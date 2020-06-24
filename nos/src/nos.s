@@ -88,6 +88,8 @@ SIOV    =     $E459   ; SIO ENTRY
        ; CONSTANTS
 
 PUTREC  =     $09     ; CIO PUTREC
+PUTCHR	=	$0B   ; CIO PUTCHR
+	
 DEVIDN  =     $71     ; SIO DEVID
 DSREAD  =     $40     ; FUJI->ATARI
 DSWRIT  =     $80     ; ATARI->FUJI
@@ -723,25 +725,79 @@ PRCVEC
 ;;; End Proceed Vector ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; CP is here ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+DOSDCB .BYTE	DEVIDN		; DDEVIC
+       .BYTE	$FF		; DUNIT
+       .BYTE	$30		; DCOMND
+       .BYTE	$40		; DSTATS
+       .BYTE	$00		; DBUFL
+       .BYTE	$05		; DBUFH
+       .BYTE	$0F		; DTIMLO
+       .BYTE	$00		; DRESVD
+       .BYTE	$00		; DBYTL
+       .BYTE	$01		; DBYTH
+       .BYTE	$00		; DAUX1
+       .BYTE	$00		; DAUX2
+
+SHOWDIR:
+	;; Get directory into $0500
 	
-GODOS:
+	LDA	DOSDR
+	STA	DOSDCB+1
+	JSR	DODOS
+
+	LDX	#$00
+
+	;; Show DOS drive.
+	CLC
+	LDA	DOSDR
+	ADC	#$30
+	STA	PRMPT+1
+	LDA	#PUTCHR
+	STA	ICCOM,X
+	LDA	#<PRMPT
+	STA	ICBAL,X
+	LDA	#>PRMPT
+	STA	ICBAH,X
+	LDA	#$03
+	STA	ICBLL,X
+	TXA			; 0
+	STA	ICBLH,X
+	JSR	CIOV
+
+	;; Show Prefix
+	LDA	#PUTREC
+	STA	ICCOM,X
+	LDA	#$FF
+	STA	ICBLL,X
+	LDA	#$00
+	STA	ICBAL,X
+	LDA	#$05
+	STA	ICBAH,X
+	JSR	CIOV
 	RTS
+
+	;; Show directory name or 
+
+DODOS:	LDA	#<DOSDCB
+	LDY	#>DOSDCB
+	JSR	DOSIOV
+	RTS
+	
+
+GODOS:
+	JSR	SHOWDIR
+	RTS
+
+PRMPT:
+	.BYTE	'N :'		; Prompt start
 	
 ;;; End CP ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Variables
 
 	;; Command Table
 CMDTBL
-	.BYTE	'CD '
-	.BYTE	'COP'
-	.BYTE	'DIR'
-	.BYTE	'DEL'
-	.BYTE	'LOA'
-	.BYTE	'LOC'
-	.BYTE	'MKD'
-	.BYTE	'RMD'
-	.BYTE	'UNL'
-	.BYTE	$FF
+	.cb	"DIR"
 
        ; DEVHDL TABLE FOR N:
 
@@ -765,7 +821,7 @@ RLEN   .DS      MAXDEV  ; RCV LEN
 ROFF   .DS      MAXDEV  ; RCV OFFSET
 TOFF   .DS      MAXDEV  ; TRX OFFSET
 INQDS  .DS      1       ; DSTATS INQ
-
+	
        ; BUFFERS (PAGE ALIGNED)
 
 	.ALIGN	$100
