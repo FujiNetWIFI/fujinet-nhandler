@@ -76,6 +76,8 @@ ICAX4   =     IOCB+13 ; AUX 4
 ICAX5   =     IOCB+14 ; AUX 5
 ICAX6   =     IOCB+15 ; AUX 6
 
+LNBUF   =     $0580   ; Line Buffer (128 bytes)
+
        ; HARDWARE REGISTERS
 
 PACTL   =     $D302   ; PIA CTRL A
@@ -87,6 +89,7 @@ SIOV    =     $E459   ; SIO ENTRY
 
        ; CONSTANTS
 
+GETREC	=	$05		; CIO GET RECORD
 PUTREC  =     $09     ; CIO PUTREC
 PUTCHR	=	$0B   ; CIO PUTCHR
 	
@@ -130,9 +133,9 @@ START:
 	STA	DOSINI
 	LDA	#>RESET
 	STA	DOSINI+1
-	LDA	#<GODOS
+	LDA	#<DOS
 	STA	DOSVEC
-	LDA	#>GODOS
+	LDA	#>DOS
 	STA	DOSVEC+1
 
 	JSR	ALTMEML
@@ -726,78 +729,62 @@ PRCVEC
 
 ;;; CP is here ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-DOSDCB .BYTE	DEVIDN		; DDEVIC
-       .BYTE	$FF		; DUNIT
-       .BYTE	$30		; DCOMND
-       .BYTE	$40		; DSTATS
-       .BYTE	$00		; DBUFL
-       .BYTE	$05		; DBUFH
-       .BYTE	$0F		; DTIMLO
-       .BYTE	$00		; DRESVD
-       .BYTE	$00		; DBYTL
-       .BYTE	$01		; DBYTH
-       .BYTE	$00		; DAUX1
-       .BYTE	$00		; DAUX2
-
-SHOWDIR:
-	;; Get directory into $0500
-	
-	LDA	DOSDR
-	STA	DOSDCB+1
-	JSR	DODOS
-
+SHOWPROMPT:
 	LDX	#$00
-
-	;; Show DOS drive.
 	CLC
 	LDA	DOSDR
 	ADC	#$30
-	STA	PRMPT+1
+	STA	PRMPT+2
 	LDA	#PUTCHR
 	STA	ICCOM,X
 	LDA	#<PRMPT
 	STA	ICBAL,X
 	LDA	#>PRMPT
 	STA	ICBAH,X
-	LDA	#$03
+	LDA	#$04
 	STA	ICBLL,X
 	TXA			; 0
 	STA	ICBLH,X
 	JSR	CIOV
+	RTS
 
-	;; Show Prefix
-	LDA	#PUTREC
+GETCMD: LDX	#$00
+	LDA	#GETREC
 	STA	ICCOM,X
-	LDA	#$FF
-	STA	ICBLL,X
-	LDA	#$00
+	LDA	#$80
 	STA	ICBAL,X
 	LDA	#$05
 	STA	ICBAH,X
+	LDA	#$7F
+	STA	ICBLL,X
 	JSR	CIOV
 	RTS
 
-	;; Show directory name or 
-
-DODOS:	LDA	#<DOSDCB
-	LDY	#>DOSDCB
-	JSR	DOSIOV
+PARSECMD:
 	RTS
 	
-
-GODOS:
-	JSR	SHOWDIR
+DOCMD:
+	LDA	#$FF
+	STA	CMD
+	RTS
+	
+PROMPT:
+	JSR	SHOWPROMPT
+	JSR	GETCMD
+	JSR	PARSECMD
+	JSR	DOCMD
+	RTS
+	
+DOS:
+	JSR	PROMPT
+	JMP	DOS
 	RTS
 
 PRMPT:
-	.BYTE	'N :'		; Prompt start
+	.BYTE	$9b,'N :'		; Prompt start
 	
 ;;; End CP ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Variables
-
-	;; Command Table
-CMDTBL
-	.cb	"DIR"
 
        ; DEVHDL TABLE FOR N:
 
@@ -816,6 +803,7 @@ BERROR .BYTE      '#FUJINET ERROR',$9B
        ; VARIABLES
 
 DOSDR	.BYTE	1		; DOS DRIVE
+CMD	.DS	1
 TRIP   .DS      1       ; INTR FLAG
 RLEN   .DS      MAXDEV  ; RCV LEN
 ROFF   .DS      MAXDEV  ; RCV OFFSET
