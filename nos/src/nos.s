@@ -100,6 +100,8 @@ MAXDEV  =     4       ; # OF N: DEVS
 EOF     =     $88     ; ERROR 136
 EOL     =     $9B     ; EOL CHAR
 
+CMD_DRIVE_CHANGE	= $01
+	
 ;;; Macros ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 	.MACRO DCBC
@@ -729,6 +731,19 @@ PRCVEC
 
 ;;; CP is here ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+	;; Called to do drive change
+	
+DO_DRIVE_CHANGE:
+	LDA	LNBUF
+	STA	PRMPT+1
+	LDA	LNBUF+1
+	SEC
+	SBC	#$30
+	STA	DOSDR
+	RTS
+
+	;; Show the prompt, consisting of current device.
+	
 SHOWPROMPT:
 	LDX	#$00
 	CLC
@@ -748,6 +763,8 @@ SHOWPROMPT:
 	JSR	CIOV
 	RTS
 
+	;; Get line of input
+	
 GETCMD: LDX	#$00
 	LDA	#GETREC
 	STA	ICCOM,X
@@ -760,10 +777,37 @@ GETCMD: LDX	#$00
 	JSR	CIOV
 	RTS
 
+	;; Check for a drive change command
+	
+PARSE_DRIVE_CHANGE:
+	LDX	#$03		; Check for EOL in pos 3
+	LDA	LNBUF,X
+	CMP	#$9B
+	BNE	PARSE_DRIVE_CHANGE_DONE
+	DEX			; go back one char
+	LDA	LNBUF,X
+	CMP	#':'		; Check for colon.
+	BNE	PARSE_DRIVE_CHANGE_DONE
+	LDA	#CMD_DRIVE_CHANGE
+	STA	CMD
+PARSE_DRIVE_CHANGE_DONE:
+	RTS
+
+PARSE_INTRINSIC_COMMAND:
+	
+	RTS
+	
 PARSECMD:
+	JSR	PARSE_DRIVE_CHANGE
+	JSR	PARSE_INTRINSIC_COMMAND
 	RTS
 	
 DOCMD:
+	LDA	CMD
+	CMP	#$01
+	BNE	DOCMD_DONE
+	JSR	DO_DRIVE_CHANGE
+DOCMD_DONE:	
 	LDA	#$FF
 	STA	CMD
 	RTS
