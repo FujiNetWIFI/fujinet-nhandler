@@ -7,7 +7,10 @@
 
 	;; Optimizations being done by djaybee!
 	;; Thank you so much!
-	
+
+DOSVEC  =     $0A       	; DOSVEC
+DOSINI  =     $0C      ; DOSINI
+
 ZIOCB   =     $20      ; ZP IOCB
 ZICHID  =     ZIOCB    ; ID
 ZICDNO  =     ZIOCB+1  ; UNIT #
@@ -25,11 +28,11 @@ ZICAX3  =     ZIOCB+12 ; AUX 3
 ZICAX4  =     ZIOCB+13 ; AUX 4
 ZICAX5  =     ZIOCB+14 ; AUX 5
 ZICAX6  =     ZIOCB+15 ; AUX 6
-
-DOSVEC  =     $0A       	; DOSVEC
-DOSINI  =     $0C      ; DOSINI
-
-       ; INTERRUPT VECTORS
+	
+CIX	=     $F2      ; Inbuff cursor
+INBUFF	=     $F3      ; Ptr to input buffer ($0580)
+	
+	; INTERRUPT VECTORS
        ; AND OTHER PAGE 2 VARS
 
 VPRCED  =     $0202   ; PROCEED VCTR
@@ -82,6 +85,11 @@ LNBUF   =     $0580   ; Line Buffer (128 bytes)
 
 PACTL   =     $D302   ; PIA CTRL A
 
+	;; MATH PACK VECTORS
+
+LDBUFA	=	$DA51		; Set INBUFF to $0580
+SKPSPC	=	$DBA1		; Increment CIX to next whitespace
+	
        ; OS ROM VECTORS
 
 CIOV    =     $E456   ; CIO ENTRY
