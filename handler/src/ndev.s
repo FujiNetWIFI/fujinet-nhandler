@@ -28,6 +28,11 @@ ZICAX6  =     ZIOCB+15 ; AUX 6
 
 DOSINI  =     $0C      ; DOSINI
 
+	;; Pointers used by relocator.
+ptr1	=	$80
+ptr2	=	$82
+ptr3	=	$84	
+	
        ; INTERRUPT VECTORS
        ; AND OTHER PAGE 2 VARS
 
@@ -94,8 +99,102 @@ MAXDEV  =     4       ; # OF N: DEVS
 EOF     =     $88     ; ERROR 136
 EOL     =     $9B     ; EOL CHAR
 
-RELOCTABLE:
-	.word w0,w1+1,w2+1,w3+1,w4+1,w5,w6+1,w7+1,w8,w9,w10
+ldax .macro	" "	; load a,x pair
+	.if :1 = '#'
+		lda #< :2
+		ldx #> :2
+	.else
+		lda :2
+		ldx :2+1
+	.endif
+	.endm
+
+	org	$3000
+	
+.proc	Start
+GotHardware
+	lda #<DRIVERSTART
+	sec
+	sbc MEMLO
+	sta Diff
+	lda #>DRIVERSTART
+	sbc MEMLO+1
+	sta Diff+1
+	
+	ldx #.len[RelocTable]-2
+Loop1
+	lda RelocTable,x
+	sta ptr1
+	lda RelocTable+1,x
+	sta ptr1+1
+	
+	ldy #0
+	lda (ptr1),y
+	sec
+	sbc Diff
+	sta (ptr1),y
+	iny
+	lda (ptr1),y
+	sbc Diff+1
+	sta (ptr1),y
+	
+	cpx #0
+	beq Move
+	dex
+	dex
+	jmp Loop1
+
+Move
+	mwa DOSINI resetHandler.initVector
+	
+	lda MEMLO
+	sta ptr2
+	sta DOSINI
+	clc
+	adc #<[DRIVEREND-DRIVERSTART]
+	sta MEMLO
+	sta resetHandler.driverEndLo
+	
+	lda MEMLO+1
+	sta ptr2+1
+	sta DOSINI+1
+	adc #>[DRIVEREND-DRIVERSTART]
+	sta MEMLO+1
+	sta resetHandler.driverEndHi
+	
+	ldy #0	; move driver code to bottom of free RAM
+	mwa #DRIVERSTART ptr1
+	mva #<[DRIVEREND-DRIVERSTART] ptr3
+	mvx #>[DRIVEREND-DRIVERSTART] ptr3+1
+	beq @+
+Loop2
+	lda (ptr1),y
+	sta (ptr2),y
+	iny
+	bne Loop2
+	inc ptr1+1
+	inc ptr2+1
+	dex
+	bne Loop2
+@
+	ldx ptr3	; lsb of size
+	beq Done
+Loop3
+	lda (ptr1),y
+	sta (ptr2),y
+	iny
+	dex
+	bne Loop3
+Done
+
+Setup
+	jsr IHTBS
+Finish
+	rts
+.endp
+
+.local RelocTable
+	.word w7+1,w8,w9,w10
 	.word w11,w12+1,w13+1,w14+1,w15+1,w16+1,w17+1,w18+1,w19+1,w20+1
 	.word w21+1,w22+1,w23,w24+1,w25+1,w26+1,w27+1,w28+1,w29+1,w30+1
 	.word w31+1,w32+1,w33+1,w34+1,w35+1,w36+1,w37+1,w38+1,w39,w40+1
@@ -107,52 +206,24 @@ RELOCTABLE:
 	.word w91+1,w92+1,w93+1,w94+1,w95+1,w96+1,w97+1,w98+1,w99+1,w100+1
 	.word w101,w102+1,w103+1,w104+1,w105+1,w106+1,w107+1,w108+1,w109,w110
 	.word w111,w112,w113,w114
+.endl
 	
-RESETPTR:	
-.def	:w0
-	.word	RESET
+DRIVERSTART:	
 	
-START:	
-	LDA	DOSINI
-.def	:w1
-	STA	RESET+1
-	LDA	DOSINI+1
-.def	:w2
-	STA	RESET+2
-	LDA	RESETPTR
-	STA	DOSINI
-	LDA	RESETPTR+1
-	STA	DOSINI+1
-
-	;;  Alter MEMLO
-.def	:w3
-	JSR	ALTMEML
-
-	BVC	IHTBS
-
-RESET:
-	JSR	$FFFF		; Jump to extant DOSINI
-.def	:w4
-	JSR	IHTBS		; Insert into HATABS
-
-	;;  Alter MEMLO
-
-ALTMEMLPTR:
-.def	:w5
-	.word	PGEND
-	
-ALTMEML:	
-.def	:w6
-	LDA	ALTMEMLPTR		
-	STA	MEMLO
+.proc resetHandler
+	jsr $FFFF
+initVector = *-2
+	lda #$ff
+driverEndLo = *-1
+	sta MEMLO
+	lda #$ff
+driverEndHi = *-1
+	sta MEMLO+1
 .def	:w7
-	LDA	ALTMEMLPTR+1
-	STA	MEMLO+1
-
-	;; Back to DOS
+	JSR IHTBS		; Insert into HATABS
+	rts
+.endp
 	
-	RTS
-
 CIOHNDPTR:
 .def	:w8
 	.word CIOHND
@@ -859,6 +930,7 @@ BERROR .BYTE      '#FUJINET ERROR',$9B
 
        ; VARIABLES
 
+DIFF	.DS	2	
 TRIP   .DS      1       ; INTR FLAG
 RLEN   .DS      MAXDEV  ; RCV LEN
 ROFF   .DS      MAXDEV  ; RCV OFFSET
@@ -872,7 +944,7 @@ INQDS  .DS      1       ; DSTATS INQ
 RBUF	.DS	$80		; 128 bytes
 TBUF	.DS	$80		; 128 bytes
 	
-PGEND	= *
+DRIVEREND	= *
 	
 	RUN	START
        END

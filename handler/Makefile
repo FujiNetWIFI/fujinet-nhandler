@@ -2,19 +2,12 @@
 ## N: Handler Makefile
 ##
 
-ifeq ($(RUNADDRESS),)
-RUNADDRESS := 8960
-endif
-ifeq ($(OUTFILE),)
-OUTFILE := ndev.com
-endif
-
 .PHONY: all clean
 
 all: ndev.com
 
 ndev.com:
-	mads src/ndev.s -b:$(RUNADDRESS) -l:ndev.lst -o:$(OUTFILE)
+	mads src/ndev.s -l:ndev.lst -o:ndev.com
 
 dist: ndev.com
 	cp ndev.com dist/
