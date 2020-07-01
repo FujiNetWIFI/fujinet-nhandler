@@ -94,6 +94,20 @@ MAXDEV  =     4       ; # OF N: DEVS
 EOF     =     $88     ; ERROR 136
 EOL     =     $9B     ; EOL CHAR
 
+RELOCTABLE:
+	.word w0,w1+1,w2+1,w3+1,w4+1,w5,w6+1,w7+1,w8,w9,w10
+	.word w11,w12+1,w13+1,w14+1,w15+1,w16+1,w17+1,w18+1,w19+1,w20+1
+	.word w21+1,w22+1,w23,w24+1,w25+1,w26+1,w27+1,w28+1,w29+1,w30+1
+	.word w31+1,w32+1,w33+1,w34+1,w35+1,w36+1,w37+1,w38+1,w39,w40+1
+	.word w41+1,w42+1,w43+1,w44+1,w45+1,w46+1,w47,w48+1,w49+1,w50+1
+	.word w51+1,w52+1,w53+1,w54+1,w55+1,w56+1,w57+1,w58+1,w59+1,w60+1
+	.word w61+1,w62+1,w63+1,w64+1,w65+1,w66+1,w67,w68+1,w69+1,w70+1
+	.word w71+1,w72+1,w73+1,w74+1,w75+1,w76+1,w77+1,w78+1,w79+1,w80+1
+	.word w81+1,w82+1,w83+1,w84+1,w85+1,w86+1,w87+1,w88,w89+1,w90+1
+	.word w91+1,w92+1,w93+1,w94+1,w95+1,w96+1,w97+1,w98+1,w99+1,w100+1
+	.word w101,w102+1,w103+1,w104+1,w105+1,w106+1,w107+1,w108+1,w109,w110
+	.word w111,w112,w113,w114
+	
 RESETPTR:	
 .def	:w0
 	.word	RESET
@@ -323,7 +337,6 @@ OPDONE:
 	TYA
 	RTS             ; AY = ERROR
 
-.def	:w39
 OPNDCB:
 	.BYTE      DEVIDN  ; DDEVIC
 	.BYTE      $FF     ; DUNIT
@@ -342,30 +355,29 @@ OPNDCB:
 
 ;;; CIO CLOSE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-.def	:w40
+.def	:w39
 CLODCBPTR:
 	.word	CLODCB
 	
 CLOSE:
-.def	:w41
+.def	:w40
 	JSR     DIPRCD		; Disable Interrupts
-.def	:w42
+.def	:w41
 	JSR	GDIDX
-.def	:w43
+.def	:w42
 	JSR	PFLUSH		; Do a Put Flush if needed.
 
 	LDA     ZICDNO		; IOCB Unit #
-.def	:w44
+.def	:w43
 	STA     CLODCB+1	; to DCB...
 
-.def	:w45
+.def	:w44
 	LDA	CLODCBPTR
-.def	:w46
+.def	:w45
 	LDY	CLODCBPTR+1
-.def	:w47
+.def	:w46
 	JMP	DOSIOV
 
-.def	:w48
 CLODCB .BYTE	DEVIDN		; DDEVIC
        .BYTE	$FF		; DUNIT
        .BYTE	'C'		; DCOMND
@@ -383,50 +395,50 @@ CLODCB .BYTE	DEVIDN		; DDEVIC
 
 ;;; CIO GET ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-.def	:w49
+.def	:w47
 GETDCBPTR:
 	.word GETDCB
 	
 GET:
-.def	:w50
+.def	:w48
 	JSR	GDIDX		; IOCB UNIT #-1 into X
-.def	:w51
+.def	:w49
 	LDA	RLEN,X		; Get # of RX chars waiting
 	BNE     GETDISC		; LEN > 0?
 
 	;; If RX buffer is empty, get # of chars waiting...
 
-.def	:w52
+.def	:w50
 	JSR	STPOLL		; Status Poll
-.def	:w53
+.def	:w51
 	JSR	GDIDX		; IOCB UNIT -1 into X (because Poll trashes X)
 	LDA	DVSTAT		; # of bytes waiting (0-127)
-.def	:w54
+.def	:w52
 	STA	RLEN,X		; Store in RX Len
 	BEQ	RETEOF
 
 GETDO:
 	LDA	ZICDNO		; Get IOCB UNIT #
-.def	:w55
+.def	:w53
 	STA	GETDCB+1	; Store into DUNIT
 	LDA	DVSTAT		; # of bytes waiting
-.def	:w56
+.def	:w54
 	STA	GETDCB+8	; Store into DBYT...
-.def	:w57
+.def	:w55
 	STA	GETDCB+10	; and DAUX1...
 
-.def	:w58
+.def	:w56
 	LDA	GETDCBPTR
-.def	:w59
+.def	:w57
 	LDY	GETDCBPTR+1
-.def	:w60
+.def	:w58
 	JSR	DOSIOV
 
 	;; Clear the Receive buffer offset.
-.def	:w61
+.def	:w59
 	JSR	GDIDX		; IOCB UNIT #-1 into X
 	LDA	#$00
-.def	:w62
+.def	:w60
 	STA     ROFF,X
 
 GETDISC:
@@ -441,25 +453,25 @@ RETEOF:
 	RTS			; buh-bye.
 
 GETUPDP:
-.def	:w63
+.def	:w61
 	DEC     RLEN,X		; Decrement RX length.
-.def	:w64
+.def	:w62
 	LDY     ROFF,X		; Get RX offset cursor.
 
 	;; Return Next char from appropriate RX buffer.
-.def	:w65	
+.def	:w63	
 	LDA	RBUF,Y
 	
 	;; Increment RX offset
-.def	:w66	
+.def	:w64	
 GX:	INC	ROFF,X		; Increment RX offset.
 	TAY			; stuff returned val into Y temporarily.
 
 	;; If requested RX buffer is empty, reset TRIP.
-.def	:w67
+.def	:w65
 	LDA	RLEN,X
 	BNE	GETDONE
-.def	:w68
+.def	:w66
 	STA     TRIP
 
 	;; Return byte back to CIO.
@@ -470,7 +482,6 @@ GETDONE:
 
 	RTS			; DONE...
 
-.def	:w69
 GETDCB .BYTE     DEVIDN  ; DDEVIC
        .BYTE     $FF     ; DUNIT
        .BYTE     'R'     ; DCOMND
@@ -488,21 +499,21 @@ GETDCB .BYTE     DEVIDN  ; DDEVIC
 
 ;;; CIO PUT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-.def	:w70
+.def	:w67
 PUTDCBPTR:
 	.word	PUTDCB
 	
 PUT:
 	;; Add to TX buffer.
 
-.def	:w71
+.def	:w68
 	JSR	GDIDX
-.def	:w72
+.def	:w69
 	LDY	TOFF,X  ; GET TX cursor.
-.def	:w73
+.def	:w70
 	STA	TBUF,Y		; TX Buffer
 
-.def	:w74
+.def	:w71
 POFF:	INC	TOFF,X		; Increment TX cursor
 	LDY	#$01		; SUCCESSFUL
 
@@ -510,9 +521,9 @@ POFF:	INC	TOFF,X		; Increment TX cursor
 
 	CMP     #EOL    ; EOL?
 	BEQ     FLUSH  ; FLUSH BUFFER
-.def	:w75
+.def	:w72
 	JSR     GDIDX   ; GET OFFSET
-.def	:w76
+.def	:w73
 	LDA     TOFF,X
         CMP     #$7F    ; LEN = $FF?
         BEQ     FLUSH  ; FLUSH BUFFER
@@ -520,7 +531,7 @@ POFF:	INC	TOFF,X		; Increment TX cursor
 
        ; FLUSH BUFFER, IF ASKED.
 
-.def	:w77
+.def	:w74
 FLUSH  JSR     PFLUSH  ; FLUSH BUFFER
        RTS
 
@@ -529,54 +540,53 @@ PFLUSH:
        ; CHECK CONNECTION, AND EOF
        ; IF DISCONNECTED.
 
-.def	:w78
+.def	:w75
        JSR     STPOLL  ; GET STATUS
        LDA     DVSTAT+2
 	BEQ	RETEOF
 
-.def	:w79
+.def	:w76
 PF1:	JSR     GDIDX   ; GET DEV X
-.def	:w80
+.def	:w77
        LDA     TOFF,X
 	BNE     PF2
-.def	:w81
+.def	:w78
        JMP     PDONE
 
        ; FILL OUT DCB FOR PUT FLUSH
 
 PF2:	LDA     ZICDNO
-.def	:w82
+.def	:w79
        STA     PUTDCB+1
 	
        ; FINISH DCB AND DO SIOV
 
-.def	:w83
+.def	:w80
 TBX:	LDA     TOFF,X
-.def	:w84
+.def	:w81
 	STA     PUTDCB+8
-.def	:w85
+.def	:w82
 	STA     PUTDCB+10
 
-.def	:w86
+.def	:w83
 	LDA	PUTDCBPTR
-.def	:w87
+.def	:w84
 	LDY	PUTDCBPTR+1
-.def	:w88
+.def	:w85
 	JSR     DOSIOV
        
        ; CLEAR THE OFFSET CURSOR
        ; AND LENGTH
 
-.def	:w89
+.def	:w86
        JSR     GDIDX
 	LDA     #$00
-.def	:w90
+.def	:w87
        STA     TOFF,X
 
 PDONE:	LDY     #$01
        RTS
 
-.def	:w91
 PUTDCB .BYTE      DEVIDN  ; DDEVIC
        .BYTE      $FF     ; DUNIT
        .BYTE      'W'     ; DCOMND
@@ -594,25 +604,25 @@ PUTDCB .BYTE      DEVIDN  ; DDEVIC
 	
 ;;; CIO STATUS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-.def	:w92
+.def	:w88
 STADCBPTR:
 	.word	STADCB
 	
 STATUS:
-.def	:w93
+.def	:w89
 	JSR     ENPRCD  ; ENABLE PRCD
-.def	:w94
+.def	:w90
 	JSR     GDIDX   ; GET DEVICE#
-.def	:w95
+.def	:w91
        LDA     RLEN,X  ; GET RLEN
 	BNE     STSLEN  ; RLEN > 0?
-.def	:w96
+.def	:w92
        LDA     TRIP
        BNE     STTRI1  ; TRIP = 1?
 
        ; NO TRIP, RETURN SAVED LEN
 
-.def	:w97
+.def	:w93
 STSLEN LDA     RLEN,X  ; GET RLEN
        STA     DVSTAT  ; RET IN DVSTAT
 ; If you don't need to preserve Y then use it instead of A
@@ -627,15 +637,15 @@ STSLEN LDA     RLEN,X  ; GET RLEN
 
        ; DO POLL AND UPDATE RCV LEN
 
-.def	:w98
+.def	:w94
 STTRI1 JSR     STPOLL  ; POLL FOR ST
-.def	:w99	
+.def	:w95	
 	STA	RLEN,X
 		
        ; UPDATE TRIP FLAG
 
 STTRIU BNE     STDONE
-.def	:w100	
+.def	:w96	
        STA     TRIP    ; RLEN = 0
 
        ; RETURN CONNECTED? FLAG.
@@ -648,14 +658,14 @@ STDONE LDA     DVSTAT+2
 
 STPOLL:	
 	LDA     ZICDNO  ; IOCB #
-.def	:w101
+.def	:w97
        STA     STADCB+1
 
-.def	:w102
+.def	:w98
 	LDA	STADCBPTR
-.def	:w103
+.def	:w99
 	LDY	STADCBPTR+1
-.def	:w104
+.def	:w100
 	JSR	DOSIOV
 
 	;; > 127 bytes? make it 127 bytes.
@@ -676,7 +686,6 @@ STADJ	LDA	#$7F
 STP2   LDA     DVSTAT+2
        RTS
 
-.def	:w105
 STADCB .BYTE      DEVIDN  ; DDEVIC
        .BYTE      $FF     ; DUNIT
        .BYTE      'S'     ; DCOMND
@@ -694,7 +703,7 @@ STADCB .BYTE      DEVIDN  ; DDEVIC
 
 ;;; CIO SPECIAL ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-.def	:w106
+.def	:w101
 SPEDCBPTR:
 	.word SPEDCB
 	
@@ -704,7 +713,7 @@ SPEC:
        LDA     ZICCOM
        CMP     #$0F    ; 15 = FLUSH
 	BNE     S1      ; NO.
-.def	:w107
+.def	:w102
        JSR     PFLUSH  ; DO FLUSH
        LDY     #$01    ; SUCCESS
        RTS
@@ -713,17 +722,17 @@ SPEC:
        ; GET DSTATS FOR COMMAND
 
 S1:	LDA	ZICDNO
-.def	:w108
+.def	:w103
 	STA	SPEDCB+1
 	LDA	ZICCOM
-.def	:w109
+.def	:w104
 	STA	SPEDCB+10
 
-.def	:w110
+.def	:w105
 	LDA	SPEDCBPTR
-.def	:w111
+.def	:w106
 	LDY	SPEDCBPTR+1
-.def	:w112
+.def	:w107
 	JSR	DOSIOV
 
 	BMI	:DSERR
@@ -769,12 +778,11 @@ DSGOL:
 	DEY
 	BPL DSGOL
 
-.def	:w113	
+.def	:w108	
 	JMP	SIOVDST
 
 	;; Return DSTATS in Y and A
 
-.def	:w114
 SPEDCB .BYTE      DEVIDN  ; DDEVIC
        .BYTE      $FF     ; DUNIT
        .BYTE      $FF     ; DCOMND ; inq
@@ -830,12 +838,18 @@ PRCVEC
 ;;; Variables
 
        ; DEVHDL TABLE FOR N:
-.def	:w115
-CIOHND .WORD      OPEN-1
-       .WORD      CLOSE-1
-       .WORD      GET-1
-       .WORD      PUT-1
-       .WORD      STATUS-1
+CIOHND
+.def	:w109
+	.WORD      OPEN-1
+.def	:w110
+	.WORD      CLOSE-1
+.def	:w111
+	.WORD      GET-1
+.def	:w112	
+	.WORD      PUT-1
+.def	:w113
+	.WORD      STATUS-1
+.def	:w114
        .WORD      SPEC-1
 
        ; BANNERS
