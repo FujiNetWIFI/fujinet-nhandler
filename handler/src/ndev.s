@@ -200,13 +200,13 @@ Finish
 	.word w11,w12+1,w13+1,w14+1,w15+1,w16+1,w17+1,w18+1,w19+1,w20+1
 	.word w21+1,w22+1,w23,w24+1,w25+1,w26+1,w27+1,w28+1,w29+1,w30+1
 	.word w31+1,w32+1,w33+1,w34+1,w35+1,w36+1,w37+1,w38+1,w39,w40+1
-	.word w41+1,w42+1,w43+1,w44+1,w45+1,w46+1,w47,w48+1,w49+1,w50+1
+	.word w41+1,w42+1,w43+1,w44+1,w45+1,w46+1,w47,w47a,w48+1,w49+1,w50+1
 	.word w51+1,w52+1,w53+1,w54+1,w55+1,w56+1,w57+1,w58+1,w59+1,w60+1
-	.word w61+1,w62+1,w63+1,w64+1,w65+1,w66+1,w67,w68+1,w69+1,w70+1
+	.word w61+1,w62+1,w63+1,w64+1,w65+1,w66+1,w67,w67a,w68+1,w69+1,w70+1
 	.word w71+1,w72+1,w73+1,w74+1,w75+1,w76+1,w77+1,w78+1,w79+1,w80+1
 	.word w81+1,w82+1,w83+1,w84+1,w85+1,w86+1,w87+1,w88,w89+1,w90+1
 	.word w91+1,w92+1,w93+1,w94+1,w95+1,w96+1,w97+1,w98+1,w99+1,w100+1
-	.word w101,w102+1,w103+1,w104+1,w105+1,w106+1,w107+1,w108+1,w109,w110
+	.word w101,w101a,w102+1,w103+1,w104+1,w105+1,w106+1,w107+1,w107a+1,w107b+1,w108+1,w109,w110
 	.word w111,w112,w113,w114
 .endl
 	
@@ -471,6 +471,10 @@ CLODCB .BYTE	DEVIDN		; DDEVIC
 .def	:w47
 GETDCBPTR:
 	.word GETDCB
+
+.def	:w47a
+GETDCBRBUFPTR:
+	.word RBUF
 	
 GET:
 .def	:w48
@@ -559,8 +563,7 @@ GETDCB .BYTE     DEVIDN  ; DDEVIC
        .BYTE     $FF     ; DUNIT
        .BYTE     'R'     ; DCOMND
        .BYTE     $40     ; DSTATS
-       .BYTE     $00     ; DBUFL
-       .BYTE     >RBUF   ; DBUFH
+	.WORD	GETDCBRBUFPTR
        .BYTE     $0F     ; DTIMLO
        .BYTE     $00     ; DRESVD
        .BYTE     $FF     ; DBYTL
@@ -575,7 +578,11 @@ GETDCB .BYTE     DEVIDN  ; DDEVIC
 .def	:w67
 PUTDCBPTR:
 	.word	PUTDCB
-	
+
+.def	:w67a
+PUTDCBTBUFPTR:
+	.word	TBUF
+
 PUT:
 	;; Add to TX buffer.
 
@@ -664,8 +671,7 @@ PUTDCB .BYTE      DEVIDN  ; DDEVIC
        .BYTE      $FF     ; DUNIT
        .BYTE      'W'     ; DCOMND
        .BYTE      $80     ; DSTATS
-       .BYTE      $80     ; DBUFL
-       .BYTE      >TBUF   ; DBUFH
+       .WORD      PUTDCBTBUFPTR   ; DBUFH
        .BYTE      $0F     ; DTIMLO
        .BYTE      $00     ; DRESVD
        .BYTE      $FF     ; DBYTL
@@ -779,7 +785,11 @@ STADCB .BYTE      DEVIDN  ; DDEVIC
 .def	:w101
 SPEDCBPTR:
 	.word SPEDCB
-	
+
+.def	:w101a
+SPEDCBINQDSPTR:
+	.word INQDS
+
 SPEC:
        ; HANDLE LOCAL COMMANDS.
 
@@ -815,6 +825,7 @@ S1:	LDA	ZICDNO
        ; INVALID
 
 DSOK:
+.def	:w107a
 	LDA     INQDS
        CMP     #$FF    ; INVALID?
        BNE     DSGO   ; DO THE CMD
@@ -830,6 +841,7 @@ DSGO:	LDA	ZICCOM
 	PHA
 	LDA	#$00
 	PHA
+.def	:w107b
 	LDA	INQDS
 	PHA
 	LDA	#$01
@@ -860,8 +872,8 @@ SPEDCB .BYTE      DEVIDN  ; DDEVIC
        .BYTE      $FF     ; DUNIT
        .BYTE      $FF     ; DCOMND ; inq
        .BYTE      $40     ; DSTATS
-       .BYTE      <INQDS  ; DBUFL
-       .BYTE      >INQDS  ; DBUFH
+       .BYTE      <SPEDCBINQDSPTR    ; DBUFL
+       .BYTE      >SPEDCBINQDSPTR+1  ; DBUFH
        .BYTE      $0F     ; DTIMLO
        .BYTE      $00     ; DRESVD
        .BYTE      $01     ; DBYTL
