@@ -110,6 +110,8 @@ ldax .macro	" "	; load a,x pair
 	.endm
 
 	org	$3000
+
+	rts
 	
 .proc	Start
 GotHardware
@@ -188,9 +190,9 @@ Loop3
 Done
 
 Setup
-	jsr IHTBS
+	jmp IHTBS
 Finish
-	rts
+
 .endp
 
 .local RelocTable
