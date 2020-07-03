@@ -941,12 +941,13 @@ ROFF   .DS      MAXDEV  ; RCV OFFSET
 TOFF   .DS      MAXDEV  ; TRX OFFSET
 INQDS  .DS      1       ; DSTATS INQ
 
+	
        ; BUFFERS (PAGE ALIGNED)
 
 	.ALIGN	$100
-	
-RBUF	.DS	$80		; 128 bytes
-TBUF	.DS	$80		; 128 bytes
+
+RBUF	.DS	128
+TBUF	.DS	128	
 	
 DRIVEREND	= *
 	
