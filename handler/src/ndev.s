@@ -236,7 +236,7 @@ BERRORPTR:
 
 BREADYPTR:
 .def	:w10
-	.word BERROR
+	.word BREADY
 
 PRCVECPTR:
 .def	:w11
@@ -350,6 +350,9 @@ SIOVDST:
 .def	:w23
 OPNDCBPTR:
 	.word	OPNDCB
+
+OPNLBL:
+	.BYTE	'!OPEN'
 	
 OPEN:
 	;; Prepare DCB
@@ -431,6 +434,9 @@ OPNDCB:
 .def	:w39
 CLODCBPTR:
 	.word	CLODCB
+
+CLOLBL:
+	.BYTE	'!CLOSE'
 	
 CLOSE:
 .def	:w40
@@ -475,6 +481,9 @@ GETDCBPTR:
 .def	:w47a
 GETDCBRBUFPTR:
 	.word RBUF
+
+GETLBL:
+	.BYTE	'!GET'
 	
 GET:
 .def	:w48
@@ -583,6 +592,9 @@ PUTDCBPTR:
 PUTDCBTBUFPTR:
 	.word	TBUF
 
+PUTLBL:
+	.BYTE	'!PUT'
+	
 PUT:
 	;; Add to TX buffer.
 
@@ -686,6 +698,9 @@ PUTDCB .BYTE      DEVIDN  ; DDEVIC
 .def	:w88
 STADCBPTR:
 	.word	STADCB
+
+STALBL:
+	.BYTE	'!STATUS'
 	
 STATUS:
 .def	:w89
@@ -790,6 +805,9 @@ SPEDCBPTR:
 SPEDCBINQDSPTR:
 	.word INQDS
 
+SPELBL:
+	.BYTE	'!SPEC'
+	
 SPEC:
        ; HANDLE LOCAL COMMANDS.
 
