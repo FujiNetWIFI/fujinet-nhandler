@@ -209,6 +209,8 @@ Finish
 	.word w101,w102+1,w103+1,w104+1,w105+1,w106+1,w107+1,w107a+1,w107b+1,w108+1,w108a,w109,w110
 	.word w111,w112,w113,w114
 .endl
+
+	.align	$100
 	
 DRIVERSTART:	
 	
@@ -941,7 +943,6 @@ ROFF   .DS      MAXDEV  ; RCV OFFSET
 TOFF   .DS      MAXDEV  ; TRX OFFSET
 INQDS  .DS      1       ; DSTATS INQ
 
-	
        ; BUFFERS (PAGE ALIGNED)
 
 	.ALIGN	$100
@@ -952,5 +953,5 @@ TBUF	.DS	128
 DRIVEREND	= *
 	
 	RUN	START
-       END
-s
+	END
+
