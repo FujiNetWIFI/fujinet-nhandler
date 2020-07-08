@@ -945,8 +945,6 @@ INQDS  .DS      1       ; DSTATS INQ
 
        ; BUFFERS (PAGE ALIGNED)
 
-	.ALIGN	$100
-
 RBUF	.DS	128
 TBUF	.DS	128	
 	
