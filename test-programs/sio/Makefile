@@ -42,6 +42,5 @@ dist: all
 	cp npoint/npoint.com dist/
 	cp nnote/nnote.com dist/
 	cp test-scripts/THTTP.EXC dist/
-	cp ../../../tls-root-certs/atascii/DIGICERT.CER dist/
 	cp DOS.SYS dist/
 	dir2atr -b DosXL230 720 n-tests.atr dist/
