@@ -21,6 +21,9 @@ all mostlyclean clean install zip:
 	@$(MAKE) -C ncacert  --no-print-directory $@
 	@$(MAKE) -C nstest   --no-print-directory $@
 	@$(MAKE) -C nudpdest --no-print-directory $@
+	@$(MAKE) -C npoint   --no-print-directory $@
+	@$(MAKE) -C nnote    --no-print-directory $@
+
 
 dist: all
 	mkdir -p dist
@@ -36,6 +39,8 @@ dist: all
 	cp ncacert/ncacert.com dist/
 	cp nstest/nstest.com dist/
 	cp nudpdest/nudpdest.com dist/
+	cp npoint/npoint.com dist/
+	cp nnote/nnote.com dist/
 	cp test-scripts/THTTP.EXC dist/
 	cp ../../../tls-root-certs/atascii/DIGICERT.CER dist/
 	cp DOS.SYS dist/
