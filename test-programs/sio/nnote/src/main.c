@@ -44,7 +44,7 @@ unsigned char nnote(void)
       print("NOTE: ");
 
       memcpy(&pos,buf,3);
-      itoa(pos,tmp,10);
+      ltoa(pos,tmp,10);
 
       print(tmp);
       
