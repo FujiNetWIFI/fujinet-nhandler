@@ -26,7 +26,7 @@ unsigned char nnote(void)
 {
   OS.dcb.ddevic=0x71;
   OS.dcb.dunit=1;
-  OS.dcb.dcomnd=0x25; // NOTE
+  OS.dcb.dcomnd=0x26; // NOTE
   OS.dcb.dstats=0x40;
   OS.dcb.dbuf=&buf;
   OS.dcb.dtimlo=0x0f;

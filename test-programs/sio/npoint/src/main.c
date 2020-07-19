@@ -26,7 +26,7 @@ void npoint(void)
 {
   OS.dcb.ddevic=0x71;
   OS.dcb.dunit=1;
-  OS.dcb.dcomnd=0x26; // POINT
+  OS.dcb.dcomnd=0x25; // POINT
   OS.dcb.dstats=0x80;
   OS.dcb.dbuf=&buf;
   OS.dcb.dtimlo=0x0f;
