@@ -209,7 +209,7 @@ Finish
 	.word w71+1,w72+1,w73+1,w74+1,w75+1,w76+1,w77+1,w78+1,w79+1,w80+1
 	.word w81+1,w82+1,w83+1,w84+1,w85+1,w86+1,w87+1,w87a,w88,w89+1,w90+1
 	.word w91+1,w92+1,w93+1,w94+1,w95+1,w96+1,w97+1,w98+1,w99+1,w100+1
-	.word w101,w101a,w101b,w102+1,w103+1,w104+1,w105+1,w106+1,w107+1,w107a+1,w107b+1,w107c+1,w107d+1,w107e+1,w107f+1,w107g+1,w107h+1,w107i+1,w107j+1,w107k+1,w108+1,w108p1+1,w108p2+1,w108p3+1,w108p4+1,w108p5+1,w108p6+1,w108p7+1,w108p8+1,w108p9+1,w108p10+1,w108a,w108b+1,w109,w110
+	.word w101,w102+1,w103+1,w104+1,w105+1,w106+1,w107+1,w107a+1,w107b+1,w108+1,w108a,w108b+1,w109,w110
 	.word w111,w112,w113,w114
 .endl
 
@@ -783,14 +783,6 @@ STADCB .BYTE      DEVIDN  ; DDEVIC
 SPEDCBPTR:
 	.word SPEDCB
 
-.def	:w101a
-SPECTBUFPTR:
-	.word TBUF
-
-.def	:w101b
-SPECRBUFPTR:
-	.word RBUF
-
 SPEC:
        ; HANDLE LOCAL COMMANDS.
 
@@ -864,83 +856,9 @@ DSGOL:
 	DEY
 	BPL DSGOL
 
-	;; Special case for POINT
+.def	:w108	
+	JMP	SIOVDST
 
-	LDA	ZICCOM
-	CMP	#$19		; POINT?
-	BNE	DSGOL2
-
-	LDA	#$03		; 3 bytes
-.def	:w107c
-	STA	SPEDCB+7
-	LDA	#$00
-.def	:w107d
-	STA	SPEDCB+8
-
-.def	:w107e
-	LDA	SPECTBUFPTR
-.def	:w107f
-	STA	SPEDCB+4
-.def	:w107g
-	LDA	SPECTBUFPTR+1
-.def	:w107h
-	STA	SPEDCB+5
-	
-	LDA	ZICAX3,X
-.def	:w107i
-	STA	TBUF
-	LDA	ZICAX4,X
-.def	:w107j
-	STA	TBUF+1
-	LDA	ZICAX5,X
-.def	:w107k
-	STA	TBUF+2
-
-	;; Special case for NOTE
-	
-.def	:w108
-DSGOL2:
-	CMP	#$1A		; NOTE?
-	BNE	DSGOL3
-
-	LDA	#$03		; 3 bytes
-.def	:w108p1
-	STA	SPEDCB+7
-	LDA	#$00
-.def	:w108p2
-	STA	SPEDCB+8
-
-.def	:w108p3
-	LDA	SPECRBUFPTR
-.def	:w108p4
-	STA	SPEDCB+4
-.def	:w108p5
-	LDA	SPECRBUFPTR+1
-.def	:w108p6
-	STA	SPEDCB+5
-
-.def	:w108p7
-DSGOL3:	
-	JSR	SIOVDST
-
-	;; Special case for NOTE, retrieve pos.
-	
-	LDA	ZICCOM
-	CMP	#$1A		; NOTE
-	BNE	DSDONE
-
-.def	:w108p8
-	LDA	RBUF
-	STA	ZICAX3,X
-.def	:w108p9
-	LDA	RBUF+1
-	STA	ZICAX4,X
-.def	:w108p10
-	LDA	RBUF+1
-	STA	ZICAX5,X
-	
-DSDONE:	RTS
-	
 	;; Return DSTATS in Y and A
 
 SPEDCB .BYTE      DEVIDN  ; DDEVIC
