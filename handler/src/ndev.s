@@ -196,8 +196,11 @@ Finish
 .endp
 
 .local RelocTable
-	.word w7+1,w8,w9,w10
-	.word w11,w12+1,w13+1,w14+1,w15+1,w16+1,w17+1,w18+1,w19+1,w20+1
+	.word w7+1,w8
+	;; .word w9,w10
+	.word w11,w12+1,w13+1
+	;; .word w14+1,w15+1,w16+1,w17+1,w18+1 
+	.word w19+1,w20+1
 	.word w21+1,w22+1,w23,w24+1,w25+1,w26+1,w27+1,w28+1,w29+1,w30+1
 	.word w31+1,w32+1,w33+1,w34+1,w35+1,w36+1,w37+1,w38+1,w39,w40+1
 	.word w41+1,w42+1,w43+1,w44+1,w45+1,w46+1,w47,w48+1,w49+1,w50+1
@@ -210,8 +213,6 @@ Finish
 	.word w111,w112,w113,w114
 .endl
 
-	.align	$100
-	
 DRIVERSTART:	
 	
 .proc resetHandler
@@ -232,13 +233,13 @@ CIOHNDPTR:
 .def	:w8
 	.word CIOHND
 
-BERRORPTR:
-.def	:w9
-	.word BERROR
+;; BERRORPTR:
+;; .def	:w9
+;; 	.word BERROR
 
-BREADYPTR:
-.def	:w10
-	.word BREADY
+;; BREADYPTR:
+;; .def	:w10
+;; 	.word BREADY
 
 PRCVECPTR:
 .def	:w11
@@ -272,47 +273,47 @@ HFND:
 
 	;; And we're done with HATABS
 
-	;; Query FUJINET
+;; 	;; Query FUJINET
 
-.def	:w14
-	JSR	STPOLL
+;; .def	:w14
+;; 	JSR	STPOLL
 
-	;; Output Ready/Error
+;; 	;; Output Ready/Error
 
-OBANR:
-	LDX	#$00		; IOCB #0
-	LDA	#PUTREC
-	STA	ICCOM,X
-	LDA	#$28		; 40 CHARS Max
-	STA	ICBLL,X
-	TXA
-	STA	ICBLH,X
-	LDA	DSTATS		; Check DSTATS
-	BPL	OBRDY		; < 128 = Ready
+;; OBANR:
+;; 	LDX	#$00		; IOCB #0
+;; 	LDA	#PUTREC
+;; 	STA	ICCOM,X
+;; 	LDA	#$28		; 40 CHARS Max
+;; 	STA	ICBLL,X
+;; 	TXA
+;; 	STA	ICBLH,X
+;; 	LDA	DSTATS		; Check DSTATS
+;; 	BPL	OBRDY		; < 128 = Ready
 
-	;; Status returned error.
+;; 	;; Status returned error.
 	
-OBERR:
-.def	:w15
-	LDA	BERRORPTR
-.def	:w16
-	LDY	BERRORPTR+1
-	BVC	OBCIO
+;; OBERR:
+;; .def	:w15
+;; 	LDA	BERRORPTR
+;; .def	:w16
+;; 	LDY	BERRORPTR+1
+;; 	BVC	OBCIO
 
-	;; Status returned ready.
+;; 	;; Status returned ready.
 	
-OBRDY:
-.def	:w17
-	LDA	BREADYPTR
-.def	:w18
-	LDY	BREADYPTR+1
+;; OBRDY:
+;; .def	:w17
+;; 	LDA	BREADYPTR
+;; .def	:w18
+;; 	LDY	BREADYPTR+1
 
-OBCIO:
-	STA	ICBAL,X
-	TYA
-	STA	ICBAH,X
+;; OBCIO:
+;; 	STA	ICBAL,X
+;; 	TYA
+;; 	STA	ICBAH,X
 
-	JSR	CIOV
+;; 	JSR	CIOV
 	
 	;; Vector in proceed interrupt
 
@@ -932,8 +933,8 @@ CIOHND
 
        ; BANNERS
 
-BREADY .BYTE      '#FUJINET READY',$9B
-BERROR .BYTE      '#FUJINET ERROR',$9B
+;; BREADY .BYTE      '#FUJINET READY',$9B
+;; BERROR .BYTE      '#FUJINET ERROR',$9B
 
        ; VARIABLES
 
