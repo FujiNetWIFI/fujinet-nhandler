@@ -109,111 +109,22 @@ ldax .macro	" "	; load a,x pair
 	.endif
 	.endm
 
-	org	$3000
+	org	$1300
 
 	rts
 	
-.proc	Start
-GotHardware
-	lda #<DRIVERSTART
-	sec
-	sbc MEMLO
-	sta Diff
-	lda #>DRIVERSTART
-	sbc MEMLO+1
-	sta Diff+1
-	
-	ldx #.len[RelocTable]-2
-Loop1
-	lda RelocTable,x
-	sta ptr1
-	lda RelocTable+1,x
-	sta ptr1+1
-	
-	ldy #0
-	lda (ptr1),y
-	sec
-	sbc Diff
-	sta (ptr1),y
-	iny
-	lda (ptr1),y
-	sbc Diff+1
-	sta (ptr1),y
-	
-	cpx #0
-	beq Move
-	dex
-	dex
-	jmp Loop1
-
-Move
-	mwa DOSINI resetHandler.initVector
-	
-	lda MEMLO
-	sta ptr2
-	sta DOSINI
-	clc
-	adc #<[DRIVEREND-DRIVERSTART]
-	sta MEMLO
-	sta resetHandler.driverEndLo
-	
-	lda MEMLO+1
-	sta ptr2+1
-	sta DOSINI+1
-	adc #>[DRIVEREND-DRIVERSTART]
-	sta MEMLO+1
-	sta resetHandler.driverEndHi
-	
-	ldy #0	; move driver code to bottom of free RAM
-	mwa #DRIVERSTART ptr1
-	mva #<[DRIVEREND-DRIVERSTART] ptr3
-	mvx #>[DRIVEREND-DRIVERSTART] ptr3+1
-	beq @+
-Loop2
-	lda (ptr1),y
-	sta (ptr2),y
-	iny
-	bne Loop2
-	inc ptr1+1
-	inc ptr2+1
-	dex
-	bne Loop2
-@
-	ldx ptr3	; lsb of size
-	beq Done
-Loop3
-	lda (ptr1),y
-	sta (ptr2),y
-	iny
-	dex
-	bne Loop3
-Done
-
-Setup
-	jmp IHTBS
-Finish
-
-.endp
-
-.local RelocTable
-	.word w7+1,w8
-	;; .word w9,w10
-	.word w11,w12+1,w13+1
-	;; .word w14+1,w15+1,w16+1,w17+1,w18+1 
-	.word w19+1,w20+1
-	.word w21+1,w22+1,w23,w24+1,w25+1,w26+1,w27+1,w28+1,w29+1,w30+1
-	.word w31+1,w32+1,w33+1,w34+1,w35+1,w36+1,w37+1,w38+1,w39,w40+1
-	.word w41+1,w42+1,w43+1,w44+1,w45+1,w46+1,w47,w48+1,w49+1,w50+1
-	.word w51+1,w52+1,w53+1,w54+1,w55+1,w56+1,w57+1,w58+1,w59+1,w60+1
-	.word w61+1,w62+1,w63+1,w64+1,w65+1,w66+1,w66a,w67,w68+1,w69+1,w70+1
-	.word w71+1,w72+1,w73+1,w74+1,w75+1,w76+1,w77+1,w78+1,w79+1,w80+1
-	.word w81+1,w82+1,w83+1,w84+1,w85+1,w86+1,w87+1,w87a,w88,w89+1,w90+1
-	.word w91+1,w92+1,w93+1,w94+1,w95+1,w96+1,w97+1,w98+1,w99+1,w100+1
-	.word w101,w102+1,w103+1,w104+1,w105+1,w106+1,w107+1,w107a+1,w107b+1,w108+1,w108a,w108b+1,w109,w110
-	.word w111,w112,w113,w114
-.endl
-
-DRIVERSTART:	
+DRIVERSTART:
+	LDA	#<DRIVEREND
+	STA	resetHandler.driverEndLo
+	STA	MEMLO
+	LDA	#>DRIVEREND
+	STA	resetHandler.driverEndHi
+	STA	MEMLO+1
+	LDA	DOSINI
+	STA	resetHandler.initVector
+	LDA	DOSINI+1
+	STA	resetHandler.initVector+1
+	JMP	IHTBS
 	
 .proc resetHandler
 	jsr $FFFF
@@ -224,25 +135,14 @@ driverEndLo = *-1
 	lda #$ff
 driverEndHi = *-1
 	sta MEMLO+1
-.def	:w7
 	JSR IHTBS		; Insert into HATABS
 	rts
 .endp
 	
 CIOHNDPTR:
-.def	:w8
 	.word CIOHND
 
-;; BERRORPTR:
-;; .def	:w9
-;; 	.word BERROR
-
-;; BREADYPTR:
-;; .def	:w10
-;; 	.word BREADY
-
 PRCVECPTR:
-.def	:w11
 	.word PRCVEC
 	
 	;; Insert entry into HATABS
@@ -264,64 +164,17 @@ IH1	LDA	HATABS,Y
 HFND:
 	LDA	#'N'
 	STA	HATABS,Y
-.def	:w12
 	LDA	CIOHNDPTR
 	STA	HATABS+1,Y
-.def	:w13
 	LDA	CIOHNDPTR+1
 	STA	HATABS+2,Y
 
-	;; And we're done with HATABS
-
-;; 	;; Query FUJINET
-
-;; .def	:w14
-;; 	JSR	STPOLL
-
-;; 	;; Output Ready/Error
-
-;; OBANR:
-;; 	LDX	#$00		; IOCB #0
-;; 	LDA	#PUTREC
-;; 	STA	ICCOM,X
-;; 	LDA	#$28		; 40 CHARS Max
-;; 	STA	ICBLL,X
-;; 	TXA
-;; 	STA	ICBLH,X
-;; 	LDA	DSTATS		; Check DSTATS
-;; 	BPL	OBRDY		; < 128 = Ready
-
-;; 	;; Status returned error.
-	
-;; OBERR:
-;; .def	:w15
-;; 	LDA	BERRORPTR
-;; .def	:w16
-;; 	LDY	BERRORPTR+1
-;; 	BVC	OBCIO
-
-;; 	;; Status returned ready.
-	
-;; OBRDY:
-;; .def	:w17
-;; 	LDA	BREADYPTR
-;; .def	:w18
-;; 	LDY	BREADYPTR+1
-
-;; OBCIO:
-;; 	STA	ICBAL,X
-;; 	TYA
-;; 	STA	ICBAH,X
-
-;; 	JSR	CIOV
-	
+	;; And we're done with HATABS	
 	;; Vector in proceed interrupt
 
 SPRCED:
-.def	:w19
 	LDA	PRCVECPTR
 	STA	VPRCED
-.def	:w20
 	LDA	PRCVECPTR+1
 	STA	VPRCED+1
 
@@ -332,9 +185,7 @@ SPRCED:
 ;;; End Initialization Code ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 DOSIOV:
-.def	:w21
 	STA	DODCBL+1
-.def	:w22
 	STY	DODCBL+2
 	LDY	#$0C
 DODCBL	LDA	$FFFF,Y
@@ -350,38 +201,28 @@ SIOVDST:
 
 ;;; CIO OPEN ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-.def	:w23
 OPNDCBPTR:
 	.word	OPNDCB
 
 OPEN:
 	;; Prepare DCB
-.def	:w24
 	JSR	GDIDX		; Get Device ID in X (0-3)
 	LDA	ZICDNO		; IOCB UNIT # (1-4)
-.def	:w25
 	STA	OPNDCB+1	; Store in DUNIT
 	LDA	ZICBAL		; Get filename buffer
-.def	:w26
 	STA	OPNDCB+4	; stuff in DBUF
 	LDA	ZICBAH		; ...
-.def	:w27
 	STA	OPNDCB+5	; ...
 	LDA	ZICAX1		; Get desired AUX1/AUX2
-.def	:w28
 	STA	OPNDCB+10	; Save them, and store in DAUX1/DAUX2
 	LDA	ZICAX2		; ...
-.def	:w29
 	STA	OPNDCB+11	; ...
 
 	;;  Copy DCB template to DCB
-.def	:w30
 	LDA	OPNDCBPTR
-.def	:w31
 	LDY	OPNDCBPTR+1
 
 	;;  Send to #FujiNet
-.def	:w32	
 	JSR	DOSIOV
                                     
 	;; Return DSTATS, unless 144, then get extended error
@@ -391,7 +232,6 @@ OPCERR:
 	BNE	OPDONE		; NOPE. RETURN DSTATS
        
 	;; 144 - get extended error
-.def	:w33
 	JSR	STPOLL  	; POLL FOR STATUS
 	LDY	DVSTAT+3
 
@@ -399,16 +239,11 @@ OPCERR:
        
 OPDONE:
 	LDA	#$01
-.def	:w34
 	STA	TRIP
-.def	:w35
 	JSR     GDIDX
 	LDA     #$00
-.def	:w36
 	STA     RLEN,X
-.def	:w37
 	STA     TOFF,X
-.def	:w38
 	STA     ROFF,X
 	TYA
 	RTS             ; AY = ERROR
@@ -431,27 +266,19 @@ OPNDCB:
 
 ;;; CIO CLOSE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-.def	:w39
 CLODCBPTR:
 	.word	CLODCB
 
 CLOSE:
-.def	:w40
 	JSR     DIPRCD		; Disable Interrupts
-.def	:w41
 	JSR	GDIDX
-.def	:w42
 	JSR	PFLUSH		; Do a Put Flush if needed.
 
 	LDA     ZICDNO		; IOCB Unit #
-.def	:w43
 	STA     CLODCB+1	; to DCB...
 
-.def	:w44
 	LDA	CLODCBPTR
-.def	:w45
 	LDY	CLODCBPTR+1
-.def	:w46
 	JMP	DOSIOV
 
 CLODCB .BYTE	DEVIDN		; DDEVIC
@@ -471,50 +298,36 @@ CLODCB .BYTE	DEVIDN		; DDEVIC
 
 ;;; CIO GET ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-.def	:w47
 GETDCBPTR:
 	.word GETDCB
 
 GET:
-.def	:w48
 	JSR	GDIDX		; IOCB UNIT #-1 into X
-.def	:w49
 	LDA	RLEN,X		; Get # of RX chars waiting
 	BNE     GETDISC		; LEN > 0?
 
 	;; If RX buffer is empty, get # of chars waiting...
 
-.def	:w50
 	JSR	STPOLL		; Status Poll
-.def	:w51
 	JSR	GDIDX		; IOCB UNIT -1 into X (because Poll trashes X)
 	LDA	DVSTAT		; # of bytes waiting (0-127)
-.def	:w52
 	STA	RLEN,X		; Store in RX Len
 	BEQ	RETEOF
 
 GETDO:
 	LDA	ZICDNO		; Get IOCB UNIT #
-.def	:w53
 	STA	GETDCB+1	; Store into DUNIT
 	LDA	DVSTAT		; # of bytes waiting
-.def	:w54
 	STA	GETDCB+8	; Store into DBYT...
-.def	:w55
 	STA	GETDCB+10	; and DAUX1...
 
-.def	:w56
 	LDA	GETDCBPTR
-.def	:w57
 	LDY	GETDCBPTR+1
-.def	:w58
 	JSR	DOSIOV
 
 	;; Clear the Receive buffer offset.
-.def	:w59
 	JSR	GDIDX		; IOCB UNIT #-1 into X
 	LDA	#$00
-.def	:w60
 	STA     ROFF,X
 
 GETDISC:
@@ -529,25 +342,19 @@ RETEOF:
 	RTS			; buh-bye.
 
 GETUPDP:
-.def	:w61
 	DEC     RLEN,X		; Decrement RX length.
-.def	:w62
 	LDY     ROFF,X		; Get RX offset cursor.
 
 	;; Return Next char from appropriate RX buffer.
-.def	:w63	
 	LDA	RBUF,Y
 	
 	;; Increment RX offset
-.def	:w64	
 GX:	INC	ROFF,X		; Increment RX offset.
 	TAY			; stuff returned val into Y temporarily.
 
 	;; If requested RX buffer is empty, reset TRIP.
-.def	:w65
 	LDA	RLEN,X
 	BNE	GETDONE
-.def	:w66
 	STA     TRIP
 
 	;; Return byte back to CIO.
@@ -555,15 +362,13 @@ GX:	INC	ROFF,X		; Increment RX offset.
 GETDONE:
 	TYA			; Move returned val back.
 	LDY	#$01		; SUCCESS
-
 	RTS			; DONE...
 
 GETDCB .BYTE     DEVIDN  ; DDEVIC
        .BYTE     $FF     ; DUNIT
        .BYTE     'R'     ; DCOMND
-	.BYTE     $40     ; DSTATS
-.DEF	:W66a
-	.WORD	RBUF
+       .BYTE     $40     ; DSTATS
+       .WORD	 RBUF
        .BYTE     $0F     ; DTIMLO
        .BYTE     $00     ; DRESVD
        .BYTE     $FF     ; DBYTL
@@ -575,21 +380,16 @@ GETDCB .BYTE     DEVIDN  ; DDEVIC
 
 ;;; CIO PUT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-.def	:w67
 PUTDCBPTR:
 	.word	PUTDCB
 
 PUT:
 	;; Add to TX buffer.
 
-.def	:w68
 	JSR	GDIDX
-.def	:w69
 	LDY	TOFF,X  ; GET TX cursor.
-.def	:w70
 	STA	TBUF,Y		; TX Buffer
 
-.def	:w71
 POFF:	INC	TOFF,X		; Increment TX cursor
 	LDY	#$01		; SUCCESSFUL
 
@@ -597,9 +397,7 @@ POFF:	INC	TOFF,X		; Increment TX cursor
 
 	CMP     #EOL    ; EOL?
 	BEQ     FLUSH  ; FLUSH BUFFER
-.def	:w72
 	JSR     GDIDX   ; GET OFFSET
-.def	:w73
 	LDA     TOFF,X
         CMP     #$7F    ; LEN = $FF?
         BEQ     FLUSH  ; FLUSH BUFFER
@@ -607,7 +405,6 @@ POFF:	INC	TOFF,X		; Increment TX cursor
 
        ; FLUSH BUFFER, IF ASKED.
 
-.def	:w74
 FLUSH  JSR     PFLUSH  ; FLUSH BUFFER
        RTS
 
@@ -616,48 +413,35 @@ PFLUSH:
        ; CHECK CONNECTION, AND EOF
        ; IF DISCONNECTED.
 
-.def	:w75
        JSR     STPOLL  ; GET STATUS
        LDA     DVSTAT+2
-	BEQ	RETEOF
+       BEQ	RETEOF
 
-.def	:w76
-PF1:	JSR     GDIDX   ; GET DEV X
-.def	:w77
+PF1:   JSR     GDIDX   ; GET DEV X
        LDA     TOFF,X
-	BNE     PF2
-.def	:w78
+       BNE     PF2
        JMP     PDONE
 
        ; FILL OUT DCB FOR PUT FLUSH
 
-PF2:	LDA     ZICDNO
-.def	:w79
+PF2:   LDA     ZICDNO
        STA     PUTDCB+1
 	
        ; FINISH DCB AND DO SIOV
 
-.def	:w80
 TBX:	LDA     TOFF,X
-.def	:w81
 	STA     PUTDCB+8
-.def	:w82
 	STA     PUTDCB+10
 
-.def	:w83
 	LDA	PUTDCBPTR
-.def	:w84
 	LDY	PUTDCBPTR+1
-.def	:w85
 	JSR     DOSIOV
        
        ; CLEAR THE OFFSET CURSOR
        ; AND LENGTH
 
-.def	:w86
        JSR     GDIDX
-	LDA     #$00
-.def	:w87
+       LDA     #$00
        STA     TOFF,X
 
 PDONE:	LDY     #$01
@@ -666,8 +450,7 @@ PDONE:	LDY     #$01
 PUTDCB .BYTE      DEVIDN  ; DDEVIC
        .BYTE      $FF     ; DUNIT
        .BYTE      'W'     ; DCOMND
-	.BYTE      $80     ; DSTATS
-.def	:w87a
+       .BYTE      $80     ; DSTATS
        .WORD      TBUF   ; DBUFH
        .BYTE      $0F     ; DTIMLO
        .BYTE      $00     ; DRESVD
@@ -680,31 +463,23 @@ PUTDCB .BYTE      DEVIDN  ; DDEVIC
 	
 ;;; CIO STATUS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-.def	:w88
 STADCBPTR:
 	.word	STADCB
 
 STATUS:
-.def	:w89
 	JSR     ENPRCD  ; ENABLE PRCD
-.def	:w90
 	JSR     GDIDX   ; GET DEVICE#
-.def	:w91
-       LDA     RLEN,X  ; GET RLEN
+        LDA     RLEN,X  ; GET RLEN
 	BNE     STSLEN  ; RLEN > 0?
-.def	:w92
-       LDA     TRIP
-       BNE     STTRI1  ; TRIP = 1?
+        LDA     TRIP
+        BNE     STTRI1  ; TRIP = 1?
 
        ; NO TRIP, RETURN SAVED LEN
 
-.def	:w93
 STSLEN LDA     RLEN,X  ; GET RLEN
        STA     DVSTAT  ; RET IN DVSTAT
-; If you don't need to preserve Y then use it instead of A
        LDA     #$00
 	STA     DVSTAT+1
-; and INY here
 	LDA	#$01
 	STA	DVSTAT+2
 	STA	DVSTAT+3
@@ -713,35 +488,28 @@ STSLEN LDA     RLEN,X  ; GET RLEN
 
        ; DO POLL AND UPDATE RCV LEN
 
-.def	:w94
 STTRI1 JSR     STPOLL  ; POLL FOR ST
-.def	:w95	
 	STA	RLEN,X
 		
        ; UPDATE TRIP FLAG
 
 STTRIU BNE     STDONE
-.def	:w96	
        STA     TRIP    ; RLEN = 0
 
        ; RETURN CONNECTED? FLAG.
 
 STDONE LDA     DVSTAT+2
-	LDY	#$01
+       LDY	#$01
        RTS
 
        ; ASK FUJINET FOR STATUS
 
 STPOLL:	
-	LDA     ZICDNO  ; IOCB #
-.def	:w97
+       LDA     ZICDNO  ; IOCB #
        STA     STADCB+1
 
-.def	:w98
 	LDA	STADCBPTR
-.def	:w99
 	LDY	STADCBPTR+1
-.def	:w100
 	JSR	DOSIOV
 
 	;; > 127 bytes? make it 127 bytes.
@@ -779,7 +547,6 @@ STADCB .BYTE      DEVIDN  ; DDEVIC
 
 ;;; CIO SPECIAL ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-.def	:w101
 SPEDCBPTR:
 	.word SPEDCB
 
@@ -788,8 +555,7 @@ SPEC:
 
        LDA     ZICCOM
        CMP     #$0F    ; 15 = FLUSH
-	BNE     S1      ; NO.
-.def	:w102
+       BNE     S1      ; NO.
        JSR     PFLUSH  ; DO FLUSH
        LDY     #$01    ; SUCCESS
        RTS
@@ -798,17 +564,12 @@ SPEC:
        ; GET DSTATS FOR COMMAND
 
 S1:	LDA	ZICDNO
-.def	:w103
 	STA	SPEDCB+1
 	LDA	ZICCOM
-.def	:w104
 	STA	SPEDCB+10
 
-.def	:w105
 	LDA	SPEDCBPTR
-.def	:w106
 	LDY	SPEDCBPTR+1
-.def	:w107
 	JSR	DOSIOV
 
 	BMI	:DSERR
@@ -818,7 +579,6 @@ S1:	LDA	ZICDNO
        ; INVALID
 
 DSOK:
-.def	:w107a
 	LDA     INQDS
        CMP     #$FF    ; INVALID?
        BNE     DSGO   ; DO THE CMD
@@ -834,7 +594,6 @@ DSGO:	LDA	ZICCOM
 	PHA
 	LDA	#$00
 	PHA
-.def	:w107b
 	LDA	INQDS
 	PHA
 	LDA	#$01
@@ -856,7 +615,6 @@ DSGOL:
 	DEY
 	BPL DSGOL
 
-.def	:w108	
 	JMP	SIOVDST
 
 	;; Return DSTATS in Y and A
@@ -865,8 +623,7 @@ SPEDCB .BYTE      DEVIDN  ; DDEVIC
        .BYTE      $FF     ; DUNIT
        .BYTE      $FF     ; DCOMND ; inq
        .BYTE      $40     ; DSTATS
-.def	:w108a
-	.WORD      INQDS    ; DBUFL
+       .WORD      INQDS    ; DBUFL
        .BYTE      $0F     ; DTIMLO
        .BYTE      $00     ; DRESVD
        .BYTE      $01     ; DBYTL
@@ -907,7 +664,6 @@ GDIDX:
 
 PRCVEC 
 	LDA     #$01
-.def	:w108b
        STA     TRIP
        PLA
        RTI
@@ -918,23 +674,12 @@ PRCVEC
 
        ; DEVHDL TABLE FOR N:
 CIOHND
-.def	:w109
 	.WORD      OPEN-1
-.def	:w110
 	.WORD      CLOSE-1
-.def	:w111
 	.WORD      GET-1
-.def	:w112	
 	.WORD      PUT-1
-.def	:w113
 	.WORD      STATUS-1
-.def	:w114
        .WORD      SPEC-1
-
-       ; BANNERS
-
-;; BREADY .BYTE      '#FUJINET READY',$9B
-;; BERROR .BYTE      '#FUJINET ERROR',$9B
 
        ; VARIABLES
 
@@ -952,6 +697,6 @@ TBUF	.DS	128
 	
 DRIVEREND	= *
 	
-	RUN	START
+	RUN	DRIVERSTART
 	END
 
