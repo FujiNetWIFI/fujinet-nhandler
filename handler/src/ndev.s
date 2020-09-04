@@ -238,13 +238,13 @@ OPCERR:
        ; RESET BUFFER LENGTH + OFFSET
        
 OPDONE:
-	LDA	#$01
-	STA	TRIP
 	JSR     GDIDX
 	LDA     #$00
 	STA     RLEN,X
 	STA     TOFF,X
 	STA     ROFF,X
+	STA	DVS2,X
+	STA	DVS3,X
 	TYA
 	RTS             ; AY = ERROR
 
@@ -255,7 +255,7 @@ OPNDCB:
 	.BYTE      $80     ; DSTATS
 	.BYTE      $FF     ; DBUFL
 	.BYTE      $FF     ; DBUFH
-	.BYTE      $0F     ; DTIMLO
+	.BYTE      $1F     ; DTIMLO
 	.BYTE      $00     ; DRESVD
 	.BYTE      $00     ; DBYTL
 	.BYTE      $01     ; DBYTH
@@ -270,6 +270,10 @@ CLODCBPTR:
 	.word	CLODCB
 
 CLOSE:
+	LDA	#$00
+	STA	TRIP		; Clear trip flag.
+	STA	DVS2,X
+	STA	DVS3,X
 	JSR     DIPRCD		; Disable Interrupts
 	JSR	GDIDX
 	JSR	PFLUSH		; Do a Put Flush if needed.
@@ -287,7 +291,7 @@ CLODCB .BYTE	DEVIDN		; DDEVIC
        .BYTE	$00		; DSTATS
        .BYTE	$00		; DBUFL
        .BYTE	$00		; DBUFH
-       .BYTE	$0F		; DTIMLO
+       .BYTE	$1F		; DTIMLO
        .BYTE	$00		; DRESVD
        .BYTE	$00		; DBYTL
        .BYTE	$00		; DBYTH
@@ -300,76 +304,77 @@ CLODCB .BYTE	DEVIDN		; DDEVIC
 
 GETDCBPTR:
 	.word GETDCB
-
+	
 GET:
 	JSR	GDIDX		; IOCB UNIT #-1 into X
-	LDA	RLEN,X		; Get # of RX chars waiting
-	BNE     GETDISC		; LEN > 0?
+	LDA	RLEN,X		; Get RX len
+	BNE	GETDRAIN	; Continue draining if > 0
 
-	;; If RX buffer is empty, get # of chars waiting...
+	;; Nothing in, Try to fill the buffer
 
-	JSR	STPOLL		; Status Poll
-	JSR	GDIDX		; IOCB UNIT -1 into X (because Poll trashes X)
-	LDA	DVSTAT		; # of bytes waiting (0-127)
-	STA	RLEN,X		; Store in RX Len
-	BEQ	RETEOF
+GETWAIT:
+	JSR	ENPRCD
+	LDA	TRIP		; Something waiting?
+	BEQ	GETWAIT		; Nope, spin until something happens.
 
-GETDO:
+	;; Something happened, try to fill buffer.
+
+GETFILL:
+	JSR	STPOLL		; Do STATUS
+	LDA	DVSTAT+3	; Get Error code
+	BMI	GETER2		; If disconnected return error code.
+	JSR	GDIDX		; Set IOCB-1
 	LDA	ZICDNO		; Get IOCB UNIT #
-	STA	GETDCB+1	; Store into DUNIT
-	LDA	DVSTAT		; # of bytes waiting
-	STA	GETDCB+8	; Store into DBYT...
-	STA	GETDCB+10	; and DAUX1...
-
-	LDA	GETDCBPTR
+	STA	GETDCB+1	; Store in DUNIT
+	LDA	DVSTAT		; Get # of bytes from STATUS
+	STA	RLEN,X		; Store into RX cursor
+	STA	GETDCB+8	; Store into DBYT
+	STA	GETDCB+10	; Store into DAUX1
+	LDA	GETDCBPTR	; Set up pointer to Get DCB
 	LDY	GETDCBPTR+1
-	JSR	DOSIOV
+	JSR	DOSIOV		; And do it.
 
-	;; Clear the Receive buffer offset.
+	;; Check if SIO call succeeded, and if so, jump to reset pointers.
+	
+	LDA	DSTATS		; Get result of SIO call
+	CMP	#$01		; Successful?
+	BEQ	GETRESET	; Reset pointers if so.
+
+GETERR:	JSR	STPOLL		; Do a status poll
+GETER2:	LDY	DVSTAT+3	; Get Error code
+	RTS			; And leave.
+
+GETRESET:
 	JSR	GDIDX		; IOCB UNIT #-1 into X
 	LDA	#$00
-	STA     ROFF,X
-
-GETDISC:
-	LDA     DVSTAT+2	; Did we disconnect?
-	BNE     GETUPDP		; nope, update the buffer cursor.
-
-	;; We disconnected, emit an EOF.
-
-RETEOF:	
-	LDY	#EOF
-	TYA
-	RTS			; buh-bye.
-
-GETUPDP:
-	DEC     RLEN,X		; Decrement RX length.
-	LDY     ROFF,X		; Get RX offset cursor.
-
-	;; Return Next char from appropriate RX buffer.
-	LDA	RBUF,Y
+	STA	ROFF,X		; Reset RX cursor
 	
-	;; Increment RX offset
-GX:	INC	ROFF,X		; Increment RX offset.
-	TAY			; stuff returned val into Y temporarily.
+	;; Drain the Buffer
+	
+GETDRAIN:
+	JSR	DIPRCD		; Disable PROCEED
+	DEC	RLEN,X		; Decrement RX len
+	LDY	ROFF,X		; Get RX offset cursor.
+	LDA	RBUF,Y		; Get next character
+	INC	ROFF,X		; Increment RX offset cursor.
+	TAY			; Stuff in Y for a moment
 
-	;; If requested RX buffer is empty, reset TRIP.
+	;; If RX buffer is now empty, turn off TRIP
 	LDA	RLEN,X
 	BNE	GETDONE
-	STA     TRIP
+	STA	TRIP
 
-	;; Return byte back to CIO.
-	
 GETDONE:
-	TYA			; Move returned val back.
+	TYA			; Move returned value back.
 	LDY	#$01		; SUCCESS
-	RTS			; DONE...
-
+	RTS
+	
 GETDCB .BYTE     DEVIDN  ; DDEVIC
        .BYTE     $FF     ; DUNIT
        .BYTE     'R'     ; DCOMND
        .BYTE     $40     ; DSTATS
-       .WORD	 RBUF
-       .BYTE     $0F     ; DTIMLO
+       .WORD	 RBUF	 ; DBUF
+       .BYTE     $1F     ; DTIMLO
        .BYTE     $00     ; DRESVD
        .BYTE     $FF     ; DBYTL
        .BYTE     $00     ; DBYTH
@@ -414,9 +419,6 @@ PFLUSH:
        ; IF DISCONNECTED.
 
        JSR     STPOLL  ; GET STATUS
-       LDA     DVSTAT+2
-       BEQ	RETEOF
-
 PF1:   JSR     GDIDX   ; GET DEV X
        LDA     TOFF,X
        BNE     PF2
@@ -452,7 +454,7 @@ PUTDCB .BYTE      DEVIDN  ; DDEVIC
        .BYTE      'W'     ; DCOMND
        .BYTE      $80     ; DSTATS
        .WORD      TBUF   ; DBUFH
-       .BYTE      $0F     ; DTIMLO
+       .BYTE      $1F     ; DTIMLO
        .BYTE      $00     ; DRESVD
        .BYTE      $FF     ; DBYTL
        .BYTE      $00     ; DBYTH
@@ -467,76 +469,83 @@ STADCBPTR:
 	.word	STADCB
 
 STATUS:
-	JSR     ENPRCD  ; ENABLE PRCD
-	JSR     GDIDX   ; GET DEVICE#
-        LDA     RLEN,X  ; GET RLEN
-	BNE     STSLEN  ; RLEN > 0?
-        LDA     TRIP
-        BNE     STTRI1  ; TRIP = 1?
-
-       ; NO TRIP, RETURN SAVED LEN
-
-STSLEN LDA     RLEN,X  ; GET RLEN
-       STA     DVSTAT  ; RET IN DVSTAT
-       LDA     #$00
-	STA     DVSTAT+1
-	LDA	#$01
-	STA	DVSTAT+2
-	STA	DVSTAT+3
+	JSR	ENPRCD		; Let's turn on interrupts in case.
 	
-	BNE	STDONE
+	;; Return cached value if we still have data in RX
+	
+	JSR	GDIDX		; Get Device ID
+	LDA	RLEN,X		; Get RX len
+	BNE	STRETC		; Drain buffer if != 0
 
-       ; DO POLL AND UPDATE RCV LEN
+	;; Only do a poll _IF_ we have an interrupt.
 
-STTRI1 JSR     STPOLL  ; POLL FOR ST
-	STA	RLEN,X
-		
-       ; UPDATE TRIP FLAG
+	LDA	TRIP		; Get interrupt flag
+	BEQ	STRETC		; No interrupt? Return cached.
 
-STTRIU BNE     STDONE
-       STA     TRIP    ; RLEN = 0
+	;; Do Poll
 
-       ; RETURN CONNECTED? FLAG.
-
-STDONE LDA     DVSTAT+2
-       LDY	#$01
-       RTS
-
-       ; ASK FUJINET FOR STATUS
-
-STPOLL:	
-       LDA     ZICDNO  ; IOCB #
-       STA     STADCB+1
-
-	LDA	STADCBPTR
-	LDY	STADCBPTR+1
-	JSR	DOSIOV
-
-	;; > 127 bytes? make it 127 bytes.
-
-	LDA	DVSTAT+1
-	BNE	STADJ
-	LDA	DVSTAT
-	BMI	STADJ
-	JMP	STP2		; <= 127 bytes...
-
-STADJ	LDA	#$7F
-	STA	DVSTAT
+	JSR	STPOLL		; Do status poll
+	LDA	DVSTAT+3	; Get Error code
+	TAY			; Move into (Y) error register
+	RTS
+	
+STRETC:
+	STA	DVSTAT	 ; Return RX len
 	LDA	#$00
-	STA	DVSTAT+1
+	STA	DVSTAT+1	; no more than 127 bytes.
+	LDA	DVS2,X	 ; Get cached DVSTAT+2
+	STA	DVSTAT+2 ; Return it
+	LDA	DVS3,X	 ; Get cached DVSTAT+3
+	STA	DVSTAT+3 ; Return it.
+	TAY		 ; Return error code in Y too
+	STY	$02C8
+	RTS		 ; Exit
+
+	;; Poll for status ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+STPOLL:
+	JSR	GDIDX		; Get IOCB-1
+	LDA	ZICDNO		; Get unit #
+	STA	STADCB+1	; Store into DUNIT
+	LDA	STADCBPTR	; Set up DCB Pointer L
+	LDY	STADCBPTR+1	; Set up DCB Pointer H
+	JSR	DOSIOV		; Do SIO Call
 	
-       ; A = CONNECTION STATUS
+	JSR	DIPRCD		; Mask interrupt.
+	LDA	#$00		; Reset trip...
+	STA	TRIP		; ...because we've serviced it.
 
-STP2   LDA     DVSTAT+2
-       RTS
+	;; Adjust RX len if greater than 127 bytes
 
+	LDA	DVSTAT+1	; > 255 bytes?
+	BNE	STPADJ		; Yes, adjust.
+	LDA	DVSTAT		; > 127 bytes?
+	BMI	STPADJ		; Yes, adjust.
+	JMP	STPDON		; Done with poll.
+
+STPADJ:	LDA	#$7F		; Set RX len to 127 bytes
+	STA	DVSTAT		;
+	LDA	#$00		;
+	STA	DVSTAT+1	;
+
+STPDON:	LDA	DVSTAT		; Get new RX Len
+	STA	RLEN,X		; Store.
+	LDA	DVSTAT+2	; Get Connection status
+	STA	DVS2,X		; Store.
+	LDA	DVSTAT+3	; Get Error code
+	STA	DVS3,X		; Store.
+	TAY			; And return in error code
+	RTS
+
+;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	
 STADCB .BYTE      DEVIDN  ; DDEVIC
        .BYTE      $FF     ; DUNIT
        .BYTE      'S'     ; DCOMND
        .BYTE      $40     ; DSTATS
        .BYTE      $EA     ; DBUFL
        .BYTE      $02     ; DBUFH
-       .BYTE      $0F     ; DTIMLO
+       .BYTE      $1F     ; DTIMLO
        .BYTE      $00     ; DRESVD
        .BYTE      $04     ; DBYTL
        .BYTE      $00     ; DBYTH
@@ -551,6 +560,10 @@ SPEDCBPTR:
 	.word SPEDCB
 
 SPEC:
+	;; Clear trip
+	LDA	#$00
+	STA	TRIP
+	
        ; HANDLE LOCAL COMMANDS.
 
        LDA     ZICCOM
@@ -624,7 +637,7 @@ SPEDCB .BYTE      DEVIDN  ; DDEVIC
        .BYTE      $FF     ; DCOMND ; inq
        .BYTE      $40     ; DSTATS
        .WORD      INQDS    ; DBUFL
-       .BYTE      $0F     ; DTIMLO
+       .BYTE      $1F     ; DTIMLO
        .BYTE      $00     ; DRESVD
        .BYTE      $01     ; DBYTL
        .BYTE      $00     ; DBYTH
@@ -662,9 +675,9 @@ GDIDX:
 
 ;;; Proceed Vector ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-PRCVEC 
+PRCVEC	
 	LDA     #$01
-       STA     TRIP
+	STA     TRIP
        PLA
        RTI
 	
@@ -684,13 +697,13 @@ CIOHND
        ; VARIABLES
 
 DIFF	.DS	2	
-TRIP   .DS      1       ; INTR FLAG
+TRIP   .BYTE      0       ; INTR FLAG
 RLEN   .DS      MAXDEV  ; RCV LEN
 ROFF   .DS      MAXDEV  ; RCV OFFSET
 TOFF   .DS      MAXDEV  ; TRX OFFSET
 INQDS  .DS      1       ; DSTATS INQ
-
-       ; BUFFERS (PAGE ALIGNED)
+DVS2   .BYTE      0,0,0,0	; DVSTAT+2 SAVE
+DVS3   .BYTE 	  0,0,0,0	; DVSTAT+3 SAVE
 
 RBUF	.DS	128
 TBUF	.DS	128	
