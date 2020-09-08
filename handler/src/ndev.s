@@ -109,8 +109,9 @@ ldax .macro	" "	; load a,x pair
 	.endif
 	.endm
 
-	org	$1300
-
+	org	$1300		
+	;; org	$1F00
+	
 	rts
 	
 DRIVERSTART:
@@ -178,6 +179,20 @@ SPRCED:
 	LDA	PRCVECPTR+1
 	STA	VPRCED+1
 
+	;; Go ahead and call close on all four IOCBs
+	LDA	#$04
+	STA	CLODCB+1
+	JSR 	CLOSE2
+	LDA	#$03
+	STA	CLODCB+1
+	JSR 	CLOSE2
+	LDA	#$02
+	STA	CLODCB+1
+	JSR 	CLOSE2
+	LDA	#$01
+	STA	CLODCB+1
+	JSR 	CLOSE2
+	
 	;; And we are done, back to DOS.
 	
 	RTS
@@ -281,7 +296,7 @@ CLOSE:
 	LDA     ZICDNO		; IOCB Unit #
 	STA     CLODCB+1	; to DCB...
 
-	LDA	CLODCBPTR
+CLOSE2:	LDA	CLODCBPTR
 	LDY	CLODCBPTR+1
 	JMP	DOSIOV
 
