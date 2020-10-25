@@ -21,6 +21,7 @@
 unsigned char buf[256];
 unsigned char daux1=0;
 unsigned char daux2=0;
+char err[8]={0,0,0,0,0,0,0,0};
 
 void nopen(void)
 {
@@ -37,8 +38,27 @@ void nopen(void)
 
   if (OS.dcb.dstats!=1)
     {
-      err_sio();
-      exit(OS.dcb.dstats);
+      if (OS.dcb.dstats==144)
+	{
+	  OS.dcb.dcomnd='S';
+	  OS.dcb.dstats=0x40;
+	  OS.dcb.dbuf=OS.dvstat;
+	  OS.dcb.dbyt=4;
+	  OS.dcb.daux=0;
+	  siov();
+
+	  print("Actual Error: ");
+	  itoa(OS.dvstat[3],err,10);
+	  print(err);
+	  print("\x9b");
+	}
+      else
+	{
+	  print("SIO Error: ");
+	  itoa(OS.dcb.dstats,err,10);
+	  print(err);
+	  print("\x9b");
+	}
     }
   else
     {
