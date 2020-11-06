@@ -109,8 +109,9 @@ ldax .macro	" "	; load a,x pair
 	.endif
 	.endm
 
-	org	$1300		
-	;; org	$1F00
+	;; org	$1300		; DOS XL 2.30
+	org	$1F00		; MyDOS 4.53
+	;; org	$17B0		; SpartaDOS 3.2
 	
 	rts
 	
