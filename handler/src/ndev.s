@@ -155,7 +155,7 @@ POLDCB:	.BYTE      DEVIDN  ; DDEVIC
 SVSTAT: JSR	GDIDX	   	; Get Unit into X
 	JSR	CAPRX		; Cap RX values
 	LDA	DVSTAT		; Get RX bytes waiting
-	STA	RLEN,X		; Save RX bytes waiting
+	STA	DVS0,X		; Save RX bytes waiting
 	LDA	DVSTAT+2	; Get Server Client connected/disconnected?
 	STA	DVS2,X		; Save 
 	LDA	DVSTAT+3	; Get last error
@@ -402,8 +402,6 @@ GETWAI:	JSR	ENPRCD		; Enable interrupt
 
 GETFLL: JSR	POLL		; Get # of bytes waiting
 	JSR	SVSTAT		; Save stat values
-	JSR	GDIDX		; Get Unit X
-	LDY	DVS3,X		; Get Error code
 	BMI	GETDNE		; If error, return error code
 	
 	;; (This may be a point of contention, but there shouldn't be...
@@ -412,12 +410,14 @@ GETFLL: JSR	POLL		; Get # of bytes waiting
 
 	LDA	ZICDNO		; Get Unit #
 	STA	GETDCB+1	; Store into table
-	LDA	RLEN,X		; Get # of bytes waiting
+	LDA	DVS0,X		; Get # of bytes waiting
 	STA	GETDCB+8	; Store into DBYTL...
 	STA	GETDCB+10	; ...and DAUX1
 	LDA	#<GETDCB	; Point to Get DCB table
 	LDY	#>GETDCB	;
 	JSR	DOSIOV		; And do SIO call.
+	LDA	#$00		; Reset offset
+	STA	ROFF,X
 	LDY	DSTATS		; Get SIO status.
 	BPL	GETDRN		; If okay, proceed to drain. 
 
@@ -433,7 +433,10 @@ GETFLL: JSR	POLL		; Get # of bytes waiting
 GETDRN:	JSR	GDIDX		; Unit into X (because SIOV trashed it)
 	JSR	DIPRCD		; Disable PROCEED
 	DEC	RLEN,X		; Decrement RX len
+	DEC	DVS0,X		; Decrement saved status value
 	LDY	ROFF,X		; Get RX offset cursor
+	LDA	RBUF,Y		; Get char.
+	TAY			; Save it.
 	INC	ROFF,X		; Increment to next char
 
 	;; If RX buffer is now empty, turn off TRIP
@@ -441,8 +444,8 @@ GETDRN:	JSR	GDIDX		; Unit into X (because SIOV trashed it)
 	LDA	RLEN,X		; Get # of bytes left
 	BNE	GETDN2		; If we have some left, simply go to done.
 	STA	TRIP		; Otherwise store the 0 into trip
-GETDN2:	LDA	RBUF,Y		; Return char into A
-	LDY	#$01		; Successful.
+	TYA			; Retrieve char.
+GETDN2:	LDY	#$01		; Successful.
 GETDNE:	RTS
 
 	;; The Get DCB table
@@ -486,10 +489,13 @@ STATUS:	JSR	ENPRCD		; Enable PROCEED.
 	LDA	RLEN,X		; Get RX len
 	BNE	STRETC		; Return cached value if RLEN > 0
 
+	LDA	TRIP		; Get TRIP?
+	BEQ	STRETC		; No trip? Return cached.
+
 	JSR	POLL		; RLEN = 0, do poll.
 	JSR	SVSTAT		; Save DVSTAT values
 
-STRETC:	LDA	RLEN,X		; Get RX len
+STRETC:	LDA	DVS0,X		; Get Saved DVSTAT+0 val
 	STA	DVSTAT		; Store into DVSTAT
 	LDA	DVS2,X		; Get Saved DVSTAT+2 val
 	STA	DVSTAT+2	; Store
@@ -587,6 +593,7 @@ RLEN	.ds	MAXDEV		; RXD Len
 ROFF	.ds	MAXDEV		; RXD offset cursor
 TOFF	.ds	MAXDEV		; TXD offset cursor
 INQDS	.ds	1		; DSTATS to return in inquiry
+DVS0	.ds	MAXDEV		; DVSTAT SAVE
 DVS2	.ds	MAXDEV		; DVSTAT+2 SAVE
 DVS3	.ds	MAXDEV		; DVSTAT+3 SAVE
 
