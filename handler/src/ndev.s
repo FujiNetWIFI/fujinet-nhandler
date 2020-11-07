@@ -400,11 +400,10 @@ GETWAI:	JSR	ENPRCD		; Enable interrupt
 
 	;; Something happened, try to fill buffer
 
-GETFLL: JSR	CLRBUF		; Clear cursors.
-	JSR	POLL		; Get # of bytes waiting
+GETFLL: JSR	POLL		; Get # of bytes waiting
 	JSR	SVSTAT		; Save stat values
 	JSR	GDIDX		; Get Unit X
-	LDA	DVS3,X		; Get Error code
+	LDY	DVS3,X		; Get Error code
 	BMI	GETDNE		; If error, return error code
 	
 	;; (This may be a point of contention, but there shouldn't be...
@@ -431,7 +430,7 @@ GETFLL: JSR	CLRBUF		; Clear cursors.
 
 	;; We have something in the buffer. let's drain it
 
-GETDRN:	JSR	GDIDX		; Unit into X (because XIOV trashed it)
+GETDRN:	JSR	GDIDX		; Unit into X (because SIOV trashed it)
 	JSR	DIPRCD		; Disable PROCEED
 	DEC	RLEN,X		; Decrement RX len
 	LDY	ROFF,X		; Get RX offset cursor
@@ -443,7 +442,7 @@ GETDRN:	JSR	GDIDX		; Unit into X (because XIOV trashed it)
 	BNE	GETDN2		; If we have some left, simply go to done.
 	STA	TRIP		; Otherwise store the 0 into trip
 GETDN2:	LDA	RBUF,Y		; Return char into A
-
+	LDY	#$01		; Successful.
 GETDNE:	RTS
 
 	;; The Get DCB table
