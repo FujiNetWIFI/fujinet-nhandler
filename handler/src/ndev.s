@@ -142,7 +142,7 @@ POLL:	LDA	ZICDNO		; Get Unit #
 POLDCB:	.BYTE      DEVIDN  ; DDEVIC
 	.BYTE      $FF     ; DUNIT
 	.BYTE      'S'     ; DCOMND
-	.BYTE      $40     ; DSTATS
+	.BYTE      DSREAD     ; DSTATS
 	.WORD	   DVSTAT  ; DBUF
 	.BYTE      $1F     ; DTIMLO
 	.BYTE      $00     ; DRESVD
@@ -197,7 +197,7 @@ FLDONE:	RTS			; Done, LDY has DSTATS
 FLUDCB:	.BYTE      DEVIDN  ; DDEVIC
 	.BYTE      $FF     ; DUNIT
 	.BYTE      'W'     ; DCOMND
-	.BYTE      $80     ; DSTATS
+	.BYTE      DSWRIT     ; DSTATS
 	.WORD      TBUF    ; DBUFL
 	.BYTE      $1F     ; DTIMLO
 	.BYTE      $00     ; DRESVD
@@ -242,7 +242,11 @@ START:
 	STA	resetHandler.initVec
 	LDA	DOSINI+1
 	STA	resetHandler.initVec+1
-
+	LDA	#<resetHandler
+	STA	DOSINI
+	LDA	#>resetHandler
+	STA	DOSINI
+	
 ;;; Insert Handler entry into HATABS ;;;;;;;;;;;
 
 IHTBS:	LDY	#$00		; Start at beginning of HATABS
@@ -344,18 +348,18 @@ OPDONE:	RTS
 	;; OPEN DCB TABLE
 
 OPNDCB:
-	.BYTE      DEVIDN  ; DDEVIC
-	.BYTE      $FF     ; DUNIT
-	.BYTE      'O'     ; DCOMND
-	.BYTE      $80     ; DSTATS
-	.BYTE      $FF     ; DBUFL
-	.BYTE      $FF     ; DBUFH
-	.BYTE      $1F     ; DTIMLO
-	.BYTE      $00     ; DRESVD
-	.BYTE      $00     ; DBYTL
-	.BYTE      $01     ; DBYTH
-	.BYTE      $FF     ; DAUX1
-	.BYTE      $FF     ; DAUX2
+	.BYTE      DEVIDN  	; DDEVIC
+	.BYTE      $FF     	; DUNIT
+	.BYTE      'O'     	; DCOMND
+	.BYTE      DSWRIT     	; DSTATS
+	.BYTE      $FF     	; DBUFL
+	.BYTE      $FF     	; DBUFH
+	.BYTE      $1F     	; DTIMLO
+	.BYTE      $00     	; DRESVD
+	.BYTE      $00     	; DBYTL
+	.BYTE      $01     	; DBYTH
+	.BYTE      $FF     	; DAUX1
+	.BYTE      $FF     	; DAUX2
 
 ;;; CLOSE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -430,16 +434,14 @@ GETDRN:	JSR	GDIDX		; Unit into X (because XIOV trashed it)
 	JSR	DIPRCD		; Disable PROCEED
 	DEC	RLEN,X		; Decrement RX len
 	LDY	ROFF,X		; Get RX offset cursor
-	LDA	RBUF,Y		; Get next character
 	INC	ROFF,X		; Increment to next char
-	TAY			; Stuff in Y for a moment.
 
 	;; If RX buffer is now empty, turn off TRIP
 
 	LDA	RLEN,X		; Get # of bytes left
 	BNE	GETDN2		; If we have some left, simply go to done.
 	STA	TRIP		; Otherwise store the 0 into trip
-GETDN2:	TYA			; Return char into A
+GETDN2:	LDA	RBUF,Y		; Return char into A
 
 GETDNE:	RTS
 
@@ -448,7 +450,7 @@ GETDNE:	RTS
 GETDCB .BYTE     DEVIDN  	; DDEVIC
        .BYTE     $FF     	; DUNIT
        .BYTE     'R'     	; DCOMND
-       .BYTE     $40     	; DSTATS
+       .BYTE     DSREAD     	; DSTATS
        .WORD	 RBUF	 	; DBUF
        .BYTE     $1F     	; DTIMLO
        .BYTE     $00     	; DRESVD
@@ -467,7 +469,7 @@ PUT:	JSR	GDIDX		; Get Unit # into X
 
 	;; Do a FLUSH if EOL or buffer full
 
-	CMP	#EOL		; EOL?
+	CPY	#EOL		; EOL?
 	BNE	PUTDON		; No, we're done.
 	LDA	TOFF,X		; Where are we in the TX buffer?
 	BPL	PUTDON		; If less than 127, we're done.
@@ -568,7 +570,7 @@ SPCDNE:	RTS
 SPEDCB .BYTE      DEVIDN  ; DDEVIC
        .BYTE      $FF     ; DUNIT
        .BYTE      $FF     ; DCOMND ; inq
-       .BYTE      $40     ; DSTATS
+       .BYTE      DSREAD     ; DSTATS
        .WORD      INQDS    ; DBUFL
        .BYTE      $1F     ; DTIMLO
        .BYTE      $00     ; DRESVD
