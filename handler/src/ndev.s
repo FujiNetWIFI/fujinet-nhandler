@@ -403,6 +403,7 @@ GETWAI:	JSR	ENPRCD		; Enable interrupt
 GETFLL: JSR	CLRBUF		; Clear cursors.
 	JSR	POLL		; Get # of bytes waiting
 	JSR	SVSTAT		; Save stat values
+	JSR	GDIDX		; Get Unit X
 	LDA	DVS3,X		; Get Error code
 	BMI	GETDNE		; If error, return error code
 	
@@ -469,13 +470,12 @@ PUT:	JSR	GDIDX		; Get Unit # into X
 
 	;; Do a FLUSH if EOL or buffer full
 
-	CPY	#EOL		; EOL?
-	BNE	PUTDON		; No, we're done.
-	LDA	TOFF,X		; Where are we in the TX buffer?
-	BPL	PUTDON		; If less than 127, we're done.
-	JSR	FLUSH		; Flush the buffer
-	
-PUTDON:	RTS
+	CMP	#EOL		; EOL?
+	BEQ	PFLUSH		; Do flush
+	CPY	#$7F		; At end of buffer?
+	BNE	PUTDON		; Nope, done.
+PFLUSH:	JSR	FLUSH		; Do Flush.
+PUTDON:	RTS			; We're done.
 	
 ;;; STATUS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -559,7 +559,7 @@ SPDO:	LDA	ZICDNO		; Unit #
 	;; Get error and return extended if needed.
 
 	LDY	DSTATS		; Get DSTATS
-	CMP	#144		; Is it 144?
+	CPY	#144		; Is it 144?
 	BNE	SPCDNE		; Nope, just return it.
 
 	JSR	POLL		; Get status, for error
