@@ -89,7 +89,7 @@ EOF     =     $88     ; ERROR 136
 EOL     =     $9B     ; EOL CHAR
 
 	;; ORG HERE
-	ORG	$2100
+	ORG	$2200
 	
 	;; This is for OS/A+
 
@@ -182,12 +182,16 @@ FLUSH:	JSR	GDIDX		; UNIT NUMBER into X
 	LDA	ZICDNO		; IOCB UNIT #
 	STA	FLUDCB+1	; Put into table.
 	LDA	TOFF,X		; get Transmit offset (# of bytes to send)
+	BEQ	FLDONE		; Don't do anything if TX cursor is at 0.
 	STA	FLUDCB+8	; Put into Table (Len and Aux)
 	STA	FLUDCB+10
 	BEQ	FLDONE		; No bytes to send, exit.
 	LDA	#<FLUDCB	; Copy Table to DCB
 	LDY	#>FLUDCB
 	JSR	DOSIOV		; And call SIOV
+	LDA	#$00		; Clear TOFF
+	STA	TOFF,X
+	LDY	DSTATS
 FLDONE:	RTS			; Done, LDY has DSTATS
 
 FLUDCB:	.BYTE      DEVIDN  ; DDEVIC
@@ -197,8 +201,8 @@ FLUDCB:	.BYTE      DEVIDN  ; DDEVIC
 	.WORD      TBUF    ; DBUFL
 	.BYTE      $1F     ; DTIMLO
 	.BYTE      $00     ; DRESVD
-	.BYTE      $00     ; DBYTL
-	.BYTE      $01     ; DBYTH
+	.BYTE      $FF     ; DBYTL
+	.BYTE      $00     ; DBYTH
 	.BYTE      $FF     ; DAUX1
 	.BYTE      $00     ; DAUX2
 
@@ -322,8 +326,8 @@ OPEN:   JSR	GDIDX		; Set IOCB OFFSET TO UNIT #
 
 	;; Do the SIOV call
 	
-	LDA	OPNDCB
-	LDY	OPNDCB+1
+	LDA	#<OPNDCB
+	LDY	#>OPNDCB
 	JSR	DOSIOV
 
 	;; Return DSTATS in Y, unless 144, then get ext err.
@@ -416,14 +420,14 @@ GETFLL: JSR	CLRBUF		; Clear cursors.
 	;; oops, something happened during the SIO call.
 	;; if 144, then we need to get the actual error.
 
-	JSR	GDIDX		; Get Unit # again, because SIOV trashed it.
 	JSR	POLL		; Poll for error
 	LDY	DVSTAT+3	; Get the error, return in Y
 	JMP	GETDNE		; Go done.
 
 	;; We have something in the buffer. let's drain it
 
-GETDRN:	JSR	DIPRCD		; Disable PROCEED
+GETDRN:	JSR	GDIDX		; Unit into X (because XIOV trashed it)
+	JSR	DIPRCD		; Disable PROCEED
 	DEC	RLEN,X		; Decrement RX len
 	LDY	ROFF,X		; Get RX offset cursor
 	LDA	RBUF,Y		; Get next character
