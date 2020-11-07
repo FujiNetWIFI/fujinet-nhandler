@@ -154,7 +154,7 @@ POLDCB:	.BYTE      DEVIDN  ; DDEVIC
 SVSTAT: JSR	GDIDX	   	; Get Unit into X
 	JSR	CAPRX		; Cap RX values
 	LDA	DVSTAT		; Get RX bytes waiting
-	STA	DVS0,X		; Save RX bytes waiting
+	STA	RLEN,X		; Save RX bytes waiting
 	LDA	DVSTAT+2	; Get Server Client connected/disconnected?
 	STA	DVS2,X		; Save 
 	LDA	DVSTAT+3	; Get last error
@@ -216,6 +216,18 @@ CAPADJ:	LDA	#$7F		; 127 bytes
 	LDA	#$00
 	STA	DVSTAT+1
 CAPDON:	RTS			; Done
+
+	;; Close all IOCBs
+
+CLALL:	LDA	#MAXDEV		; Close all 4 N: devices
+	STA	TRIP		; Temporarily use trip
+CLLP:	LDA	TRIP		; Get
+	STA	ZICDNO		; Store into unit #
+	JSR	CLOSE		; Close Nx:
+	DEC	TRIP		; Decrement
+	LDA	TRIP		; Get it
+	BNE	CLLP		; Loop until done.
+	RTS	
 	
 ;;; END SUBROUTINES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	
@@ -245,6 +257,7 @@ START:
 	STA	DOSINI
 	LDA	#>resetHandler
 	STA	DOSINI
+	JSR	CLALL		; Close all
 	
 ;;; Insert Handler entry into HATABS ;;;;;;;;;;;
 
@@ -387,65 +400,62 @@ CLODCB .BYTE	DEVIDN		; DDEVIC
 
 ;;; GET ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-GET:	JSR	GDIDX		; IOCB UNIT INTO X
-	LDA	RLEN,X		; Do we still have data in buffer?
-	BNE	GETDRN		; Continue draining if > 0
+GET:	JSR	GDIDX		; IOCB unit into X
+	LDA	RLEN,X		; Do we have data in buffer?
+	BNE	GETDRN		; >0 ? yes, drain.
 
-	;; Nothing here, Wait until something happens.
+	;; Check to see if something is available
 
-GETWAI:	JSR	ENPRCD		; Enable interrupt
+GETWAI:	JSR	ENPRCD		; Enable PROCEED
 	LDA	TRIP		; Did something happen?
-	BEQ	GETWAI		; if trip=0 nothing happened, continue to wait
+	BEQ	GETWAI		; nope, wait some more.
 
-	;; Something happened, try to fill buffer
+	;; Something happened, try to fill buffer.
 
-GETFLL: JSR	POLL		; Get # of bytes waiting
-	JSR	SVSTAT		; Save stat values
-	BMI	GETDNE		; If error, return error code
-	
-	;; (This may be a point of contention, but there shouldn't be...
-	;;  ...zero bytes waiting, with an error code of 1. If there is,...
-	;;  ...the firmware is broken, and it should be fixed.)
+	JSR	POLL		; Do status poll
+	JSR	SVSTAT		; cache status values
+	BMI	GETDNE		; If error, return error code.
+
+	;; If no error, do the read.
 
 	LDA	ZICDNO		; Get Unit #
 	STA	GETDCB+1	; Store into table
-	LDA	DVS0,X		; Get # of bytes waiting
-	STA	GETDCB+8	; Store into DBYTL...
-	STA	GETDCB+10	; ...and DAUX1
-	LDA	#<GETDCB	; Point to Get DCB table
+	JSR	GDIDX		; unit into X again.
+	LDA	#$00		; Reset cursors
+	STA	ROFF,X		; Reset RXD offset.
+	LDA	RLEN,X		; Store RLEN
+	STA	GETDCB+8	; Store into DBYT/DAUX
+	STA	GETDCB+10	;
+	LDA	#<GETDCB	; Set up GETDCB table
 	LDY	#>GETDCB	;
 	JSR	DOSIOV		; And do SIO call.
-	LDA	#$00		; Reset offset
-	STA	ROFF,X
-	LDY	DSTATS		; Get SIO status.
-	BPL	GETDRN		; If okay, proceed to drain. 
+	LDA	DSTATS		; Get error
+	BPL	GETDRN		; If no error, go to drain.
 
-	;; oops, something happened during the SIO call.
-	;; if 144, then we need to get the actual error.
+	;; We got an error from the read, get error
 
-	JSR	POLL		; Poll for error
-	LDY	DVSTAT+3	; Get the error, return in Y
-	JMP	GETDNE		; Go done.
+	CMP	#144		; Extended error?
+	BNE	GETDNE		; Nope, just return as is.
+	JSR	POLL		; Get status
+	LDY	DVSTAT+3	; Get exterr
+	JMP	GETDNE		; Done.
 
-	;; We have something in the buffer. let's drain it
+GETDRN:	JSR	DIPRCD		; Disable PROCEED
+	JSR	GDIDX		; Unit into X
+	LDY	ROFF,X		; get RX offset
+	LDA	RBUF,Y		; Get char from buffer.
+	PHA			; Put it on the stack.
+	INC	ROFF,X		; Increment RX cursor, while...
+	DEC	RLEN,X		; ...Decrementing RLEN
 
-GETDRN:	JSR	GDIDX		; Unit into X (because SIOV trashed it)
-	JSR	DIPRCD		; Disable PROCEED
-	DEC	RLEN,X		; Decrement RX len
-	DEC	DVS0,X		; Decrement saved status value
-	LDY	ROFF,X		; Get RX offset cursor
-	LDA	RBUF,Y		; Get char.
-	TAY			; Save it.
-	INC	ROFF,X		; Increment to next char
+	;; If RX buffer empty, turn off trip.
 
-	;; If RX buffer is now empty, turn off TRIP
+	LDA	RLEN,X		; Get # of bytes left.
+	BNE	GETDN2		; some left, jump to done with success.
+	STA	TRIP		; Otherwise store 0 into trip.
 
-	LDA	RLEN,X		; Get # of bytes left
-	BNE	GETDN2		; If we have some left, simply go to done.
-	STA	TRIP		; Otherwise store the 0 into trip
-	TYA			; Retrieve char.
-GETDN2:	LDY	#$01		; Successful.
-GETDNE:	RTS
+GETDN2:	LDY	#$01		; Return success.
+GETDNE:	RTS			; done.
 
 	;; The Get DCB table
 	
@@ -460,7 +470,7 @@ GETDCB .BYTE     DEVIDN  	; DDEVIC
        .BYTE     $00     	; DBYTH
        .BYTE     $FF     	; DAUX1
        .BYTE     $00     	; DAUX2
-	
+
 ;;; PUT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 PUT:	JSR	GDIDX		; Get Unit # into X
@@ -494,7 +504,7 @@ STATUS:	JSR	ENPRCD		; Enable PROCEED.
 	JSR	POLL		; RLEN = 0, do poll.
 	JSR	SVSTAT		; Save DVSTAT values
 
-STRETC:	LDA	DVS0,X		; Get Saved DVSTAT+0 val
+STRETC:	LDA	RLEN,X		; Get Saved DVSTAT+0 val
 	STA	DVSTAT		; Store into DVSTAT
 	LDA	DVS2,X		; Get Saved DVSTAT+2 val
 	STA	DVSTAT+2	; Store
@@ -592,7 +602,6 @@ RLEN	.ds	MAXDEV		; RXD Len
 ROFF	.ds	MAXDEV		; RXD offset cursor
 TOFF	.ds	MAXDEV		; TXD offset cursor
 INQDS	.ds	1		; DSTATS to return in inquiry
-DVS0	.ds	MAXDEV		; DVSTAT SAVE
 DVS2	.ds	MAXDEV		; DVSTAT+2 SAVE
 DVS3	.ds	MAXDEV		; DVSTAT+3 SAVE
 
