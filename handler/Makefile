@@ -10,9 +10,9 @@ ndev.com:
 	mads src/ndev.s -l:ndev.lst -o:ndev.com
 
 dist: ndev.com
-	cp ndev.com dist/
+	cp ndev.com dist/AUTORUN.SYS
 	dir2atr -S -b DosXL230 n-handler.atr dist
 
 clean:
-	rm -rf ndev* dist/ndev* n-handler.atr relwork-dist/ndev* relwork.atr
+	rm -rf ndev* dist/AUTORUN.SYS n-handler.atr
 
