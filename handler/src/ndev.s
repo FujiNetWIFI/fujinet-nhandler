@@ -80,7 +80,6 @@ SIOV    =     $E459   ; SIO ENTRY
 
        ; CONSTANTS
 
-PUTREC  =     $09     ; CIO PUTREC
 DEVIDN  =     $71     ; SIO DEVID
 DSREAD  =     $40     ; FUJI->ATARI
 DSWRIT  =     $80     ; ATARI->FUJI
