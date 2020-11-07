@@ -121,6 +121,101 @@ INTR:	LDA	#$01		; set trip to 1
 	
 ;;; END INTERRUPT HANDLER ;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;; SUBROUTINES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+	;; GET IOCB UNIT # INTO X
+	
+GDIDX:	LDX	ZICDNO		; CURRENT IOCB UNIT #
+	DEX			; -1
+	RTS
+
+	;; Poll for Status
+
+POLL:	LDA	ZICDNO		; Get Unit #
+	STA	POLDCB+1	; Put into Table
+	LDA	#<POLDCB	; Set up STATUS POLL DCB table
+	LDY	#>POLDCB
+	JSR	DOSIOV		; And do SIOV
+	
+	RTS
+
+POLDCB:	.BYTE      DEVIDN  ; DDEVIC
+	.BYTE      $FF     ; DUNIT
+	.BYTE      'S'     ; DCOMND
+	.BYTE      $40     ; DSTATS
+	.WORD	   DVSTAT  ; DBUF
+	.BYTE      $1F     ; DTIMLO
+	.BYTE      $00     ; DRESVD
+	.WORD	   4	   ; 4 bytes
+	.BYTE      $00     ; DAUX1
+	.BYTE      $00     ; DAUX2
+
+	;; Save DVSTAT values
+
+SVSTAT: JSR	GDIDX	   	; Get Unit into X
+	JSR	CAPRX		; Cap RX values
+	LDA	DVSTAT		; Get RX bytes waiting
+	STA	RLEN,X		; Save RX bytes waiting
+	LDA	DVSTAT+2	; Get Server Client connected/disconnected?
+	STA	DVS2,X		; Save 
+	LDA	DVSTAT+3	; Get last error
+	STA	DVS3,X		; Save
+	RTS
+	
+	;; Enable PROCEED interrupt
+
+ENPRCD:	LDA	PACTL		; Get PACTL register
+	ORA	#$01		; Enable PROCEED
+	STA	PACTL		; Store it back
+	RTS
+
+	;; Disable PROCEED interrupt
+	
+DIPRCD:	LDA	PACTL		; Get PACTL register
+	AND	#$FE		; Disable PROCEED
+	STA	PACTL		; store it back.
+	RTS
+
+	;; Flush TX Buffer out
+	
+FLUSH:	JSR	GDIDX		; UNIT NUMBER into X
+	LDA	ZICDNO		; IOCB UNIT #
+	STA	FLUDCB+1	; Put into table.
+	LDA	TOFF,X		; get Transmit offset (# of bytes to send)
+	STA	FLUDCB+8	; Put into Table (Len and Aux)
+	STA	FLUDCB+10
+	BEQ	FLDONE		; No bytes to send, exit.
+	LDA	#<FLUDCB	; Copy Table to DCB
+	LDY	#>FLUDCB
+	JSR	DOSIOV		; And call SIOV
+FLDONE:	RTS			; Done, LDY has DSTATS
+
+FLUDCB:	.BYTE      DEVIDN  ; DDEVIC
+	.BYTE      $FF     ; DUNIT
+	.BYTE      'W'     ; DCOMND
+	.BYTE      $80     ; DSTATS
+	.WORD      TBUF    ; DBUFL
+	.BYTE      $1F     ; DTIMLO
+	.BYTE      $00     ; DRESVD
+	.BYTE      $00     ; DBYTL
+	.BYTE      $01     ; DBYTH
+	.BYTE      $FF     ; DAUX1
+	.BYTE      $00     ; DAUX2
+
+	;; Cap RX to 127 bytes (temporary routine)
+
+CAPRX:	LDA	DVSTAT+1	; Get hi-byte
+	BNE	CAPADJ		; Adjust if > 256 bytes
+	LDA	DVSTAT		; Get lo-byte
+	BPL	CAPDON		; Exit if < 127 bytes
+CAPADJ:	LDA	#$7F		; 127 bytes
+	STA	DVSTAT		; into DVSTAT/DVSTAT+1
+	LDA	#$00
+	STA	DVSTAT+1
+CAPDON:	RTS			; Done
+	
+;;; END SUBROUTINES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	
 ;;; DEVICE HANDLER TABLE ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 DEVHDL:	.WORD	OPEN-1
@@ -181,40 +276,317 @@ VPRCD:	LDA	#<INTR		; Get Addr of interrupt handler
 
 SUCC:	LDY	#$01 		; Indicate success
 	RTS			; Back to caller.
+
+;;; CLEAR BUFFERS FOR UNIT X ;;;;;;;;;;;;;;;;;;;;
+	
+CLRBUF:	LDA	#$00
+	STA	RLEN,X
+	STA	TOFF,X
+	STA	ROFF,X
+	STA	DVS2,X
+	STA	DVS3,X
+	RTS
+	
+;;; COPY TABLE TO DCB AND DO SIO CALL ;;;;;;;;;;;
+
+DOSIOV: STA	DODCBL+1	; Set source address
+	STY	DODCBL+2
+	LDY	#$0C		; 12 bytes
+DODCBL	LDA	$FFFF,Y		; Changed above.
+	STA	DCB,Y		; To DCB table
+	DEY			; Count down
+	BPL	DODCBL		; Until done
+
+SIOVDST:	
+	JSR	SIOV		; Call SIOV
+	LDY	DSTATS		; Get STATUS in Y
+	TYA			; Copy it into A
+	RTS			; Done
 	
 ;;; OPEN ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-OPEN:	
-	JMP	SUCC
+	;; Fill in the OPEN table
 	
+OPEN:   JSR	GDIDX		; Set IOCB OFFSET TO UNIT #
+	JSR	CLRBUF		; Clear Buffers
+	LDA	ZICDNO		; GET Desired unit #
+	STA	OPNDCB+1	; Store in open table
+	LDA	ZICBAL		; Get desired buffer LO
+	STA	OPNDCB+4	; Store in open table
+	LDA	ZICBAH		; Get desired buffer HI
+	STA	OPNDCB+5	; Store in open table
+	LDA	ZICAX1		; Get requested Aux1
+	STA	OPNDCB+10	; Store in open table
+	LDA	ZICAX2		; Get requested Aux2
+	STA	OPNDCB+11	; Store in open table
+
+	;; Do the SIOV call
+	
+	LDA	OPNDCB
+	LDY	OPNDCB+1
+	JSR	DOSIOV
+
+	;; Return DSTATS in Y, unless 144, then get ext err.
+
+	CPY	#144		; Did we get an ERROR- 144?
+	BNE	OPDONE		; Nope, keep DSTATS in Y
+
+	;; We got a 144, get error from STATUS call
+	JSR	POLL		; Do Status poll
+	LDY	DVSTAT+3	; Get error code
+
+OPDONE:	RTS
+
+	;; OPEN DCB TABLE
+
+OPNDCB:
+	.BYTE      DEVIDN  ; DDEVIC
+	.BYTE      $FF     ; DUNIT
+	.BYTE      'O'     ; DCOMND
+	.BYTE      $80     ; DSTATS
+	.BYTE      $FF     ; DBUFL
+	.BYTE      $FF     ; DBUFH
+	.BYTE      $1F     ; DTIMLO
+	.BYTE      $00     ; DRESVD
+	.BYTE      $00     ; DBYTL
+	.BYTE      $01     ; DBYTH
+	.BYTE      $FF     ; DAUX1
+	.BYTE      $FF     ; DAUX2
+
 ;;; CLOSE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-CLOSE:
-	JMP	SUCC
-	
+CLOSE:	JSR	DIPRCD		; Disable PROCEED
+	JSR	FLUSH		; do PUT flush if needed.
+	JSR	CLRBUF		; Clear buffer pointers
+	LDA	ZICDNO		; Unit #
+	STA	CLODCB+1	; Put into table
+	LDA	#<CLODCB	; Close DCB table
+	LDY	#>CLODCB
+	JSR	DOSIOV		; Do SIOV
+	JMP	SUCC		; Always return success
+
+CLODCB .BYTE	DEVIDN		; DDEVIC
+       .BYTE	$FF		; DUNIT
+       .BYTE	'C'		; DCOMND
+       .BYTE	$00		; DSTATS
+       .BYTE	$00		; DBUFL
+       .BYTE	$00		; DBUFH
+       .BYTE	$1F		; DTIMLO
+       .BYTE	$00		; DRESVD
+       .BYTE	$00		; DBYTL
+       .BYTE	$00		; DBYTH
+       .BYTE	$00		; DAUX1
+       .BYTE	$00		; DAUX2
+
 ;;; GET ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-GET:
-	JMP	SUCC
+GET:	JSR	GDIDX		; IOCB UNIT INTO X
+	LDA	RLEN,X		; Do we still have data in buffer?
+	BNE	GETDRN		; Continue draining if > 0
 
+	;; Nothing here, Wait until something happens.
+
+GETWAI:	JSR	ENPRCD		; Enable interrupt
+	LDA	TRIP		; Did something happen?
+	BEQ	GETWAI		; if trip=0 nothing happened, continue to wait
+
+	;; Something happened, try to fill buffer
+
+GETFLL: JSR	CLRBUF		; Clear cursors.
+	JSR	POLL		; Get # of bytes waiting
+	JSR	SVSTAT		; Save stat values
+	LDA	DVS3,X		; Get Error code
+	BMI	GETDNE		; If error, return error code
+	
+	;; (This may be a point of contention, but there shouldn't be...
+	;;  ...zero bytes waiting, with an error code of 1. If there is,...
+	;;  ...the firmware is broken, and it should be fixed.)
+
+	LDA	ZICDNO		; Get Unit #
+	STA	GETDCB+1	; Store into table
+	LDA	RLEN,X		; Get # of bytes waiting
+	STA	GETDCB+8	; Store into DBYTL...
+	STA	GETDCB+10	; ...and DAUX1
+	LDA	#<GETDCB	; Point to Get DCB table
+	LDY	#>GETDCB	;
+	JSR	DOSIOV		; And do SIO call.
+	LDY	DSTATS		; Get SIO status.
+	BPL	GETDRN		; If okay, proceed to drain. 
+
+	;; oops, something happened during the SIO call.
+	;; if 144, then we need to get the actual error.
+
+	JSR	GDIDX		; Get Unit # again, because SIOV trashed it.
+	JSR	POLL		; Poll for error
+	LDY	DVSTAT+3	; Get the error, return in Y
+	JMP	GETDNE		; Go done.
+
+	;; We have something in the buffer. let's drain it
+
+GETDRN:	JSR	DIPRCD		; Disable PROCEED
+	DEC	RLEN,X		; Decrement RX len
+	LDY	ROFF,X		; Get RX offset cursor
+	LDA	RBUF,Y		; Get next character
+	INC	ROFF,X		; Increment to next char
+	TAY			; Stuff in Y for a moment.
+
+	;; If RX buffer is now empty, turn off TRIP
+
+	LDA	RLEN,X		; Get # of bytes left
+	BNE	GETDN2		; If we have some left, simply go to done.
+	STA	TRIP		; Otherwise store the 0 into trip
+GETDN2:	TYA			; Return char into A
+
+GETDNE:	RTS
+
+	;; The Get DCB table
+	
+GETDCB .BYTE     DEVIDN  	; DDEVIC
+       .BYTE     $FF     	; DUNIT
+       .BYTE     'R'     	; DCOMND
+       .BYTE     $40     	; DSTATS
+       .WORD	 RBUF	 	; DBUF
+       .BYTE     $1F     	; DTIMLO
+       .BYTE     $00     	; DRESVD
+       .BYTE     $FF     	; DBYTL
+       .BYTE     $00     	; DBYTH
+       .BYTE     $FF     	; DAUX1
+       .BYTE     $00     	; DAUX2
+	
 ;;; PUT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-PUT:
-	JMP	SUCC
+PUT:	JSR	GDIDX		; Get Unit # into X
+	LDY	TOFF,X		; Get TX cursor
+	STA	TBUF,Y		; Put char into buffer ptd by cursor
+
+	INC	TOFF,X		; Increment TX cursor
+
+	;; Do a FLUSH if EOL or buffer full
+
+	CMP	#EOL		; EOL?
+	BNE	PUTDON		; No, we're done.
+	LDA	TOFF,X		; Where are we in the TX buffer?
+	BPL	PUTDON		; If less than 127, we're done.
+	JSR	FLUSH		; Flush the buffer
+	
+PUTDON:	RTS
 	
 ;;; STATUS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-STATUS:
-	JMP	SUCC
+
+STATUS:	JSR	ENPRCD		; Enable PROCEED.
+
+	;; Return cached value if we still have data in RX
+
+	JSR	GDIDX		; Unit into X
+	LDA	RLEN,X		; Get RX len
+	BNE	STRETC		; Return cached value if RLEN > 0
+
+	JSR	POLL		; RLEN = 0, do poll.
+	JSR	SVSTAT		; Save DVSTAT values
+
+STRETC:	LDA	RLEN,X		; Get RX len
+	STA	DVSTAT		; Store into DVSTAT
+	LDA	DVS2,X		; Get Saved DVSTAT+2 val
+	STA	DVSTAT+2	; Store
+	LDA	DVS3,X		; Get Saved DVSTAT+3 val
+	STA	DVSTAT+3
+	
+	RTS			; Done.	
 	
 ;;; SPECIAL ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-SPECIAL:
-	JMP	SUCC
 
+SPECIAL:
+	
+	;; Clear Trip
+
+	LDA	#$00
+	STA	TRIP
+
+	;; Handle Local Commands
+
+	LDA	ZICCOM
+	CMP	#$0F		; 15 = FLUSH
+	BNE	SPQ		; No. Handle protocol commands
+	JSR	FLUSH		; Yes. Do flush.
+	LDY	#$01		; Flush always successful
+	JMP	SPCDNE		; We're done.
+
+	;; Handle Protocol commands, do INQDS Query
+
+SPQ:	LDA	ZICDNO		; Get Unit #
+	STA	SPEDCB+1	; Store in table
+	LDA	ZICCOM		; Get Command
+	STA	SPEDCB+10	; Put in AUX1 for query
+	LDA	#<SPEDCB	; Set up SPECIAL DCB TABLE
+	LDY	#>SPEDCB	;
+	JSR	DOSIOV		; Do Query
+	LDY	DSTATS		; Get DSTATS
+	BMI	SPCDNE		; SIO error, return in Y. There is no ext err.
+
+	;; We got a query, if it's $FF, return unimplemented.
+	LDA	INQDS		; Get the Returned DSTATS value from inquiry
+	CMP	#$FF		; Is it $FF ?
+	BNE	SPDO		; Nope, let's do it.
+	LDY	#146		; ERROR- 146  Unimplemented Command
+	JMP	SPCDNE		; Done.
+
+	;; Do the Special, get all IOCB params, push onto stack
+	
+SPDO:	LDA	ZICDNO		; Unit #
+	STA	SPEDCB+1
+	LDA	ZICCOM		; Command
+	STA	SPEDCB+2
+	LDA	INQDS		; Result of Inquiry
+	STA	SPEDCB+3
+	LDA	ZICBAL		; Ptr to passed in devicespec
+	STA	SPEDCB+4
+	LDA	ZICBAH		; 
+	STA	SPEDCB+5
+	LDA	ZICAX1		; Aux1
+	STA	SPEDCB+10
+	LDA	ZICAX2		; Aux2
+	STA	SPEDCB+11
+	LDA	#<SPEDCB
+	LDY	#>SPEDCB
+	JSR	DOSIOV
+
+	;; Get error and return extended if needed.
+
+	LDY	DSTATS		; Get DSTATS
+	CMP	#144		; Is it 144?
+	BNE	SPCDNE		; Nope, just return it.
+
+	JSR	POLL		; Get status, for error
+	LDY	DVSTAT+3	; Get extended error.
+	
+SPCDNE:	RTS
+
+SPEDCB .BYTE      DEVIDN  ; DDEVIC
+       .BYTE      $FF     ; DUNIT
+       .BYTE      $FF     ; DCOMND ; inq
+       .BYTE      $40     ; DSTATS
+       .WORD      INQDS    ; DBUFL
+       .BYTE      $1F     ; DTIMLO
+       .BYTE      $00     ; DRESVD
+       .BYTE      $01     ; DBYTL
+       .BYTE      $00     ; DBYTH
+       .BYTE      $FF     ; DAUX1
+       .BYTE      $FF     ; DAUX2	
+	
 	;; End of Handler
 
 ;;; VARIABLES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-TRIP	.ds	1
+TRIP	.ds	1		; Interrupt Tripped?
+RLEN	.ds	MAXDEV		; RXD Len
+ROFF	.ds	MAXDEV		; RXD offset cursor
+TOFF	.ds	MAXDEV		; TXD offset cursor
+INQDS	.ds	1		; DSTATS to return in inquiry
+DVS2	.ds	MAXDEV		; DVSTAT+2 SAVE
+DVS3	.ds	MAXDEV		; DVSTAT+3 SAVE
+
+RBUF	.ds	128		; RXD buffer
+TBUF	.ds	128		; TXD buffer
 	
 HANDLEREND	= *
 
