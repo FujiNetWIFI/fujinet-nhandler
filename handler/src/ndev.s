@@ -184,26 +184,26 @@ FLUSH:	JSR	GDIDX		; UNIT NUMBER into X
 	BEQ	FLDONE		; Don't do anything if TX cursor is at 0.
 	STA	FLUDCB+8	; Put into Table (Len and Aux)
 	STA	FLUDCB+10
-	BEQ	FLDONE		; No bytes to send, exit.
 	LDA	#<FLUDCB	; Copy Table to DCB
 	LDY	#>FLUDCB
 	JSR	DOSIOV		; And call SIOV
+	JSR	GDIDX		; Get Unit into X
 	LDA	#$00		; Clear TOFF
 	STA	TOFF,X
 	LDY	DSTATS
 FLDONE:	RTS			; Done, LDY has DSTATS
 
-FLUDCB:	.BYTE      DEVIDN  ; DDEVIC
-	.BYTE      $FF     ; DUNIT
-	.BYTE      'W'     ; DCOMND
-	.BYTE      DSWRIT     ; DSTATS
-	.WORD      TBUF    ; DBUFL
-	.BYTE      $1F     ; DTIMLO
-	.BYTE      $00     ; DRESVD
-	.BYTE      $FF     ; DBYTL
-	.BYTE      $00     ; DBYTH
-	.BYTE      $FF     ; DAUX1
-	.BYTE      $00     ; DAUX2
+FLUDCB:	.BYTE      DEVIDN  	; DDEVIC
+	.BYTE      $FF     	; DUNIT
+	.BYTE      'W'     	; DCOMND
+	.BYTE      DSWRIT     	; DSTATS
+	.WORD      TBUF    	; DBUFL
+	.BYTE      $1F     	; DTIMLO
+	.BYTE      $00     	; DRESVD
+	.BYTE      $FF     	; DBYTL
+	.BYTE      $00     	; DBYTH
+	.BYTE      $FF     	; DAUX1
+	.BYTE      $00     	; DAUX2
 
 	;; Cap RX to 127 bytes (temporary routine)
 
