@@ -96,18 +96,15 @@ EOL     =     $9B     ; EOL CHAR
 
 ;;; RESET HANDLER ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-.proc resetHandler
+RESET:	
 	JSR	$FFFF		; Modified for original DOSINI
-initVec	= *-2
 	LDA	#$FF		; Driver end LO
-handlerEndLo = *-1
 	STA 	MEMLO
 	LDA	#$FF		; Driver end HI
-handlerEndHi = *-1
 	STA	MEMLO+1
 	JSR	IHTBS		; Insert into HATABS
+	JSR	CLALL
 	RTS
-.endp	
 	
 ;;; END RESET HANDLER ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -275,21 +272,20 @@ DEVHDL:	.WORD	OPEN-1
 	
 ;;; HANDLER RUNAD HERE ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	
-START:
-	LDA	#<HANDLEREND	; Find End of code
-	STA	resetHandler.handlerEndLo
-	STA	MEMLO
-	LDA	#>HANDLEREND
-	STA	resetHandler.handlerEndHi
-	STA	MEMLO+1
-	LDA	DOSINI
-	STA	resetHandler.initVec
+START:	LDA	DOSINI
+	STA	RESET+1
 	LDA	DOSINI+1
-	STA	resetHandler.initVec+1
-	LDA	#<resetHandler
+	STA	RESET+2
+	LDA	#<RESET
 	STA	DOSINI
-	LDA	#>resetHandler
-	STA	DOSINI
+	LDA	#>RESET
+	STA	DOSINI+1
+	LDA	#<HANDLEREND
+	STA	MEMLO
+	STA	RESET+4
+	LDA	#>HANDLEREND
+	STA	MEMLO+1
+	STA	RESET+9
 	JSR	CLALL		; Close all
 	
 ;;; Insert Handler entry into HATABS ;;;;;;;;;;;
@@ -440,7 +436,7 @@ GET:	JSR	GDIDX		; Unit into X
 	;; Otherwise, we wait for something to happen.
 
 GETWAI:	JSR	ENPRCD		; Enable Proceed
-	JSR	TRIP		; Did trip change?
+	LDA	TRIP		; Did trip change?
 	BEQ	GETWAI		; Nope, not yet...
 
 	;; Something happened, try to poll for data.
