@@ -472,8 +472,8 @@ GETDRN:	JSR	DIPRCD		; Disable PROCEED
 	STA	TRIP		; Otherwise store 0 into trip
 	
 GETDN2:	LDY	#$01		; Success.
-GETDNE: PLA			; Get char back into A
-	RTS
+	PLA			; Get char back into A
+GETDNE:	RTS
 	
 ;;; PUT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
