@@ -459,11 +459,11 @@ GETWAI:	JSR	ENPRCD		; Enable Proceed
 	
 GETDRN:	JSR	DIPRCD		; Disable PROCEED
 	JSR	GDIDX		; Get Unit into X again
+	DEC	RLEN,X		; Decrement length
 	LDY	ROFF,X		; Get Current Offset into X
 	LDA	RBUF,Y		; Get next character
-	PHA
 	INC	ROFF,X		; Increment cursor
-	DEC	RLEN,X		; Decrement length
+	TAY			; Store in Y for a moment
 
 	;; If RX buffer empty, turn off trip.
 
@@ -471,8 +471,8 @@ GETDRN:	JSR	DIPRCD		; Disable PROCEED
 	BNE	GETDN2		; some left, just go done with success
 	STA	TRIP		; Otherwise store 0 into trip
 	
-GETDN2:	LDY	#$01		; Success.
-	PLA			; Get char back into A
+GETDN2:	TYA			; Bring back char into A
+	LDY	#$01		; 
 GETDNE:	RTS
 	
 ;;; PUT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
