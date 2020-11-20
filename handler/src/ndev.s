@@ -447,7 +447,7 @@ GETWAI:	JSR	ENPRCD		; Enable Proceed
 
 	;; If RLEN=0 then determine if error.
 
-	LDA	RLEN,X		; Get RLEN Again
+	LDA	DVSTAT		; Get RLEN Again
 	BNE	GETDRN		; If RLEN > 1, then drain.
 	LDY	DSTATS		; Else, get DSTATS from status/read.
 	CPY	#144		; is it 144?
