@@ -449,6 +449,9 @@ GETWAI:	JSR	ENPRCD		; Enable Proceed
 
 	LDA	DVSTAT		; Get RLEN Again
 	BNE	GETDRN		; If RLEN > 1, then drain.
+	LDY	DVSTAT+3	; Get ext err
+	CPY	#136		; EOF?
+	BEQ	GETDNE		; Yes, return it.
 	LDY	DSTATS		; Else, get DSTATS from status/read.
 	CPY	#144		; is it 144?
 	BNE	GETDNE		; Nope, simply return it in Y, done.
