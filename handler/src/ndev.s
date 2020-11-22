@@ -542,7 +542,9 @@ SPECIAL:
 
 	;; Handle Protocol commands, do INQDS Query
 
-SPQ:	LDA	ZICDNO		; Get Unit #
+SPQ:	LDA	#$FF		; Set INQDS
+	STA	ZICCOM		; To ICCOM
+	LDA	ZICDNO		; Get Unit #
 	STA	SPEDCB+1	; Store in table
 	LDA	ZICCOM		; Get Command
 	STA	SPEDCB+10	; Put in AUX1 for query
