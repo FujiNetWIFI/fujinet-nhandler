@@ -1,4 +1,4 @@
-mads 2.1.0 build 8 (23 Dec 19)
+mads 2.1.1
 Source: ndev.s
      1 					;; N: Device Handler
      2 					;; Compile with MADS
@@ -94,7 +94,7 @@ Source: ndev.s
     92 					
     93 					;; This is for OS/A+
     94
-    95 FFFF> 2200-24F4> 60		RTS			; Immediately exit
+    95 FFFF> 2200-2503> 60		RTS			; Immediately exit
     96
     97 				;;; RESET HANDLER ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     98
@@ -113,7 +113,7 @@ Source: ndev.s
    111 				;;; INTERRUPT HANDLER ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
    112
    113 2215 A9 01		INTR:	LDA	#$01		; set trip to 1
-   114 2217 8D F5 24			STA	TRIP
+   114 2217 8D 04 25			STA	TRIP
    115 221A 68				PLA
    116 221B 40				RTI
    117 					
@@ -153,11 +153,11 @@ Source: ndev.s
    151 2239 20 1C 22		SVSTAT: JSR	GDIDX	   	; Get Unit into X
    152 223C 20 96 22			JSR	CAPRX		; Cap RX values
    153 223F AD EA 02			LDA	DVSTAT		; Get RX bytes waiting
-   154 2242 9D F6 24			STA	RLEN,X		; Save RX bytes waiting
+   154 2242 9D 05 25			STA	RLEN,X		; Save RX bytes waiting
    155 2245 AD EC 02			LDA	DVSTAT+2	; Get Server Client connected/disconnected?
-   156 2248 9D 03 25			STA	DVS2,X		; Save 
+   156 2248 9D 12 25			STA	DVS2,X		; Save 
    157 224B AD ED 02			LDA	DVSTAT+3	; Get last error
-   158 224E 9D 07 25			STA	DVS3,X		; Save
+   158 224E 9D 16 25			STA	DVS3,X		; Save
    159 2251 60				RTS
    160 					
    161 					;; Enable PROCEED interrupt
@@ -179,7 +179,7 @@ Source: ndev.s
    177 2264 20 1C 22		FLUSH:	JSR	GDIDX		; UNIT NUMBER into X
    178 2267 A5 21			LDA	ZICDNO		; IOCB UNIT #
    179 2269 8D 8B 22			STA	FLUDCB+1	; Put into table.
-   180 226C BD FE 24			LDA	TOFF,X		; get Transmit offset (# of bytes to send)
+   180 226C BD 0D 25			LDA	TOFF,X		; get Transmit offset (# of bytes to send)
    181 226F F0 18			BEQ	FLDONE		; Don't do anything if TX cursor is at 0.
    182 2271 8D 92 22			STA	FLUDCB+8	; Put into Table (Len and Aux)
    183 2274 8D 94 22			STA	FLUDCB+10
@@ -188,7 +188,7 @@ Source: ndev.s
    186 227B 20 6C 23			JSR	DOSIOV		; And call SIOV
    187 227E 20 1C 22			JSR	GDIDX		; Get Unit into X
    188 2281 A9 00			LDA	#$00		; Clear TOFF
-   189 2283 9D FE 24			STA	TOFF,X
+   189 2283 9D 0D 25			STA	TOFF,X
    190 2286 AC 03 03			LDY	DSTATS
    191 2289 60			FLDONE:	RTS			; Done, LDY has DSTATS
    192
@@ -196,7 +196,7 @@ Source: ndev.s
    194 228B FF				.BYTE      $FF     	; DUNIT
    195 228C 57				.BYTE      'W'     	; DCOMND
    196 228D 80				.BYTE      DSWRIT     	; DSTATS
-   197 228E 8B 25			.WORD      TBUF    	; DBUFL
+   197 228E 9A 25			.WORD      TBUF    	; DBUFL
    198 2290 1F				.BYTE      $1F     	; DTIMLO
    199 2291 00				.BYTE      $00     	; DRESVD
    200 2292 FF				.BYTE      $FF     	; DBYTL
@@ -219,12 +219,12 @@ Source: ndev.s
    217 					;; Close all IOCBs
    218
    219 22AB A9 04		CLALL:	LDA	#MAXDEV		; Close all 4 N: devices
-   220 22AD 8D F5 24			STA	TRIP		; Temporarily use trip
-   221 22B0 AD F5 24		CLLP:	LDA	TRIP		; Get
+   220 22AD 8D 04 25			STA	TRIP		; Temporarily use trip
+   221 22B0 AD 04 25		CLLP:	LDA	TRIP		; Get
    222 22B3 85 21			STA	ZICDNO		; Store into unit #
    223 22B5 20 C2 23			JSR	CLOSE		; Close Nx:
-   224 22B8 CE F5 24			DEC	TRIP		; Decrement
-   225 22BB AD F5 24			LDA	TRIP		; Get it
+   224 22B8 CE 04 25			DEC	TRIP		; Decrement
+   225 22BB AD 04 25			LDA	TRIP		; Get it
    226 22BE D0 F0			BNE	CLLP		; Loop until done.
    227 22C0 60				RTS	
    228
@@ -232,10 +232,10 @@ Source: ndev.s
    230
    231 22C1 20 1C 22		READ:	JSR	GDIDX	  	; unit into X
    232 22C4 A9 00			LDA	#$00		; Set 0 into
-   233 22C6 9D FA 24			STA	ROFF,X		; RXD cursor.
+   233 22C6 9D 09 25			STA	ROFF,X		; RXD cursor.
    234 22C9 A5 21			LDA	ZICDNO		; Get Unit #
    235 22CB 8D EF 22			STA	READCB+1	; Put into Read DCB table
-   236 22CE AD F6 24			LDA	RLEN		; Get RLEN (from status)
+   236 22CE AD 05 25			LDA	RLEN		; Get RLEN (from status)
    237 22D1 F0 1A			BEQ	RDONE		; If RLEN=0 then abort read.
    238 22D3 8D F6 22			STA	READCB+8	; Store in DBYTL
    239 22D6 8D F8 22			STA	READCB+10	; Store in DAUX1
@@ -253,7 +253,7 @@ Source: ndev.s
    251 22EF FF			       .BYTE     $FF     	; DUNIT
    252 22F0 52			       .BYTE     'R'     	; DCOMND
    253 22F1 40			       .BYTE     DSREAD     	; DSTATS
-   254 22F2 0B 25		       .WORD	 RBUF	 	; DBUF
+   254 22F2 1A 25		       .WORD	 RBUF	 	; DBUF
    255 22F4 1F			       .BYTE     $1F     	; DTIMLO
    256 22F5 00			       .BYTE     $00     	; DRESVD
    257 22F6 FF			       .BYTE     $FF     	; DBYTL
@@ -282,7 +282,7 @@ Source: ndev.s
    280 2312 85 0C			STA	DOSINI
    281 2314 A9 22			LDA	#>RESET
    282 2316 85 0D			STA	DOSINI+1
-   283 2318 A9 0B			LDA	#<HANDLEREND
+   283 2318 A9 1A			LDA	#<HANDLEREND
    284 231A 8D E7 02			STA	MEMLO
    285 231D 8D 05 22			STA	RESET+4
    286 2320 A9 26			LDA	#>HANDLEREND
@@ -331,11 +331,11 @@ Source: ndev.s
    329 				;;; CLEAR BUFFERS FOR UNIT X ;;;;;;;;;;;;;;;;;;;;
    330 					
    331 235A A9 00		CLRBUF:	LDA	#$00
-   332 235C 9D F6 24			STA	RLEN,X
-   333 235F 9D FE 24			STA	TOFF,X
-   334 2362 9D FA 24			STA	ROFF,X
-   335 2365 9D 03 25			STA	DVS2,X
-   336 2368 9D 07 25			STA	DVS3,X
+   332 235C 9D 05 25			STA	RLEN,X
+   333 235F 9D 0D 25			STA	TOFF,X
+   334 2362 9D 09 25			STA	ROFF,X
+   335 2365 9D 12 25			STA	DVS2,X
+   336 2368 9D 16 25			STA	DVS3,X
    337 236B 60				RTS
    338 					
    339 				;;; COPY TABLE TO DCB AND DO SIO CALL ;;;;;;;;;;;
@@ -432,13 +432,13 @@ Source: ndev.s
    430 				;;; GET ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
    431
    432 23E6 20 1C 22		GET:	JSR	GDIDX		; Unit into X
-   433 23E9 BD F6 24			LDA	RLEN,X		; Get current RX len from last STATUS
+   433 23E9 BD 05 25			LDA	RLEN,X		; Get current RX len from last STATUS
    434 23EC D0 29			BNE	GETDRN		; If RLEN > 0 then drain.
    435
    436 					;; Otherwise, we wait for something to happen.
    437
    438 23EE 20 52 22		GETWAI:	JSR	ENPRCD		; Enable Proceed
-   439 23F1 AD F5 24			LDA	TRIP		; Did trip change?
+   439 23F1 AD 04 25			LDA	TRIP		; Did trip change?
    440 23F4 F0 F8			BEQ	GETWAI		; Nope, not yet...
    441
    442 					;; Something happened, try to poll for data.
@@ -464,17 +464,17 @@ Source: ndev.s
    462 					
    463 2417 20 5B 22		GETDRN:	JSR	DIPRCD		; Disable PROCEED
    464 241A 20 1C 22			JSR	GDIDX		; Get Unit into X again
-   465 241D DE F6 24			DEC	RLEN,X		; Decrement length
-   466 2420 BC FA 24			LDY	ROFF,X		; Get Current Offset into X
-   467 2423 B9 0B 25			LDA	RBUF,Y		; Get next character
-   468 2426 FE FA 24			INC	ROFF,X		; Increment cursor
+   465 241D DE 05 25			DEC	RLEN,X		; Decrement length
+   466 2420 BC 09 25			LDY	ROFF,X		; Get Current Offset into X
+   467 2423 B9 1A 25			LDA	RBUF,Y		; Get next character
+   468 2426 FE 09 25			INC	ROFF,X		; Increment cursor
    469 2429 A8				TAY			; Store in Y for a moment
    470
    471 					;; If RX buffer empty, turn off trip.
    472
-   473 242A BD F6 24			LDA	RLEN,X		; Get RLEN
+   473 242A BD 05 25			LDA	RLEN,X		; Get RLEN
    474 242D D0 03			BNE	GETDN2		; some left, just go done with success
-   475 242F 8D F5 24			STA	TRIP		; Otherwise store 0 into trip
+   475 242F 8D 04 25			STA	TRIP		; Otherwise store 0 into trip
    476 					
    477 2432 98			GETDN2:	TYA			; Bring back char into A
    478 2433 A0 01			LDY	#$01		; 
@@ -483,10 +483,10 @@ Source: ndev.s
    481 				;;; PUT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
    482
    483 2436 20 1C 22		PUT:	JSR	GDIDX		; Get Unit # into X
-   484 2439 BC FE 24			LDY	TOFF,X		; Get TX cursor
-   485 243C 99 8B 25			STA	TBUF,Y		; Put char into buffer ptd by cursor
+   484 2439 BC 0D 25			LDY	TOFF,X		; Get TX cursor
+   485 243C 99 9A 25			STA	TBUF,Y		; Put char into buffer ptd by cursor
    486
-   487 243F FE FE 24			INC	TOFF,X		; Increment TX cursor
+   487 243F FE 0D 25			INC	TOFF,X		; Increment TX cursor
    488
    489 					;; Do a FLUSH if EOL or buffer full
    490
@@ -504,21 +504,21 @@ Source: ndev.s
    502 					;; Return cached value if we still have data in RX
    503
    504 2451 20 1C 22			JSR	GDIDX		; Unit into X
-   505 2454 BD F6 24			LDA	RLEN,X		; Get RX len
+   505 2454 BD 05 25			LDA	RLEN,X		; Get RX len
    506 2457 D0 0E			BNE	STRETC		; Return cached value if RLEN > 0
    507
-   508 2459 AD F5 24			LDA	TRIP		; Get TRIP?
+   508 2459 AD 04 25			LDA	TRIP		; Get TRIP?
    509 245C F0 09			BEQ	STRETC		; No trip? Return cached.
    510
    511 245E 20 20 22			JSR	POLL		; RLEN = 0, do poll.
    512 2461 20 39 22			JSR	SVSTAT		; Save DVSTAT values
    513 2464 20 C1 22			JSR	READ		; Do read.
    514 					
-   515 2467 BD F6 24		STRETC:	LDA	RLEN,X		; Get Saved DVSTAT+0 val
+   515 2467 BD 05 25		STRETC:	LDA	RLEN,X		; Get Saved DVSTAT+0 val
    516 246A 8D EA 02			STA	DVSTAT		; Store into DVSTAT
-   517 246D BD 03 25			LDA	DVS2,X		; Get Saved DVSTAT+2 val
+   517 246D BD 12 25			LDA	DVS2,X		; Get Saved DVSTAT+2 val
    518 2470 8D EC 02			STA	DVSTAT+2	; Store
-   519 2473 BD 07 25			LDA	DVS3,X		; Get Saved DVSTAT+3 val
+   519 2473 BD 16 25			LDA	DVS3,X		; Get Saved DVSTAT+3 val
    520 2476 8D ED 02			STA	DVSTAT+3
    521 2479 A8				TAY			; copy it into Y for error output.
    522 					
@@ -531,7 +531,7 @@ Source: ndev.s
    529 					;; Clear Trip
    530
    531 247B A9 00			LDA	#$00
-   532 247D 8D F5 24			STA	TRIP
+   532 247D 8D 04 25			STA	TRIP
    533
    534 					;; Handle Local Commands
    535
@@ -540,86 +540,92 @@ Source: ndev.s
    538 2484 D0 08			BNE	SPQ		; No. Handle protocol commands
    539 2486 20 64 22			JSR	FLUSH		; Yes. Do flush.
    540 2489 A0 01			LDY	#$01		; Flush always successful
-   541 248B 4C E8 24			JMP	SPCDNE		; We're done.
+   541 248B 4C F7 24			JMP	SPCDNE		; We're done.
    542
    543 					;; Handle Protocol commands, do INQDS Query
    544
-   545 248E A5 21		SPQ:	LDA	ZICDNO		; Get Unit #
-   546 2490 8D EA 24			STA	SPEDCB+1	; Store in table
-   547 2493 A5 22			LDA	ZICCOM		; Get Command
-   548 2495 8D F3 24			STA	SPEDCB+10	; Put in AUX1 for query
-   549 2498 A9 E9			LDA	#<SPEDCB	; Set up SPECIAL DCB TABLE
-   550 249A A0 24			LDY	#>SPEDCB	;
-   551 249C 20 6C 23			JSR	DOSIOV		; Do Query
-   552 249F AC 03 03			LDY	DSTATS		; Get DSTATS
-   553 24A2 30 44			BMI	SPCDNE		; SIO error, return in Y. There is no ext err.
-   554
-   555 					;; We got a query, if it's $FF, return unimplemented.
-   556 24A4 AD 02 25			LDA	INQDS		; Get the Returned DSTATS value from inquiry
-   557 24A7 C9 FF			CMP	#$FF		; Is it $FF ?
-   558 24A9 D0 05			BNE	SPDO		; Nope, let's do it.
-   559 24AB A0 92			LDY	#146		; ERROR- 146  Unimplemented Command
-   560 24AD 4C E8 24			JMP	SPCDNE		; Done.
-   561
-   562 					;; Do the Special, get all IOCB params, push onto stack
-   563 					
-   564 24B0 A5 21		SPDO:	LDA	ZICDNO		; Unit #
-   565 24B2 8D EA 24			STA	SPEDCB+1
-   566 24B5 A5 22			LDA	ZICCOM		; Command
-   567 24B7 8D EB 24			STA	SPEDCB+2
-   568 24BA AD 02 25			LDA	INQDS		; Result of Inquiry
-   569 24BD 8D EC 24			STA	SPEDCB+3
-   570 24C0 A5 24			LDA	ZICBAL		; Ptr to passed in devicespec
-   571 24C2 8D ED 24			STA	SPEDCB+4
-   572 24C5 A5 25			LDA	ZICBAH		; 
-   573 24C7 8D EE 24			STA	SPEDCB+5
-   574 24CA A5 2A			LDA	ZICAX1		; Aux1
-   575 24CC 8D F3 24			STA	SPEDCB+10
-   576 24CF A5 2B			LDA	ZICAX2		; Aux2
-   577 24D1 8D F4 24			STA	SPEDCB+11
-   578 24D4 A9 E9			LDA	#<SPEDCB
-   579 24D6 A0 24			LDY	#>SPEDCB
-   580 24D8 20 6C 23			JSR	DOSIOV
-   581
-   582 					;; Get error and return extended if needed.
-   583
-   584 24DB AC 03 03			LDY	DSTATS		; Get DSTATS
-   585 24DE C0 90			CPY	#144		; Is it 144?
-   586 24E0 D0 06			BNE	SPCDNE		; Nope, just return it.
+   545 248E A9 FF		SPQ:	LDA	#$FF		; Set INQDS
+   546 2490 8D FA 24			STA	SPEDCB+2		; To ICCOM
+   547 2493 A5 21			LDA	ZICDNO		; Get Unit #
+   548 2495 8D F9 24			STA	SPEDCB+1	; Store in table
+   549 2498 A5 22			LDA	ZICCOM		; Get Command
+   550 249A 8D 02 25			STA	SPEDCB+10	; Put in AUX1 for query
+   551 249D A9 F8			LDA	#<SPEDCB	; Set up SPECIAL DCB TABLE
+   552 249F A0 24			LDY	#>SPEDCB	;
+   553 24A1 20 6C 23			JSR	DOSIOV		; Do Query
+   554 24A4 AC 03 03			LDY	DSTATS		; Get DSTATS
+   555 24A7 30 4E			BMI	SPCDNE		; SIO error, return in Y. There is no ext err.
+   556
+   557 					;; We got a query, if it's $FF, return unimplemented.
+   558 24A9 AD 11 25			LDA	INQDS		; Get the Returned DSTATS value from inquiry
+   559 24AC C9 FF			CMP	#$FF		; Is it $FF ?
+   560 24AE D0 05			BNE	SPDO		; Nope, let's do it.
+   561 24B0 A0 92			LDY	#146		; ERROR- 146  Unimplemented Command
+   562 24B2 4C F7 24			JMP	SPCDNE		; Done.
+   563
+   564 					;; Do the Special, get all IOCB params, push onto stack
+   565 					
+   566 24B5 A5 21		SPDO:	LDA	ZICDNO		; Unit #
+   567 24B7 8D F9 24			STA	SPEDCB+1
+   568 24BA A5 22			LDA	ZICCOM		; Command
+   569 24BC 8D FA 24			STA	SPEDCB+2
+   570 24BF AD 11 25			LDA	INQDS		; Result of Inquiry
+   571 24C2 8D FB 24			STA	SPEDCB+3
+   572 24C5 A5 24			LDA	ZICBAL		; Ptr to passed in devicespec
+   573 24C7 8D FC 24			STA	SPEDCB+4
+   574 24CA A5 25			LDA	ZICBAH		; 
+   575 24CC 8D FD 24			STA	SPEDCB+5
+   576 24CF A9 00			LDA #$00
+   577 24D1 8D 00 25			STA SPEDCB+8
+   578 24D4 A9 01			LDA #$01
+   579 24D6 8D 01 25			STA SPEDCB+9
+   580 24D9 A5 2A			LDA	ZICAX1		; Aux1
+   581 24DB 8D 02 25			STA	SPEDCB+10
+   582 24DE A5 2B			LDA	ZICAX2		; Aux2
+   583 24E0 8D 03 25			STA	SPEDCB+11
+   584 24E3 A9 F8			LDA	#<SPEDCB
+   585 24E5 A0 24			LDY	#>SPEDCB
+   586 24E7 20 6C 23			JSR	DOSIOV
    587
-   588 24E2 20 20 22			JSR	POLL		; Get status, for error
-   589 24E5 AC ED 02			LDY	DVSTAT+3	; Get extended error.
-   590 					
-   591 24E8 60			SPCDNE:	RTS
-   592
-   593 24E9 71			SPEDCB .BYTE      DEVIDN  ; DDEVIC
-   594 24EA FF			       .BYTE      $FF     ; DUNIT
-   595 24EB FF			       .BYTE      $FF     ; DCOMND ; inq
-   596 24EC 40			       .BYTE      DSREAD     ; DSTATS
-   597 24ED 02 25		       .WORD      INQDS    ; DBUFL
-   598 24EF 1F			       .BYTE      $1F     ; DTIMLO
-   599 24F0 00			       .BYTE      $00     ; DRESVD
-   600 24F1 01			       .BYTE      $01     ; DBYTL
-   601 24F2 00			       .BYTE      $00     ; DBYTH
-   602 24F3 FF			       .BYTE      $FF     ; DAUX1
-   603 24F4 FF			       .BYTE      $FF     ; DAUX2	
-   604 					
-   605 					;; End of Handler
-   606
-   607 				;;; VARIABLES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-   608
-   609 = 24F5			TRIP	.ds	1		; Interrupt Tripped?
-   610 = 24F6			RLEN	.ds	MAXDEV		; RXD Len
-   611 = 24FA			ROFF	.ds	MAXDEV		; RXD offset cursor
-   612 = 24FE			TOFF	.ds	MAXDEV		; TXD offset cursor
-   613 = 2502			INQDS	.ds	1		; DSTATS to return in inquiry
-   614 = 2503			DVS2	.ds	MAXDEV		; DVSTAT+2 SAVE
-   615 = 2507			DVS3	.ds	MAXDEV		; DVSTAT+3 SAVE
-   616
-   617 = 250B			RBUF	.ds	128		; RXD buffer
-   618 = 258B			TBUF	.ds	128		; TXD buffer
-   619 					
-   620 = 260B			HANDLEREND	= *
-   621
-   622 02E0-02E1> 06 23			RUN	START
-   623 					END
+   588 					;; Get error and return extended if needed.
+   589
+   590 24EA AC 03 03			LDY	DSTATS		; Get DSTATS
+   591 24ED C0 90			CPY	#144		; Is it 144?
+   592 24EF D0 06			BNE	SPCDNE		; Nope, just return it.
+   593
+   594 24F1 20 20 22			JSR	POLL		; Get status, for error
+   595 24F4 AC ED 02			LDY	DVSTAT+3	; Get extended error.
+   596 					
+   597 24F7 60			SPCDNE:	RTS
+   598
+   599 24F8 71			SPEDCB .BYTE      DEVIDN  ; DDEVIC
+   600 24F9 FF			       .BYTE      $FF     ; DUNIT
+   601 24FA FF			       .BYTE      $FF     ; DCOMND ; inq
+   602 24FB 40			       .BYTE      DSREAD     ; DSTATS
+   603 24FC 11 25		       .WORD      INQDS    ; DBUFL
+   604 24FE 1F			       .BYTE      $1F     ; DTIMLO
+   605 24FF 00			       .BYTE      $00     ; DRESVD
+   606 2500 01			       .BYTE      $01     ; DBYTL
+   607 2501 00			       .BYTE      $00     ; DBYTH
+   608 2502 FF			       .BYTE      $FF     ; DAUX1
+   609 2503 FF			       .BYTE      $FF     ; DAUX2	
+   610 					
+   611 					;; End of Handler
+   612
+   613 				;;; VARIABLES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   614
+   615 = 2504			TRIP	.ds	1		; Interrupt Tripped?
+   616 = 2505			RLEN	.ds	MAXDEV		; RXD Len
+   617 = 2509			ROFF	.ds	MAXDEV		; RXD offset cursor
+   618 = 250D			TOFF	.ds	MAXDEV		; TXD offset cursor
+   619 = 2511			INQDS	.ds	1		; DSTATS to return in inquiry
+   620 = 2512			DVS2	.ds	MAXDEV		; DVSTAT+2 SAVE
+   621 = 2516			DVS3	.ds	MAXDEV		; DVSTAT+3 SAVE
+   622
+   623 = 251A			RBUF	.ds	128		; RXD buffer
+   624 = 259A			TBUF	.ds	128		; TXD buffer
+   625 					
+   626 = 261A			HANDLEREND	= *
+   627
+   628 02E0-02E1> 06 23			RUN	START
+   629 					END
