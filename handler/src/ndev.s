@@ -548,6 +548,10 @@ SPQ:	LDA	#$FF		; Set INQDS
 	STA	SPEDCB+1	; Store in table
 	LDA	ZICCOM		; Get Command
 	STA	SPEDCB+10	; Put in AUX1 for query
+	LDA	#$01		; 1 byte
+	STA	SPEDCB+8	;
+	LDA	#$00		;
+	STA	SPEDCB+9	;
 	LDA	#<SPEDCB	; Set up SPECIAL DCB TABLE
 	LDY	#>SPEDCB	;
 	JSR	DOSIOV		; Do Query
