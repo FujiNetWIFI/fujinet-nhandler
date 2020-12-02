@@ -543,7 +543,7 @@ SPECIAL:
 	;; Handle Protocol commands, do INQDS Query
 
 SPQ:	LDA	#$FF		; Set INQDS
-	STA	SPEDCB+2		; To ICCOM
+	STA	SPEDCB+2		; To DCOMND
 	LDA	ZICDNO		; Get Unit #
 	STA	SPEDCB+1	; Store in table
 	LDA	ZICCOM		; Get Command
@@ -552,6 +552,12 @@ SPQ:	LDA	#$FF		; Set INQDS
 	STA	SPEDCB+8	;
 	LDA	#$00		;
 	STA	SPEDCB+9	;
+	LDA	#<INQDS		; Stora INQDS address
+	STA	SPEDCB+4	; ...
+	LDA	#>INQDS		; ...
+	STA	SPEDCB+5
+	LDA	#$40		; <-Atari
+	STA	SPEDCB+3
 	LDA	#<SPEDCB	; Set up SPECIAL DCB TABLE
 	LDY	#>SPEDCB	;
 	JSR	DOSIOV		; Do Query
