@@ -237,7 +237,7 @@ READ:	JSR	GDIDX	  	; unit into X
 	BEQ	RDONE		; If RLEN=0 then abort read.
 	STA	READCB+8	; Store in DBYTL
 	STA	READCB+10	; Store in DAUX1
-	LDA	#<READCB	; Set up Read DCB
+READ2:	LDA	#<READCB	; Set up Read DCB
 	LDY	#>READCB	; ...
 	JSR	DOSIOV		; Do SIO call
 	LDY	DSTATS		; Get DSTATS for error
@@ -429,7 +429,78 @@ CLODCB .BYTE	DEVIDN		; DDEVIC
 
 ;;; GET ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-GET:	JSR	GDIDX		; Unit into X
+	;; Called to do burst read from GETB
+	
+GETBR:	LDA	ZICDNO		; Get requested unit #
+	STA	READCB+1	; Store into DUNIT portion of table.
+	LDA	ZICBAL		; Get requested dest buffer from IOCB
+	STA	READCB+4	; ...and put into DCB
+	LDA	ZICBAH		; ...
+	STA	READCB+5	; ...
+	LDA	ZICBLL		; Get Requested Length
+	STA	READCB+8	; and stuff into DCB as DBYT/DAUX
+	STA	READCB+10	; ...
+	LDA	ZICBLH		; ...
+	STA	READCB+9	; ...
+	STA	READCB+11	; ...
+	LDA	#<READCB	; Set up DCB
+	LDY	#>READCB	; ...
+	JSR	DOSIOV		; and do SIOV call
+	RTS			; Back to GETB.
+
+	;; Called when burst mode is requested
+	
+GETB:	JSR	GETBR		; Do the SIO call.
+	LDY	DSTATS 		; Get error (come back here later and fill this out)
+	BPL	GETBS		; If no error, continue
+	CPY	#144		; Extended error?
+	BEQ	GETB2		; Nope, loop to done
+	JSR	SVSTAT		; Get status
+	LDY	DVSTAT+3	; Get extended error
+GETB2:	JMP	GETDNE		; Leave.
+
+	;; Adjust buffer length to length-1
+
+GETBS:	SEC			; Set up for subtraction
+	LDA	ZICBLL		; Get length
+	SBC	#01		; Subtract 1
+	STA	ZICBLL		; Store back
+	BCC	GETBA		; go to the add stage, if done
+	DEC	ZICBLH		; We need to decrement the msb too
+
+	;; Use buffer length to adjust address
+
+GETBA:	CLC			; Set up for addition
+	LDA	ZICBAL		; Get Low byte of buffer address
+	ADC	ZICBLL		; Adjust by now adjusted length
+	STA	ZICBAL		; And store it back
+	LDA	ZICBAH		; Get High byte of buffer address
+	ADC	ZICBLH		; Adjust by now adjusted length
+	STA	ZICBAH		; And store it back
+
+	;; Now reset length to 1, for the last trip through CIO
+
+GETBL:	JSR	GDIDX		; Put IOCB into X
+	LDA	#$01		; ZIOCB buffer length now 1
+	TAY			; Stuff into Y (for later)
+	STA	ZICBLL		; ...
+	STA	RLEN,X		; and alter RLEN
+	LDA	#$00		; ...
+	STA	ROFF,X		; and alter ROFF
+	STA	ZICBLH		; ...
+
+	;; Stuff the one byte left into the start of the rcv buffer
+	LDA	(ZICBAL),Y	; Get next byte (y=1)
+	STA	RBUF		; and pop into buffer.
+	RTS			; And we're done here.
+
+	;; GET entry point for CIO
+	
+GET:	LDA	ZICBLH
+	BNE	GETB
+	LDA	ZICBLL
+	BNE	GETB		; Go to burst
+	JSR	GDIDX		; Unit into X
 	LDA	RLEN,X		; Get current RX len from last STATUS
 	BNE	GETDRN		; If RLEN > 0 then drain.
 
@@ -476,7 +547,8 @@ GETDRN:	JSR	DIPRCD		; Disable PROCEED
 	
 GETDN2:	TYA			; Bring back char into A
 	LDY	#$01		; 
-GETDNE:	RTS
+GETDNE: TYA			; Restore CPU status.
+	RTS
 	
 ;;; PUT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
