@@ -94,7 +94,7 @@ Source: ndev.s
     92 					
     93 					;; This is for OS/A+
     94
-    95 FFFF> 2200-25BC> 60		RTS			; Immediately exit
+    95 FFFF> 2200-25B5> 60		RTS			; Immediately exit
     96
     97 				;;; RESET HANDLER ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     98
@@ -104,8 +104,8 @@ Source: ndev.s
    102 2206 8D E7 02			STA 	MEMLO
    103 2209 A9 FF			LDA	#$FF		; Driver end HI
    104 220B 8D E8 02			STA	MEMLO+1
-   105 220E 20 2B 23			JSR	IHTBS		; Insert into HATABS
-   106 2211 20 AB 22			JSR	CLALL
+   105 220E 20 A4 23			JSR	IHTBS		; Insert into HATABS
+   106 2211 20 B0 22			JSR	CLALL
    107 2214 60				RTS
    108 					
    109 				;;; END RESET HANDLER ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -113,7 +113,7 @@ Source: ndev.s
    111 				;;; INTERRUPT HANDLER ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
    112
    113 2215 A9 01		INTR:	LDA	#$01		; set trip to 1
-   114 2217 8D BD 25			STA	TRIP
+   114 2217 8D B6 25			STA	TRIP
    115 221A 68				PLA
    116 221B 40				RTI
    117 					
@@ -133,7 +133,7 @@ Source: ndev.s
    131 2222 8D 2E 22			STA	POLDCB+1	; Put into Table
    132 2225 A9 2D			LDA	#<POLDCB	; Set up STATUS POLL DCB table
    133 2227 A0 22			LDY	#>POLDCB
-   134 2229 20 6C 23			JSR	DOSIOV		; And do SIOV
+   134 2229 20 E5 23			JSR	DOSIOV		; And do SIOV
    135 					
    136 222C 60				RTS
    137
@@ -151,588 +151,562 @@ Source: ndev.s
    149 					;; Save DVSTAT values
    150
    151 2239 20 1C 22		SVSTAT: JSR	GDIDX	   	; Get Unit into X
-   152 223C 20 96 22			JSR	CAPRX		; Cap RX values
-   153 223F AD EA 02			LDA	DVSTAT		; Get RX bytes waiting
-   154 2242 9D BE 25			STA	RLEN,X		; Save RX bytes waiting
-   155 2245 AD EC 02			LDA	DVSTAT+2	; Get Server Client connected/disconnected?
-   156 2248 9D CB 25			STA	DVS2,X		; Save 
-   157 224B AD ED 02			LDA	DVSTAT+3	; Get last error
-   158 224E 9D CF 25			STA	DVS3,X		; Save
-   159 2251 60				RTS
-   160 					
-   161 					;; Enable PROCEED interrupt
-   162
-   163 2252 AD 02 D3		ENPRCD:	LDA	PACTL		; Get PACTL register
-   164 2255 09 01			ORA	#$01		; Enable PROCEED
-   165 2257 8D 02 D3			STA	PACTL		; Store it back
-   166 225A 60				RTS
-   167
-   168 					;; Disable PROCEED interrupt
-   169 					
-   170 225B AD 02 D3		DIPRCD:	LDA	PACTL		; Get PACTL register
-   171 225E 29 FE			AND	#$FE		; Disable PROCEED
-   172 2260 8D 02 D3			STA	PACTL		; store it back.
-   173 2263 60				RTS
-   174
-   175 					;; Flush TX Buffer out
-   176 					
-   177 2264 20 1C 22		FLUSH:	JSR	GDIDX		; UNIT NUMBER into X
-   178 2267 A5 21			LDA	ZICDNO		; IOCB UNIT #
-   179 2269 8D 8B 22			STA	FLUDCB+1	; Put into table.
-   180 226C BD C6 25			LDA	TOFF,X		; get Transmit offset (# of bytes to send)
-   181 226F F0 18			BEQ	FLDONE		; Don't do anything if TX cursor is at 0.
-   182 2271 8D 92 22			STA	FLUDCB+8	; Put into Table (Len and Aux)
-   183 2274 8D 94 22			STA	FLUDCB+10
-   184 2277 A9 8A			LDA	#<FLUDCB	; Copy Table to DCB
-   185 2279 A0 22			LDY	#>FLUDCB
-   186 227B 20 6C 23			JSR	DOSIOV		; And call SIOV
-   187 227E 20 1C 22			JSR	GDIDX		; Get Unit into X
-   188 2281 A9 00			LDA	#$00		; Clear TOFF
-   189 2283 9D C6 25			STA	TOFF,X
-   190 2286 AC 03 03			LDY	DSTATS
-   191 2289 60			FLDONE:	RTS			; Done, LDY has DSTATS
-   192
-   193 228A 71			FLUDCB:	.BYTE      DEVIDN  	; DDEVIC
-   194 228B FF				.BYTE      $FF     	; DUNIT
-   195 228C 57				.BYTE      'W'     	; DCOMND
-   196 228D 80				.BYTE      DSWRIT     	; DSTATS
-   197 228E 53 26			.WORD      TBUF    	; DBUFL
-   198 2290 1F				.BYTE      $1F     	; DTIMLO
-   199 2291 00				.BYTE      $00     	; DRESVD
-   200 2292 FF				.BYTE      $FF     	; DBYTL
-   201 2293 00				.BYTE      $00     	; DBYTH
-   202 2294 FF				.BYTE      $FF     	; DAUX1
-   203 2295 00				.BYTE      $00     	; DAUX2
-   204
-   205 					;; Cap RX to 127 bytes (temporary routine)
+   152 223C AD CC 25			LDA	BURST		; Are we in burst mode?
+   153 223F D0 03			BNE	SVSTAS		; Yes, do not cap values, just save them.
+   154 2241 20 9B 22			JSR	CAPRX		; Cap RX values
+   155 2244 AD EA 02		SVSTAS:	LDA	DVSTAT		; Get RX bytes waiting
+   156 2247 9D B7 25			STA	RLEN,X		; Save RX bytes waiting
+   157 224A AD EC 02			LDA	DVSTAT+2	; Get Server Client connected/disconnected?
+   158 224D 9D C4 25			STA	DVS2,X		; Save 
+   159 2250 AD ED 02			LDA	DVSTAT+3	; Get last error
+   160 2253 9D C8 25			STA	DVS3,X		; Save
+   161 2256 60				RTS
+   162 					
+   163 					;; Enable PROCEED interrupt
+   164
+   165 2257 AD 02 D3		ENPRCD:	LDA	PACTL		; Get PACTL register
+   166 225A 09 01			ORA	#$01		; Enable PROCEED
+   167 225C 8D 02 D3			STA	PACTL		; Store it back
+   168 225F 60				RTS
+   169
+   170 					;; Disable PROCEED interrupt
+   171 					
+   172 2260 AD 02 D3		DIPRCD:	LDA	PACTL		; Get PACTL register
+   173 2263 29 FE			AND	#$FE		; Disable PROCEED
+   174 2265 8D 02 D3			STA	PACTL		; store it back.
+   175 2268 60				RTS
+   176
+   177 					;; Flush TX Buffer out
+   178 					
+   179 2269 20 1C 22		FLUSH:	JSR	GDIDX		; UNIT NUMBER into X
+   180 226C A5 21			LDA	ZICDNO		; IOCB UNIT #
+   181 226E 8D 90 22			STA	FLUDCB+1	; Put into table.
+   182 2271 BD BF 25			LDA	TOFF,X		; get Transmit offset (# of bytes to send)
+   183 2274 F0 18			BEQ	FLDONE		; Don't do anything if TX cursor is at 0.
+   184 2276 8D 97 22			STA	FLUDCB+8	; Put into Table (Len and Aux)
+   185 2279 8D 99 22			STA	FLUDCB+10
+   186 227C A9 8F			LDA	#<FLUDCB	; Copy Table to DCB
+   187 227E A0 22			LDY	#>FLUDCB
+   188 2280 20 E5 23			JSR	DOSIOV		; And call SIOV
+   189 2283 20 1C 22			JSR	GDIDX		; Get Unit into X
+   190 2286 A9 00			LDA	#$00		; Clear TOFF
+   191 2288 9D BF 25			STA	TOFF,X
+   192 228B AC 03 03			LDY	DSTATS
+   193 228E 60			FLDONE:	RTS			; Done, LDY has DSTATS
+   194
+   195 228F 71			FLUDCB:	.BYTE      DEVIDN  	; DDEVIC
+   196 2290 FF				.BYTE      $FF     	; DUNIT
+   197 2291 57				.BYTE      'W'     	; DCOMND
+   198 2292 80				.BYTE      DSWRIT     	; DSTATS
+   199 2293 4D 26			.WORD      TBUF    	; DBUFL
+   200 2295 1F				.BYTE      $1F     	; DTIMLO
+   201 2296 00				.BYTE      $00     	; DRESVD
+   202 2297 FF				.BYTE      $FF     	; DBYTL
+   203 2298 00				.BYTE      $00     	; DBYTH
+   204 2299 FF				.BYTE      $FF     	; DAUX1
+   205 229A 00				.BYTE      $00     	; DAUX2
    206
-   207 2296 AD EB 02		CAPRX:	LDA	DVSTAT+1	; Get hi-byte
-   208 2299 D0 05			BNE	CAPADJ		; Adjust if > 256 bytes
-   209 229B AD EA 02			LDA	DVSTAT		; Get lo-byte
-   210 229E 10 0A			BPL	CAPDON		; Exit if < 127 bytes
-   211 22A0 A9 7F		CAPADJ:	LDA	#$7F		; 127 bytes
-   212 22A2 8D EA 02			STA	DVSTAT		; into DVSTAT/DVSTAT+1
-   213 22A5 A9 00			LDA	#$00
-   214 22A7 8D EB 02			STA	DVSTAT+1
-   215 22AA 60			CAPDON:	RTS			; Done
-   216
-   217 					;; Close all IOCBs
+   207 					;; Cap RX to 127 bytes (temporary routine)
+   208
+   209 229B AD EB 02		CAPRX:	LDA	DVSTAT+1	; Get hi-byte
+   210 229E D0 05			BNE	CAPADJ		; Adjust if > 256 bytes
+   211 22A0 AD EA 02			LDA	DVSTAT		; Get lo-byte
+   212 22A3 10 0A			BPL	CAPDON		; Exit if < 127 bytes
+   213 22A5 A9 7F		CAPADJ:	LDA	#$7F		; 127 bytes
+   214 22A7 8D EA 02			STA	DVSTAT		; into DVSTAT/DVSTAT+1
+   215 22AA A9 00			LDA	#$00
+   216 22AC 8D EB 02			STA	DVSTAT+1
+   217 22AF 60			CAPDON:	RTS			; Done
    218
-   219 22AB A9 04		CLALL:	LDA	#MAXDEV		; Close all 4 N: devices
-   220 22AD 8D BD 25			STA	TRIP		; Temporarily use trip
-   221 22B0 AD BD 25		CLLP:	LDA	TRIP		; Get
-   222 22B3 85 21			STA	ZICDNO		; Store into unit #
-   223 22B5 20 C2 23			JSR	CLOSE		; Close Nx:
-   224 22B8 CE BD 25			DEC	TRIP		; Decrement
-   225 22BB AD BD 25			LDA	TRIP		; Get it
-   226 22BE D0 F0			BNE	CLLP		; Loop until done.
-   227 22C0 60				RTS	
-   228
-   229 					;; Do read from ZIOCB unit
+   219 					;; Close all IOCBs
+   220
+   221 22B0 A9 04		CLALL:	LDA	#MAXDEV		; Close all 4 N: devices
+   222 22B2 8D B6 25			STA	TRIP		; Temporarily use trip
+   223 22B5 AD B6 25		CLLP:	LDA	TRIP		; Get
+   224 22B8 85 21			STA	ZICDNO		; Store into unit #
+   225 22BA 20 3B 24			JSR	CLOSE		; Close Nx:
+   226 22BD CE B6 25			DEC	TRIP		; Decrement
+   227 22C0 AD B6 25			LDA	TRIP		; Get it
+   228 22C3 D0 F0			BNE	CLLP		; Loop until done.
+   229 22C5 60				RTS	
    230
-   231 22C1 20 1C 22		READ:	JSR	GDIDX	  	; unit into X
-   232 22C4 A9 00			LDA	#$00		; Set 0 into
-   233 22C6 9D C2 25			STA	ROFF,X		; RXD cursor.
+   231 					;; Do read from ZIOCB unit
+   232
+   233 22C6 20 1C 22		READ:	JSR	GDIDX	  	; unit into X
    234 22C9 A5 21			LDA	ZICDNO		; Get Unit #
-   235 22CB 8D EF 22			STA	READCB+1	; Put into Read DCB table
-   236 22CE AD BE 25			LDA	RLEN		; Get RLEN (from status)
-   237 22D1 F0 1A			BEQ	RDONE		; If RLEN=0 then abort read.
-   238 22D3 8D F6 22			STA	READCB+8	; Store in DBYTL
-   239 22D6 8D F8 22			STA	READCB+10	; Store in DAUX1
-   240 22D9 A9 EE		READ2:	LDA	#<READCB	; Set up Read DCB
-   241 22DB A0 22			LDY	#>READCB	; ...
-   242 22DD 20 6C 23			JSR	DOSIOV		; Do SIO call
-   243 22E0 AC 03 03			LDY	DSTATS		; Get DSTATS for error
-   244 22E3 C0 90			CPY	#144		; Is it 144?
-   245 22E5 D0 06			BNE	RDONE		; No, simply return DSTATS in Y
-   246 22E7 20 20 22			JSR	POLL		; Otherwise, do a poll to get extended error
-   247 22EA AC ED 02			LDY	DVSTAT+3	; And return it in Y.
-   248 22ED 60			RDONE:	RTS			; Done.
-   249
-   250 22EE 71			READCB .BYTE     DEVIDN  	; DDEVIC
-   251 22EF FF			       .BYTE     $FF     	; DUNIT
-   252 22F0 52			       .BYTE     'R'     	; DCOMND
-   253 22F1 40			       .BYTE     DSREAD     	; DSTATS
-   254 22F2 D3 25		       .WORD	 RBUF	 	; DBUF
-   255 22F4 1F			       .BYTE     $1F     	; DTIMLO
-   256 22F5 00			       .BYTE     $00     	; DRESVD
-   257 22F6 FF			       .BYTE     $FF     	; DBYTL
-   258 22F7 00			       .BYTE     $00     	; DBYTH
-   259 22F8 FF			       .BYTE     $FF     	; DAUX1
-   260 22F9 00			       .BYTE     $00     	; DAUX2
-   261 					
-   262 				;;; END SUBROUTINES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-   263 					
-   264 				;;; DEVICE HANDLER TABLE ;;;;;;;;;;;;;;;;;;;;;;;;;
-   265
-   266 22FA 84 23		DEVHDL:	.WORD	OPEN-1
-   267 22FC C1 23			.WORD	CLOSE-1
-   268 22FE 7B 24			.WORD	GET-1
-   269 2300 D5 24			.WORD	PUT-1
-   270 2302 ED 24			.WORD	STATUS-1
-   271 2304 1A 25			.WORD	SPECIAL-1
-   272 					
-   273 				;;; HANDLER RUNAD HERE ;;;;;;;;;;;;;;;;;;;;;;;;;;;
-   274 					
-   275 2306 A5 0C		START:	LDA	DOSINI
-   276 2308 8D 02 22			STA	RESET+1
-   277 230B A5 0D			LDA	DOSINI+1
-   278 230D 8D 03 22			STA	RESET+2
-   279 2310 A9 01			LDA	#<RESET
-   280 2312 85 0C			STA	DOSINI
-   281 2314 A9 22			LDA	#>RESET
-   282 2316 85 0D			STA	DOSINI+1
-   283 2318 A9 D3			LDA	#<HANDLEREND
-   284 231A 8D E7 02			STA	MEMLO
-   285 231D 8D 05 22			STA	RESET+4
-   286 2320 A9 26			LDA	#>HANDLEREND
-   287 2322 8D E8 02			STA	MEMLO+1
-   288 2325 8D 0A 22			STA	RESET+9
-   289 2328 20 AB 22			JSR	CLALL		; Close all
-   290 					
-   291 				;;; Insert Handler entry into HATABS ;;;;;;;;;;;
-   292
-   293 232B A0 00		IHTBS:	LDY	#$00		; Start at beginning of HATABS
-   294 232D B9 1A 03		IH1:	LDA	HATABS,Y
-   295 2330 F0 0B			BEQ	HFND		; Did we find a blank ($00) entry?
-   296 2332 C9 4E			CMP	#'N'		; or did we find our existing 'N' entry?
-   297 2334 F0 07			BEQ	HFND		; If so, insert our entry here.
-   298 2336 C8				INY			; Otherwise, scoot forward to next entry.
-   299 2337 C8				INY			
-   300 2338 C8				INY
-   301 2339 C0 21			CPY	#11*3		; Are we at the end of the table?
-   302 233B 90 F0			BCC	IH1		; Check again.
-   303
-   304 					;; We found a slot, insert it in.
+   235 22CB 8D 5C 23			STA	READCB+1	; Put into Read DCB table
+   236 22CE AD CC 25			LDA	BURST		; Are we in burst mode?
+   237 22D1 F0 53			BEQ	READNB		; no, do non-bursted read.
+   238 22D3 20 20 22		READB:	JSR	POLL		; do status poll to get available bytes
+   239 22D6 A5 29			LDA	ZICBLH		; Get hi byte of # of bytes requested
+   240 22D8 CD EB 02			CMP	DVSTAT+1	; compare with # of bytes available (H)
+   241 22DB 90 11			BCC	READBC		; if < then go ahead and set up the read
+   242 22DD A5 28			LDA	ZICBLL		; Get lo byte of # of bytes requested
+   243 22DF CD EA 02			CMP	DVSTAT		; compare with # of bytes available (L)
+   244 22E2 90 0A			BCC	READBC		; if < then go ahead and set up the read
+   245 22E4 AD EA 02		READBJ:	LDA	DVSTAT		; Get bytes available (L)
+   246 22E7 85 28			STA	ZICBLL		; Store in requested bytes available (L)
+   247 22E9 AD EB 02			LDA	DVSTAT+1	; Get bytes available (H)
+   248 22EC 85 29			STA	ZICBLH		; Store in requested bytes available (H)
+   249 22EE 38			READBC: SEC			; Set up for subtraction
+   250 22EF A5 28			LDA	ZICBLL		; Get requested length
+   251 22F1 E9 01			SBC	#$01		; subtract 1
+   252 22F3 85 28			STA	ZICBLL		; store back
+   253 22F5 90 02			BCC	READBD		; Continue on if done.
+   254 22F7 C6 29			DEC	ZICBLH		; Decrement high byte if needed.	
+   255 22F9 AD CC 25		READBD:	LDA	BURST		; are we in burst?
+   256 22FC F0 0B			BEQ	READBE		; nope continue on
+   257 22FE A9 00			LDA	#$00		; Store 0
+   258 2300 9D B7 25			STA	RLEN,X		; Into RLEN
+   259 2303 8D EB 02			STA	DVSTAT+1
+   260 2306 9D BB 25			STA	ROFF,X		; and ROFF, so that next read will get remaining byte.
+   261 2309 A5 24		READBE:	LDA	ZICBAL		; Get requested destination buffer (L)
+   262 230B 8D 5F 23			STA	READCB+4	; Store into table
+   263 230E A5 25			LDA	ZICBAH		; Get requested destination buffer (H)
+   264 2310 8D 60 23			STA	READCB+5	; Store into table
+   265 2313 A5 28			LDA	ZICBLL		; Get requested length L (which may have been adjusted)
+   266 2315 8D 63 23			STA	READCB+8	; Store into table in DBYTL
+   267 2318 8D 65 23			STA	READCB+10	; ...and DAUX1
+   268 231B A5 29			LDA	ZICBLH		; Get requested length H
+   269 231D 8D 64 23			STA	READCB+9	; Store into table in DBYTH
+   270 2320 8D 66 23			STA	READCB+11	; ...and DAUX2
+   271 2323 4C 46 23			JMP	READ2		; And do the read.	
+   272 2326 A9 CD		READNB:	LDA	#<RBUF		; point to non-burst buffer
+   273 2328 8D 5F 23			STA	READCB+4	; put in DBUFL
+   274 232B A9 25			LDA	#>RBUF		; point to non-burst buffer
+   275 232D 8D 60 23			STA	READCB+5	; put in DBUFH
+   276 2330 A9 00			LDA	#$00		; Set 0 into
+   277 2332 9D BB 25			STA	ROFF,X		; RXD cursor.
+   278 2335 8D 64 23			STA	READCB+9	; zero out high byte of DBYTH
+   279 2338 8D 66 23			STA	READCB+11	; ...and DAUX2
+   280 233B AD B7 25			LDA	RLEN		; Get RLEN (from status)
+   281 233E F0 1A			BEQ	RDONE		; If RLEN=0 then abort read.
+   282 2340 8D 63 23			STA	READCB+8	; Store in DBYTL
+   283 2343 8D 65 23			STA	READCB+10	; Store in DAUX1
+   284 2346 A9 5B		READ2:	LDA	#<READCB	; Set up Read DCB
+   285 2348 A0 23			LDY	#>READCB	; ...
+   286 234A 20 E5 23			JSR	DOSIOV		; Do SIO call
+   287 234D AC 03 03			LDY	DSTATS		; Get DSTATS for error
+   288 2350 C0 90		READ3:	CPY	#144		; Is it 144?
+   289 2352 D0 06			BNE	RDONE		; No, simply return DSTATS in Y
+   290 2354 20 20 22			JSR	POLL		; Otherwise, do a poll to get extended error
+   291 2357 AC ED 02			LDY	DVSTAT+3	; And return it in Y.
+   292 235A 60			RDONE:	RTS			; Done.
+   293
+   294 235B 71			READCB .BYTE     DEVIDN  	; DDEVIC
+   295 235C FF			       .BYTE     $FF     	; DUNIT
+   296 235D 52			       .BYTE     'R'     	; DCOMND
+   297 235E 40			       .BYTE     DSREAD     	; DSTATS
+   298 235F CD 25		       .WORD	 RBUF	 	; DBUF
+   299 2361 1F			       .BYTE     $1F     	; DTIMLO
+   300 2362 00			       .BYTE     $00     	; DRESVD
+   301 2363 FF			       .BYTE     $FF     	; DBYTL
+   302 2364 00			       .BYTE     $00     	; DBYTH
+   303 2365 FF			       .BYTE     $FF     	; DAUX1
+   304 2366 00			       .BYTE     $00     	; DAUX2
    305
-   306 233D A9 4E		HFND:	LDA	#'N'		; We are the N: device
-   307 233F 99 1A 03			STA	HATABS,Y	; first byte in our entry
-   308 2342 A9 FA			LDA	#<DEVHDL	; Get address of our handler table
-   309 2344 99 1B 03			STA	HATABS+1,Y	; and put it in Hatabs
-   310 2347 A9 22			LDA	#>DEVHDL
-   311 2349 99 1C 03			STA	HATABS+2,Y
-   312 					
-   313 					;; And vector in PROCEED.
-   314
-   315 234C A9 15		VPRCD:	LDA	#<INTR		; Get Addr of interrupt handler
-   316 234E 8D 02 02			STA	VPRCED		; Store it in PROCEED vector
-   317 2351 A9 22			LDA	#>INTR
-   318 2353 8D 03 02			STA	VPRCED+1
-   319 					
-   320 					;; We're done, back to DOS.
-   321
-   322 2356 60				RTS
-   323
-   324 				;;; INDICATE SUCCESS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-   325
-   326 2357 A0 01		SUCC:	LDY	#$01 		; Indicate success
-   327 2359 60				RTS			; Back to caller.
-   328
-   329 				;;; CLEAR BUFFERS FOR UNIT X ;;;;;;;;;;;;;;;;;;;;
-   330 					
-   331 235A A9 00		CLRBUF:	LDA	#$00
-   332 235C 9D BE 25			STA	RLEN,X
-   333 235F 9D C6 25			STA	TOFF,X
-   334 2362 9D C2 25			STA	ROFF,X
-   335 2365 9D CB 25			STA	DVS2,X
-   336 2368 9D CF 25			STA	DVS3,X
-   337 236B 60				RTS
-   338 					
-   339 				;;; COPY TABLE TO DCB AND DO SIO CALL ;;;;;;;;;;;
-   340
-   341 236C 8D 75 23		DOSIOV: STA	DODCBL+1	; Set source address
-   342 236F 8C 76 23			STY	DODCBL+2
-   343 2372 A0 0C			LDY	#$0C		; 12 bytes
-   344 2374 B9 FF FF		DODCBL	LDA	$FFFF,Y		; Changed above.
-   345 2377 99 00 03			STA	DCB,Y		; To DCB table
-   346 237A 88				DEY			; Count down
-   347 237B 10 F7			BPL	DODCBL		; Until done
-   348
-   349 237D			SIOVDST:	
-   350 237D 20 59 E4			JSR	SIOV		; Call SIOV
-   351 2380 AC 03 03			LDY	DSTATS		; Get STATUS in Y
-   352 2383 98				TYA			; Copy it into A
-   353 2384 60				RTS			; Done
-   354 					
-   355 				;;; OPEN ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-   356
-   357 					;; Fill in the OPEN table
-   358 					
-   359 2385 20 1C 22		OPEN:   JSR	GDIDX		; Set IOCB OFFSET TO UNIT #
-   360 2388 20 5A 23			JSR	CLRBUF		; Clear Buffers
-   361 238B A5 21			LDA	ZICDNO		; GET Desired unit #
-   362 238D 8D B7 23			STA	OPNDCB+1	; Store in open table
-   363 2390 A5 24			LDA	ZICBAL		; Get desired buffer LO
-   364 2392 8D BA 23			STA	OPNDCB+4	; Store in open table
-   365 2395 A5 25			LDA	ZICBAH		; Get desired buffer HI
-   366 2397 8D BB 23			STA	OPNDCB+5	; Store in open table
-   367 239A A5 2A			LDA	ZICAX1		; Get requested Aux1
-   368 239C 8D C0 23			STA	OPNDCB+10	; Store in open table
-   369 239F A5 2B			LDA	ZICAX2		; Get requested Aux2
-   370 23A1 8D C1 23			STA	OPNDCB+11	; Store in open table
-   371
-   372 					;; Do the SIOV call
+   306 					;; set burst = 1
+   307 2367 A9 01		SETB:	LDA	#$01		; 1 to
+   308 2369 8D CC 25			STA	BURST		; burst mode flag
+   309 236C 60				RTS
+   310
+   311 					;; set burst = 0
+   312 236D A9 00		CLRB:	LDA	#$00		; 0 to
+   313 236F 8D CC 25			STA	BURST		; burst mode flag
+   314 2372 60				RTS
+   315 					
+   316 				;;; END SUBROUTINES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   317 					
+   318 				;;; DEVICE HANDLER TABLE ;;;;;;;;;;;;;;;;;;;;;;;;;
+   319
+   320 2373 FD 23		DEVHDL:	.WORD	OPEN-1
+   321 2375 3A 24			.WORD	CLOSE-1
+   322 2377 5E 24			.WORD	GET-1
+   323 2379 CE 24			.WORD	PUT-1
+   324 237B E6 24			.WORD	STATUS-1
+   325 237D 13 25			.WORD	SPECIAL-1
+   326 					
+   327 				;;; HANDLER RUNAD HERE ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   328 					
+   329 237F A5 0C		START:	LDA	DOSINI
+   330 2381 8D 02 22			STA	RESET+1
+   331 2384 A5 0D			LDA	DOSINI+1
+   332 2386 8D 03 22			STA	RESET+2
+   333 2389 A9 01			LDA	#<RESET
+   334 238B 85 0C			STA	DOSINI
+   335 238D A9 22			LDA	#>RESET
+   336 238F 85 0D			STA	DOSINI+1
+   337 2391 A9 CD			LDA	#<HANDLEREND
+   338 2393 8D E7 02			STA	MEMLO
+   339 2396 8D 05 22			STA	RESET+4
+   340 2399 A9 26			LDA	#>HANDLEREND
+   341 239B 8D E8 02			STA	MEMLO+1
+   342 239E 8D 0A 22			STA	RESET+9
+   343 23A1 20 B0 22			JSR	CLALL		; Close all
+   344 					
+   345 				;;; Insert Handler entry into HATABS ;;;;;;;;;;;
+   346
+   347 23A4 A0 00		IHTBS:	LDY	#$00		; Start at beginning of HATABS
+   348 23A6 B9 1A 03		IH1:	LDA	HATABS,Y
+   349 23A9 F0 0B			BEQ	HFND		; Did we find a blank ($00) entry?
+   350 23AB C9 4E			CMP	#'N'		; or did we find our existing 'N' entry?
+   351 23AD F0 07			BEQ	HFND		; If so, insert our entry here.
+   352 23AF C8				INY			; Otherwise, scoot forward to next entry.
+   353 23B0 C8				INY			
+   354 23B1 C8				INY
+   355 23B2 C0 21			CPY	#11*3		; Are we at the end of the table?
+   356 23B4 90 F0			BCC	IH1		; Check again.
+   357
+   358 					;; We found a slot, insert it in.
+   359
+   360 23B6 A9 4E		HFND:	LDA	#'N'		; We are the N: device
+   361 23B8 99 1A 03			STA	HATABS,Y	; first byte in our entry
+   362 23BB A9 73			LDA	#<DEVHDL	; Get address of our handler table
+   363 23BD 99 1B 03			STA	HATABS+1,Y	; and put it in Hatabs
+   364 23C0 A9 23			LDA	#>DEVHDL
+   365 23C2 99 1C 03			STA	HATABS+2,Y
+   366 					
+   367 					;; And vector in PROCEED.
+   368
+   369 23C5 A9 15		VPRCD:	LDA	#<INTR		; Get Addr of interrupt handler
+   370 23C7 8D 02 02			STA	VPRCED		; Store it in PROCEED vector
+   371 23CA A9 22			LDA	#>INTR
+   372 23CC 8D 03 02			STA	VPRCED+1
    373 					
-   374 23A4 A9 B6			LDA	#<OPNDCB
-   375 23A6 A0 23			LDY	#>OPNDCB
-   376 23A8 20 6C 23			JSR	DOSIOV
+   374 					;; We're done, back to DOS.
+   375
+   376 23CF 60				RTS
    377
-   378 					;; Return DSTATS in Y, unless 144, then get ext err.
+   378 				;;; INDICATE SUCCESS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
    379
-   380 23AB C0 90			CPY	#144		; Did we get an ERROR- 144?
-   381 23AD D0 06			BNE	OPDONE		; Nope, keep DSTATS in Y
+   380 23D0 A0 01		SUCC:	LDY	#$01 		; Indicate success
+   381 23D2 60				RTS			; Back to caller.
    382
-   383 					;; We got a 144, get error from STATUS call
-   384 23AF 20 20 22			JSR	POLL		; Do Status poll
-   385 23B2 AC ED 02			LDY	DVSTAT+3	; Get error code
-   386
-   387 23B5 60			OPDONE:	RTS
-   388
-   389 					;; OPEN DCB TABLE
-   390
-   391 23B6			OPNDCB:
-   392 23B6 71				.BYTE      DEVIDN  	; DDEVIC
-   393 23B7 FF				.BYTE      $FF     	; DUNIT
-   394 23B8 4F				.BYTE      'O'     	; DCOMND
-   395 23B9 80				.BYTE      DSWRIT     	; DSTATS
-   396 23BA FF				.BYTE      $FF     	; DBUFL
-   397 23BB FF				.BYTE      $FF     	; DBUFH
-   398 23BC 1F				.BYTE      $1F     	; DTIMLO
-   399 23BD 00				.BYTE      $00     	; DRESVD
-   400 23BE 00				.BYTE      $00     	; DBYTL
-   401 23BF 01				.BYTE      $01     	; DBYTH
-   402 23C0 FF				.BYTE      $FF     	; DAUX1
-   403 23C1 FF				.BYTE      $FF     	; DAUX2
-   404
-   405 				;;; CLOSE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-   406
-   407 23C2 20 5B 22		CLOSE:	JSR	DIPRCD		; Disable PROCEED
-   408 23C5 20 64 22			JSR	FLUSH		; do PUT flush if needed.
-   409 23C8 20 5A 23			JSR	CLRBUF		; Clear buffer pointers
-   410 23CB A5 21			LDA	ZICDNO		; Unit #
-   411 23CD 8D DB 23			STA	CLODCB+1	; Put into table
-   412 23D0 A9 DA			LDA	#<CLODCB	; Close DCB table
-   413 23D2 A0 23			LDY	#>CLODCB
-   414 23D4 20 6C 23			JSR	DOSIOV		; Do SIOV
-   415 23D7 4C 57 23			JMP	SUCC		; Always return success
-   416
-   417 23DA 71			CLODCB .BYTE	DEVIDN		; DDEVIC
-   418 23DB FF			       .BYTE	$FF		; DUNIT
-   419 23DC 43			       .BYTE	'C'		; DCOMND
-   420 23DD 00			       .BYTE	$00		; DSTATS
-   421 23DE 00			       .BYTE	$00		; DBUFL
-   422 23DF 00			       .BYTE	$00		; DBUFH
-   423 23E0 1F			       .BYTE	$1F		; DTIMLO
-   424 23E1 00			       .BYTE	$00		; DRESVD
-   425 23E2 00			       .BYTE	$00		; DBYTL
-   426 23E3 00			       .BYTE	$00		; DBYTH
-   427 23E4 00			       .BYTE	$00		; DAUX1
-   428 23E5 00			       .BYTE	$00		; DAUX2
-   429
-   430 				;;; GET ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   383 				;;; CLEAR BUFFERS FOR UNIT X ;;;;;;;;;;;;;;;;;;;;
+   384 					
+   385 23D3 A9 00		CLRBUF:	LDA	#$00
+   386 23D5 9D B7 25			STA	RLEN,X
+   387 23D8 9D BF 25			STA	TOFF,X
+   388 23DB 9D BB 25			STA	ROFF,X
+   389 23DE 9D C4 25			STA	DVS2,X
+   390 23E1 9D C8 25			STA	DVS3,X
+   391 23E4 60				RTS
+   392 					
+   393 				;;; COPY TABLE TO DCB AND DO SIO CALL ;;;;;;;;;;;
+   394
+   395 23E5 8D EE 23		DOSIOV: STA	DODCBL+1	; Set source address
+   396 23E8 8C EF 23			STY	DODCBL+2
+   397 23EB A0 0C			LDY	#$0C		; 12 bytes
+   398 23ED B9 FF FF		DODCBL	LDA	$FFFF,Y		; Changed above.
+   399 23F0 99 00 03			STA	DCB,Y		; To DCB table
+   400 23F3 88				DEY			; Count down
+   401 23F4 10 F7			BPL	DODCBL		; Until done
+   402
+   403 23F6			SIOVDST:	
+   404 23F6 20 59 E4			JSR	SIOV		; Call SIOV
+   405 23F9 AC 03 03			LDY	DSTATS		; Get STATUS in Y
+   406 23FC 98				TYA			; Copy it into A
+   407 23FD 60				RTS			; Done
+   408 					
+   409 				;;; OPEN ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   410
+   411 					;; Fill in the OPEN table
+   412 					
+   413 23FE 20 1C 22		OPEN:   JSR	GDIDX		; Set IOCB OFFSET TO UNIT #
+   414 2401 20 D3 23			JSR	CLRBUF		; Clear Buffers
+   415 2404 A5 21			LDA	ZICDNO		; GET Desired unit #
+   416 2406 8D 30 24			STA	OPNDCB+1	; Store in open table
+   417 2409 A5 24			LDA	ZICBAL		; Get desired buffer LO
+   418 240B 8D 33 24			STA	OPNDCB+4	; Store in open table
+   419 240E A5 25			LDA	ZICBAH		; Get desired buffer HI
+   420 2410 8D 34 24			STA	OPNDCB+5	; Store in open table
+   421 2413 A5 2A			LDA	ZICAX1		; Get requested Aux1
+   422 2415 8D 39 24			STA	OPNDCB+10	; Store in open table
+   423 2418 A5 2B			LDA	ZICAX2		; Get requested Aux2
+   424 241A 8D 3A 24			STA	OPNDCB+11	; Store in open table
+   425
+   426 					;; Do the SIOV call
+   427 					
+   428 241D A9 2F			LDA	#<OPNDCB
+   429 241F A0 24			LDY	#>OPNDCB
+   430 2421 20 E5 23			JSR	DOSIOV
    431
-   432 					;; Adjust requested bytes to available bytes
-   433 					;; and set EOF (#3), next read should return (#136)
-   434
-   435 23E6 AD EA 02		GETBJ:	LDA	DVSTAT		; Low bytes available
-   436 23E9 85 28			STA	ZICBLL		; Store into ZIOCB
-   437 23EB AD EB 02			LDA	DVSTAT+1	; High bytes available
-   438 23EE 85 29			STA	ZICBLH		; Store into ZIOCB
-   439 23F0 A9 88			LDA	#136		; EOF
-   440 23F2 8D ED 02			STA	DVSTAT+3
-   441 23F5 4C 09 24			JMP	GETBRD		; Go back to GetBR2
-   442 					
-   443 					;; Called to do burst read from GETB
-   444 					
-   445 23F8 20 20 22		GETBR:	JSR	POLL		; Status poll
-   446
-   447 					;; If requested bytes > available bytes, then 
-   448 23FB A5 29			LDA	ZICBLH		; Get # of requested bytes
-   449 23FD CD EB 02			CMP	DVSTAT+1	; Compare against available bytes (hi)
-   450 2400 B0 E4			BCS	GETBJ		; > available bytes? adjust.
-   451
-   452 2402 A5 28			LDA	ZICBLL		; Get Low byte of # of requested bytes
-   453 2404 CD EA 02			CMP	DVSTAT		; Compare against available bytes (lo)
-   454 2407 B0 DD			BCS	GETBJ		; > available bytes? adjust.
-   455 					
-   456 2409 A5 21		GETBRD:	LDA	ZICDNO		; Get requested unit #
-   457 240B 8D EF 22			STA	READCB+1	; Store into DUNIT portion of table.
-   458 240E A5 24			LDA	ZICBAL		; Get requested dest buffer from IOCB
-   459 2410 8D F2 22			STA	READCB+4	; ...and put into DCB
-   460 2413 A5 25			LDA	ZICBAH		; ...
-   461 2415 8D F3 22			STA	READCB+5	; ...
-   462 2418 A5 28			LDA	ZICBLL		; Get Requested Length
-   463 241A 8D F6 22			STA	READCB+8	; and stuff into DCB as DBYT/DAUX
-   464 241D 8D F8 22			STA	READCB+10	; ...
-   465 2420 A5 29			LDA	ZICBLH		; ...
-   466 2422 8D F7 22			STA	READCB+9	; ...
-   467 2425 8D F9 22			STA	READCB+11	; ...
-   468 2428 A9 EE			LDA	#<READCB	; Set up DCB
-   469 242A A0 22			LDY	#>READCB	; ...
-   470 242C 20 6C 23			JSR	DOSIOV		; and do SIOV call
-   471 242F 60				RTS			; Back to GETB.
-   472
-   473 					;; Called when burst mode is requested
-   474 					
-   475 2430 20 F8 23		GETB:	JSR	GETBR		; Do the SIO call.
-   476 2433 AC ED 02			LDY	DVSTAT+3	; get result from CIO call
-   477 2436 C0 88			CPY	#136		; EOF?
-   478 2438 F0 0F			BEQ	GETB2		; Get out of here.
-   479 243A AC 03 03			LDY	DSTATS 		; Get error (come back here later and fill this out)
-   480 243D 10 0D			BPL	GETBS		; If no error, continue
-   481 243F C0 90			CPY	#144		; Extended error?
-   482 2441 F0 06			BEQ	GETB2		; Nope, loop to done
-   483 2443 20 39 22			JSR	SVSTAT		; Get status
-   484 2446 AC ED 02			LDY	DVSTAT+3	; Get extended error
-   485 2449 4C D3 24		GETB2:	JMP	GETDNE		; Leave.
-   486
-   487 					;; Adjust buffer length to length-1
-   488
-   489 244C 38			GETBS:	SEC			; Set up for subtraction
-   490 244D A5 28			LDA	ZICBLL		; Get length
-   491 244F E9 01			SBC	#01		; Subtract 1
-   492 2451 85 28			STA	ZICBLL		; Store back
-   493 2453 90 02			BCC	GETBA		; go to the add stage, if done
-   494 2455 C6 29			DEC	ZICBLH		; We need to decrement the msb too
-   495
-   496 					;; Use buffer length to adjust address
-   497
-   498 2457 18			GETBA:	CLC			; Set up for addition
-   499 2458 A5 24			LDA	ZICBAL		; Get Low byte of buffer address
-   500 245A 65 28			ADC	ZICBLL		; Adjust by now adjusted length
-   501 245C 85 24			STA	ZICBAL		; And store it back
-   502 245E A5 25			LDA	ZICBAH		; Get High byte of buffer address
-   503 2460 65 29			ADC	ZICBLH		; Adjust by now adjusted length
-   504 2462 85 25			STA	ZICBAH		; And store it back
-   505
-   506 					;; Now reset length to 1, for the last trip through CIO
-   507
-   508 2464 20 1C 22		GETBL:	JSR	GDIDX		; Put IOCB into X
-   509 2467 A9 01			LDA	#$01		; ZIOCB buffer length now 1
-   510 2469 A8				TAY			; Stuff into Y (for later)
-   511 246A 85 28			STA	ZICBLL		; ...
-   512 246C 9D BE 25			STA	RLEN,X		; and alter RLEN
-   513 246F A9 00			LDA	#$00		; ...
-   514 2471 9D C2 25			STA	ROFF,X		; and alter ROFF
-   515 2474 85 29			STA	ZICBLH		; ...
+   432 					;; Return DSTATS in Y, unless 144, then get ext err.
+   433
+   434 2424 C0 90			CPY	#144		; Did we get an ERROR- 144?
+   435 2426 D0 06			BNE	OPDONE		; Nope, keep DSTATS in Y
+   436
+   437 					;; We got a 144, get error from STATUS call
+   438 2428 20 20 22			JSR	POLL		; Do Status poll
+   439 242B AC ED 02			LDY	DVSTAT+3	; Get error code
+   440
+   441 242E 60			OPDONE:	RTS
+   442
+   443 					;; OPEN DCB TABLE
+   444
+   445 242F			OPNDCB:
+   446 242F 71				.BYTE      DEVIDN  	; DDEVIC
+   447 2430 FF				.BYTE      $FF     	; DUNIT
+   448 2431 4F				.BYTE      'O'     	; DCOMND
+   449 2432 80				.BYTE      DSWRIT     	; DSTATS
+   450 2433 FF				.BYTE      $FF     	; DBUFL
+   451 2434 FF				.BYTE      $FF     	; DBUFH
+   452 2435 1F				.BYTE      $1F     	; DTIMLO
+   453 2436 00				.BYTE      $00     	; DRESVD
+   454 2437 00				.BYTE      $00     	; DBYTL
+   455 2438 01				.BYTE      $01     	; DBYTH
+   456 2439 FF				.BYTE      $FF     	; DAUX1
+   457 243A FF				.BYTE      $FF     	; DAUX2
+   458
+   459 				;;; CLOSE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   460
+   461 243B 20 60 22		CLOSE:	JSR	DIPRCD		; Disable PROCEED
+   462 243E 20 69 22			JSR	FLUSH		; do PUT flush if needed.
+   463 2441 20 D3 23			JSR	CLRBUF		; Clear buffer pointers
+   464 2444 A5 21			LDA	ZICDNO		; Unit #
+   465 2446 8D 54 24			STA	CLODCB+1	; Put into table
+   466 2449 A9 53			LDA	#<CLODCB	; Close DCB table
+   467 244B A0 24			LDY	#>CLODCB
+   468 244D 20 E5 23			JSR	DOSIOV		; Do SIOV
+   469 2450 4C D0 23			JMP	SUCC		; Always return success
+   470
+   471 2453 71			CLODCB .BYTE	DEVIDN		; DDEVIC
+   472 2454 FF			       .BYTE	$FF		; DUNIT
+   473 2455 43			       .BYTE	'C'		; DCOMND
+   474 2456 00			       .BYTE	$00		; DSTATS
+   475 2457 00			       .BYTE	$00		; DBUFL
+   476 2458 00			       .BYTE	$00		; DBUFH
+   477 2459 1F			       .BYTE	$1F		; DTIMLO
+   478 245A 00			       .BYTE	$00		; DRESVD
+   479 245B 00			       .BYTE	$00		; DBYTL
+   480 245C 00			       .BYTE	$00		; DBYTH
+   481 245D 00			       .BYTE	$00		; DAUX1
+   482 245E 00			       .BYTE	$00		; DAUX2
+   483
+   484 				;;; GET ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   485
+   486 					;; GET entry point for CIO
+   487 					
+   488 245F 20 1C 22		GET:	JSR	GDIDX		; Unit into X
+   489 2462 20 6D 23			JSR	CLRB		; Clear burst flag.
+   490 2465 A5 22			LDA	ZICCOM		; Get command
+   491 2467 C9 05			CMP	#5		; GET RECORD?
+   492 2469 F0 10			BEQ	GETNOB		; Bypass burst
+   493 246B A5 29			LDA	ZICBLH		; high byte of length
+   494 246D F0 0C			BEQ	GETNOB		; set burst if > 0
+   495 246F A5 28			LDA	ZICBLL		; low byte of length
+   496 2471 10 08			BPL	GETNOB		; set burst if > 127
+   497 2473 20 67 23			JSR	SETB		; Set burst flag if above conditions fall through.
+   498 2476 AD CC 25			LDA	BURST		; Are we now in burst mode?
+   499 2479 D0 05			BNE	GETWAI		; Yeah, Wait for some data
+   500 247B BD B7 25		GETNOB:	LDA	RLEN,X		; Get current RX len from last STATUS
+   501 247E D0 2E			BNE	GETDRN		; If RLEN > 0 then drain.
+   502
+   503 					;; Otherwise, we wait for something to happen.
+   504
+   505 2480 20 57 22		GETWAI:	JSR	ENPRCD		; Enable Proceed
+   506 2483 AD B6 25			LDA	TRIP		; Did trip change?
+   507 2486 F0 F8			BEQ	GETWAI		; Nope, not yet...
+   508
+   509 					;; Something happened, try to poll for data.
+   510
+   511 2488 20 20 22			JSR	POLL		; Do Status Poll
+   512 248B 20 39 22			JSR	SVSTAT		; Save Status
+   513 248E 20 C6 22			JSR	READ		; Do read
+   514
+   515 					;; If RLEN=0 then determine if error.
    516
-   517 					;; Stuff the one byte left into the start of the rcv buffer
-   518 2476 B1 24			LDA	(ZICBAL),Y	; Get next byte (y=1)
-   519 2478 8D D3 25			STA	RBUF		; and pop into buffer.
-   520 247B 60				RTS			; And we're done here.
-   521
-   522 					;; GET entry point for CIO
-   523 					
-   524 247C A5 29		GET:	LDA	ZICBLH		; high byte of length
-   525 247E D0 B0			BNE	GETB		; Got to burst if > 0
-   526 2480 A5 28			LDA	ZICBLL		; low byte of length
-   527 2482 30 AC			BMI	GETB		; Go to burst if > 127
-   528 2484 20 1C 22			JSR	GDIDX		; Unit into X
-   529 2487 BD BE 25			LDA	RLEN,X		; Get current RX len from last STATUS
-   530 248A D0 29			BNE	GETDRN		; If RLEN > 0 then drain.
-   531
-   532 					;; Otherwise, we wait for something to happen.
-   533
-   534 248C 20 52 22		GETWAI:	JSR	ENPRCD		; Enable Proceed
-   535 248F AD BD 25			LDA	TRIP		; Did trip change?
-   536 2492 F0 F8			BEQ	GETWAI		; Nope, not yet...
-   537
-   538 					;; Something happened, try to poll for data.
+   517 2491 AD CC 25			LDA	BURST		; Are we in burst mode?
+   518 2494 D0 05			BNE	GETERR		; Yes, check for error.
+   519 2496 AD EA 02			LDA	DVSTAT		; Get RLEN Again
+   520 2499 D0 13			BNE	GETDRN		; If RLEN > 1, then drain.
+   521 249B AC ED 02		GETERR:	LDY	DVSTAT+3	; Get ext err
+   522 249E C0 88			CPY	#136		; EOF?
+   523 24A0 F0 2A			BEQ	GETDNE		; Yes, return it.
+   524 24A2 AC 03 03			LDY	DSTATS		; Else, get DSTATS from status/read.
+   525 24A5 C0 90			CPY	#144		; is it 144?
+   526 24A7 D0 23			BNE	GETDNE		; Nope, simply return it in Y, done.
+   527 24A9 AC ED 02			LDY	DVSTAT+3	; Get Extended error
+   528 24AC D0 1E			BNE	GETDNE		; Done.
+   529
+   530 					;; Drain
+   531 					
+   532 24AE 20 60 22		GETDRN:	JSR	DIPRCD		; Disable PROCEED
+   533 24B1 20 1C 22			JSR	GDIDX		; Get Unit into X again
+   534 24B4 DE B7 25			DEC	RLEN,X		; Decrement length
+   535 24B7 BC BB 25			LDY	ROFF,X		; Get Current Offset into X
+   536 24BA B9 CD 25			LDA	RBUF,Y		; Get next character
+   537 24BD FE BB 25			INC	ROFF,X		; Increment cursor
+   538 24C0 A8				TAY			; Store in Y for a moment
    539
-   540 2494 20 20 22			JSR	POLL		; Do Status Poll
-   541 2497 20 39 22			JSR	SVSTAT		; Save Status
-   542 249A 20 C1 22			JSR	READ		; Do read
-   543
-   544 					;; If RLEN=0 then determine if error.
-   545
-   546 249D AD EA 02			LDA	DVSTAT		; Get RLEN Again
-   547 24A0 D0 13			BNE	GETDRN		; If RLEN > 1, then drain.
-   548 24A2 AC ED 02			LDY	DVSTAT+3	; Get ext err
-   549 24A5 C0 88			CPY	#136		; EOF?
-   550 24A7 F0 2A			BEQ	GETDNE		; Yes, return it.
-   551 24A9 AC 03 03			LDY	DSTATS		; Else, get DSTATS from status/read.
-   552 24AC C0 90			CPY	#144		; is it 144?
-   553 24AE D0 23			BNE	GETDNE		; Nope, simply return it in Y, done.
-   554 24B0 AC ED 02			LDY	DVSTAT+3	; Get Extended error
-   555 24B3 D0 1E			BNE	GETDNE		; Done.
+   540 					;; If RX buffer empty, turn off trip.
+   541
+   542 24C1 BD B7 25			LDA	RLEN,X		; Get RLEN
+   543 24C4 D0 03			BNE	GETDN2		; some left, just go done with success
+   544 24C6 8D B6 25			STA	TRIP		; Otherwise store 0 into trip
+   545 					
+   546 24C9 98			GETDN2:	TYA			; Bring back char into A
+   547 24CA A0 01			LDY	#$01		; 
+   548 24CC C0 00		GETDNE: CPY	#$00		; Reset flag to negative.
+   549 24CE 60				RTS
+   550 					
+   551 				;;; PUT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   552
+   553 24CF 20 1C 22		PUT:	JSR	GDIDX		; Get Unit # into X
+   554 24D2 BC BF 25			LDY	TOFF,X		; Get TX cursor
+   555 24D5 99 4D 26			STA	TBUF,Y		; Put char into buffer ptd by cursor
    556
-   557 					;; Drain
-   558 					
-   559 24B5 20 5B 22		GETDRN:	JSR	DIPRCD		; Disable PROCEED
-   560 24B8 20 1C 22			JSR	GDIDX		; Get Unit into X again
-   561 24BB DE BE 25			DEC	RLEN,X		; Decrement length
-   562 24BE BC C2 25			LDY	ROFF,X		; Get Current Offset into X
-   563 24C1 B9 D3 25			LDA	RBUF,Y		; Get next character
-   564 24C4 FE C2 25			INC	ROFF,X		; Increment cursor
-   565 24C7 A8				TAY			; Store in Y for a moment
-   566
-   567 					;; If RX buffer empty, turn off trip.
-   568
-   569 24C8 BD BE 25			LDA	RLEN,X		; Get RLEN
-   570 24CB D0 03			BNE	GETDN2		; some left, just go done with success
-   571 24CD 8D BD 25			STA	TRIP		; Otherwise store 0 into trip
-   572 					
-   573 24D0 98			GETDN2:	TYA			; Bring back char into A
-   574 24D1 A0 01			LDY	#$01		; 
-   575 24D3 C0 00		GETDNE: CPY	#$00		; Reset flag to negative.
-   576 24D5 60				RTS
-   577 					
-   578 				;;; PUT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-   579
-   580 24D6 20 1C 22		PUT:	JSR	GDIDX		; Get Unit # into X
-   581 24D9 BC C6 25			LDY	TOFF,X		; Get TX cursor
-   582 24DC 99 53 26			STA	TBUF,Y		; Put char into buffer ptd by cursor
-   583
-   584 24DF FE C6 25			INC	TOFF,X		; Increment TX cursor
-   585
-   586 					;; Do a FLUSH if EOL or buffer full
-   587
-   588 24E2 C9 9B			CMP	#EOL		; EOL?
-   589 24E4 F0 04			BEQ	PFLUSH		; Do flush
-   590 24E6 C0 7F			CPY	#$7F		; At end of buffer?
-   591 24E8 D0 03			BNE	PUTDON		; Nope, done.
-   592 24EA 20 64 22		PFLUSH:	JSR	FLUSH		; Do Flush.
-   593 24ED 60			PUTDON:	RTS			; We're done.
+   557 24D8 FE BF 25			INC	TOFF,X		; Increment TX cursor
+   558
+   559 					;; Do a FLUSH if EOL or buffer full
+   560
+   561 24DB C9 9B			CMP	#EOL		; EOL?
+   562 24DD F0 04			BEQ	PFLUSH		; Do flush
+   563 24DF C0 7F			CPY	#$7F		; At end of buffer?
+   564 24E1 D0 03			BNE	PUTDON		; Nope, done.
+   565 24E3 20 69 22		PFLUSH:	JSR	FLUSH		; Do Flush.
+   566 24E6 60			PUTDON:	RTS			; We're done.
+   567 					
+   568 				;;; STATUS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   569
+   570 24E7 20 57 22		STATUS:	JSR	ENPRCD		; Enable PROCEED.
+   571
+   572 					;; Return cached value if we still have data in RX
+   573
+   574 24EA 20 1C 22			JSR	GDIDX		; Unit into X
+   575 24ED BD B7 25			LDA	RLEN,X		; Get RX len
+   576 24F0 D0 0E			BNE	STRETC		; Return cached value if RLEN > 0
+   577
+   578 24F2 AD B6 25			LDA	TRIP		; Get TRIP?
+   579 24F5 F0 09			BEQ	STRETC		; No trip? Return cached.
+   580
+   581 24F7 20 20 22			JSR	POLL		; RLEN = 0, do poll.
+   582 24FA 20 39 22			JSR	SVSTAT		; Save DVSTAT values
+   583 24FD 20 C6 22			JSR	READ		; Do read.
+   584 					
+   585 2500 BD B7 25		STRETC:	LDA	RLEN,X		; Get Saved DVSTAT+0 val
+   586 2503 8D EA 02			STA	DVSTAT		; Store into DVSTAT
+   587 2506 BD C4 25			LDA	DVS2,X		; Get Saved DVSTAT+2 val
+   588 2509 8D EC 02			STA	DVSTAT+2	; Store
+   589 250C BD C8 25			LDA	DVS3,X		; Get Saved DVSTAT+3 val
+   590 250F 8D ED 02			STA	DVSTAT+3
+   591 2512 A8				TAY			; copy it into Y for error output.
+   592 					
+   593 2513 60				RTS			; Done.	
    594 					
-   595 				;;; STATUS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   595 				;;; SPECIAL ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
    596
-   597 24EE 20 52 22		STATUS:	JSR	ENPRCD		; Enable PROCEED.
-   598
-   599 					;; Return cached value if we still have data in RX
+   597 2514			SPECIAL:
+   598 					
+   599 					;; Clear Trip
    600
-   601 24F1 20 1C 22			JSR	GDIDX		; Unit into X
-   602 24F4 BD BE 25			LDA	RLEN,X		; Get RX len
-   603 24F7 D0 0E			BNE	STRETC		; Return cached value if RLEN > 0
-   604
-   605 24F9 AD BD 25			LDA	TRIP		; Get TRIP?
-   606 24FC F0 09			BEQ	STRETC		; No trip? Return cached.
-   607
-   608 24FE 20 20 22			JSR	POLL		; RLEN = 0, do poll.
-   609 2501 20 39 22			JSR	SVSTAT		; Save DVSTAT values
-   610 2504 20 C1 22			JSR	READ		; Do read.
-   611 					
-   612 2507 BD BE 25		STRETC:	LDA	RLEN,X		; Get Saved DVSTAT+0 val
-   613 250A 8D EA 02			STA	DVSTAT		; Store into DVSTAT
-   614 250D BD CB 25			LDA	DVS2,X		; Get Saved DVSTAT+2 val
-   615 2510 8D EC 02			STA	DVSTAT+2	; Store
-   616 2513 BD CF 25			LDA	DVS3,X		; Get Saved DVSTAT+3 val
-   617 2516 8D ED 02			STA	DVSTAT+3
-   618 2519 A8				TAY			; copy it into Y for error output.
-   619 					
-   620 251A 60				RTS			; Done.	
-   621 					
-   622 				;;; SPECIAL ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-   623
-   624 251B			SPECIAL:
-   625 					
-   626 					;; Clear Trip
-   627
-   628 251B A9 00			LDA	#$00
-   629 251D 8D BD 25			STA	TRIP
-   630
-   631 					;; Handle Local Commands
-   632
-   633 2520 A5 22			LDA	ZICCOM
-   634 2522 C9 0F			CMP	#$0F		; 15 = FLUSH
-   635 2524 D0 08			BNE	SPQ		; No. Handle protocol commands
-   636 2526 20 64 22			JSR	FLUSH		; Yes. Do flush.
-   637 2529 A0 01			LDY	#$01		; Flush always successful
-   638 252B 4C B0 25			JMP	SPCDNE		; We're done.
-   639
-   640 					;; Handle Protocol commands, do INQDS Query
-   641
-   642 252E A9 FF		SPQ:	LDA	#$FF		; Set INQDS
-   643 2530 8D B3 25			STA	SPEDCB+2		; To DCOMND
-   644 2533 A5 21			LDA	ZICDNO		; Get Unit #
-   645 2535 8D B2 25			STA	SPEDCB+1	; Store in table
-   646 2538 A5 22			LDA	ZICCOM		; Get Command
-   647 253A 8D BB 25			STA	SPEDCB+10	; Put in AUX1 for query
-   648 253D A9 01			LDA	#$01		; 1 byte
-   649 253F 8D B9 25			STA	SPEDCB+8	;
-   650 2542 A9 00			LDA	#$00		;
-   651 2544 8D BA 25			STA	SPEDCB+9	;
-   652 2547 A9 CA			LDA	#<INQDS		; Stora INQDS address
-   653 2549 8D B5 25			STA	SPEDCB+4	; ...
-   654 254C A9 25			LDA	#>INQDS		; ...
-   655 254E 8D B6 25			STA	SPEDCB+5
-   656 2551 A9 40			LDA	#$40		; <-Atari
-   657 2553 8D B4 25			STA	SPEDCB+3
-   658 2556 A9 B1			LDA	#<SPEDCB	; Set up SPECIAL DCB TABLE
-   659 2558 A0 25			LDY	#>SPEDCB	;
-   660 255A 20 6C 23			JSR	DOSIOV		; Do Query
-   661 255D AC 03 03			LDY	DSTATS		; Get DSTATS
-   662 2560 30 4E			BMI	SPCDNE		; SIO error, return in Y. There is no ext err.
-   663
-   664 					;; We got a query, if it's $FF, return unimplemented.
-   665 2562 AD CA 25			LDA	INQDS		; Get the Returned DSTATS value from inquiry
-   666 2565 C9 FF			CMP	#$FF		; Is it $FF ?
-   667 2567 D0 05			BNE	SPDO		; Nope, let's do it.
-   668 2569 A0 92			LDY	#146		; ERROR- 146  Unimplemented Command
-   669 256B 4C B0 25			JMP	SPCDNE		; Done.
-   670
-   671 					;; Do the Special, get all IOCB params, push onto stack
-   672 					
-   673 256E A5 21		SPDO:	LDA	ZICDNO		; Unit #
-   674 2570 8D B2 25			STA	SPEDCB+1
-   675 2573 A5 22			LDA	ZICCOM		; Command
-   676 2575 8D B3 25			STA	SPEDCB+2
-   677 2578 AD CA 25			LDA	INQDS		; Result of Inquiry
-   678 257B 8D B4 25			STA	SPEDCB+3
-   679 257E A5 24			LDA	ZICBAL		; Ptr to passed in devicespec
-   680 2580 8D B5 25			STA	SPEDCB+4
-   681 2583 A5 25			LDA	ZICBAH		; 
-   682 2585 8D B6 25			STA	SPEDCB+5
-   683 2588 A9 00			LDA #$00
-   684 258A 8D B9 25			STA SPEDCB+8
-   685 258D A9 01			LDA #$01
-   686 258F 8D BA 25			STA SPEDCB+9
-   687 2592 A5 2A			LDA	ZICAX1		; Aux1
-   688 2594 8D BB 25			STA	SPEDCB+10
-   689 2597 A5 2B			LDA	ZICAX2		; Aux2
-   690 2599 8D BC 25			STA	SPEDCB+11
-   691 259C A9 B1			LDA	#<SPEDCB
-   692 259E A0 25			LDY	#>SPEDCB
-   693 25A0 20 6C 23			JSR	DOSIOV
+   601 2514 A9 00			LDA	#$00
+   602 2516 8D B6 25			STA	TRIP
+   603
+   604 					;; Handle Local Commands
+   605
+   606 2519 A5 22			LDA	ZICCOM
+   607 251B C9 0F			CMP	#$0F		; 15 = FLUSH
+   608 251D D0 08			BNE	SPQ		; No. Handle protocol commands
+   609 251F 20 69 22			JSR	FLUSH		; Yes. Do flush.
+   610 2522 A0 01			LDY	#$01		; Flush always successful
+   611 2524 4C A9 25			JMP	SPCDNE		; We're done.
+   612
+   613 					;; Handle Protocol commands, do INQDS Query
+   614
+   615 2527 A9 FF		SPQ:	LDA	#$FF		; Set INQDS
+   616 2529 8D AC 25			STA	SPEDCB+2		; To DCOMND
+   617 252C A5 21			LDA	ZICDNO		; Get Unit #
+   618 252E 8D AB 25			STA	SPEDCB+1	; Store in table
+   619 2531 A5 22			LDA	ZICCOM		; Get Command
+   620 2533 8D B4 25			STA	SPEDCB+10	; Put in AUX1 for query
+   621 2536 A9 01			LDA	#$01		; 1 byte
+   622 2538 8D B2 25			STA	SPEDCB+8	;
+   623 253B A9 00			LDA	#$00		;
+   624 253D 8D B3 25			STA	SPEDCB+9	;
+   625 2540 A9 C3			LDA	#<INQDS		; Stora INQDS address
+   626 2542 8D AE 25			STA	SPEDCB+4	; ...
+   627 2545 A9 25			LDA	#>INQDS		; ...
+   628 2547 8D AF 25			STA	SPEDCB+5
+   629 254A A9 40			LDA	#$40		; <-Atari
+   630 254C 8D AD 25			STA	SPEDCB+3
+   631 254F A9 AA			LDA	#<SPEDCB	; Set up SPECIAL DCB TABLE
+   632 2551 A0 25			LDY	#>SPEDCB	;
+   633 2553 20 E5 23			JSR	DOSIOV		; Do Query
+   634 2556 AC 03 03			LDY	DSTATS		; Get DSTATS
+   635 2559 30 4E			BMI	SPCDNE		; SIO error, return in Y. There is no ext err.
+   636
+   637 					;; We got a query, if it's $FF, return unimplemented.
+   638 255B AD C3 25			LDA	INQDS		; Get the Returned DSTATS value from inquiry
+   639 255E C9 FF			CMP	#$FF		; Is it $FF ?
+   640 2560 D0 05			BNE	SPDO		; Nope, let's do it.
+   641 2562 A0 92			LDY	#146		; ERROR- 146  Unimplemented Command
+   642 2564 4C A9 25			JMP	SPCDNE		; Done.
+   643
+   644 					;; Do the Special, get all IOCB params, push onto stack
+   645 					
+   646 2567 A5 21		SPDO:	LDA	ZICDNO		; Unit #
+   647 2569 8D AB 25			STA	SPEDCB+1
+   648 256C A5 22			LDA	ZICCOM		; Command
+   649 256E 8D AC 25			STA	SPEDCB+2
+   650 2571 AD C3 25			LDA	INQDS		; Result of Inquiry
+   651 2574 8D AD 25			STA	SPEDCB+3
+   652 2577 A5 24			LDA	ZICBAL		; Ptr to passed in devicespec
+   653 2579 8D AE 25			STA	SPEDCB+4
+   654 257C A5 25			LDA	ZICBAH		; 
+   655 257E 8D AF 25			STA	SPEDCB+5
+   656 2581 A9 00			LDA #$00
+   657 2583 8D B2 25			STA SPEDCB+8
+   658 2586 A9 01			LDA #$01
+   659 2588 8D B3 25			STA SPEDCB+9
+   660 258B A5 2A			LDA	ZICAX1		; Aux1
+   661 258D 8D B4 25			STA	SPEDCB+10
+   662 2590 A5 2B			LDA	ZICAX2		; Aux2
+   663 2592 8D B5 25			STA	SPEDCB+11
+   664 2595 A9 AA			LDA	#<SPEDCB
+   665 2597 A0 25			LDY	#>SPEDCB
+   666 2599 20 E5 23			JSR	DOSIOV
+   667
+   668 					;; Get error and return extended if needed.
+   669
+   670 259C AC 03 03			LDY	DSTATS		; Get DSTATS
+   671 259F C0 90			CPY	#144		; Is it 144?
+   672 25A1 D0 06			BNE	SPCDNE		; Nope, just return it.
+   673
+   674 25A3 20 20 22			JSR	POLL		; Get status, for error
+   675 25A6 AC ED 02			LDY	DVSTAT+3	; Get extended error.
+   676 					
+   677 25A9 60			SPCDNE:	RTS
+   678
+   679 25AA 71			SPEDCB .BYTE      DEVIDN  ; DDEVIC
+   680 25AB FF			       .BYTE      $FF     ; DUNIT
+   681 25AC FF			       .BYTE      $FF     ; DCOMND ; inq
+   682 25AD 40			       .BYTE      DSREAD     ; DSTATS
+   683 25AE C3 25		       .WORD      INQDS    ; DBUFL
+   684 25B0 1F			       .BYTE      $1F     ; DTIMLO
+   685 25B1 00			       .BYTE      $00     ; DRESVD
+   686 25B2 01			       .BYTE      $01     ; DBYTL
+   687 25B3 00			       .BYTE      $00     ; DBYTH
+   688 25B4 FF			       .BYTE      $FF     ; DAUX1
+   689 25B5 FF			       .BYTE      $FF     ; DAUX2	
+   690 					
+   691 					;; End of Handler
+   692
+   693 				;;; VARIABLES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
    694
-   695 					;; Get error and return extended if needed.
-   696
-   697 25A3 AC 03 03			LDY	DSTATS		; Get DSTATS
-   698 25A6 C0 90			CPY	#144		; Is it 144?
-   699 25A8 D0 06			BNE	SPCDNE		; Nope, just return it.
-   700
-   701 25AA 20 20 22			JSR	POLL		; Get status, for error
-   702 25AD AC ED 02			LDY	DVSTAT+3	; Get extended error.
+   695 = 25B6			TRIP	.ds	1		; Interrupt Tripped?
+   696 = 25B7			RLEN	.ds	MAXDEV		; RXD Len
+   697 = 25BB			ROFF	.ds	MAXDEV		; RXD offset cursor
+   698 = 25BF			TOFF	.ds	MAXDEV		; TXD offset cursor
+   699 = 25C3			INQDS	.ds	1		; DSTATS to return in inquiry
+   700 = 25C4			DVS2	.ds	MAXDEV		; DVSTAT+2 SAVE
+   701 = 25C8			DVS3	.ds	MAXDEV		; DVSTAT+3 SAVE
+   702 = 25CC			BURST	.ds	1		; Is this operation in burst mode?
    703 					
-   704 25B0 60			SPCDNE:	RTS
-   705
-   706 25B1 71			SPEDCB .BYTE      DEVIDN  ; DDEVIC
-   707 25B2 FF			       .BYTE      $FF     ; DUNIT
-   708 25B3 FF			       .BYTE      $FF     ; DCOMND ; inq
-   709 25B4 40			       .BYTE      DSREAD     ; DSTATS
-   710 25B5 CA 25		       .WORD      INQDS    ; DBUFL
-   711 25B7 1F			       .BYTE      $1F     ; DTIMLO
-   712 25B8 00			       .BYTE      $00     ; DRESVD
-   713 25B9 01			       .BYTE      $01     ; DBYTL
-   714 25BA 00			       .BYTE      $00     ; DBYTH
-   715 25BB FF			       .BYTE      $FF     ; DAUX1
-   716 25BC FF			       .BYTE      $FF     ; DAUX2	
-   717 					
-   718 					;; End of Handler
-   719
-   720 				;;; VARIABLES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-   721
-   722 = 25BD			TRIP	.ds	1		; Interrupt Tripped?
-   723 = 25BE			RLEN	.ds	MAXDEV		; RXD Len
-   724 = 25C2			ROFF	.ds	MAXDEV		; RXD offset cursor
-   725 = 25C6			TOFF	.ds	MAXDEV		; TXD offset cursor
-   726 = 25CA			INQDS	.ds	1		; DSTATS to return in inquiry
-   727 = 25CB			DVS2	.ds	MAXDEV		; DVSTAT+2 SAVE
-   728 = 25CF			DVS3	.ds	MAXDEV		; DVSTAT+3 SAVE
-   729
-   730 = 25D3			RBUF	.ds	128		; RXD buffer
-   731 = 2653			TBUF	.ds	128		; TXD buffer
-   732 					
-   733 = 26D3			HANDLEREND	= *
-   734
-   735 02E0-02E1> 06 23			RUN	START
-   736 					END
+   704 = 25CD			RBUF	.ds	128		; RXD buffer
+   705 = 264D			TBUF	.ds	128		; TXD buffer
+   706 					
+   707 = 26CD			HANDLEREND	= *
+   708
+   709 02E0-02E1> 7F 23			RUN	START
+   710 					END

@@ -149,8 +149,10 @@ POLDCB:	.BYTE      DEVIDN  ; DDEVIC
 	;; Save DVSTAT values
 
 SVSTAT: JSR	GDIDX	   	; Get Unit into X
+	LDA	BURST		; Are we in burst mode?
+	BNE	SVSTAS		; Yes, do not cap values, just save them.
 	JSR	CAPRX		; Cap RX values
-	LDA	DVSTAT		; Get RX bytes waiting
+SVSTAS:	LDA	DVSTAT		; Get RX bytes waiting
 	STA	RLEN,X		; Save RX bytes waiting
 	LDA	DVSTAT+2	; Get Server Client connected/disconnected?
 	STA	DVS2,X		; Save 
@@ -229,10 +231,52 @@ CLLP:	LDA	TRIP		; Get
 	;; Do read from ZIOCB unit
 
 READ:	JSR	GDIDX	  	; unit into X
-	LDA	#$00		; Set 0 into
-	STA	ROFF,X		; RXD cursor.
 	LDA	ZICDNO		; Get Unit #
 	STA	READCB+1	; Put into Read DCB table
+	LDA	BURST		; Are we in burst mode?
+	BEQ	READNB		; no, do non-bursted read.
+READB:	JSR	POLL		; do status poll to get available bytes
+	LDA	ZICBLH		; Get hi byte of # of bytes requested
+	CMP	DVSTAT+1	; compare with # of bytes available (H)
+	BCC	READBC		; if < then go ahead and set up the read
+	LDA	ZICBLL		; Get lo byte of # of bytes requested
+	CMP	DVSTAT		; compare with # of bytes available (L)
+	BCC	READBC		; if < then go ahead and set up the read
+READBJ:	LDA	DVSTAT		; Get bytes available (L)
+	STA	ZICBLL		; Store in requested bytes available (L)
+	LDA	DVSTAT+1	; Get bytes available (H)
+	STA	ZICBLH		; Store in requested bytes available (H)
+READBC: SEC			; Set up for subtraction
+	LDA	ZICBLL		; Get requested length
+	SBC	#$01		; subtract 1
+	STA	ZICBLL		; store back
+	BCC	READBD		; Continue on if done.
+	DEC	ZICBLH		; Decrement high byte if needed.	
+READBD:	LDA	BURST		; are we in burst?
+	BEQ	READBE		; nope continue on
+	LDA	#$00		; Store 0
+	STA	RLEN,X		; Into RLEN
+	STA	DVSTAT+1
+	STA	ROFF,X		; and ROFF, so that next read will get remaining byte.
+READBE:	LDA	ZICBAL		; Get requested destination buffer (L)
+	STA	READCB+4	; Store into table
+	LDA	ZICBAH		; Get requested destination buffer (H)
+	STA	READCB+5	; Store into table
+	LDA	ZICBLL		; Get requested length L (which may have been adjusted)
+	STA	READCB+8	; Store into table in DBYTL
+	STA	READCB+10	; ...and DAUX1
+	LDA	ZICBLH		; Get requested length H
+	STA	READCB+9	; Store into table in DBYTH
+	STA	READCB+11	; ...and DAUX2
+	JMP	READ2		; And do the read.	
+READNB:	LDA	#<RBUF		; point to non-burst buffer
+	STA	READCB+4	; put in DBUFL
+	LDA	#>RBUF		; point to non-burst buffer
+	STA	READCB+5	; put in DBUFH
+	LDA	#$00		; Set 0 into
+	STA	ROFF,X		; RXD cursor.
+	STA	READCB+9	; zero out high byte of DBYTH
+	STA	READCB+11	; ...and DAUX2
 	LDA	RLEN		; Get RLEN (from status)
 	BEQ	RDONE		; If RLEN=0 then abort read.
 	STA	READCB+8	; Store in DBYTL
@@ -241,7 +285,7 @@ READ2:	LDA	#<READCB	; Set up Read DCB
 	LDY	#>READCB	; ...
 	JSR	DOSIOV		; Do SIO call
 	LDY	DSTATS		; Get DSTATS for error
-	CPY	#144		; Is it 144?
+READ3:	CPY	#144		; Is it 144?
 	BNE	RDONE		; No, simply return DSTATS in Y
 	JSR	POLL		; Otherwise, do a poll to get extended error
 	LDY	DVSTAT+3	; And return it in Y.
@@ -258,6 +302,16 @@ READCB .BYTE     DEVIDN  	; DDEVIC
        .BYTE     $00     	; DBYTH
        .BYTE     $FF     	; DAUX1
        .BYTE     $00     	; DAUX2
+
+	;; set burst = 1
+SETB:	LDA	#$01		; 1 to
+	STA	BURST		; burst mode flag
+	RTS
+
+	;; set burst = 0
+CLRB:	LDA	#$00		; 0 to
+	STA	BURST		; burst mode flag
+	RTS
 	
 ;;; END SUBROUTINES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	
@@ -429,107 +483,21 @@ CLODCB .BYTE	DEVIDN		; DDEVIC
 
 ;;; GET ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-	;; Adjust requested bytes to available bytes
-	;; and set EOF (#3), next read should return (#136)
-
-GETBJ:	LDA	DVSTAT		; Low bytes available
-	STA	ZICBLL		; Store into ZIOCB
-	LDA	DVSTAT+1	; High bytes available
-	STA	ZICBLH		; Store into ZIOCB
-	LDA	#136		; EOF
-	STA	DVSTAT+3
-	JMP	GETBRD		; Go back to GetBR2
-	
-	;; Called to do burst read from GETB
-	
-GETBR:	JSR	POLL		; Status poll
-
-	;; If requested bytes > available bytes, then 
-	LDA	ZICBLH		; Get # of requested bytes
-	CMP	DVSTAT+1	; Compare against available bytes (hi)
-	BCS	GETBJ		; > available bytes? adjust.
-
-	LDA	ZICBLL		; Get Low byte of # of requested bytes
-	CMP	DVSTAT		; Compare against available bytes (lo)
-	BCS	GETBJ		; > available bytes? adjust.
-	
-GETBRD:	LDA	ZICDNO		; Get requested unit #
-	STA	READCB+1	; Store into DUNIT portion of table.
-	LDA	ZICBAL		; Get requested dest buffer from IOCB
-	STA	READCB+4	; ...and put into DCB
-	LDA	ZICBAH		; ...
-	STA	READCB+5	; ...
-	LDA	ZICBLL		; Get Requested Length
-	STA	READCB+8	; and stuff into DCB as DBYT/DAUX
-	STA	READCB+10	; ...
-	LDA	ZICBLH		; ...
-	STA	READCB+9	; ...
-	STA	READCB+11	; ...
-	LDA	#<READCB	; Set up DCB
-	LDY	#>READCB	; ...
-	JSR	DOSIOV		; and do SIOV call
-	RTS			; Back to GETB.
-
-	;; Called when burst mode is requested
-	
-GETB:	JSR	GETBR		; Do the SIO call.
-	LDY	DVSTAT+3	; get result from CIO call
-	CPY	#136		; EOF?
-	BEQ	GETB2		; Get out of here.
-	LDY	DSTATS 		; Get error (come back here later and fill this out)
-	BPL	GETBS		; If no error, continue
-	CPY	#144		; Extended error?
-	BEQ	GETB2		; Nope, loop to done
-	JSR	SVSTAT		; Get status
-	LDY	DVSTAT+3	; Get extended error
-GETB2:	JMP	GETDNE		; Leave.
-
-	;; Adjust buffer length to length-1
-
-GETBS:	SEC			; Set up for subtraction
-	LDA	ZICBLL		; Get length
-	SBC	#01		; Subtract 1
-	STA	ZICBLL		; Store back
-	BCC	GETBA		; go to the add stage, if done
-	DEC	ZICBLH		; We need to decrement the msb too
-
-	;; Use buffer length to adjust address
-
-GETBA:	CLC			; Set up for addition
-	LDA	ZICBAL		; Get Low byte of buffer address
-	ADC	ZICBLL		; Adjust by now adjusted length
-	STA	ZICBAL		; And store it back
-	LDA	ZICBAH		; Get High byte of buffer address
-	ADC	ZICBLH		; Adjust by now adjusted length
-	STA	ZICBAH		; And store it back
-
-	;; Now reset length to 1, for the last trip through CIO
-
-GETBL:	JSR	GDIDX		; Put IOCB into X
-	LDA	#$01		; ZIOCB buffer length now 1
-	TAY			; Stuff into Y (for later)
-	STA	ZICBLL		; ...
-	STA	RLEN,X		; and alter RLEN
-	LDA	#$00		; ...
-	STA	ROFF,X		; and alter ROFF
-	STA	ZICBLH		; ...
-
-	;; Stuff the one byte left into the start of the rcv buffer
-	LDA	(ZICBAL),Y	; Get next byte (y=1)
-	STA	RBUF		; and pop into buffer.
-	RTS			; And we're done here.
-
 	;; GET entry point for CIO
 	
-GET:	LDA	ZICCOM		; Get command
+GET:	JSR	GDIDX		; Unit into X
+	JSR	CLRB		; Clear burst flag.
+	LDA	ZICCOM		; Get command
 	CMP	#5		; GET RECORD?
 	BEQ	GETNOB		; Bypass burst
 	LDA	ZICBLH		; high byte of length
-	BNE	GETB		; Got to burst if > 0
+	BEQ	GETNOB		; set burst if > 0
 	LDA	ZICBLL		; low byte of length
-	BMI	GETB		; Go to burst if > 127
-GETNOB:	JSR	GDIDX		; Unit into X
-	LDA	RLEN,X		; Get current RX len from last STATUS
+	BPL	GETNOB		; set burst if > 127
+	JSR	SETB		; Set burst flag if above conditions fall through.
+	LDA	BURST		; Are we now in burst mode?
+	BNE	GETWAI		; Yeah, Wait for some data
+GETNOB:	LDA	RLEN,X		; Get current RX len from last STATUS
 	BNE	GETDRN		; If RLEN > 0 then drain.
 
 	;; Otherwise, we wait for something to happen.
@@ -546,9 +514,11 @@ GETWAI:	JSR	ENPRCD		; Enable Proceed
 
 	;; If RLEN=0 then determine if error.
 
+	LDA	BURST		; Are we in burst mode?
+	BNE	GETERR		; Yes, check for error.
 	LDA	DVSTAT		; Get RLEN Again
 	BNE	GETDRN		; If RLEN > 1, then drain.
-	LDY	DVSTAT+3	; Get ext err
+GETERR:	LDY	DVSTAT+3	; Get ext err
 	CPY	#136		; EOF?
 	BEQ	GETDNE		; Yes, return it.
 	LDY	DSTATS		; Else, get DSTATS from status/read.
@@ -729,7 +699,8 @@ TOFF	.ds	MAXDEV		; TXD offset cursor
 INQDS	.ds	1		; DSTATS to return in inquiry
 DVS2	.ds	MAXDEV		; DVSTAT+2 SAVE
 DVS3	.ds	MAXDEV		; DVSTAT+3 SAVE
-
+BURST	.ds	1		; Is this operation in burst mode?
+	
 RBUF	.ds	128		; RXD buffer
 TBUF	.ds	128		; TXD buffer
 	
