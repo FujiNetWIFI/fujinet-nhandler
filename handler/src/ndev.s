@@ -429,9 +429,31 @@ CLODCB .BYTE	DEVIDN		; DDEVIC
 
 ;;; GET ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+	;; Adjust requested bytes to available bytes
+	;; and set EOF (#3), next read should return (#136)
+
+GETBJ:	LDA	DVSTAT		; Low bytes available
+	STA	ZICBLL		; Store into ZIOCB
+	LDA	DVSTAT+1	; High bytes available
+	STA	ZICBLH		; Store into ZIOCB
+	LDA	#136		; EOF
+	STA	DVSTAT+3
+	JMP	GETBRD		; Go back to GetBR2
+	
 	;; Called to do burst read from GETB
 	
-GETBR:	LDA	ZICDNO		; Get requested unit #
+GETBR:	JSR	POLL		; Status poll
+
+	;; If requested bytes > available bytes, then 
+	LDA	ZICBLH		; Get # of requested bytes
+	CMP	DVSTAT+1	; Compare against available bytes (hi)
+	BCS	GETBJ		; > available bytes? adjust.
+
+	LDA	ZICBLL		; Get Low byte of # of requested bytes
+	CMP	DVSTAT		; Compare against available bytes (lo)
+	BCS	GETBJ		; > available bytes? adjust.
+	
+GETBRD:	LDA	ZICDNO		; Get requested unit #
 	STA	READCB+1	; Store into DUNIT portion of table.
 	LDA	ZICBAL		; Get requested dest buffer from IOCB
 	STA	READCB+4	; ...and put into DCB
@@ -451,6 +473,9 @@ GETBR:	LDA	ZICDNO		; Get requested unit #
 	;; Called when burst mode is requested
 	
 GETB:	JSR	GETBR		; Do the SIO call.
+	LDY	DVSTAT+3	; get result from CIO call
+	CPY	#136		; EOF?
+	BEQ	GETB2		; Get out of here.
 	LDY	DSTATS 		; Get error (come back here later and fill this out)
 	BPL	GETBS		; If no error, continue
 	CPY	#144		; Extended error?
@@ -496,11 +521,14 @@ GETBL:	JSR	GDIDX		; Put IOCB into X
 
 	;; GET entry point for CIO
 	
-GET:	LDA	ZICBLH
-	BNE	GETB
-	LDA	ZICBLL
-	BNE	GETB		; Go to burst
-	JSR	GDIDX		; Unit into X
+GET:	LDA	ZICCOM		; Get command
+	CMP	#5		; GET RECORD?
+	BEQ	GETNOB		; Bypass burst
+	LDA	ZICBLH		; high byte of length
+	BNE	GETB		; Got to burst if > 0
+	LDA	ZICBLL		; low byte of length
+	BMI	GETB		; Go to burst if > 127
+GETNOB:	JSR	GDIDX		; Unit into X
 	LDA	RLEN,X		; Get current RX len from last STATUS
 	BNE	GETDRN		; If RLEN > 0 then drain.
 
@@ -547,7 +575,7 @@ GETDRN:	JSR	DIPRCD		; Disable PROCEED
 	
 GETDN2:	TYA			; Bring back char into A
 	LDY	#$01		; 
-GETDNE: TYA			; Restore CPU status.
+GETDNE: CPY	#$00		; Reset flag to negative.
 	RTS
 	
 ;;; PUT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
