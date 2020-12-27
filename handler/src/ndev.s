@@ -88,7 +88,7 @@ EOF     =     $88     ; ERROR 136
 EOL     =     $9B     ; EOL CHAR
 
 	;; ORG HERE
-	ORG	$2200
+	ORG	$1200
 	
 	;; This is for OS/A+
 
