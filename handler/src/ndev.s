@@ -6,6 +6,9 @@
 
 	;; CURRENT IOCB IN ZERO PAGE
 
+DEBUG	=	0	; displays debug messages
+DONT_RELOCATE =	0	; set to one if you don't want to relocate code.
+
 ZIOCB   =     $20      ; ZP IOCB
 ZICHID  =     ZIOCB    ; ID
 ZICDNO  =     ZIOCB+1  ; UNIT #
@@ -88,21 +91,22 @@ EOF     =     $88     ; ERROR 136
 EOL     =     $9B     ; EOL CHAR
 
 	;; ORG HERE
-	ORG	$1200
+	ORG	$6000
 	
-	;; This is for OS/A+
+RELOCATE_CODE_START:		
+;; This is for OS/A+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 	RTS			; Immediately exit
 
 ;;; RESET HANDLER ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 RESET:	
-	JSR	$FFFF		; Modified for original DOSINI
-	LDA	#$FF		; Driver end LO
+	JSR	$FFFF			; pointing to original DOSINI
+	LDA	RELOC_HANDLEREND	; Driver end LO
 	STA 	MEMLO
-	LDA	#$FF		; Driver end HI
+	LDA	RELOC_HANDLEREND+1	; Driver end HI
 	STA	MEMLO+1
-	JSR	IHTBS		; Insert into HATABS
+	JSR	IHTBS			; Insert into HATABS
 	JSR	CLALL
 	RTS
 	
@@ -129,22 +133,12 @@ GDIDX:	LDX	ZICDNO		; CURRENT IOCB UNIT #
 
 POLL:	LDA	ZICDNO		; Get Unit #
 	STA	POLDCB+1	; Put into Table
-	LDA	#<POLDCB	; Set up STATUS POLL DCB table
-	LDY	#>POLDCB
+	LDA	RELOC_POLDCB	; Set up STATUS POLL DCB table
+	LDY	RELOC_POLDCB+1
 	JSR	DOSIOV		; And do SIOV
 	
 	RTS
 
-POLDCB:	.BYTE      DEVIDN  ; DDEVIC
-	.BYTE      $FF     ; DUNIT
-	.BYTE      'S'     ; DCOMND
-	.BYTE      DSREAD     ; DSTATS
-	.WORD	   DVSTAT  ; DBUF
-	.BYTE      $1F     ; DTIMLO
-	.BYTE      $00     ; DRESVD
-	.WORD	   4	   ; 4 bytes
-	.BYTE      $00     ; DAUX1
-	.BYTE      $00     ; DAUX2
 
 	;; Save DVSTAT values
 
@@ -181,8 +175,8 @@ FLUSH:	JSR	GDIDX		; UNIT NUMBER into X
 	BEQ	FLDONE		; Don't do anything if TX cursor is at 0.
 	STA	FLUDCB+8	; Put into Table (Len and Aux)
 	STA	FLUDCB+10
-	LDA	#<FLUDCB	; Copy Table to DCB
-	LDY	#>FLUDCB
+	LDA	RELOC_FLUDCB	; Copy Table to DCB
+	LDY	RELOC_FLUDCB+1
 	JSR	DOSIOV		; And call SIOV
 	JSR	GDIDX		; Get Unit into X
 	LDA	#$00		; Clear TOFF
@@ -190,17 +184,6 @@ FLUSH:	JSR	GDIDX		; UNIT NUMBER into X
 	LDY	DSTATS
 FLDONE:	RTS			; Done, LDY has DSTATS
 
-FLUDCB:	.BYTE      DEVIDN  	; DDEVIC
-	.BYTE      $FF     	; DUNIT
-	.BYTE      'W'     	; DCOMND
-	.BYTE      DSWRIT     	; DSTATS
-	.WORD      TBUF    	; DBUFL
-	.BYTE      $1F     	; DTIMLO
-	.BYTE      $00     	; DRESVD
-	.BYTE      $FF     	; DBYTL
-	.BYTE      $00     	; DBYTH
-	.BYTE      $FF     	; DAUX1
-	.BYTE      $00     	; DAUX2
 
 	;; Cap RX to 127 bytes (temporary routine)
 
@@ -237,8 +220,8 @@ READ:	JSR	GDIDX	  	; unit into X
 	BEQ	RDONE		; If RLEN=0 then abort read.
 	STA	READCB+8	; Store in DBYTL
 	STA	READCB+10	; Store in DAUX1
-	LDA	#<READCB	; Set up Read DCB
-	LDY	#>READCB	; ...
+	LDA	RELOC_READCB	; Set up Read DCB
+	LDY	RELOC_READCB+1	; ...
 	JSR	DOSIOV		; Do SIO call
 	LDY	DSTATS		; Get DSTATS for error
 	CPY	#144		; Is it 144?
@@ -247,45 +230,23 @@ READ:	JSR	GDIDX	  	; unit into X
 	LDY	DVSTAT+3	; And return it in Y.
 RDONE:	RTS			; Done.
 
-READCB .BYTE     DEVIDN  	; DDEVIC
-       .BYTE     $FF     	; DUNIT
-       .BYTE     'R'     	; DCOMND
-       .BYTE     DSREAD     	; DSTATS
-       .WORD	 RBUF	 	; DBUF
-       .BYTE     $1F     	; DTIMLO
-       .BYTE     $00     	; DRESVD
-       .BYTE     $FF     	; DBYTL
-       .BYTE     $00     	; DBYTH
-       .BYTE     $FF     	; DAUX1
-       .BYTE     $00     	; DAUX2
-	
-;;; END SUBROUTINES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	
-;;; DEVICE HANDLER TABLE ;;;;;;;;;;;;;;;;;;;;;;;;;
-
-DEVHDL:	.WORD	OPEN-1
-	.WORD	CLOSE-1
-	.WORD	GET-1
-	.WORD	PUT-1
-	.WORD	STATUS-1
-	.WORD	SPECIAL-1
 	
 ;;; HANDLER RUNAD HERE ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	
-START:	LDA	DOSINI
+START:	LDA	DOSINI		; store the old dosini in our routine
 	STA	RESET+1
 	LDA	DOSINI+1
 	STA	RESET+2
-	LDA	#<RESET
+	
+	LDA	RELOC_RESET	; add our reset handler 
 	STA	DOSINI
-	LDA	#>RESET
+	LDA	RELOC_RESET+1
 	STA	DOSINI+1
-	LDA	#<HANDLEREND
+	
+	LDA	RELOC_HANDLEREND ; update memlo
 	STA	MEMLO
-	STA	RESET+4
-	LDA	#>HANDLEREND
+	LDA	RELOC_HANDLEREND+1
 	STA	MEMLO+1
-	STA	RESET+9
 	JSR	CLALL		; Close all
 	
 ;;; Insert Handler entry into HATABS ;;;;;;;;;;;
@@ -305,16 +266,16 @@ IH1:	LDA	HATABS,Y
 
 HFND:	LDA	#'N'		; We are the N: device
 	STA	HATABS,Y	; first byte in our entry
-	LDA	#<DEVHDL	; Get address of our handler table
+	LDA	RELOC_DEVHDL	; Get address of our handler table
 	STA	HATABS+1,Y	; and put it in Hatabs
-	LDA	#>DEVHDL
+	LDA	RELOC_DEVHDL+1
 	STA	HATABS+2,Y
 	
 	;; And vector in PROCEED.
 
-VPRCD:	LDA	#<INTR		; Get Addr of interrupt handler
+VPRCD:	LDA	RELOC_INTR	; Get Addr of interrupt handler
 	STA	VPRCED		; Store it in PROCEED vector
-	LDA	#>INTR
+	LDA	RELOC_INTR+1
 	STA	VPRCED+1
 	
 	;; We're done, back to DOS.
@@ -371,8 +332,8 @@ OPEN:   JSR	GDIDX		; Set IOCB OFFSET TO UNIT #
 
 	;; Do the SIOV call
 	
-	LDA	#<OPNDCB
-	LDY	#>OPNDCB
+	LDA	RELOC_OPNDCB
+	LDY	RELOC_OPNDCB+1
 	JSR	DOSIOV
 
 	;; Return DSTATS in Y, unless 144, then get ext err.
@@ -386,21 +347,7 @@ OPEN:   JSR	GDIDX		; Set IOCB OFFSET TO UNIT #
 
 OPDONE:	RTS
 
-	;; OPEN DCB TABLE
 
-OPNDCB:
-	.BYTE      DEVIDN  	; DDEVIC
-	.BYTE      $FF     	; DUNIT
-	.BYTE      'O'     	; DCOMND
-	.BYTE      DSWRIT     	; DSTATS
-	.BYTE      $FF     	; DBUFL
-	.BYTE      $FF     	; DBUFH
-	.BYTE      $1F     	; DTIMLO
-	.BYTE      $00     	; DRESVD
-	.BYTE      $00     	; DBYTL
-	.BYTE      $01     	; DBYTH
-	.BYTE      $FF     	; DAUX1
-	.BYTE      $FF     	; DAUX2
 
 ;;; CLOSE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -409,23 +356,14 @@ CLOSE:	JSR	DIPRCD		; Disable PROCEED
 	JSR	CLRBUF		; Clear buffer pointers
 	LDA	ZICDNO		; Unit #
 	STA	CLODCB+1	; Put into table
-	LDA	#<CLODCB	; Close DCB table
-	LDY	#>CLODCB
+	LDA	RELOC_CLODCB	; Close DCB table
+	LDY	RELOC_CLODCB+1
 	JSR	DOSIOV		; Do SIOV
-	JMP	SUCC		; Always return success
+	
+	CLV
+	BVC	SUCC		; Always return success
 
-CLODCB .BYTE	DEVIDN		; DDEVIC
-       .BYTE	$FF		; DUNIT
-       .BYTE	'C'		; DCOMND
-       .BYTE	$00		; DSTATS
-       .BYTE	$00		; DBUFL
-       .BYTE	$00		; DBUFH
-       .BYTE	$1F		; DTIMLO
-       .BYTE	$00		; DRESVD
-       .BYTE	$00		; DBYTL
-       .BYTE	$00		; DBYTH
-       .BYTE	$00		; DAUX1
-       .BYTE	$00		; DAUX2
+
 
 ;;; GET ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -552,8 +490,8 @@ SPQ:	LDA	#$FF		; Set INQDS
 	STA	SPEDCB+8	;
 	LDA	#$00		;
 	STA	SPEDCB+9	;
-	LDA	#<SPEDCB	; Set up SPECIAL DCB TABLE
-	LDY	#>SPEDCB	;
+	LDA	RELOC_SPEDCB	; Set up SPECIAL DCB TABLE
+	LDY	RELOC_SPEDCB+1	;
 	JSR	DOSIOV		; Do Query
 	LDY	DSTATS		; Get DSTATS
 	BMI	SPCDNE		; SIO error, return in Y. There is no ext err.
@@ -577,16 +515,16 @@ SPDO:	LDA	ZICDNO		; Unit #
 	STA	SPEDCB+4
 	LDA	ZICBAH		; 
 	STA	SPEDCB+5
-	LDA #$00
-	STA SPEDCB+8
-	LDA #$01
-	STA SPEDCB+9
+	LDA 	#$00
+	STA 	SPEDCB+8
+	LDA 	#$01
+	STA 	SPEDCB+9
 	LDA	ZICAX1		; Aux1
 	STA	SPEDCB+10
 	LDA	ZICAX2		; Aux2
 	STA	SPEDCB+11
-	LDA	#<SPEDCB
-	LDY	#>SPEDCB
+	LDA	RELOC_SPEDCB
+	LDY	RELOC_SPEDCB+1
 	JSR	DOSIOV
 
 	;; Get error and return extended if needed.
@@ -600,17 +538,100 @@ SPDO:	LDA	ZICDNO		; Unit #
 	
 SPCDNE:	RTS
 
-SPEDCB .BYTE      DEVIDN  ; DDEVIC
-       .BYTE      $FF     ; DUNIT
-       .BYTE      $FF     ; DCOMND ; inq
-       .BYTE      DSREAD     ; DSTATS
-       .WORD      INQDS    ; DBUFL
-       .BYTE      $1F     ; DTIMLO
-       .BYTE      $00     ; DRESVD
-       .BYTE      $01     ; DBYTL
-       .BYTE      $00     ; DBYTH
-       .BYTE      $FF     ; DAUX1
-       .BYTE      $FF     ; DAUX2	
+RELOCATE_CODE_END:
+; ----------------------
+; ---- DATA SECTION ----
+; ----------------------
+
+READCB	.BYTE	DEVIDN  	; DDEVIC
+	.BYTE	$FF     	; DUNIT
+	.BYTE	'R'     	; DCOMND
+	.BYTE	DSREAD     	; DSTATS
+rel100	.WORD	RBUF	 	; DBUF
+	.BYTE	$1F     	; DTIMLO
+	.BYTE	$00     	; DRESVD
+	.BYTE	$FF     	; DBYTL
+	.BYTE	$00     	; DBYTH
+	.BYTE	$FF     	; DAUX1
+	.BYTE	$00     	; DAUX2
+	
+;;; END SUBROUTINES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+FLUDCB:	.BYTE	DEVIDN  	; DDEVIC
+	.BYTE	$FF     	; DUNIT
+	.BYTE	'W'     	; DCOMND
+	.BYTE	DSWRIT     	; DSTATS
+rel101	.WORD	TBUF    	; DBUFL
+	.BYTE	$1F     	; DTIMLO
+	.BYTE	$00     	; DRESVD
+	.BYTE	$FF     	; DBYTL
+	.BYTE	$00     	; DBYTH
+	.BYTE	$FF     	; DAUX1
+	.BYTE	$00     	; DAUX2
+
+	
+POLDCB:	.BYTE	DEVIDN  	; DDEVIC
+	.BYTE	$FF     	; DUNIT
+	.BYTE	'S'     	; DCOMND
+	.BYTE	DSREAD		; DSTATS
+	.WORD	DVSTAT  	; DBUF
+	.BYTE	$1F     	; DTIMLO
+	.BYTE	$00     	; DRESVD
+	.WORD	4	   	; 4 bytes
+	.BYTE	$00     	; DAUX1
+	.BYTE	$00     	; DAUX2
+
+
+;;; DEVICE HANDLER TABLE ;;;;;;;;;;;;;;;;;;;;;;;;;
+
+DEVHDL:
+rel110	.WORD	OPEN-1
+rel111	.WORD	CLOSE-1
+rel112	.WORD	GET-1
+rel113	.WORD	PUT-1
+rel114	.WORD	STATUS-1
+rel115	.WORD	SPECIAL-1
+	
+	;; OPEN DCB TABLE
+
+OPNDCB:
+	.BYTE	DEVIDN  	; DDEVIC
+	.BYTE	$FF     	; DUNIT
+	.BYTE	'O'     	; DCOMND
+	.BYTE	DSWRIT     	; DSTATS
+	.BYTE	$FF     	; DBUFL
+	.BYTE	$FF     	; DBUFH
+	.BYTE	$1F     	; DTIMLO
+	.BYTE	$00     	; DRESVD
+	.BYTE	$00     	; DBYTL
+	.BYTE	$01     	; DBYTH
+	.BYTE	$FF     	; DAUX1
+	.BYTE	$FF     	; DAUX2
+
+CLODCB	.BYTE	DEVIDN		; DDEVIC
+	.BYTE	$FF		; DUNIT
+	.BYTE	'C'		; DCOMND
+	.BYTE	$00		; DSTATS
+	.BYTE	$00		; DBUFL
+	.BYTE	$00		; DBUFH
+	.BYTE	$1F		; DTIMLO
+	.BYTE	$00		; DRESVD
+	.BYTE	$00		; DBYTL
+	.BYTE	$00		; DBYTH
+	.BYTE	$00		; DAUX1
+	.BYTE	$00		; DAUX2
+
+SPEDCB	.BYTE	DEVIDN		; DDEVIC
+	.BYTE	$FF		; DUNIT
+	.BYTE	$FF		; DCOMND ; inq
+	.BYTE	DSREAD		; DSTATS
+rel120	.WORD	INQDS		; DBUFL
+	.BYTE	$1F		; DTIMLO
+	.BYTE	$00		; DRESVD
+	.BYTE	$01		; DBYTL
+	.BYTE	$00		; DBYTH
+	.BYTE	$FF		; DAUX1
+	.BYTE	$FF		; DAUX2	
 	
 	;; End of Handler
 
@@ -626,8 +647,139 @@ DVS3	.ds	MAXDEV		; DVSTAT+3 SAVE
 
 RBUF	.ds	128		; RXD buffer
 TBUF	.ds	128		; TXD buffer
+
+
+
+; LDA #<ADDR  LO becomes  LDA RELOC_ADDR
+; LDY #>ADDR  HI becomes  LDA RELOC_ADDR+1
+
+relocate_000
+RELOC_OPNDCB	.WORD	OPNDCB
+
+relocate_001
+RELOC_READCB	.WORD	READCB
+
+relocate_002
+RELOC_POLDCB	.WORD	POLDCB
+
+relocate_003
+RELOC_FLUDCB	.WORD	FLUDCB
+
+relocate_004
+RELOC_RESET	.WORD	RESET
+
+relocate_005
+RELOC_HANDLEREND .WORD	HANDLEREND
+
+relocate_006
+RELOC_DEVHDL	.WORD	DEVHDL
+
+relocate_007
+RELOC_INTR	.WORD	INTR
+
+relocate_008
+RELOC_CLODCB	.WORD	CLODCB
+
+relocate_009
+RELOC_SPEDCB	.WORD	SPEDCB
+
+
+NEW_START	.BYTE   $4C
+relocate_010	.WORD	START
+
+RELOCATE_DATA_END:
 	
 HANDLEREND	= *
 
-	RUN	START
+; Within your code you need the following tables
+; in this order
+;
+;   RELOCATE_CODE_START	
+;     <code>
+;   RELOCATE_CODE_END
+;     <data>
+;     reloc000 .WORD <address>
+;   RELOCATE_DATA_END
+;
+;   RELOCATION_TABLE
+;     .WORD <location of addresses that need relocating>
+;     .WORD 0 ; END OF TABLE
+
+RELOCATION_TABLE:
+			.WORD	relocate_000,relocate_001,relocate_002,relocate_003,relocate_004
+			.WORD	relocate_005,relocate_006,relocate_007,relocate_008,relocate_009,relocate_010
+			.WORD	rel100,rel101
+			.WORD	rel110,rel111,rel112,rel113,rel114,rel115
+			.WORD	rel120
+;	icl "CIO-Routines_RELOC.ASM"
+			; Code relocation data will be auto-magically appended to the end of the table
+	
+			.WORD 	0 ; end of table
+			.DS 	1024 ; this is only needed now for testing. This storage won't be necessary in a future release
+END_RELOCATION_TABLE:
+			
+	icl "RELOCATE.ASM"
+
+
+.if DEBUG = 1
+
+; This debug code simply displays
+; if it's relocated or not and
+; where it is loaded/relocated
+
+	icl "CIO-Routines.asm"
+	icl "CIO-Routines_DATA.ASM"
+		
+MSG	.BYTE 'Relocated to ',EOL
+NMSG	.BYTE 'Not relocated ',EOL
+PRGNAME .BYTE 'NDEV: 2021-01-05 18:45',EOL
+.endif
+	
+RELOCATE_START
+
+.if DEBUG = 1
+
+	JSR OPEN_E_DEVICE
+	LDA #<PRGNAME
+	LDY #>PRGNAME
+	JSR PRINT_STRING
+	
+.if DONT_RELOCATE = 0
+	LDA #<MSG
+	LDY #>MSG
+.else
+	LDA #<NMSG
+	LDY #>NMSG
+.endif ; DONT_RELOCATE
+
+	JSR PRINT_STRING_NO_EOL
+
+.if DONT_RELOCATE = 0
+	LDA MEMLO+1
+.else
+	LDA #>RELOCATE_CODE_START
+.endif ; DONT_RELOCATE
+
+	JSR PRINT_HEX_NO_EOL
+
+.if DONT_RELOCATE = 0
+	LDA MEMLO
+.else
+	LDA #<RELOCATE_CODE_START
+.endif	; DONT_RELOCATE
+
+	JSR PRINT_HEX
+	LDA #<NORE
+	LDY #>NORE
+	JSR PRINT_STRING
+	
+.endif ; DEBUG
+
+
+.if DONT_RELOCATE = 0
+	JSR RELOCATE_TO_MEMLO
+.endif ; DONT_RELOCATE
+	JMP NEW_START	
+			
+	RUN RELOCATE_START
 	END
