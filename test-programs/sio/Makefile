@@ -23,6 +23,7 @@ all mostlyclean clean install zip:
 	@$(MAKE) -C nudpdest --no-print-directory $@
 	@$(MAKE) -C npoint   --no-print-directory $@
 	@$(MAKE) -C nnote    --no-print-directory $@
+	@$(MAKE) -C nudptest --no-print-directory $@
 
 
 dist: all
@@ -41,6 +42,7 @@ dist: all
 	cp nudpdest/nudpdest.com dist/
 	cp npoint/npoint.com dist/
 	cp nnote/nnote.com dist/
+	cp nudptest/nudptest.com dist/
 	cp test-scripts/THTTP.EXC dist/
 	cp DOS.SYS dist/
 	dir2atr -b DosXL230 720 n-tests.atr dist/

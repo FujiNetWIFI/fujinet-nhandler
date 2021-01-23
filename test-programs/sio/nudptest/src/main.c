@@ -35,7 +35,7 @@ void nclose()
 int main(int argc, char* argv[])
 {
   unsigned short i=0;
-  unsigned short *bw=&OS.dvstat[0];
+  unsigned short *bw=(unsigned short *)&OS.dvstat[0];
   
   OS.soundr=0;
   OS.dspflg=0xFF;
