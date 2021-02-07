@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
   memset(&OS.dvstat,0,4);
 
   // Wait for packet. polling, no interrupt.
-  while (bw==0)
+  while (OS.dvstat[0]==0)
     {
       OS.dcb.ddevic=0x71;
       OS.dcb.dunit=1;
@@ -108,13 +108,13 @@ int main(int argc, char* argv[])
   OS.dcb.dstats=0x40;
   OS.dcb.dbuf=&buf;
   OS.dcb.dtimlo=0x0f;
-  OS.dcb.dbyt=OS.dcb.daux=*bw;
+  OS.dcb.dbyt=OS.dcb.daux=OS.dvstat[0];
   siov();      
 
   print("RECEIVED PACKET:\x9b");
 
   // Display it
-  for (i=0;i<*bw;i++)
+  for (i=0;i<OS.dvstat[0];i++)
       printc(&buf[i]);
 
   // Close
