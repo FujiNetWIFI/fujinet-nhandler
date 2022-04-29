@@ -1,4 +1,4 @@
-mads 2.1.1
+mads 2.1.3
 Source: ndev.s
      1 					;; N: Device Handler
      2 					;; Compile with MADS
@@ -98,15 +98,15 @@ Source: ndev.s
     96 				RELOCATE_CODE_START:		
     97 				;; This is for OS/A+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     98
-    99 FFFF> 6000-631F> 60		RTS			; Immediately exit
+    99 FFFF> 6000-630F> 60		RTS			; Immediately exit
    100
    101 				;;; RESET HANDLER ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
    102
    103 6001			RESET:	
    104 6001 20 FF FF			JSR	$FFFF			; pointing to original DOSINI
-   105 6004 AD 40 64			LDA	RELOC_HANDLEREND	; Driver end LO
+   105 6004 AD 30 64			LDA	RELOC_HANDLEREND	; Driver end LO
    106 6007 8D E7 02			STA 	MEMLO
-   107 600A AD 41 64			LDA	RELOC_HANDLEREND+1	; Driver end HI
+   107 600A AD 31 64			LDA	RELOC_HANDLEREND+1	; Driver end HI
    108 600D 8D E8 02			STA	MEMLO+1
    109 6010 20 01 61			JSR	IHTBS			; Insert into HATABS
    110 6013 20 99 60			JSR	CLALL
@@ -117,7 +117,7 @@ Source: ndev.s
    115 				;;; INTERRUPT HANDLER ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
    116
    117 6017 A9 01		INTR:	LDA	#$01		; set trip to 1
-   118 6019 8D 20 63			STA	TRIP
+   118 6019 8D 10 63			STA	TRIP
    119 601C 68				PLA
    120 601D 40				RTI
    121 					
@@ -134,9 +134,9 @@ Source: ndev.s
    132 					;; Poll for Status
    133
    134 6022 A5 21		POLL:	LDA	ZICDNO		; Get Unit #
-   135 6024 8D E5 62			STA	POLDCB+1	; Put into Table
-   136 6027 AD 3A 64			LDA	RELOC_POLDCB	; Set up STATUS POLL DCB table
-   137 602A AC 3B 64			LDY	RELOC_POLDCB+1
+   135 6024 8D C9 62			STA	POLDCB+1	; Put into Table
+   136 6027 AD 2A 64			LDA	RELOC_POLDCB	; Set up STATUS POLL DCB table
+   137 602A AC 2B 64			LDY	RELOC_POLDCB+1
    138 602D 20 46 61			JSR	DOSIOV		; And do SIOV
    139 					
    140 6030 60				RTS
@@ -147,11 +147,11 @@ Source: ndev.s
    145 6031 20 1E 60		SVSTAT: JSR	GDIDX	   	; Get Unit into X
    146 6034 20 84 60			JSR	CAPRX		; Cap RX values
    147 6037 AD EA 02			LDA	DVSTAT		; Get RX bytes waiting
-   148 603A 9D 21 63			STA	RLEN,X		; Save RX bytes waiting
+   148 603A 9D 11 63			STA	RLEN,X		; Save RX bytes waiting
    149 603D AD EC 02			LDA	DVSTAT+2	; Get Server Client connected/disconnected?
-   150 6040 9D 2E 63			STA	DVS2,X		; Save 
+   150 6040 9D 1E 63			STA	DVS2,X		; Save 
    151 6043 AD ED 02			LDA	DVSTAT+3	; Get last error
-   152 6046 9D 32 63			STA	DVS3,X		; Save
+   152 6046 9D 22 63			STA	DVS3,X		; Save
    153 6049 60				RTS
    154 					
    155 					;; Enable PROCEED interrupt
@@ -172,17 +172,17 @@ Source: ndev.s
    170 					
    171 605C 20 1E 60		FLUSH:	JSR	GDIDX		; UNIT NUMBER into X
    172 605F A5 21			LDA	ZICDNO		; IOCB UNIT #
-   173 6061 8D D9 62			STA	FLUDCB+1	; Put into table.
-   174 6064 BD 29 63			LDA	TOFF,X		; get Transmit offset (# of bytes to send)
+   173 6061 8D BD 62			STA	FLUDCB+1	; Put into table.
+   174 6064 BD 19 63			LDA	TOFF,X		; get Transmit offset (# of bytes to send)
    175 6067 F0 1A			BEQ	FLDONE		; Don't do anything if TX cursor is at 0.
-   176 6069 8D E0 62			STA	FLUDCB+8	; Put into Table (Len and Aux)
-   177 606C 8D E2 62			STA	FLUDCB+10
-   178 606F AD 3C 64			LDA	RELOC_FLUDCB	; Copy Table to DCB
-   179 6072 AC 3D 64			LDY	RELOC_FLUDCB+1
+   176 6069 8D C4 62			STA	FLUDCB+8	; Put into Table (Len and Aux)
+   177 606C 8D C6 62			STA	FLUDCB+10
+   178 606F AD 2C 64			LDA	RELOC_FLUDCB	; Copy Table to DCB
+   179 6072 AC 2D 64			LDY	RELOC_FLUDCB+1
    180 6075 20 46 61			JSR	DOSIOV		; And call SIOV
    181 6078 20 1E 60			JSR	GDIDX		; Get Unit into X
    182 607B A9 00			LDA	#$00		; Clear TOFF
-   183 607D 9D 29 63			STA	TOFF,X
+   183 607D 9D 19 63			STA	TOFF,X
    184 6080 AC 03 03			LDY	DSTATS
    185 6083 60			FLDONE:	RTS			; Done, LDY has DSTATS
    186
@@ -202,12 +202,12 @@ Source: ndev.s
    200 					;; Close all IOCBs
    201
    202 6099 A9 04		CLALL:	LDA	#MAXDEV		; Close all 4 N: devices
-   203 609B 8D 20 63			STA	TRIP		; Temporarily use trip
-   204 609E AD 20 63		CLLP:	LDA	TRIP		; Get
+   203 609B 8D 10 63			STA	TRIP		; Temporarily use trip
+   204 609E AD 10 63		CLLP:	LDA	TRIP		; Get
    205 60A1 85 21			STA	ZICDNO		; Store into unit #
    206 60A3 20 92 61			JSR	CLOSE		; Close Nx:
-   207 60A6 CE 20 63			DEC	TRIP		; Decrement
-   208 60A9 AD 20 63			LDA	TRIP		; Get it
+   207 60A6 CE 10 63			DEC	TRIP		; Decrement
+   208 60A9 AD 10 63			LDA	TRIP		; Get it
    209 60AC D0 F0			BNE	CLLP		; Loop until done.
    210 60AE 60				RTS	
    211
@@ -215,15 +215,15 @@ Source: ndev.s
    213
    214 60AF 20 1E 60		READ:	JSR	GDIDX	  	; unit into X
    215 60B2 A9 00			LDA	#$00		; Set 0 into
-   216 60B4 9D 25 63			STA	ROFF,X		; RXD cursor.
+   216 60B4 9D 15 63			STA	ROFF,X		; RXD cursor.
    217 60B7 A5 21			LDA	ZICDNO		; Get Unit #
-   218 60B9 8D CD 62			STA	READCB+1	; Put into Read DCB table
-   219 60BC AD 21 63			LDA	RLEN		; Get RLEN (from status)
+   218 60B9 8D B1 62			STA	READCB+1	; Put into Read DCB table
+   219 60BC AD 11 63			LDA	RLEN		; Get RLEN (from status)
    220 60BF F0 1C			BEQ	RDONE		; If RLEN=0 then abort read.
-   221 60C1 8D D4 62			STA	READCB+8	; Store in DBYTL
-   222 60C4 8D D6 62			STA	READCB+10	; Store in DAUX1
-   223 60C7 AD 38 64			LDA	RELOC_READCB	; Set up Read DCB
-   224 60CA AC 39 64			LDY	RELOC_READCB+1	; ...
+   221 60C1 8D B8 62			STA	READCB+8	; Store in DBYTL
+   222 60C4 8D BA 62			STA	READCB+10	; Store in DAUX1
+   223 60C7 AD 28 64			LDA	RELOC_READCB	; Set up Read DCB
+   224 60CA AC 29 64			LDY	RELOC_READCB+1	; ...
    225 60CD 20 46 61			JSR	DOSIOV		; Do SIO call
    226 60D0 AC 03 03			LDY	DSTATS		; Get DSTATS for error
    227 60D3 C0 90			CPY	#144		; Is it 144?
@@ -240,14 +240,14 @@ Source: ndev.s
    238 60E3 A5 0D			LDA	DOSINI+1
    239 60E5 8D 03 60			STA	RESET+2
    240 					
-   241 60E8 AD 3E 64			LDA	RELOC_RESET	; add our reset handler 
+   241 60E8 AD 2E 64			LDA	RELOC_RESET	; add our reset handler 
    242 60EB 85 0C			STA	DOSINI
-   243 60ED AD 3F 64			LDA	RELOC_RESET+1
+   243 60ED AD 2F 64			LDA	RELOC_RESET+1
    244 60F0 85 0D			STA	DOSINI+1
    245 					
-   246 60F2 AD 40 64			LDA	RELOC_HANDLEREND ; update memlo
+   246 60F2 AD 30 64			LDA	RELOC_HANDLEREND ; update memlo
    247 60F5 8D E7 02			STA	MEMLO
-   248 60F8 AD 41 64			LDA	RELOC_HANDLEREND+1
+   248 60F8 AD 31 64			LDA	RELOC_HANDLEREND+1
    249 60FB 8D E8 02			STA	MEMLO+1
    250 60FE 20 99 60			JSR	CLALL		; Close all
    251 					
@@ -268,16 +268,16 @@ Source: ndev.s
    266
    267 6113 A9 4E		HFND:	LDA	#'N'		; We are the N: device
    268 6115 99 1A 03			STA	HATABS,Y	; first byte in our entry
-   269 6118 AD 42 64			LDA	RELOC_DEVHDL	; Get address of our handler table
+   269 6118 AD 32 64			LDA	RELOC_DEVHDL	; Get address of our handler table
    270 611B 99 1B 03			STA	HATABS+1,Y	; and put it in Hatabs
-   271 611E AD 43 64			LDA	RELOC_DEVHDL+1
+   271 611E AD 33 64			LDA	RELOC_DEVHDL+1
    272 6121 99 1C 03			STA	HATABS+2,Y
    273 					
    274 					;; And vector in PROCEED.
    275
-   276 6124 AD 44 64		VPRCD:	LDA	RELOC_INTR	; Get Addr of interrupt handler
+   276 6124 AD 34 64		VPRCD:	LDA	RELOC_INTR	; Get Addr of interrupt handler
    277 6127 8D 02 02			STA	VPRCED		; Store it in PROCEED vector
-   278 612A AD 45 64			LDA	RELOC_INTR+1
+   278 612A AD 35 64			LDA	RELOC_INTR+1
    279 612D 8D 03 02			STA	VPRCED+1
    280 					
    281 					;; We're done, back to DOS.
@@ -292,11 +292,11 @@ Source: ndev.s
    290 				;;; CLEAR BUFFERS FOR UNIT X ;;;;;;;;;;;;;;;;;;;;
    291 					
    292 6134 A9 00		CLRBUF:	LDA	#$00
-   293 6136 9D 21 63			STA	RLEN,X
-   294 6139 9D 29 63			STA	TOFF,X
-   295 613C 9D 25 63			STA	ROFF,X
-   296 613F 9D 2E 63			STA	DVS2,X
-   297 6142 9D 32 63			STA	DVS3,X
+   293 6136 9D 11 63			STA	RLEN,X
+   294 6139 9D 19 63			STA	TOFF,X
+   295 613C 9D 15 63			STA	ROFF,X
+   296 613F 9D 1E 63			STA	DVS2,X
+   297 6142 9D 22 63			STA	DVS3,X
    298 6145 60				RTS
    299 					
    300 				;;; COPY TABLE TO DCB AND DO SIO CALL ;;;;;;;;;;;
@@ -322,20 +322,20 @@ Source: ndev.s
    320 615F 20 1E 60		OPEN:   JSR	GDIDX		; Set IOCB OFFSET TO UNIT #
    321 6162 20 34 61			JSR	CLRBUF		; Clear Buffers
    322 6165 A5 21			LDA	ZICDNO		; GET Desired unit #
-   323 6167 8D FD 62			STA	OPNDCB+1	; Store in open table
+   323 6167 8D E1 62			STA	OPNDCB+1	; Store in open table
    324 616A A5 24			LDA	ZICBAL		; Get desired buffer LO
-   325 616C 8D 00 63			STA	OPNDCB+4	; Store in open table
+   325 616C 8D E4 62			STA	OPNDCB+4	; Store in open table
    326 616F A5 25			LDA	ZICBAH		; Get desired buffer HI
-   327 6171 8D 01 63			STA	OPNDCB+5	; Store in open table
+   327 6171 8D E5 62			STA	OPNDCB+5	; Store in open table
    328 6174 A5 2A			LDA	ZICAX1		; Get requested Aux1
-   329 6176 8D 06 63			STA	OPNDCB+10	; Store in open table
+   329 6176 8D EA 62			STA	OPNDCB+10	; Store in open table
    330 6179 A5 2B			LDA	ZICAX2		; Get requested Aux2
-   331 617B 8D 07 63			STA	OPNDCB+11	; Store in open table
+   331 617B 8D EB 62			STA	OPNDCB+11	; Store in open table
    332
    333 					;; Do the SIOV call
    334 					
-   335 617E AD 36 64			LDA	RELOC_OPNDCB
-   336 6181 AC 37 64			LDY	RELOC_OPNDCB+1
+   335 617E AD 26 64			LDA	RELOC_OPNDCB
+   336 6181 AC 27 64			LDY	RELOC_OPNDCB+1
    337 6184 20 46 61			JSR	DOSIOV
    338
    339 					;; Return DSTATS in Y, unless 144, then get ext err.
@@ -357,9 +357,9 @@ Source: ndev.s
    355 6195 20 5C 60			JSR	FLUSH		; do PUT flush if needed.
    356 6198 20 34 61			JSR	CLRBUF		; Clear buffer pointers
    357 619B A5 21			LDA	ZICDNO		; Unit #
-   358 619D 8D 09 63			STA	CLODCB+1	; Put into table
-   359 61A0 AD 46 64			LDA	RELOC_CLODCB	; Close DCB table
-   360 61A3 AC 47 64			LDY	RELOC_CLODCB+1
+   358 619D 8D ED 62			STA	CLODCB+1	; Put into table
+   359 61A0 AD 36 64			LDA	RELOC_CLODCB	; Close DCB table
+   360 61A3 AC 37 64			LDY	RELOC_CLODCB+1
    361 61A6 20 46 61			JSR	DOSIOV		; Do SIOV
    362 					
    363 61A9 B8				CLV
@@ -370,13 +370,13 @@ Source: ndev.s
    368 				;;; GET ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
    369
    370 61AC 20 1E 60		GET:	JSR	GDIDX		; Unit into X
-   371 61AF BD 21 63			LDA	RLEN,X		; Get current RX len from last STATUS
+   371 61AF BD 11 63			LDA	RLEN,X		; Get current RX len from last STATUS
    372 61B2 D0 29			BNE	GETDRN		; If RLEN > 0 then drain.
    373
    374 					;; Otherwise, we wait for something to happen.
    375
    376 61B4 20 4A 60		GETWAI:	JSR	ENPRCD		; Enable Proceed
-   377 61B7 AD 20 63			LDA	TRIP		; Did trip change?
+   377 61B7 AD 10 63			LDA	TRIP		; Did trip change?
    378 61BA F0 F8			BEQ	GETWAI		; Nope, not yet...
    379
    380 					;; Something happened, try to poll for data.
@@ -402,17 +402,17 @@ Source: ndev.s
    400 					
    401 61DD 20 53 60		GETDRN:	JSR	DIPRCD		; Disable PROCEED
    402 61E0 20 1E 60			JSR	GDIDX		; Get Unit into X again
-   403 61E3 DE 21 63			DEC	RLEN,X		; Decrement length
-   404 61E6 BC 25 63			LDY	ROFF,X		; Get Current Offset into X
-   405 61E9 B9 36 63			LDA	RBUF,Y		; Get next character
-   406 61EC FE 25 63			INC	ROFF,X		; Increment cursor
+   403 61E3 DE 11 63			DEC	RLEN,X		; Decrement length
+   404 61E6 BC 15 63			LDY	ROFF,X		; Get Current Offset into X
+   405 61E9 B9 26 63			LDA	RBUF,Y		; Get next character
+   406 61EC FE 15 63			INC	ROFF,X		; Increment cursor
    407 61EF A8				TAY			; Store in Y for a moment
    408
    409 					;; If RX buffer empty, turn off trip.
    410
-   411 61F0 BD 21 63			LDA	RLEN,X		; Get RLEN
+   411 61F0 BD 11 63			LDA	RLEN,X		; Get RLEN
    412 61F3 D0 03			BNE	GETDN2		; some left, just go done with success
-   413 61F5 8D 20 63			STA	TRIP		; Otherwise store 0 into trip
+   413 61F5 8D 10 63			STA	TRIP		; Otherwise store 0 into trip
    414 					
    415 61F8 98			GETDN2:	TYA			; Bring back char into A
    416 61F9 A0 01			LDY	#$01		; 
@@ -421,10 +421,10 @@ Source: ndev.s
    419 				;;; PUT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
    420
    421 61FC 20 1E 60		PUT:	JSR	GDIDX		; Get Unit # into X
-   422 61FF BC 29 63			LDY	TOFF,X		; Get TX cursor
-   423 6202 99 B6 63			STA	TBUF,Y		; Put char into buffer ptd by cursor
+   422 61FF BC 19 63			LDY	TOFF,X		; Get TX cursor
+   423 6202 99 A6 63			STA	TBUF,Y		; Put char into buffer ptd by cursor
    424
-   425 6205 FE 29 63			INC	TOFF,X		; Increment TX cursor
+   425 6205 FE 19 63			INC	TOFF,X		; Increment TX cursor
    426
    427 					;; Do a FLUSH if EOL or buffer full
    428
@@ -442,21 +442,21 @@ Source: ndev.s
    440 					;; Return cached value if we still have data in RX
    441
    442 6217 20 1E 60			JSR	GDIDX		; Unit into X
-   443 621A BD 21 63			LDA	RLEN,X		; Get RX len
+   443 621A BD 11 63			LDA	RLEN,X		; Get RX len
    444 621D D0 0E			BNE	STRETC		; Return cached value if RLEN > 0
    445
-   446 621F AD 20 63			LDA	TRIP		; Get TRIP?
+   446 621F AD 10 63			LDA	TRIP		; Get TRIP?
    447 6222 F0 09			BEQ	STRETC		; No trip? Return cached.
    448
    449 6224 20 22 60			JSR	POLL		; RLEN = 0, do poll.
    450 6227 20 31 60			JSR	SVSTAT		; Save DVSTAT values
    451 622A 20 AF 60			JSR	READ		; Do read.
    452 					
-   453 622D BD 21 63		STRETC:	LDA	RLEN,X		; Get Saved DVSTAT+0 val
+   453 622D BD 11 63		STRETC:	LDA	RLEN,X		; Get Saved DVSTAT+0 val
    454 6230 8D EA 02			STA	DVSTAT		; Store into DVSTAT
-   455 6233 BD 2E 63			LDA	DVS2,X		; Get Saved DVSTAT+2 val
+   455 6233 BD 1E 63			LDA	DVS2,X		; Get Saved DVSTAT+2 val
    456 6236 8D EC 02			STA	DVSTAT+2	; Store
-   457 6239 BD 32 63			LDA	DVS3,X		; Get Saved DVSTAT+3 val
+   457 6239 BD 22 63			LDA	DVS3,X		; Get Saved DVSTAT+3 val
    458 623C 8D ED 02			STA	DVSTAT+3
    459 623F A8				TAY			; copy it into Y for error output.
    460 					
@@ -469,7 +469,7 @@ Source: ndev.s
    467 					;; Clear Trip
    468
    469 6241 A9 00			LDA	#$00
-   470 6243 8D 20 63			STA	TRIP
+   470 6243 8D 10 63			STA	TRIP
    471
    472 					;; Handle Local Commands
    473
@@ -478,249 +478,254 @@ Source: ndev.s
    476 624A D0 08			BNE	SPQ		; No. Handle protocol commands
    477 624C 20 5C 60			JSR	FLUSH		; Yes. Do flush.
    478 624F A0 01			LDY	#$01		; Flush always successful
-   479 6251 4C CB 62			JMP	SPCDNE		; We're done.
+   479 6251 4C AF 62			JMP	SPCDNE		; We're done.
    480
    481 					;; Handle Protocol commands, do INQDS Query
    482
-   483 6254 A9 FF		SPQ:	LDA	#$FF		; Set INQDS
-   484 6256 8D 16 63			STA	SPEDCB+2		; To ICCOM
-   485 6259 A5 21			LDA	ZICDNO		; Get Unit #
-   486 625B 8D 15 63			STA	SPEDCB+1	; Store in table
-   487 625E A5 22			LDA	ZICCOM		; Get Command
-   488 6260 8D 1E 63			STA	SPEDCB+10	; Put in AUX1 for query
-   489 6263 A9 01			LDA	#$01		; 1 byte
-   490 6265 8D 1C 63			STA	SPEDCB+8	;
-   491 6268 A9 00			LDA	#$00		;
-   492 626A 8D 1D 63			STA	SPEDCB+9	;
-   493 626D AD 48 64			LDA	RELOC_SPEDCB	; Set up SPECIAL DCB TABLE
-   494 6270 AC 49 64			LDY	RELOC_SPEDCB+1	;
-   495 6273 20 46 61			JSR	DOSIOV		; Do Query
-   496 6276 AC 03 03			LDY	DSTATS		; Get DSTATS
-   497 6279 30 50			BMI	SPCDNE		; SIO error, return in Y. There is no ext err.
-   498
-   499 					;; We got a query, if it's $FF, return unimplemented.
-   500 627B AD 2D 63			LDA	INQDS		; Get the Returned DSTATS value from inquiry
-   501 627E C9 FF			CMP	#$FF		; Is it $FF ?
-   502 6280 D0 05			BNE	SPDO		; Nope, let's do it.
-   503 6282 A0 92			LDY	#146		; ERROR- 146  Unimplemented Command
-   504 6284 4C CB 62			JMP	SPCDNE		; Done.
-   505
-   506 					;; Do the Special, get all IOCB params, push onto stack
-   507 					
-   508 6287 A5 21		SPDO:	LDA	ZICDNO		; Unit #
-   509 6289 8D 15 63			STA	SPEDCB+1
-   510 628C A5 22			LDA	ZICCOM		; Command
-   511 628E 8D 16 63			STA	SPEDCB+2
-   512 6291 AD 2D 63			LDA	INQDS		; Result of Inquiry
-   513 6294 8D 17 63			STA	SPEDCB+3
-   514 6297 A5 24			LDA	ZICBAL		; Ptr to passed in devicespec
-   515 6299 8D 18 63			STA	SPEDCB+4
-   516 629C A5 25			LDA	ZICBAH		; 
-   517 629E 8D 19 63			STA	SPEDCB+5
-   518 62A1 A9 00			LDA 	#$00
-   519 62A3 8D 1C 63			STA 	SPEDCB+8
-   520 62A6 A9 01			LDA 	#$01
-   521 62A8 8D 1D 63			STA 	SPEDCB+9
-   522 62AB A5 2A			LDA	ZICAX1		; Aux1
-   523 62AD 8D 1E 63			STA	SPEDCB+10
-   524 62B0 A5 2B			LDA	ZICAX2		; Aux2
-   525 62B2 8D 1F 63			STA	SPEDCB+11
-   526 62B5 AD 48 64			LDA	RELOC_SPEDCB
-   527 62B8 AC 49 64			LDY	RELOC_SPEDCB+1
-   528 62BB 20 46 61			JSR	DOSIOV
+   483 6254 A5 21		SPQ:	LDA	ZICDNO		; Get Unit #
+   484 6256 8D F9 62			STA	SPQDCB+1	; Store in table
+   485 6259 A5 22			LDA	ZICCOM		; Get Command
+   486 625B 8D 02 63			STA	SPQDCB+10	; Put in AUX1 for query
+   487 625E AD 38 64			LDA	RELOC_SPQDCB	; Set up SPECIAL QUERY DCB TABLE
+   488 6261 AC 39 64			LDY	RELOC_SPQDCB+1	;
+   489 6264 20 46 61			JSR	DOSIOV		; Do Query
+   490 6267 AC 03 03			LDY	DSTATS		; Get DSTATS
+   491 626A 30 43			BMI	SPCDNE		; SIO error, return in Y. There is no ext err.
+   492
+   493 					;; We got a query, if it's $FF, return unimplemented.
+   494 626C AD 1D 63			LDA	INQDS		; Get the Returned DSTATS value from inquiry
+   495 626F C9 FF			CMP	#$FF		; Is it $FF ?
+   496 6271 D0 05			BNE	SPDO		; Nope, let's do it.
+   497 6273 A0 92			LDY	#146		; ERROR- 146  Unimplemented Command
+   498 6275 4C AF 62			JMP	SPCDNE		; Done.
+   499
+   500 					;; Do the Special, get all IOCB params, push onto stack
+   501 					
+   502 6278 8D 07 63		SPDO:	STA	SPEDCB+3	; DSTATS value from inquiry
+   503 627B A5 21			LDA	ZICDNO		; Unit #
+   504 627D 8D 05 63			STA	SPEDCB+1
+   505 6280 A5 22			LDA	ZICCOM		; Command
+   506 6282 8D 06 63			STA	SPEDCB+2
+   507 6285 A5 24			LDA	ZICBAL		; Ptr to passed in devicespec
+   508 6287 8D 08 63			STA	SPEDCB+4
+   509 628A A5 25			LDA	ZICBAH		; 
+   510 628C 8D 09 63			STA	SPEDCB+5
+   511 628F A5 2A			LDA	ZICAX1		; Aux1
+   512 6291 8D 0E 63			STA	SPEDCB+10
+   513 6294 A5 2B			LDA	ZICAX2		; Aux2
+   514 6296 8D 0F 63			STA	SPEDCB+11
+   515 6299 AD 3A 64			LDA	RELOC_SPEDCB
+   516 629C AC 3B 64			LDY	RELOC_SPEDCB+1
+   517 629F 20 46 61			JSR	DOSIOV
+   518
+   519 					;; Get error and return extended if needed.
+   520
+   521 62A2 AC 03 03			LDY	DSTATS		; Get DSTATS
+   522 62A5 C0 90			CPY	#144		; Is it 144?
+   523 62A7 D0 06			BNE	SPCDNE		; Nope, just return it.
+   524
+   525 62A9 20 22 60			JSR	POLL		; Get status, for error
+   526 62AC AC ED 02			LDY	DVSTAT+3	; Get extended error.
+   527 					
+   528 62AF 60			SPCDNE:	RTS
    529
-   530 					;; Get error and return extended if needed.
-   531
-   532 62BE AC 03 03			LDY	DSTATS		; Get DSTATS
-   533 62C1 C0 90			CPY	#144		; Is it 144?
-   534 62C3 D0 06			BNE	SPCDNE		; Nope, just return it.
-   535
-   536 62C5 20 22 60			JSR	POLL		; Get status, for error
-   537 62C8 AC ED 02			LDY	DVSTAT+3	; Get extended error.
-   538 					
-   539 62CB 60			SPCDNE:	RTS
-   540
-   541 62CC			RELOCATE_CODE_END:
-   542 				; ----------------------
-   543 				; ---- DATA SECTION ----
-   544 				; ----------------------
-   545
-   546 62CC 71			READCB	.BYTE	DEVIDN  	; DDEVIC
-   547 62CD FF				.BYTE	$FF     	; DUNIT
-   548 62CE 52				.BYTE	'R'     	; DCOMND
-   549 62CF 40				.BYTE	DSREAD     	; DSTATS
-   550 62D0 36 63		rel100	.WORD	RBUF	 	; DBUF
-   551 62D2 1F				.BYTE	$1F     	; DTIMLO
-   552 62D3 00				.BYTE	$00     	; DRESVD
-   553 62D4 FF				.BYTE	$FF     	; DBYTL
-   554 62D5 00				.BYTE	$00     	; DBYTH
-   555 62D6 FF				.BYTE	$FF     	; DAUX1
-   556 62D7 00				.BYTE	$00     	; DAUX2
-   557 					
-   558 				;;; END SUBROUTINES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-   559
-   560 62D8 71			FLUDCB:	.BYTE	DEVIDN  	; DDEVIC
-   561 62D9 FF				.BYTE	$FF     	; DUNIT
-   562 62DA 57				.BYTE	'W'     	; DCOMND
-   563 62DB 80				.BYTE	DSWRIT     	; DSTATS
-   564 62DC B6 63		rel101	.WORD	TBUF    	; DBUFL
-   565 62DE 1F				.BYTE	$1F     	; DTIMLO
-   566 62DF 00				.BYTE	$00     	; DRESVD
-   567 62E0 FF				.BYTE	$FF     	; DBYTL
-   568 62E1 00				.BYTE	$00     	; DBYTH
-   569 62E2 FF				.BYTE	$FF     	; DAUX1
-   570 62E3 00				.BYTE	$00     	; DAUX2
-   571
-   572 					
-   573 62E4 71			POLDCB:	.BYTE	DEVIDN  	; DDEVIC
-   574 62E5 FF				.BYTE	$FF     	; DUNIT
-   575 62E6 53				.BYTE	'S'     	; DCOMND
-   576 62E7 40				.BYTE	DSREAD		; DSTATS
-   577 62E8 EA 02			.WORD	DVSTAT  	; DBUF
-   578 62EA 1F				.BYTE	$1F     	; DTIMLO
-   579 62EB 00				.BYTE	$00     	; DRESVD
-   580 62EC 04 00			.WORD	4	   	; 4 bytes
-   581 62EE 00				.BYTE	$00     	; DAUX1
-   582 62EF 00				.BYTE	$00     	; DAUX2
-   583
-   584
-   585 				;;; DEVICE HANDLER TABLE ;;;;;;;;;;;;;;;;;;;;;;;;;
-   586
-   587 62F0			DEVHDL:
-   588 62F0 5E 61		rel110	.WORD	OPEN-1
-   589 62F2 91 61		rel111	.WORD	CLOSE-1
-   590 62F4 AB 61		rel112	.WORD	GET-1
-   591 62F6 FB 61		rel113	.WORD	PUT-1
-   592 62F8 13 62		rel114	.WORD	STATUS-1
-   593 62FA 40 62		rel115	.WORD	SPECIAL-1
-   594 					
-   595 					;; OPEN DCB TABLE
-   596
-   597 62FC			OPNDCB:
-   598 62FC 71				.BYTE	DEVIDN  	; DDEVIC
-   599 62FD FF				.BYTE	$FF     	; DUNIT
-   600 62FE 4F				.BYTE	'O'     	; DCOMND
-   601 62FF 80				.BYTE	DSWRIT     	; DSTATS
-   602 6300 FF				.BYTE	$FF     	; DBUFL
-   603 6301 FF				.BYTE	$FF     	; DBUFH
-   604 6302 1F				.BYTE	$1F     	; DTIMLO
-   605 6303 00				.BYTE	$00     	; DRESVD
-   606 6304 00				.BYTE	$00     	; DBYTL
-   607 6305 01				.BYTE	$01     	; DBYTH
-   608 6306 FF				.BYTE	$FF     	; DAUX1
-   609 6307 FF				.BYTE	$FF     	; DAUX2
-   610
-   611 6308 71			CLODCB	.BYTE	DEVIDN		; DDEVIC
-   612 6309 FF				.BYTE	$FF		; DUNIT
-   613 630A 43				.BYTE	'C'		; DCOMND
-   614 630B 00				.BYTE	$00		; DSTATS
-   615 630C 00				.BYTE	$00		; DBUFL
-   616 630D 00				.BYTE	$00		; DBUFH
-   617 630E 1F				.BYTE	$1F		; DTIMLO
-   618 630F 00				.BYTE	$00		; DRESVD
-   619 6310 00				.BYTE	$00		; DBYTL
-   620 6311 00				.BYTE	$00		; DBYTH
-   621 6312 00				.BYTE	$00		; DAUX1
-   622 6313 00				.BYTE	$00		; DAUX2
-   623
-   624 6314 71			SPEDCB	.BYTE	DEVIDN		; DDEVIC
-   625 6315 FF				.BYTE	$FF		; DUNIT
-   626 6316 FF				.BYTE	$FF		; DCOMND ; inq
-   627 6317 40				.BYTE	DSREAD		; DSTATS
-   628 6318 2D 63		rel120	.WORD	INQDS		; DBUFL
-   629 631A 1F				.BYTE	$1F		; DTIMLO
-   630 631B 00				.BYTE	$00		; DRESVD
-   631 631C 01				.BYTE	$01		; DBYTL
-   632 631D 00				.BYTE	$00		; DBYTH
-   633 631E FF				.BYTE	$FF		; DAUX1
-   634 631F FF				.BYTE	$FF		; DAUX2	
-   635 					
-   636 					;; End of Handler
-   637
-   638 				;;; VARIABLES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   530 62B0			RELOCATE_CODE_END:
+   531 				; ----------------------
+   532 				; ---- DATA SECTION ----
+   533 				; ----------------------
+   534
+   535 62B0 71			READCB	.BYTE	DEVIDN  	; DDEVIC
+   536 62B1 FF				.BYTE	$FF     	; DUNIT
+   537 62B2 52				.BYTE	'R'     	; DCOMND
+   538 62B3 40				.BYTE	DSREAD     	; DSTATS
+   539 62B4 26 63		rel100	.WORD	RBUF	 	; DBUF
+   540 62B6 1F				.BYTE	$1F     	; DTIMLO
+   541 62B7 00				.BYTE	$00     	; DRESVD
+   542 62B8 FF				.BYTE	$FF     	; DBYTL
+   543 62B9 00				.BYTE	$00     	; DBYTH
+   544 62BA FF				.BYTE	$FF     	; DAUX1
+   545 62BB 00				.BYTE	$00     	; DAUX2
+   546 					
+   547 				;;; END SUBROUTINES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   548
+   549 62BC 71			FLUDCB:	.BYTE	DEVIDN  	; DDEVIC
+   550 62BD FF				.BYTE	$FF     	; DUNIT
+   551 62BE 57				.BYTE	'W'     	; DCOMND
+   552 62BF 80				.BYTE	DSWRIT     	; DSTATS
+   553 62C0 A6 63		rel101	.WORD	TBUF    	; DBUFL
+   554 62C2 1F				.BYTE	$1F     	; DTIMLO
+   555 62C3 00				.BYTE	$00     	; DRESVD
+   556 62C4 FF				.BYTE	$FF     	; DBYTL
+   557 62C5 00				.BYTE	$00     	; DBYTH
+   558 62C6 FF				.BYTE	$FF     	; DAUX1
+   559 62C7 00				.BYTE	$00     	; DAUX2
+   560
+   561 					
+   562 62C8 71			POLDCB:	.BYTE	DEVIDN  	; DDEVIC
+   563 62C9 FF				.BYTE	$FF     	; DUNIT
+   564 62CA 53				.BYTE	'S'     	; DCOMND
+   565 62CB 40				.BYTE	DSREAD		; DSTATS
+   566 62CC EA 02			.WORD	DVSTAT  	; DBUF
+   567 62CE 1F				.BYTE	$1F     	; DTIMLO
+   568 62CF 00				.BYTE	$00     	; DRESVD
+   569 62D0 04 00			.WORD	4	   	; 4 bytes
+   570 62D2 00				.BYTE	$00     	; DAUX1
+   571 62D3 00				.BYTE	$00     	; DAUX2
+   572
+   573
+   574 				;;; DEVICE HANDLER TABLE ;;;;;;;;;;;;;;;;;;;;;;;;;
+   575
+   576 62D4			DEVHDL:
+   577 62D4 5E 61		rel110	.WORD	OPEN-1
+   578 62D6 91 61		rel111	.WORD	CLOSE-1
+   579 62D8 AB 61		rel112	.WORD	GET-1
+   580 62DA FB 61		rel113	.WORD	PUT-1
+   581 62DC 13 62		rel114	.WORD	STATUS-1
+   582 62DE 40 62		rel115	.WORD	SPECIAL-1
+   583 					
+   584 					;; OPEN DCB TABLE
+   585
+   586 62E0			OPNDCB:
+   587 62E0 71				.BYTE	DEVIDN  	; DDEVIC
+   588 62E1 FF				.BYTE	$FF     	; DUNIT
+   589 62E2 4F				.BYTE	'O'     	; DCOMND
+   590 62E3 80				.BYTE	DSWRIT     	; DSTATS
+   591 62E4 FF				.BYTE	$FF     	; DBUFL
+   592 62E5 FF				.BYTE	$FF     	; DBUFH
+   593 62E6 1F				.BYTE	$1F     	; DTIMLO
+   594 62E7 00				.BYTE	$00     	; DRESVD
+   595 62E8 00				.BYTE	$00     	; DBYTL
+   596 62E9 01				.BYTE	$01     	; DBYTH
+   597 62EA FF				.BYTE	$FF     	; DAUX1
+   598 62EB FF				.BYTE	$FF     	; DAUX2
+   599
+   600 62EC 71			CLODCB	.BYTE	DEVIDN		; DDEVIC
+   601 62ED FF				.BYTE	$FF		; DUNIT
+   602 62EE 43				.BYTE	'C'		; DCOMND
+   603 62EF 00				.BYTE	$00		; DSTATS
+   604 62F0 00				.BYTE	$00		; DBUFL
+   605 62F1 00				.BYTE	$00		; DBUFH
+   606 62F2 1F				.BYTE	$1F		; DTIMLO
+   607 62F3 00				.BYTE	$00		; DRESVD
+   608 62F4 00				.BYTE	$00		; DBYTL
+   609 62F5 00				.BYTE	$00		; DBYTH
+   610 62F6 00				.BYTE	$00		; DAUX1
+   611 62F7 00				.BYTE	$00		; DAUX2
+   612
+   613 62F8 71			SPQDCB	.BYTE	DEVIDN		; DDEVIC
+   614 62F9 FF				.BYTE	$FF		; DUNIT
+   615 62FA FF				.BYTE	$FF		; DCOMND ; inq
+   616 62FB 40				.BYTE	DSREAD		; DSTATS
+   617 62FC 1D 63		rel120	.WORD	INQDS		; DBUFL, DBUFH
+   618 62FE 1F				.BYTE	$1F		; DTIMLO
+   619 62FF 00				.BYTE	$00		; DRESVD
+   620 6300 01				.BYTE	$01		; DBYTL ; 1 byte
+   621 6301 00				.BYTE	$00		; DBYTH
+   622 6302 FF				.BYTE	$FF		; DAUX1
+   623 6303 00				.BYTE	$00		; DAUX2
+   624 					
+   625 6304 71			SPEDCB	.BYTE	DEVIDN		; DDEVIC
+   626 6305 FF				.BYTE	$FF		; DUNIT
+   627 6306 FF				.BYTE	$FF		; DCOMND ; special cmd
+   628 6307 FF				.BYTE	$FF		; DSTATS ; DSTATS from inquiry
+   629 6308 00				.BYTE	$00		; DBUFL
+   630 6309 00				.BYTE	$00		; DBUFH
+   631 630A 1F				.BYTE	$1F		; DTIMLO
+   632 630B 00				.BYTE	$00		; DRESVD
+   633 630C 00				.BYTE	$00		; DBYTL ; 256 bytes
+   634 630D 01				.BYTE	$01		; DBYTH
+   635 630E FF				.BYTE	$FF		; DAUX1
+   636 630F FF				.BYTE	$FF		; DAUX2	
+   637 					
+   638 					;; End of Handler
    639
-   640 = 6320			TRIP	.ds	1		; Interrupt Tripped?
-   641 = 6321			RLEN	.ds	MAXDEV		; RXD Len
-   642 = 6325			ROFF	.ds	MAXDEV		; RXD offset cursor
-   643 = 6329			TOFF	.ds	MAXDEV		; TXD offset cursor
-   644 = 632D			INQDS	.ds	1		; DSTATS to return in inquiry
-   645 = 632E			DVS2	.ds	MAXDEV		; DVSTAT+2 SAVE
-   646 = 6332			DVS3	.ds	MAXDEV		; DVSTAT+3 SAVE
-   647
-   648 = 6336			RBUF	.ds	128		; RXD buffer
-   649 = 63B6			TBUF	.ds	128		; TXD buffer
-   650
-   651
+   640 				;;; VARIABLES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   641
+   642 = 6310			TRIP	.ds	1		; Interrupt Tripped?
+   643 = 6311			RLEN	.ds	MAXDEV		; RXD Len
+   644 = 6315			ROFF	.ds	MAXDEV		; RXD offset cursor
+   645 = 6319			TOFF	.ds	MAXDEV		; TXD offset cursor
+   646 = 631D			INQDS	.ds	1		; DSTATS to return in inquiry
+   647 = 631E			DVS2	.ds	MAXDEV		; DVSTAT+2 SAVE
+   648 = 6322			DVS3	.ds	MAXDEV		; DVSTAT+3 SAVE
+   649
+   650 = 6326			RBUF	.ds	128		; RXD buffer
+   651 = 63A6			TBUF	.ds	128		; TXD buffer
    652
-   653 				; LDA #<ADDR  LO becomes  LDA RELOC_ADDR
-   654 				; LDY #>ADDR  HI becomes  LDA RELOC_ADDR+1
-   655
-   656 6436			relocate_000
-   657 6436-6476> FC 62		RELOC_OPNDCB	.WORD	OPNDCB
-   658
-   659 6438			relocate_001
-   660 6438 CC 62		RELOC_READCB	.WORD	READCB
-   661
-   662 643A			relocate_002
-   663 643A E4 62		RELOC_POLDCB	.WORD	POLDCB
-   664
-   665 643C			relocate_003
-   666 643C D8 62		RELOC_FLUDCB	.WORD	FLUDCB
-   667
-   668 643E			relocate_004
-   669 643E 01 60		RELOC_RESET	.WORD	RESET
-   670
-   671 6440			relocate_005
-   672 6440 4D 64		RELOC_HANDLEREND .WORD	HANDLEREND
-   673
-   674 6442			relocate_006
-   675 6442 F0 62		RELOC_DEVHDL	.WORD	DEVHDL
-   676
-   677 6444			relocate_007
-   678 6444 17 60		RELOC_INTR	.WORD	INTR
-   679
-   680 6446			relocate_008
-   681 6446 08 63		RELOC_CLODCB	.WORD	CLODCB
-   682
-   683 6448			relocate_009
-   684 6448 14 63		RELOC_SPEDCB	.WORD	SPEDCB
-   685
-   686
-   687 644A 4C			NEW_START	.BYTE   $4C
-   688 644B DE 60		relocate_010	.WORD	START
-   689
-   690 644D			RELOCATE_DATA_END:
-   691 					
-   692 = 644D			HANDLEREND	= *
+   653
+   654
+   655 				; LDA #<ADDR  LO becomes  LDA RELOC_ADDR
+   656 				; LDY #>ADDR  HI becomes  LDA RELOC_ADDR+1
+   657
+   658 6426			relocate_000
+   659 6426-646A> E0 62		RELOC_OPNDCB	.WORD	OPNDCB
+   660
+   661 6428			relocate_001
+   662 6428 B0 62		RELOC_READCB	.WORD	READCB
+   663
+   664 642A			relocate_002
+   665 642A C8 62		RELOC_POLDCB	.WORD	POLDCB
+   666
+   667 642C			relocate_003
+   668 642C BC 62		RELOC_FLUDCB	.WORD	FLUDCB
+   669
+   670 642E			relocate_004
+   671 642E 01 60		RELOC_RESET	.WORD	RESET
+   672
+   673 6430			relocate_005
+   674 6430 3F 64		RELOC_HANDLEREND .WORD	HANDLEREND
+   675
+   676 6432			relocate_006
+   677 6432 D4 62		RELOC_DEVHDL	.WORD	DEVHDL
+   678
+   679 6434			relocate_007
+   680 6434 17 60		RELOC_INTR	.WORD	INTR
+   681
+   682 6436			relocate_008
+   683 6436 EC 62		RELOC_CLODCB	.WORD	CLODCB
+   684
+   685 6438			relocate_009
+   686 6438 F8 62		RELOC_SPQDCB	.WORD	SPQDCB
+   687
+   688 643A			relocate_010
+   689 643A 04 63		RELOC_SPEDCB	.WORD	SPEDCB
+   690
+   691 643C 4C			NEW_START	.BYTE   $4C
+   692 643D DE 60		relocate_011	.WORD	START
    693
-   694 				; Within your code you need the following tables
-   695 				; in this order
-   696 				;
-   697 				;   RELOCATE_CODE_START	
-   698 				;     <code>
-   699 				;   RELOCATE_CODE_END
-   700 				;     <data>
-   701 				;     reloc000 .WORD <address>
-   702 				;   RELOCATE_DATA_END
-   703 				;
-   704 				;   RELOCATION_TABLE
-   705 				;     .WORD <location of addresses that need relocating>
-   706 				;     .WORD 0 ; END OF TABLE
-   707
-   708 644D			RELOCATION_TABLE:
-   709 644D 36 64 38 64 3A 64 + 			.WORD	relocate_000,relocate_001,relocate_002,relocate_003,relocate_004
-   710 6457 40 64 42 64 44 64 + 			.WORD	relocate_005,relocate_006,relocate_007,relocate_008,relocate_009,relocate_010
-   711 6463 D0 62 DC 62					.WORD	rel100,rel101
-   712 6467 F0 62 F2 62 F4 62 + 			.WORD	rel110,rel111,rel112,rel113,rel114,rel115
-   713 6473 18 63					.WORD	rel120
-   714 				;	icl "CIO-Routines_RELOC.ASM"
-   715 							; Code relocation data will be auto-magically appended to the end of the table
-   716 					
-   717 6475 00 00					.WORD 	0 ; end of table
-   718 = 6477						.DS 	1024 ; this is only needed now for testing. This storage won't be necessary in a future release
-   719 6877			END_RELOCATION_TABLE:
-   720 							
-   721 6877				icl "RELOCATE.ASM"
+   694 643F			RELOCATE_DATA_END:
+   695 					
+   696 = 643F			HANDLEREND	= *
+   697
+   698 				; Within your code you need the following tables
+   699 				; in this order
+   700 				;
+   701 				;   RELOCATE_CODE_START	
+   702 				;     <code>
+   703 				;   RELOCATE_CODE_END
+   704 				;     <data>
+   705 				;     reloc000 .WORD <address>
+   706 				;   RELOCATE_DATA_END
+   707 				;
+   708 				;   RELOCATION_TABLE
+   709 				;     .WORD <location of addresses that need relocating>
+   710 				;     .WORD 0 ; END OF TABLE
+   711
+   712 643F			RELOCATION_TABLE:
+   713 643F 26 64 28 64 2A 64 + 			.WORD	relocate_000,relocate_001,relocate_002,relocate_003,relocate_004
+   714 6449 30 64 32 64 34 64 + 			.WORD	relocate_005,relocate_006,relocate_007,relocate_008,relocate_009
+   715 6453 3A 64 3D 64					.WORD	relocate_010, relocate_011
+   716 6457 B4 62 C0 62					.WORD	rel100,rel101
+   717 645B D4 62 D6 62 D8 62 + 			.WORD	rel110,rel111,rel112,rel113,rel114,rel115
+   718 6467 FC 62					.WORD	rel120
+   719 				;	icl "CIO-Routines_RELOC.ASM"
+   720 							; Code relocation data will be auto-magically appended to the end of the table
+   721 					
+   722 6469 00 00					.WORD 	0 ; end of table
+   723 = 646B						.DS 	1024 ; this is only needed now for testing. This storage won't be necessary in a future release
+   724 686B			END_RELOCATION_TABLE:
+   725 							
+   726 686B				icl "RELOCATE.ASM"
 Source: RELOCATE.ASM
      1 				; relocate 6502 code
      2 				;
@@ -788,211 +793,211 @@ Source: RELOCATE.ASM
     64 				; REGISTERS AFFECTED
     65 				;   ALL
     66 				;====================================
-    67 6877			RELOCATE_TO_MEMLO:
+    67 686B			RELOCATE_TO_MEMLO:
     68
-    69 6877-6B03> AD E7 02		LDA MEMLO
-    70 687A 85 A6			STA TGT_ADDR_LO
-    71 687C AD E8 02			LDA MEMLO+1
-    72 687F 85 A7			STA TGT_ADDR_HI
+    69 686B-6AF7> AD E7 02		LDA MEMLO
+    70 686E 85 A6			STA TGT_ADDR_LO
+    71 6870 AD E8 02			LDA MEMLO+1
+    72 6873 85 A7			STA TGT_ADDR_HI
     73 					
-    74 6881			RELOCATE_TO_TGT_ADDR:
+    74 6875			RELOCATE_TO_TGT_ADDR:
     75 					
     76 				; START ADDRESS of the CODE block
     77
-    78 6881 A9 00			LDA #<RELOCATE_CODE_START
-    79 6883 85 A4			STA SRC_ADDR_LO
-    80 6885 A9 60			LDA #>RELOCATE_CODE_START
-    81 6887 85 A5			STA SRC_ADDR_HI
+    78 6875 A9 00			LDA #<RELOCATE_CODE_START
+    79 6877 85 A4			STA SRC_ADDR_LO
+    80 6879 A9 60			LDA #>RELOCATE_CODE_START
+    81 687B 85 A5			STA SRC_ADDR_HI
     82
     83 				; Size of just the code block
     84
-    85 6889 A9 CC			LDA #<(RELOCATE_CODE_END-RELOCATE_CODE_START)
-    86 688B 8D F8 6A			STA SRC_SIZE_LO
-    87 688E 8D FA 6A			STA CODE_SIZE_LO
-    88 6891 A9 02			LDA #>(RELOCATE_CODE_END-RELOCATE_CODE_START)
-    89 6893 8D F9 6A			STA SRC_SIZE_HI
-    90 6896 8D FB 6A			STA CODE_SIZE_HI
+    85 687D A9 B0			LDA #<(RELOCATE_CODE_END-RELOCATE_CODE_START)
+    86 687F 8D EC 6A			STA SRC_SIZE_LO
+    87 6882 8D EE 6A			STA CODE_SIZE_LO
+    88 6885 A9 02			LDA #>(RELOCATE_CODE_END-RELOCATE_CODE_START)
+    89 6887 8D ED 6A			STA SRC_SIZE_HI
+    90 688A 8D EF 6A			STA CODE_SIZE_HI
     91 							
     92 				; Figure out how much we need to adjust
     93 				; all addresses by	
     94
-    95 6899 A5 A4			LDA SRC_ADDR_LO
-    96 689B 38				SEC
-    97 689C E5 A6			SBC TGT_ADDR_LO
-    98 689E 8D FC 6A			STA DIFF_LO
+    95 688D A5 A4			LDA SRC_ADDR_LO
+    96 688F 38				SEC
+    97 6890 E5 A6			SBC TGT_ADDR_LO
+    98 6892 8D F0 6A			STA DIFF_LO
     99 					
-   100 68A1 A5 A5			LDA SRC_ADDR_HI
-   101 68A3 E5 A7			SBC TGT_ADDR_HI
-   102 68A5 8D FD 6A			STA DIFF_HI
+   100 6895 A5 A5			LDA SRC_ADDR_HI
+   101 6897 E5 A7			SBC TGT_ADDR_HI
+   102 6899 8D F1 6A			STA DIFF_HI
    103 					
-   104 68A8 A9 4D			LDA #<RELOCATION_TABLE
-   105 68AA 85 A2			STA RELOCATE_TABLE_LO
-   106 68AC A9 64			LDA #>RELOCATION_TABLE
-   107 68AE 85 A3			STA RELOCATE_TABLE_HI
+   104 689C A9 3F			LDA #<RELOCATION_TABLE
+   105 689E 85 A2			STA RELOCATE_TABLE_LO
+   106 68A0 A9 64			LDA #>RELOCATION_TABLE
+   107 68A2 85 A3			STA RELOCATE_TABLE_HI
    108
    109 				; The user may have manually added entries
    110 				; to the relocation block, so find the end
    111 				; of the entries
    112
-   113 68B0			NEXT_RELOC:
-   114 68B0 A0 00			LDY #$00		
-   115 68B2 B1 A2			LDA (RELOCATE_TABLE),Y
-   116 68B4 C8				INY
-   117 68B5 11 A2			ORA (RELOCATE_TABLE),Y
-   118 68B7 F0 10			BEQ CHECK_INSTRUCTION
-   119 68B9 18				CLC
-   120 68BA A5 A2			LDA RELOCATE_TABLE_LO
-   121 68BC 69 02			ADC #$02
-   122 68BE 85 A2			STA RELOCATE_TABLE_LO
-   123 68C0 A5 A3			LDA RELOCATE_TABLE_HI
-   124 68C2 69 00			ADC #$00
-   125 68C4 85 A3			STA RELOCATE_TABLE_HI
+   113 68A4			NEXT_RELOC:
+   114 68A4 A0 00			LDY #$00		
+   115 68A6 B1 A2			LDA (RELOCATE_TABLE),Y
+   116 68A8 C8				INY
+   117 68A9 11 A2			ORA (RELOCATE_TABLE),Y
+   118 68AB F0 10			BEQ CHECK_INSTRUCTION
+   119 68AD 18				CLC
+   120 68AE A5 A2			LDA RELOCATE_TABLE_LO
+   121 68B0 69 02			ADC #$02
+   122 68B2 85 A2			STA RELOCATE_TABLE_LO
+   123 68B4 A5 A3			LDA RELOCATE_TABLE_HI
+   124 68B6 69 00			ADC #$00
+   125 68B8 85 A3			STA RELOCATE_TABLE_HI
    126
-   127 68C6 18				CLC
-   128 68C7 90 E7			BCC NEXT_RELOC
+   127 68BA 18				CLC
+   128 68BB 90 E7			BCC NEXT_RELOC
    129 					
-   130 68C9			CHECK_INSTRUCTION:
+   130 68BD			CHECK_INSTRUCTION:
    131 					
-   132 68C9 A0 00			LDY #$00
-   133 68CB B1 A4			LDA (SRC_ADDR),Y	; Get the instruction
-   134 68CD AA				TAX
-   135 68CE BD F8 69			LDA INSTRUCTION_SIZE,X	; find out how many bytes the instruction takes
-   136 68D1 85 AA			STA INSTRUCT_SIZE	; Keep this size so we can move to the next instruction
-   137 68D3 D0 03			BNE CHECK_ABSOLUTE
-   138 68D5 4C B4 69			JMP ILLEGAL_INSTRUCTION ; can't relocate
+   132 68BD A0 00			LDY #$00
+   133 68BF B1 A4			LDA (SRC_ADDR),Y	; Get the instruction
+   134 68C1 AA				TAX
+   135 68C2 BD EC 69			LDA INSTRUCTION_SIZE,X	; find out how many bytes the instruction takes
+   136 68C5 85 AA			STA INSTRUCT_SIZE	; Keep this size so we can move to the next instruction
+   137 68C7 D0 03			BNE CHECK_ABSOLUTE
+   138 68C9 4C A8 69			JMP ILLEGAL_INSTRUCTION ; can't relocate
    139
-   140 68D8			CHECK_ABSOLUTE:	
-   141 68D8 C9 03			CMP #$03		; If it's 3 bytes long, then we have an absolute address
-   142 68DA F0 02			BEQ ABSOLUTE_INSTRUCT	; and we need to see if the address is within our block
+   140 68CC			CHECK_ABSOLUTE:	
+   141 68CC C9 03			CMP #$03		; If it's 3 bytes long, then we have an absolute address
+   142 68CE F0 02			BEQ ABSOLUTE_INSTRUCT	; and we need to see if the address is within our block
    143 					
-   144 68DC D0 56			BNE MOVE_TO_NEXT_INSTRUCTION	
+   144 68D0 D0 56			BNE MOVE_TO_NEXT_INSTRUCTION	
    145
-   146 68DE			ABSOLUTE_INSTRUCT:
+   146 68D2			ABSOLUTE_INSTRUCT:
    147 					
    148 				; Store the address into our table even if we're
    149 				; we may not need it.
    150
-   151 68DE A0 00			LDY #$00
-   152 68E0 A5 A4			LDA SRC_ADDR_LO	
-   153 68E2 91 A2			STA (RELOCATE_TABLE), Y
-   154 68E4 C8				INY
-   155 68E5 A5 A5			LDA SRC_ADDR_HI	
-   156 68E7 91 A2			STA (RELOCATE_TABLE), Y 
+   151 68D2 A0 00			LDY #$00
+   152 68D4 A5 A4			LDA SRC_ADDR_LO	
+   153 68D6 91 A2			STA (RELOCATE_TABLE), Y
+   154 68D8 C8				INY
+   155 68D9 A5 A5			LDA SRC_ADDR_HI	
+   156 68DB 91 A2			STA (RELOCATE_TABLE), Y 
    157
    158 				; We're actually pointing at the instruction
    159 				; increase the address by one
    160
-   161 68E9 A0 00			LDY #$00
-   162 68EB 18				CLC				; move the the address 
-   163 68EC B1 A2			LDA (RELOCATE_TABLE),Y		; in the instruction
-   164 68EE 69 01			ADC #$01
-   165 68F0 91 A2			STA (RELOCATE_TABLE),Y
-   166 68F2 C8				INY
-   167 68F3 B1 A2			LDA (RELOCATE_TABLE),Y
-   168 68F5 69 00			ADC #$00
-   169 68F7 91 A2			STA (RELOCATE_TABLE),Y	
+   161 68DD A0 00			LDY #$00
+   162 68DF 18				CLC				; move the the address 
+   163 68E0 B1 A2			LDA (RELOCATE_TABLE),Y		; in the instruction
+   164 68E2 69 01			ADC #$01
+   165 68E4 91 A2			STA (RELOCATE_TABLE),Y
+   166 68E6 C8				INY
+   167 68E7 B1 A2			LDA (RELOCATE_TABLE),Y
+   168 68E9 69 00			ADC #$00
+   169 68EB 91 A2			STA (RELOCATE_TABLE),Y	
    170
    171 				; How we have the address location
    172 				; we need to grab the address at that location
    173
-   174 68F9 A0 00			LDY #$00		
-   175 68FB B1 A2			LDA (RELOCATE_TABLE),Y		; The lo address in the table
-   176 68FD 85 A8			STA MOD_ADDR_LO
+   174 68ED A0 00			LDY #$00		
+   175 68EF B1 A2			LDA (RELOCATE_TABLE),Y		; The lo address in the table
+   176 68F1 85 A8			STA MOD_ADDR_LO
    177
-   178 68FF C8				INY
-   179 6900 B1 A2			LDA (RELOCATE_TABLE),Y		; the hi address in the table
-   180 6902 85 A9			STA MOD_ADDR_HI
+   178 68F3 C8				INY
+   179 68F4 B1 A2			LDA (RELOCATE_TABLE),Y		; the hi address in the table
+   180 68F6 85 A9			STA MOD_ADDR_HI
    181
    182 				; Treat the number in the addresses as unsigned	
    183
    184 				; IF ADDRESS_HI > END_OF_BLOCK THEN MOVE_TO_NEXT_INSTRUCTION
    185
-   186 6904 A0 01			LDY #$01
-   187 6906 B1 A8			LDA (MOD_ADDR),Y		; get the high byte of the address
-   188 6908 C9 64			CMP #>RELOCATE_DATA_END		; is the address before our block?
-   189 690A F0 08			BEQ LAST_BYTES			; is the high byte equal to our block?  Check if too high
-   190 690C B0 26			BCS MOVE_TO_NEXT_INSTRUCTION	; We're too high, skip it.
+   186 68F8 A0 01			LDY #$01
+   187 68FA B1 A8			LDA (MOD_ADDR),Y		; get the high byte of the address
+   188 68FC C9 64			CMP #>RELOCATE_DATA_END		; is the address before our block?
+   189 68FE F0 08			BEQ LAST_BYTES			; is the high byte equal to our block?  Check if too high
+   190 6900 B0 26			BCS MOVE_TO_NEXT_INSTRUCTION	; We're too high, skip it.
    191
    192 				; IF ADDRESS_HI < STARTING_OF_BLOCK THEN MOVE_TO_NEXT_INSTRUCTION
    193
-   194 690E C9 60			CMP #>RELOCATE_CODE_START	
-   195 6910 90 22			BCC MOVE_TO_NEXT_INSTRUCTION	; is the address less than our starint address?
+   194 6902 C9 60			CMP #>RELOCATE_CODE_START	
+   195 6904 90 22			BCC MOVE_TO_NEXT_INSTRUCTION	; is the address less than our starint address?
    196
-   197 6912 B0 08			BCS STORE_ADDRESS		; we're within range, so just store address
+   197 6906 B0 08			BCS STORE_ADDRESS		; we're within range, so just store address
    198
-   199 6914			LAST_BYTES:
+   199 6908			LAST_BYTES:
    200
    201 				; We're on the same page as the final block, so we need to check the low portion of address
    202
-   203 6914 A0 00			LDY #$00
-   204 6916 B1 A8			LDA (MOD_ADDR),Y		; checking the low byte
-   205 6918 C9 4D			CMP #<RELOCATE_DATA_END		; is the address after our block
-   206 691A B0 18			BCS MOVE_TO_NEXT_INSTRUCTION 	
+   203 6908 A0 00			LDY #$00
+   204 690A B1 A8			LDA (MOD_ADDR),Y		; checking the low byte
+   205 690C C9 3F			CMP #<RELOCATE_DATA_END		; is the address after our block
+   206 690E B0 18			BCS MOVE_TO_NEXT_INSTRUCTION 	
    207
    208 				; we're between our SOURCE range, so we want to store
    209 				; the address of the instruction in the table
    210
-   211 691C			STORE_ADDRESS:
-   212 691C A0 00			LDY #$00
-   213 691E A5 A8			LDA MOD_ADDR_LO			; store the address of
-   214 6920 91 A2			STA (RELOCATE_TABLE),Y		; the address
-   215 6922 C8				INY
-   216 6923 A5 A9			LDA MOD_ADDR_HI
-   217 6925 91 A2			STA (RELOCATE_TABLE),Y
+   211 6910			STORE_ADDRESS:
+   212 6910 A0 00			LDY #$00
+   213 6912 A5 A8			LDA MOD_ADDR_LO			; store the address of
+   214 6914 91 A2			STA (RELOCATE_TABLE),Y		; the address
+   215 6916 C8				INY
+   216 6917 A5 A9			LDA MOD_ADDR_HI
+   217 6919 91 A2			STA (RELOCATE_TABLE),Y
    218
    219 				; move to the next entry in the table
    220
-   221 6927 18				CLC
-   222 6928 A5 A2			LDA RELOCATE_TABLE_LO	
-   223 692A 69 02			ADC #$02
-   224 692C 85 A2			STA RELOCATE_TABLE_LO
-   225 692E A5 A3			LDA RELOCATE_TABLE_HI
-   226 6930 69 00			ADC #$00
-   227 6932 85 A3			STA RELOCATE_TABLE_HI
+   221 691B 18				CLC
+   222 691C A5 A2			LDA RELOCATE_TABLE_LO	
+   223 691E 69 02			ADC #$02
+   224 6920 85 A2			STA RELOCATE_TABLE_LO
+   225 6922 A5 A3			LDA RELOCATE_TABLE_HI
+   226 6924 69 00			ADC #$00
+   227 6926 85 A3			STA RELOCATE_TABLE_HI
    228 								
-   229 6934			MOVE_TO_NEXT_INSTRUCTION:
+   229 6928			MOVE_TO_NEXT_INSTRUCTION:
    230
    231 				; move to the next instruction
    232 				; this updates SRC_ADDR by the
    233 				; instruction size
    234
-   235 6934 18				CLC			
-   236 6935 A5 A4			LDA SRC_ADDR_LO		 
-   237 6937 65 AA			ADC INSTRUCT_SIZE
-   238 6939 85 A4			STA SRC_ADDR_LO
-   239 693B A5 A5			LDA SRC_ADDR_HI
-   240 693D 69 00			ADC #$00
-   241 693F 85 A5			STA SRC_ADDR_HI
+   235 6928 18				CLC			
+   236 6929 A5 A4			LDA SRC_ADDR_LO		 
+   237 692B 65 AA			ADC INSTRUCT_SIZE
+   238 692D 85 A4			STA SRC_ADDR_LO
+   239 692F A5 A5			LDA SRC_ADDR_HI
+   240 6931 69 00			ADC #$00
+   241 6933 85 A5			STA SRC_ADDR_HI
    242 					
    243 				; substract the instruction size from
    244 				; our size counter.  If we've reached
    245 				; zero, we are done
    246
-   247 6941 38				SEC
-   248 6942 AD F8 6A			LDA SRC_SIZE_LO
-   249 6945 E5 AA			SBC INSTRUCT_SIZE
-   250 6947 8D F8 6A			STA SRC_SIZE_LO
-   251 694A AD F9 6A			LDA SRC_SIZE_HI
-   252 694D E9 00			SBC #$00
-   253 694F 8D F9 6A			STA SRC_SIZE_HI
+   247 6935 38				SEC
+   248 6936 AD EC 6A			LDA SRC_SIZE_LO
+   249 6939 E5 AA			SBC INSTRUCT_SIZE
+   250 693B 8D EC 6A			STA SRC_SIZE_LO
+   251 693E AD ED 6A			LDA SRC_SIZE_HI
+   252 6941 E9 00			SBC #$00
+   253 6943 8D ED 6A			STA SRC_SIZE_HI
    254
    255 				; if both SRC_SIZE and SRC_SIZE+1 are zero
    256 				; we're done
    257 					
-   258 6952 AD F8 6A			LDA SRC_SIZE_LO
-   259 6955 0D F9 6A			ORA SRC_SIZE_HI
-   260 6958 F0 03			BEQ TERMINATE_TABLE
-   261 695A 4C C9 68			JMP CHECK_INSTRUCTION
+   258 6946 AD EC 6A			LDA SRC_SIZE_LO
+   259 6949 0D ED 6A			ORA SRC_SIZE_HI
+   260 694C F0 03			BEQ TERMINATE_TABLE
+   261 694E 4C BD 68			JMP CHECK_INSTRUCTION
    262 					
    263 				; TERMINATE THE TABLE
    264 				; by adding a NULL to the end of the table
    265
-   266 695D			TERMINATE_TABLE:
-   267 695D A9 00			LDA #$00
-   268 695F A8				TAY
-   269 6960 91 A2			STA (RELOCATE_TABLE),Y
-   270 6962 C8				INY
-   271 6963 91 A2			STA (RELOCATE_TABLE),Y
+   266 6951			TERMINATE_TABLE:
+   267 6951 A9 00			LDA #$00
+   268 6953 A8				TAY
+   269 6954 91 A2			STA (RELOCATE_TABLE),Y
+   270 6956 C8				INY
+   271 6957 91 A2			STA (RELOCATE_TABLE),Y
    272
    273 				;
    274 				; At this point we have a completed relocation table!
@@ -1001,81 +1006,81 @@ Source: RELOCATE.ASM
    277 					
    278 				; BEGIN AT THE START OF RELOCATION TABLE AGAIN
    279
-   280 6965 A9 4D			LDA #<RELOCATION_TABLE
-   281 6967 85 A2			STA RELOCATE_TABLE_LO
-   282 6969 A9 64			LDA #>RELOCATION_TABLE
-   283 696B 85 A3			STA RELOCATE_TABLE_HI
+   280 6959 A9 3F			LDA #<RELOCATION_TABLE
+   281 695B 85 A2			STA RELOCATE_TABLE_LO
+   282 695D A9 64			LDA #>RELOCATION_TABLE
+   283 695F 85 A3			STA RELOCATE_TABLE_HI
    284 					
    285 				; now we are at the first entry in the table
    286
-   287 696D			UPDATE_ADDRESSES:	
+   287 6961			UPDATE_ADDRESSES:	
    288 					
    289 				; the table contains all the addresses we need to
    290 				; update the source addresses.	
    291
    292 				; read the address we're to modify
-   293 696D A0 00			LDY #$00
+   293 6961 A0 00			LDY #$00
    294 						
-   295 696F B1 A2			LDA (RELOCATE_TABLE),Y		; The lo address in the table
-   296 6971 85 A8			STA MOD_ADDR_LO
+   295 6963 B1 A2			LDA (RELOCATE_TABLE),Y		; The lo address in the table
+   296 6965 85 A8			STA MOD_ADDR_LO
    297
-   298 6973 C8				INY
-   299 6974 B1 A2			LDA (RELOCATE_TABLE),Y		; the hi address in the table
-   300 6976 85 A9			STA MOD_ADDR_HI
+   298 6967 C8				INY
+   299 6968 B1 A2			LDA (RELOCATE_TABLE),Y		; the hi address in the table
+   300 696A 85 A9			STA MOD_ADDR_HI
    301
-   302 6978 A5 A8			LDA MOD_ADDR_LO
-   303 697A 05 A9			ORA MOD_ADDR_HI
-   304 697C F0 21			BEQ TABLE_EXHAUSTED		; if the entry is NULL, we're done
+   302 696C A5 A8			LDA MOD_ADDR_LO
+   303 696E 05 A9			ORA MOD_ADDR_HI
+   304 6970 F0 21			BEQ TABLE_EXHAUSTED		; if the entry is NULL, we're done
    305
    306 				; load the address and subtract the difference
    307 				; save the new address back
    308 					
-   309 697E 88				DEY 				; y back to zero
+   309 6972 88				DEY 				; y back to zero
    310
-   311 697F B1 A8			LDA (MOD_ADDR),Y; 
-   312 6981 38				SEC
-   313 6982 ED FC 6A			SBC DIFF_LO
-   314 6985 91 A8			STA (MOD_ADDR),Y
+   311 6973 B1 A8			LDA (MOD_ADDR),Y; 
+   312 6975 38				SEC
+   313 6976 ED F0 6A			SBC DIFF_LO
+   314 6979 91 A8			STA (MOD_ADDR),Y
    315 						
-   316 6987 C8				INY
-   317 6988 B1 A8			LDA (MOD_ADDR),Y
-   318 698A ED FD 6A			SBC DIFF_HI
-   319 698D 91 A8			STA (MOD_ADDR),Y
+   316 697B C8				INY
+   317 697C B1 A8			LDA (MOD_ADDR),Y
+   318 697E ED F1 6A			SBC DIFF_HI
+   319 6981 91 A8			STA (MOD_ADDR),Y
    320
    321 				; move to the next entry in the table
    322
-   323 698F 18				CLC
-   324 6990 A5 A2			LDA RELOCATE_TABLE_LO	
-   325 6992 69 02			ADC #$02
-   326 6994 85 A2			STA RELOCATE_TABLE_LO
-   327 6996 A5 A3			LDA RELOCATE_TABLE_HI
-   328 6998 69 00			ADC #$00
-   329 699A 85 A3			STA RELOCATE_TABLE_HI
+   323 6983 18				CLC
+   324 6984 A5 A2			LDA RELOCATE_TABLE_LO	
+   325 6986 69 02			ADC #$02
+   326 6988 85 A2			STA RELOCATE_TABLE_LO
+   327 698A A5 A3			LDA RELOCATE_TABLE_HI
+   328 698C 69 00			ADC #$00
+   329 698E 85 A3			STA RELOCATE_TABLE_HI
    330
    331 				; JMP always		
-   332 699C 18				CLC
-   333 699D 90 CE			BCC UPDATE_ADDRESSES		
+   332 6990 18				CLC
+   333 6991 90 CE			BCC UPDATE_ADDRESSES		
    334 							
-   335 699F			TABLE_EXHAUSTED:
+   335 6993			TABLE_EXHAUSTED:
    336
    337 				; Now we can move the entire block of
    338 				; modified code and data to the appropriate
    339 				; memory location
    340
-   341 699F A9 00			LDA #<RELOCATE_CODE_START
-   342 69A1 85 A4			STA SRC_ADDR_LO
-   343 69A3 A9 60			LDA #>RELOCATE_CODE_START
-   344 69A5 85 A5			STA SRC_ADDR_HI
+   341 6993 A9 00			LDA #<RELOCATE_CODE_START
+   342 6995 85 A4			STA SRC_ADDR_LO
+   343 6997 A9 60			LDA #>RELOCATE_CODE_START
+   344 6999 85 A5			STA SRC_ADDR_HI
    345 					
-   346 69A7 A9 4D			LDA #<(RELOCATE_DATA_END-RELOCATE_CODE_START)	; THIS SIZE INCLUDES THE DATA
-   347 69A9 8D F8 6A			STA SRC_SIZE_LO
-   348 69AC A9 04			LDA #>(RELOCATE_DATA_END-RELOCATE_CODE_START)
-   349 69AE 8D F9 6A			STA SRC_SIZE_HI
+   346 699B A9 3F			LDA #<(RELOCATE_DATA_END-RELOCATE_CODE_START)	; THIS SIZE INCLUDES THE DATA
+   347 699D 8D EC 6A			STA SRC_SIZE_LO
+   348 69A0 A9 04			LDA #>(RELOCATE_DATA_END-RELOCATE_CODE_START)
+   349 69A2 8D ED 6A			STA SRC_SIZE_HI
    350 					
-   351 69B1 20 B5 69			JSR MOVE_TO_TARGET
+   351 69A5 20 A9 69			JSR MOVE_TO_TARGET
    352
-   353 69B4			ILLEGAL_INSTRUCTION:
-   354 69B4 60				RTS
+   353 69A8			ILLEGAL_INSTRUCTION:
+   354 69A8 60				RTS
    355
    356 				;====================================
    357 				; MOVE_TO_TARGET
@@ -1094,29 +1099,29 @@ Source: RELOCATE.ASM
    370 				; The Source is in SRC_ADDR
    371 				; The Target is in TGT_ADDR
    372 					
-   373 69B5			MOVE_TO_TARGET:	
+   373 69A9			MOVE_TO_TARGET:	
    374 				 
-   375 69B5 A0 00			LDY #0
-   376 69B7 AE F9 6A			LDX SRC_SIZE_HI
-   377 69BA F0 0E			BEQ MOVE2
-   378 69BC B1 A4		MOVE1	LDA (SRC_ADDR),Y ; move a page at a time
-   379 69BE 91 A6			STA (TGT_ADDR),Y
-   380 69C0 C8				INY
-   381 69C1 D0 F9			BNE MOVE1
-   382 69C3 E6 A5			INC SRC_ADDR+1
-   383 69C5 E6 A7			INC TGT_ADDR+1
-   384 69C7 CA				DEX
-   385 69C8 D0 F2			BNE MOVE1
-   386 69CA AE F8 6A		MOVE2	LDX SRC_SIZE_LO
-   387 69CD F0 08			BEQ MOVE_COMPLETED
-   388 69CF B1 A4		MOVE3	LDA (SRC_ADDR),Y ; move the remaining bytes
-   389 69D1 91 A6			STA (TGT_ADDR),Y
-   390 69D3 C8				INY
-   391 69D4 CA				DEX
-   392 69D5 D0 F8			BNE MOVE3
+   375 69A9 A0 00			LDY #0
+   376 69AB AE ED 6A			LDX SRC_SIZE_HI
+   377 69AE F0 0E			BEQ MOVE2
+   378 69B0 B1 A4		MOVE1	LDA (SRC_ADDR),Y ; move a page at a time
+   379 69B2 91 A6			STA (TGT_ADDR),Y
+   380 69B4 C8				INY
+   381 69B5 D0 F9			BNE MOVE1
+   382 69B7 E6 A5			INC SRC_ADDR+1
+   383 69B9 E6 A7			INC TGT_ADDR+1
+   384 69BB CA				DEX
+   385 69BC D0 F2			BNE MOVE1
+   386 69BE AE EC 6A		MOVE2	LDX SRC_SIZE_LO
+   387 69C1 F0 08			BEQ MOVE_COMPLETED
+   388 69C3 B1 A4		MOVE3	LDA (SRC_ADDR),Y ; move the remaining bytes
+   389 69C5 91 A6			STA (TGT_ADDR),Y
+   390 69C7 C8				INY
+   391 69C8 CA				DEX
+   392 69C9 D0 F8			BNE MOVE3
    393
-   394 69D7			MOVE_COMPLETED
-   395 69D7 60				RTS
+   394 69CB			MOVE_COMPLETED
+   395 69CB 60				RTS
    396
    397 				;====================================
    398 				; ADJUST_MEMLO
@@ -1132,276 +1137,276 @@ Source: RELOCATE.ASM
    408 				;
    409 				; 	ADJUST MEMLO TO PROTECT US
    410 				;	
-   411 69D8			ADJUST_MEMLO:
+   411 69CC			ADJUST_MEMLO:
    412
-   413 69D8 A9 4D			LDA #<(RELOCATE_DATA_END-RELOCATE_CODE_START)	; THIS SIZE INCLUDES THE DATA
-   414 69DA 8D F8 6A			STA SRC_SIZE_LO
-   415 69DD A9 04			LDA #>(RELOCATE_DATA_END-RELOCATE_CODE_START)
-   416 69DF 8D F9 6A			STA SRC_SIZE_HI
+   413 69CC A9 3F			LDA #<(RELOCATE_DATA_END-RELOCATE_CODE_START)	; THIS SIZE INCLUDES THE DATA
+   414 69CE 8D EC 6A			STA SRC_SIZE_LO
+   415 69D1 A9 04			LDA #>(RELOCATE_DATA_END-RELOCATE_CODE_START)
+   416 69D3 8D ED 6A			STA SRC_SIZE_HI
    417 					
    418 				; Make sure another process
    419 				; doesn't modify our 
    420 				; MEMLO, while we are modifying it
    421 					
-   422 69E2 78				SEI
-   423 69E3 18				CLC
-   424 69E4 AD E7 02			LDA MEMLO
-   425 69E7 6D F8 6A			ADC SRC_SIZE_LO
-   426 69EA 8D E7 02			STA MEMLO
-   427 69ED AD E8 02			LDA MEMLO+1
-   428 69F0 6D F9 6A			ADC SRC_SIZE_HI
-   429 69F3 8D E8 02			STA MEMLO+1
-   430 69F6 58				CLI
+   422 69D6 78				SEI
+   423 69D7 18				CLC
+   424 69D8 AD E7 02			LDA MEMLO
+   425 69DB 6D EC 6A			ADC SRC_SIZE_LO
+   426 69DE 8D E7 02			STA MEMLO
+   427 69E1 AD E8 02			LDA MEMLO+1
+   428 69E4 6D ED 6A			ADC SRC_SIZE_HI
+   429 69E7 8D E8 02			STA MEMLO+1
+   430 69EA 58				CLI
    431 					
-   432 69F7 60				RTS
+   432 69EB 60				RTS
    433 					
    434 						
    435 				; Each entry is points to the instruction 
    436 				; (not the address) we need to relocate
    437
-   438 69F8 02			INSTRUCTION_SIZE	.BYTE $02 ; $00 BRK
-   439 69F9 02						.BYTE $02 ; $01 ORA X,IND	
-   440 69FA 00 00 00					.BYTE 0,0,0
-   441 69FD 02						.BYTE $02 ; $05 ORA ZPG
-   442 69FE 02						.BYTE $02 ; $06 ASL ZPG
-   443 69FF 00						.BYTE $00
-   444 6A00 01						.BYTE $01 ; $08 PHP
-   445 6A01 02						.BYTE $02 ; $09 ORA #
-   446 6A02 01						.BYTE $01 ; $0A ASL
-   447 6A03 00 00					.BYTE 0,0
-   448 6A05 03						.BYTE $03 ; $0D ORA ABS 
-   449 6A06 03						.BYTE $03 ; $0E ASL ABS
-   450 6A07 00						.BYTE $00
+   438 69EC 02			INSTRUCTION_SIZE	.BYTE $02 ; $00 BRK
+   439 69ED 02						.BYTE $02 ; $01 ORA X,IND	
+   440 69EE 00 00 00					.BYTE 0,0,0
+   441 69F1 02						.BYTE $02 ; $05 ORA ZPG
+   442 69F2 02						.BYTE $02 ; $06 ASL ZPG
+   443 69F3 00						.BYTE $00
+   444 69F4 01						.BYTE $01 ; $08 PHP
+   445 69F5 02						.BYTE $02 ; $09 ORA #
+   446 69F6 01						.BYTE $01 ; $0A ASL
+   447 69F7 00 00					.BYTE 0,0
+   448 69F9 03						.BYTE $03 ; $0D ORA ABS 
+   449 69FA 03						.BYTE $03 ; $0E ASL ABS
+   450 69FB 00						.BYTE $00
    451
-   452 6A08 02						.BYTE $02 ; $10 BPL
-   453 6A09 02						.BYTE $02 ; $11 ORA IND,Y	
-   454 6A0A 00 00 00					.BYTE 0,0,0
-   455 6A0D 02						.BYTE $02 ; $15 ORA ZPG,X
-   456 6A0E 02						.BYTE $02 ; $16 AND ZPG
-   457 6A0F 00						.BYTE $00
-   458 6A10 01						.BYTE $01 ; $18 CLC
-   459 6A11 03						.BYTE $03 ; $19 ORA ABS,Y
-   460 6A12 00						.BYTE 0  ; 
-   461 6A13 00 00					.BYTE 0,0
-   462 6A15 03						.BYTE $03 ; $1D ORA ABS,X
-   463 6A16 03						.BYTE $03 ; $1E ASL ABS,X
-   464 6A17 00						.BYTE $00
+   452 69FC 02						.BYTE $02 ; $10 BPL
+   453 69FD 02						.BYTE $02 ; $11 ORA IND,Y	
+   454 69FE 00 00 00					.BYTE 0,0,0
+   455 6A01 02						.BYTE $02 ; $15 ORA ZPG,X
+   456 6A02 02						.BYTE $02 ; $16 AND ZPG
+   457 6A03 00						.BYTE $00
+   458 6A04 01						.BYTE $01 ; $18 CLC
+   459 6A05 03						.BYTE $03 ; $19 ORA ABS,Y
+   460 6A06 00						.BYTE 0  ; 
+   461 6A07 00 00					.BYTE 0,0
+   462 6A09 03						.BYTE $03 ; $1D ORA ABS,X
+   463 6A0A 03						.BYTE $03 ; $1E ASL ABS,X
+   464 6A0B 00						.BYTE $00
    465
-   466 6A18 03						.BYTE $03 ; $20 JSR ABS
-   467 6A19 02						.BYTE $02 ; $21 AND X,IND	
-   468 6A1A 00 00					.BYTE 0,0
-   469 6A1C 02						.BYTE $02 ; $24 BIT ZPG
-   470 6A1D 02						.BYTE $02 ; $25 AND ZPG
-   471 6A1E 02						.BYTE $02 ; $26 ROL ZPG
-   472 6A1F 00						.BYTE $00
-   473 6A20 01						.BYTE $01 ; $28 PLP
-   474 6A21 02						.BYTE $02 ; $29 AND #
-   475 6A22 01						.BYTE $01 ; $2A ROL 
-   476 6A23 00						.BYTE 0
-   477 6A24 03						.BYTE $03 ; $2C BIT ABS
-   478 6A25 03						.BYTE $03 ; $2D ORA ABS
-   479 6A26 03						.BYTE $03 ; $2E ROL ABS
-   480 6A27 00						.BYTE $00
+   466 6A0C 03						.BYTE $03 ; $20 JSR ABS
+   467 6A0D 02						.BYTE $02 ; $21 AND X,IND	
+   468 6A0E 00 00					.BYTE 0,0
+   469 6A10 02						.BYTE $02 ; $24 BIT ZPG
+   470 6A11 02						.BYTE $02 ; $25 AND ZPG
+   471 6A12 02						.BYTE $02 ; $26 ROL ZPG
+   472 6A13 00						.BYTE $00
+   473 6A14 01						.BYTE $01 ; $28 PLP
+   474 6A15 02						.BYTE $02 ; $29 AND #
+   475 6A16 01						.BYTE $01 ; $2A ROL 
+   476 6A17 00						.BYTE 0
+   477 6A18 03						.BYTE $03 ; $2C BIT ABS
+   478 6A19 03						.BYTE $03 ; $2D ORA ABS
+   479 6A1A 03						.BYTE $03 ; $2E ROL ABS
+   480 6A1B 00						.BYTE $00
    481
-   482 6A28 02						.BYTE $02 ; $30 BMI REL
-   483 6A29 02						.BYTE $02 ; $31 AND IND,Y	
-   484 6A2A 00 00 00					.BYTE 0,0,0
-   485 6A2D 02						.BYTE $02 ; $35 AND ZPG,X
-   486 6A2E 02						.BYTE $02 ; $36 ROL ZPG,X
-   487 6A2F 00						.BYTE $00
-   488 6A30 01						.BYTE $01 ; $38 SEC
-   489 6A31 03						.BYTE $03 ; $39 AND ABS,Y
-   490 6A32 00						.BYTE 0  ; 
-   491 6A33 00 00					.BYTE 0,0
-   492 6A35 03						.BYTE $03 ; $3D AND ABS,X
-   493 6A36 03						.BYTE $03 ; $3E ROL ABS,X
-   494 6A37 00						.BYTE $00	
+   482 6A1C 02						.BYTE $02 ; $30 BMI REL
+   483 6A1D 02						.BYTE $02 ; $31 AND IND,Y	
+   484 6A1E 00 00 00					.BYTE 0,0,0
+   485 6A21 02						.BYTE $02 ; $35 AND ZPG,X
+   486 6A22 02						.BYTE $02 ; $36 ROL ZPG,X
+   487 6A23 00						.BYTE $00
+   488 6A24 01						.BYTE $01 ; $38 SEC
+   489 6A25 03						.BYTE $03 ; $39 AND ABS,Y
+   490 6A26 00						.BYTE 0  ; 
+   491 6A27 00 00					.BYTE 0,0
+   492 6A29 03						.BYTE $03 ; $3D AND ABS,X
+   493 6A2A 03						.BYTE $03 ; $3E ROL ABS,X
+   494 6A2B 00						.BYTE $00	
    495 							
-   496 6A38 01						.BYTE $01 ; $40 RTI 
-   497 6A39 02						.BYTE $02 ; $41 EOR X,IND	
-   498 6A3A 00 00 00					.BYTE 0,0,0
-   499 6A3D 02						.BYTE $02 ; $45 EOR ZPG
-   500 6A3E 02						.BYTE $02 ; $46 LSR ZPG
-   501 6A3F 00						.BYTE $00
-   502 6A40 01						.BYTE $01 ; $48 PHA
-   503 6A41 02						.BYTE $02 ; $49 EOR #
-   504 6A42 01						.BYTE $01 ; $4A LSR 
-   505 6A43 00						.BYTE 0
-   506 6A44 03						.BYTE $03 ; $4C JMP ABS
-   507 6A45 03						.BYTE $03 ; $4D EOR ABS
-   508 6A46 03						.BYTE $03 ; $4E LSR ABS
-   509 6A47 00						.BYTE $00
+   496 6A2C 01						.BYTE $01 ; $40 RTI 
+   497 6A2D 02						.BYTE $02 ; $41 EOR X,IND	
+   498 6A2E 00 00 00					.BYTE 0,0,0
+   499 6A31 02						.BYTE $02 ; $45 EOR ZPG
+   500 6A32 02						.BYTE $02 ; $46 LSR ZPG
+   501 6A33 00						.BYTE $00
+   502 6A34 01						.BYTE $01 ; $48 PHA
+   503 6A35 02						.BYTE $02 ; $49 EOR #
+   504 6A36 01						.BYTE $01 ; $4A LSR 
+   505 6A37 00						.BYTE 0
+   506 6A38 03						.BYTE $03 ; $4C JMP ABS
+   507 6A39 03						.BYTE $03 ; $4D EOR ABS
+   508 6A3A 03						.BYTE $03 ; $4E LSR ABS
+   509 6A3B 00						.BYTE $00
    510
-   511 6A48 02						.BYTE $02 ; $50 BVC REL
-   512 6A49 02						.BYTE $02 ; $51 EOR IND,Y	
-   513 6A4A 00 00 00					.BYTE 0,0,0
-   514 6A4D 02						.BYTE $02 ; $55 EOR ZPG,X
-   515 6A4E 02						.BYTE $02 ; $56 LSR ZPG,X
-   516 6A4F 00						.BYTE $00
-   517 6A50 01						.BYTE $01 ; $58 CLI
-   518 6A51 03						.BYTE $03 ; $59 EOR ABS,Y
-   519 6A52 00						.BYTE 0  ; 
-   520 6A53 00 00					.BYTE 0,0
-   521 6A55 03						.BYTE $03 ; $5D EOR ABS,X
-   522 6A56 03						.BYTE $03 ; $5E LSR ABS,X
-   523 6A57 00						.BYTE $00
+   511 6A3C 02						.BYTE $02 ; $50 BVC REL
+   512 6A3D 02						.BYTE $02 ; $51 EOR IND,Y	
+   513 6A3E 00 00 00					.BYTE 0,0,0
+   514 6A41 02						.BYTE $02 ; $55 EOR ZPG,X
+   515 6A42 02						.BYTE $02 ; $56 LSR ZPG,X
+   516 6A43 00						.BYTE $00
+   517 6A44 01						.BYTE $01 ; $58 CLI
+   518 6A45 03						.BYTE $03 ; $59 EOR ABS,Y
+   519 6A46 00						.BYTE 0  ; 
+   520 6A47 00 00					.BYTE 0,0
+   521 6A49 03						.BYTE $03 ; $5D EOR ABS,X
+   522 6A4A 03						.BYTE $03 ; $5E LSR ABS,X
+   523 6A4B 00						.BYTE $00
    524 							
-   525 6A58 01						.BYTE $01 ; $60 RTS 
-   526 6A59 02						.BYTE $02 ; $61 ADC X,IND	
-   527 6A5A 00 00 00					.BYTE 0,0,0
-   528 6A5D 02						.BYTE $02 ; $65 ADC ZPG
-   529 6A5E 02						.BYTE $02 ; $66 ROR ZPG
-   530 6A5F 00						.BYTE $00
-   531 6A60 01						.BYTE $01 ; $68 PLA
-   532 6A61 02						.BYTE $02 ; $69 ADC #
-   533 6A62 01						.BYTE $01 ; $6A ROR 
-   534 6A63 00						.BYTE 0
-   535 6A64 03						.BYTE $03 ; $6C JMP IND
-   536 6A65 03						.BYTE $03 ; $6D ADC ABS
-   537 6A66 03						.BYTE $03 ; $6E ROR ABS
-   538 6A67 00						.BYTE $00
+   525 6A4C 01						.BYTE $01 ; $60 RTS 
+   526 6A4D 02						.BYTE $02 ; $61 ADC X,IND	
+   527 6A4E 00 00 00					.BYTE 0,0,0
+   528 6A51 02						.BYTE $02 ; $65 ADC ZPG
+   529 6A52 02						.BYTE $02 ; $66 ROR ZPG
+   530 6A53 00						.BYTE $00
+   531 6A54 01						.BYTE $01 ; $68 PLA
+   532 6A55 02						.BYTE $02 ; $69 ADC #
+   533 6A56 01						.BYTE $01 ; $6A ROR 
+   534 6A57 00						.BYTE 0
+   535 6A58 03						.BYTE $03 ; $6C JMP IND
+   536 6A59 03						.BYTE $03 ; $6D ADC ABS
+   537 6A5A 03						.BYTE $03 ; $6E ROR ABS
+   538 6A5B 00						.BYTE $00
    539
-   540 6A68 02						.BYTE $02 ; $70 BVS REL
-   541 6A69 02						.BYTE $02 ; $71 ADC IND,Y	
-   542 6A6A 00 00 00					.BYTE 0,0,0
-   543 6A6D 02						.BYTE $02 ; $75 ADC ZPG,X
-   544 6A6E 02						.BYTE $02 ; $76 ROR ZPG,X
-   545 6A6F 00						.BYTE $00
-   546 6A70 01						.BYTE $01 ; $78 SEI
-   547 6A71 03						.BYTE $03 ; $79 ADC ABS,Y
-   548 6A72 00						.BYTE 0  ; 
-   549 6A73 00 00					.BYTE 0,0
-   550 6A75 03						.BYTE $03 ; $7D ADC ABS,X
-   551 6A76 03						.BYTE $03 ; $7E ROR ABS,X
-   552 6A77 00						.BYTE $00
+   540 6A5C 02						.BYTE $02 ; $70 BVS REL
+   541 6A5D 02						.BYTE $02 ; $71 ADC IND,Y	
+   542 6A5E 00 00 00					.BYTE 0,0,0
+   543 6A61 02						.BYTE $02 ; $75 ADC ZPG,X
+   544 6A62 02						.BYTE $02 ; $76 ROR ZPG,X
+   545 6A63 00						.BYTE $00
+   546 6A64 01						.BYTE $01 ; $78 SEI
+   547 6A65 03						.BYTE $03 ; $79 ADC ABS,Y
+   548 6A66 00						.BYTE 0  ; 
+   549 6A67 00 00					.BYTE 0,0
+   550 6A69 03						.BYTE $03 ; $7D ADC ABS,X
+   551 6A6A 03						.BYTE $03 ; $7E ROR ABS,X
+   552 6A6B 00						.BYTE $00
    553
-   554 6A78 00						.BYTE 0 
-   555 6A79 02						.BYTE $02 ; $81 STA X,IND	
-   556 6A7A 00 00					.BYTE 0,0
-   557 6A7C 02						.BYTE $02 ; $84 STY ZPG
-   558 6A7D 02						.BYTE $02 ; $85 STA ZPG
-   559 6A7E 02						.BYTE $02 ; $86 STX ZPG
-   560 6A7F 00						.BYTE $00
-   561 6A80 01						.BYTE $01 ; $88 DEY
-   562 6A81 09						.BYTE 9  
-   563 6A82 01						.BYTE $01 ; $8A TXA 
-   564 6A83 00						.BYTE 0
-   565 6A84 03						.BYTE $03 ; $8C STY ABS
-   566 6A85 03						.BYTE $03 ; $8D STA ABS
-   567 6A86 03						.BYTE $03 ; $8E STX ABS
-   568 6A87 00						.BYTE $00
+   554 6A6C 00						.BYTE 0 
+   555 6A6D 02						.BYTE $02 ; $81 STA X,IND	
+   556 6A6E 00 00					.BYTE 0,0
+   557 6A70 02						.BYTE $02 ; $84 STY ZPG
+   558 6A71 02						.BYTE $02 ; $85 STA ZPG
+   559 6A72 02						.BYTE $02 ; $86 STX ZPG
+   560 6A73 00						.BYTE $00
+   561 6A74 01						.BYTE $01 ; $88 DEY
+   562 6A75 09						.BYTE 9  
+   563 6A76 01						.BYTE $01 ; $8A TXA 
+   564 6A77 00						.BYTE 0
+   565 6A78 03						.BYTE $03 ; $8C STY ABS
+   566 6A79 03						.BYTE $03 ; $8D STA ABS
+   567 6A7A 03						.BYTE $03 ; $8E STX ABS
+   568 6A7B 00						.BYTE $00
    569
-   570 6A88 02						.BYTE $02 ; $90 BCC REL
-   571 6A89 02						.BYTE $02 ; $91 STA IND,Y	
-   572 6A8A 00 00					.BYTE 0,0
-   573 6A8C 02						.BYTE $02 ; $94 STY ZPG,X
-   574 6A8D 02						.BYTE $02 ; $95 STA ZPG,X
-   575 6A8E 02						.BYTE $02 ; $96 STX ZPG,X
-   576 6A8F 00						.BYTE $00
-   577 6A90 01						.BYTE $01 ; $98 TYA
-   578 6A91 03						.BYTE $03 ; $99 STA ABS,Y
-   579 6A92 01						.BYTE $01 ; $9A TXS
-   580 6A93 00 00					.BYTE 0,0
-   581 6A95 03						.BYTE $03 ; $9D STA ABS,X
-   582 6A96 00						.BYTE 0
-   583 6A97 00						.BYTE $00
+   570 6A7C 02						.BYTE $02 ; $90 BCC REL
+   571 6A7D 02						.BYTE $02 ; $91 STA IND,Y	
+   572 6A7E 00 00					.BYTE 0,0
+   573 6A80 02						.BYTE $02 ; $94 STY ZPG,X
+   574 6A81 02						.BYTE $02 ; $95 STA ZPG,X
+   575 6A82 02						.BYTE $02 ; $96 STX ZPG,X
+   576 6A83 00						.BYTE $00
+   577 6A84 01						.BYTE $01 ; $98 TYA
+   578 6A85 03						.BYTE $03 ; $99 STA ABS,Y
+   579 6A86 01						.BYTE $01 ; $9A TXS
+   580 6A87 00 00					.BYTE 0,0
+   581 6A89 03						.BYTE $03 ; $9D STA ABS,X
+   582 6A8A 00						.BYTE 0
+   583 6A8B 00						.BYTE $00
    584
-   585 6A98 02						.BYTE $02 ; $A0 LDY #
-   586 6A99 02						.BYTE $02 ; $A1 LDA X, IND	
-   587 6A9A 02						.BYTE $02 ; $A2 LDX #
-   588 6A9B 00						.BYTE 0
-   589 6A9C 02						.BYTE $02 ; $A4 LDY ZPG
-   590 6A9D 02						.BYTE $02 ; $A5 LDA ZPG
-   591 6A9E 02						.BYTE $02 ; $A6 LDX ZPG
-   592 6A9F 00						.BYTE $00
-   593 6AA0 01						.BYTE $01 ; $A8 TAY
-   594 6AA1 02						.BYTE $02 ; $A9 LDA #
-   595 6AA2 01						.BYTE $01 ; $AA TAX
-   596 6AA3 00						.BYTE 0
-   597 6AA4 03						.BYTE $03 ; $AC LDY ABS 
-   598 6AA5 03						.BYTE $03 ; $AD LDA ABS
-   599 6AA6 03						.BYTE $03 ; $AE LDX ABS
-   600 6AA7 00						.BYTE $00
+   585 6A8C 02						.BYTE $02 ; $A0 LDY #
+   586 6A8D 02						.BYTE $02 ; $A1 LDA X, IND	
+   587 6A8E 02						.BYTE $02 ; $A2 LDX #
+   588 6A8F 00						.BYTE 0
+   589 6A90 02						.BYTE $02 ; $A4 LDY ZPG
+   590 6A91 02						.BYTE $02 ; $A5 LDA ZPG
+   591 6A92 02						.BYTE $02 ; $A6 LDX ZPG
+   592 6A93 00						.BYTE $00
+   593 6A94 01						.BYTE $01 ; $A8 TAY
+   594 6A95 02						.BYTE $02 ; $A9 LDA #
+   595 6A96 01						.BYTE $01 ; $AA TAX
+   596 6A97 00						.BYTE 0
+   597 6A98 03						.BYTE $03 ; $AC LDY ABS 
+   598 6A99 03						.BYTE $03 ; $AD LDA ABS
+   599 6A9A 03						.BYTE $03 ; $AE LDX ABS
+   600 6A9B 00						.BYTE $00
    601 							
-   602 6AA8 02						.BYTE $02 ; $B0 BCS REL
-   603 6AA9 02						.BYTE $02 ; $B1 LDA IND,Y	
-   604 6AAA 00 00					.BYTE 0,0
-   605 6AAC 02						.BYTE $02 ; $B4 LDY ZPG,X
-   606 6AAD 02						.BYTE $02 ; $B5 LDA ZPG,X
-   607 6AAE 02						.BYTE $02 ; $B6 LDX ZPG,Y
-   608 6AAF 00						.BYTE $00
-   609 6AB0 01						.BYTE $01 ; $B8 CLV
-   610 6AB1 03						.BYTE $03 ; $B9 LDA ABS,Y
-   611 6AB2 01						.BYTE $01 ; $BA TSX
-   612 6AB3 00						.BYTE 0
-   613 6AB4 03						.BYTE $03 ; $BC LDY ABS,X 
-   614 6AB5 03						.BYTE $03 ; $BD LDA ABS,X
-   615 6AB6 03						.BYTE $03 ; $BE LDX ABS,Y
-   616 6AB7 00						.BYTE $00
+   602 6A9C 02						.BYTE $02 ; $B0 BCS REL
+   603 6A9D 02						.BYTE $02 ; $B1 LDA IND,Y	
+   604 6A9E 00 00					.BYTE 0,0
+   605 6AA0 02						.BYTE $02 ; $B4 LDY ZPG,X
+   606 6AA1 02						.BYTE $02 ; $B5 LDA ZPG,X
+   607 6AA2 02						.BYTE $02 ; $B6 LDX ZPG,Y
+   608 6AA3 00						.BYTE $00
+   609 6AA4 01						.BYTE $01 ; $B8 CLV
+   610 6AA5 03						.BYTE $03 ; $B9 LDA ABS,Y
+   611 6AA6 01						.BYTE $01 ; $BA TSX
+   612 6AA7 00						.BYTE 0
+   613 6AA8 03						.BYTE $03 ; $BC LDY ABS,X 
+   614 6AA9 03						.BYTE $03 ; $BD LDA ABS,X
+   615 6AAA 03						.BYTE $03 ; $BE LDX ABS,Y
+   616 6AAB 00						.BYTE $00
    617
-   618 6AB8 02						.BYTE $02 ; $C0 CPY #
-   619 6AB9 02						.BYTE $02 ; $C1 CMP X,IND	
-   620 6ABA 00 00					.BYTE 0,0
-   621 6ABC 02						.BYTE $02 ; $C4 CPY ZPG
-   622 6ABD 02						.BYTE $02 ; $C5 CMP ZPG
-   623 6ABE 02						.BYTE $02 ; $C6 DEC ZPG
-   624 6ABF 00						.BYTE $00
-   625 6AC0 01						.BYTE $01 ; $C8 INY
-   626 6AC1 02						.BYTE $02 ; $C9 CMP #
-   627 6AC2 01						.BYTE $01 ; $CA DEX
-   628 6AC3 00						.BYTE 0
-   629 6AC4 03						.BYTE $03 ; $CC CPY ABS 
-   630 6AC5 03						.BYTE $03 ; $CD CMP ABS
-   631 6AC6 03						.BYTE $03 ; $CE DEC ABS
-   632 6AC7 00						.BYTE $00
+   618 6AAC 02						.BYTE $02 ; $C0 CPY #
+   619 6AAD 02						.BYTE $02 ; $C1 CMP X,IND	
+   620 6AAE 00 00					.BYTE 0,0
+   621 6AB0 02						.BYTE $02 ; $C4 CPY ZPG
+   622 6AB1 02						.BYTE $02 ; $C5 CMP ZPG
+   623 6AB2 02						.BYTE $02 ; $C6 DEC ZPG
+   624 6AB3 00						.BYTE $00
+   625 6AB4 01						.BYTE $01 ; $C8 INY
+   626 6AB5 02						.BYTE $02 ; $C9 CMP #
+   627 6AB6 01						.BYTE $01 ; $CA DEX
+   628 6AB7 00						.BYTE 0
+   629 6AB8 03						.BYTE $03 ; $CC CPY ABS 
+   630 6AB9 03						.BYTE $03 ; $CD CMP ABS
+   631 6ABA 03						.BYTE $03 ; $CE DEC ABS
+   632 6ABB 00						.BYTE $00
    633
-   634 6AC8 02						.BYTE $02 ; $D0 BNE REL
-   635 6AC9 02						.BYTE $02 ; $D1 CMP IND,Y	
-   636 6ACA 00 00 00					.BYTE 0,0,0
-   637 6ACD 02						.BYTE $02 ; $D5 CMP ZPG,X
-   638 6ACE 02						.BYTE $02 ; $D6 DEC ZPG,X
-   639 6ACF 00						.BYTE $00
-   640 6AD0 01						.BYTE $01 ; $D8 CLD
-   641 6AD1 03						.BYTE $03 ; $D9 CMP ABS,Y
-   642 6AD2 00 00 00					.BYTE 0,0,0
-   643 6AD5 03						.BYTE $03 ; $DD CMP ABS,X
-   644 6AD6 03						.BYTE $03 ; $DE DEC ABS,X
-   645 6AD7 00						.BYTE $00																								
+   634 6ABC 02						.BYTE $02 ; $D0 BNE REL
+   635 6ABD 02						.BYTE $02 ; $D1 CMP IND,Y	
+   636 6ABE 00 00 00					.BYTE 0,0,0
+   637 6AC1 02						.BYTE $02 ; $D5 CMP ZPG,X
+   638 6AC2 02						.BYTE $02 ; $D6 DEC ZPG,X
+   639 6AC3 00						.BYTE $00
+   640 6AC4 01						.BYTE $01 ; $D8 CLD
+   641 6AC5 03						.BYTE $03 ; $D9 CMP ABS,Y
+   642 6AC6 00 00 00					.BYTE 0,0,0
+   643 6AC9 03						.BYTE $03 ; $DD CMP ABS,X
+   644 6ACA 03						.BYTE $03 ; $DE DEC ABS,X
+   645 6ACB 00						.BYTE $00																								
    646
-   647 6AD8 02						.BYTE $02 ; $E0 CPX #
-   648 6AD9 02						.BYTE $02 ; $E1 SBC X,IND	
-   649 6ADA 00 00					.BYTE 0,0
-   650 6ADC 02						.BYTE $02 ; $E4 CPX ZPG
-   651 6ADD 02						.BYTE $02 ; $E5 SBC ZPG
-   652 6ADE 02						.BYTE $02 ; $E6 INC ZPG
-   653 6ADF 00						.BYTE $00
-   654 6AE0 01						.BYTE $01 ; $E8 INX
-   655 6AE1 02						.BYTE $02 ; $E9 SBC #
-   656 6AE2 01						.BYTE $01 ; $EA NOP
-   657 6AE3 00						.BYTE 0
-   658 6AE4 03						.BYTE $03 ; $EC CPX ABS 
-   659 6AE5 03						.BYTE $03 ; $ED SBC ABS
-   660 6AE6 03						.BYTE $03 ; $EE INC ABS
-   661 6AE7 00						.BYTE $00
+   647 6ACC 02						.BYTE $02 ; $E0 CPX #
+   648 6ACD 02						.BYTE $02 ; $E1 SBC X,IND	
+   649 6ACE 00 00					.BYTE 0,0
+   650 6AD0 02						.BYTE $02 ; $E4 CPX ZPG
+   651 6AD1 02						.BYTE $02 ; $E5 SBC ZPG
+   652 6AD2 02						.BYTE $02 ; $E6 INC ZPG
+   653 6AD3 00						.BYTE $00
+   654 6AD4 01						.BYTE $01 ; $E8 INX
+   655 6AD5 02						.BYTE $02 ; $E9 SBC #
+   656 6AD6 01						.BYTE $01 ; $EA NOP
+   657 6AD7 00						.BYTE 0
+   658 6AD8 03						.BYTE $03 ; $EC CPX ABS 
+   659 6AD9 03						.BYTE $03 ; $ED SBC ABS
+   660 6ADA 03						.BYTE $03 ; $EE INC ABS
+   661 6ADB 00						.BYTE $00
    662 																												
-   663 6AE8 02						.BYTE $02 ; $F0 BEQ REL
-   664 6AE9 02						.BYTE $02 ; $F1 SBC IND,Y	
-   665 6AEA 00 00 00					.BYTE 0,0,0
-   666 6AED 02						.BYTE $02 ; $F5 SBC ZPG,X
-   667 6AEE 02						.BYTE $02 ; $F6 INC ZPG,X
-   668 6AEF 00						.BYTE $00
-   669 6AF0 01						.BYTE $01 ; $F8 SED
-   670 6AF1 02						.BYTE $02 ; $F9 SBC #
-   671 6AF2 00 00 00					.BYTE 0,0,0
-   672 6AF5 03						.BYTE $03 ; $FD SBC ABS,X
-   673 6AF6 03						.BYTE $03 ; $FE INC ABS,X
-   674 6AF7 00						.BYTE $00
+   663 6ADC 02						.BYTE $02 ; $F0 BEQ REL
+   664 6ADD 02						.BYTE $02 ; $F1 SBC IND,Y	
+   665 6ADE 00 00 00					.BYTE 0,0,0
+   666 6AE1 02						.BYTE $02 ; $F5 SBC ZPG,X
+   667 6AE2 02						.BYTE $02 ; $F6 INC ZPG,X
+   668 6AE3 00						.BYTE $00
+   669 6AE4 01						.BYTE $01 ; $F8 SED
+   670 6AE5 02						.BYTE $02 ; $F9 SBC #
+   671 6AE6 00 00 00					.BYTE 0,0,0
+   672 6AE9 03						.BYTE $03 ; $FD SBC ABS,X
+   673 6AEA 03						.BYTE $03 ; $FE INC ABS,X
+   674 6AEB 00						.BYTE $00
    675
    676 																											
    677 				; RC_SIZE
-   678 6AF8			SRC_SIZE:
-   679 6AF8 00			SRC_SIZE_LO:		.BYTE $00
-   680 6AF9 00			SRC_SIZE_HI:		.BYTE $00
+   678 6AEC			SRC_SIZE:
+   679 6AEC 00			SRC_SIZE_LO:		.BYTE $00
+   680 6AED 00			SRC_SIZE_HI:		.BYTE $00
    681
    682 				;SRC_ADDR_END_LO:	.BYTE $00
    683 				;SRC_ADDR_END_HI:	.BYTE $00
@@ -1409,76 +1414,76 @@ Source: RELOCATE.ASM
    685 				;SRC_DATA_END_LO:	.BYTE $00
    686 				;SRC_DATA_END_HI:	.BYTE $00
    687
-   688 6AFA 00			CODE_SIZE_LO		.BYTE $00
-   689 6AFB 00			CODE_SIZE_HI		.BYTE $00
+   688 6AEE 00			CODE_SIZE_LO		.BYTE $00
+   689 6AEF 00			CODE_SIZE_HI		.BYTE $00
    690
-   691 6AFC			DIFF:
-   692 6AFC 00			DIFF_LO:		.BYTE $00
-   693 6AFD 00			DIFF_HI:		.BYTE $00
+   691 6AF0			DIFF:
+   692 6AF0 00			DIFF_LO:		.BYTE $00
+   693 6AF1 00			DIFF_HI:		.BYTE $00
    694
    695
-   722
-   723
-   724 				.if DEBUG = 1
-   725
-   726 				; This debug code simply displays
-   727 				; if it's relocated or not and
-   728 				; where it is loaded/relocated
-   729
-   730 					icl "CIO-Routines.asm"
-   731 					icl "CIO-Routines_DATA.ASM"
-   732 						
-   733 				MSG	.BYTE 'Relocated to ',EOL
-   734 				NMSG	.BYTE 'Not relocated ',EOL
-   735 				PRGNAME .BYTE 'NDEV: 2021-01-05 18:45',EOL
-   736 				.endif
-   737 					
-   738 6AFE			RELOCATE_START
-   739
-   740 				.if DEBUG = 1
-   741
-   742 					JSR OPEN_E_DEVICE
-   743 					LDA #<PRGNAME
-   744 					LDY #>PRGNAME
-   745 					JSR PRINT_STRING
-   746 					
-   747 				.if DONT_RELOCATE = 0
-   748 					LDA #<MSG
-   749 					LDY #>MSG
-   750 				.else
-   751 					LDA #<NMSG
-   752 					LDY #>NMSG
-   753 				.endif ; DONT_RELOCATE
-   754
-   755 					JSR PRINT_STRING_NO_EOL
-   756
-   757 				.if DONT_RELOCATE = 0
-   758 					LDA MEMLO+1
-   759 				.else
-   760 					LDA #>RELOCATE_CODE_START
-   761 				.endif ; DONT_RELOCATE
-   762
-   763 					JSR PRINT_HEX_NO_EOL
-   764
-   765 				.if DONT_RELOCATE = 0
-   766 					LDA MEMLO
-   767 				.else
-   768 					LDA #<RELOCATE_CODE_START
-   769 				.endif	; DONT_RELOCATE
-   770
-   771 					JSR PRINT_HEX
-   772 					LDA #<NORE
-   773 					LDY #>NORE
-   774 					JSR PRINT_STRING
-   775 					
-   776 				.endif ; DEBUG
-   777
-   778
-   779 				.if DONT_RELOCATE = 0
-   780 6AFE 20 77 68			JSR RELOCATE_TO_MEMLO
-   781 				.endif ; DONT_RELOCATE
-   782 6B01 4C 4A 64			JMP NEW_START	
+   727
+   728
+   729 				.if DEBUG = 1
+   730
+   731 				; This debug code simply displays
+   732 				; if it's relocated or not and
+   733 				; where it is loaded/relocated
+   734
+   735 					icl "CIO-Routines.asm"
+   736 					icl "CIO-Routines_DATA.ASM"
+   737 						
+   738 				MSG	.BYTE 'Relocated to ',EOL
+   739 				NMSG	.BYTE 'Not relocated ',EOL
+   740 				PRGNAME .BYTE 'NDEV: 2021-01-05 18:45',EOL
+   741 				.endif
+   742 					
+   743 6AF2			RELOCATE_START
+   744
+   745 				.if DEBUG = 1
+   746
+   747 					JSR OPEN_E_DEVICE
+   748 					LDA #<PRGNAME
+   749 					LDY #>PRGNAME
+   750 					JSR PRINT_STRING
+   751 					
+   752 				.if DONT_RELOCATE = 0
+   753 					LDA #<MSG
+   754 					LDY #>MSG
+   755 				.else
+   756 					LDA #<NMSG
+   757 					LDY #>NMSG
+   758 				.endif ; DONT_RELOCATE
+   759
+   760 					JSR PRINT_STRING_NO_EOL
+   761
+   762 				.if DONT_RELOCATE = 0
+   763 					LDA MEMLO+1
+   764 				.else
+   765 					LDA #>RELOCATE_CODE_START
+   766 				.endif ; DONT_RELOCATE
+   767
+   768 					JSR PRINT_HEX_NO_EOL
+   769
+   770 				.if DONT_RELOCATE = 0
+   771 					LDA MEMLO
+   772 				.else
+   773 					LDA #<RELOCATE_CODE_START
+   774 				.endif	; DONT_RELOCATE
+   775
+   776 					JSR PRINT_HEX
+   777 					LDA #<NORE
+   778 					LDY #>NORE
+   779 					JSR PRINT_STRING
+   780 					
+   781 				.endif ; DEBUG
+   782
    783
-   784 6B04				ORG $02E2 		; init
-   785 02E2-02E3> FE 6A			.WORD RELOCATE_START
-   786 					END
+   784 				.if DONT_RELOCATE = 0
+   785 6AF2 20 6B 68			JSR RELOCATE_TO_MEMLO
+   786 				.endif ; DONT_RELOCATE
+   787 6AF5 4C 3C 64			JMP NEW_START	
+   788
+   789 6AF8				ORG $02E2 		; init
+   790 02E2-02E3> F2 6A			.WORD RELOCATE_START
+   791 					END

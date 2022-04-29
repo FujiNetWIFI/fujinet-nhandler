@@ -480,18 +480,12 @@ SPECIAL:
 
 	;; Handle Protocol commands, do INQDS Query
 
-SPQ:	LDA	#$FF		; Set INQDS
-	STA	SPEDCB+2		; To ICCOM
-	LDA	ZICDNO		; Get Unit #
-	STA	SPEDCB+1	; Store in table
+SPQ:	LDA	ZICDNO		; Get Unit #
+	STA	SPQDCB+1	; Store in table
 	LDA	ZICCOM		; Get Command
-	STA	SPEDCB+10	; Put in AUX1 for query
-	LDA	#$01		; 1 byte
-	STA	SPEDCB+8	;
-	LDA	#$00		;
-	STA	SPEDCB+9	;
-	LDA	RELOC_SPEDCB	; Set up SPECIAL DCB TABLE
-	LDY	RELOC_SPEDCB+1	;
+	STA	SPQDCB+10	; Put in AUX1 for query
+	LDA	RELOC_SPQDCB	; Set up SPECIAL QUERY DCB TABLE
+	LDY	RELOC_SPQDCB+1	;
 	JSR	DOSIOV		; Do Query
 	LDY	DSTATS		; Get DSTATS
 	BMI	SPCDNE		; SIO error, return in Y. There is no ext err.
@@ -505,20 +499,15 @@ SPQ:	LDA	#$FF		; Set INQDS
 
 	;; Do the Special, get all IOCB params, push onto stack
 	
-SPDO:	LDA	ZICDNO		; Unit #
+SPDO:	STA	SPEDCB+3	; DSTATS value from inquiry
+	LDA	ZICDNO		; Unit #
 	STA	SPEDCB+1
 	LDA	ZICCOM		; Command
 	STA	SPEDCB+2
-	LDA	INQDS		; Result of Inquiry
-	STA	SPEDCB+3
 	LDA	ZICBAL		; Ptr to passed in devicespec
 	STA	SPEDCB+4
 	LDA	ZICBAH		; 
 	STA	SPEDCB+5
-	LDA 	#$00
-	STA 	SPEDCB+8
-	LDA 	#$01
-	STA 	SPEDCB+9
 	LDA	ZICAX1		; Aux1
 	STA	SPEDCB+10
 	LDA	ZICAX2		; Aux2
@@ -621,15 +610,28 @@ CLODCB	.BYTE	DEVIDN		; DDEVIC
 	.BYTE	$00		; DAUX1
 	.BYTE	$00		; DAUX2
 
-SPEDCB	.BYTE	DEVIDN		; DDEVIC
+SPQDCB	.BYTE	DEVIDN		; DDEVIC
 	.BYTE	$FF		; DUNIT
 	.BYTE	$FF		; DCOMND ; inq
 	.BYTE	DSREAD		; DSTATS
-rel120	.WORD	INQDS		; DBUFL
+rel120	.WORD	INQDS		; DBUFL, DBUFH
 	.BYTE	$1F		; DTIMLO
 	.BYTE	$00		; DRESVD
-	.BYTE	$01		; DBYTL
+	.BYTE	$01		; DBYTL ; 1 byte
 	.BYTE	$00		; DBYTH
+	.BYTE	$FF		; DAUX1
+	.BYTE	$00		; DAUX2
+	
+SPEDCB	.BYTE	DEVIDN		; DDEVIC
+	.BYTE	$FF		; DUNIT
+	.BYTE	$FF		; DCOMND ; special cmd
+	.BYTE	$FF		; DSTATS ; DSTATS from inquiry
+	.BYTE	$00		; DBUFL
+	.BYTE	$00		; DBUFH
+	.BYTE	$1F		; DTIMLO
+	.BYTE	$00		; DRESVD
+	.BYTE	$00		; DBYTL ; 256 bytes
+	.BYTE	$01		; DBYTH
 	.BYTE	$FF		; DAUX1
 	.BYTE	$FF		; DAUX2	
 	
@@ -681,11 +683,13 @@ relocate_008
 RELOC_CLODCB	.WORD	CLODCB
 
 relocate_009
+RELOC_SPQDCB	.WORD	SPQDCB
+
+relocate_010
 RELOC_SPEDCB	.WORD	SPEDCB
 
-
 NEW_START	.BYTE   $4C
-relocate_010	.WORD	START
+relocate_011	.WORD	START
 
 RELOCATE_DATA_END:
 	
@@ -707,7 +711,8 @@ HANDLEREND	= *
 
 RELOCATION_TABLE:
 			.WORD	relocate_000,relocate_001,relocate_002,relocate_003,relocate_004
-			.WORD	relocate_005,relocate_006,relocate_007,relocate_008,relocate_009,relocate_010
+			.WORD	relocate_005,relocate_006,relocate_007,relocate_008,relocate_009
+			.WORD	relocate_010, relocate_011
 			.WORD	rel100,rel101
 			.WORD	rel110,rel111,rel112,rel113,rel114,rel115
 			.WORD	rel120
