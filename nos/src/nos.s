@@ -1913,7 +1913,7 @@ CMD_TAB_H:
         .BYTE   >(DO_UNLOCK-1)      ; 11 UNLOCK
         .BYTE   >(DO_CAR-1)         ; 12 CAR
         .BYTE   >(DO_RUN-1)         ; 13 RUN
-        .BYTE   >(DO_CLS-1)         ; 14 RUN
+        .BYTE   >(DO_CLS-1)         ; 14 CLS
         .BYTE   >(DO_DRIVE_CHG-1)   ; 15
 
        ; DEVHDL TABLE FOR N:
