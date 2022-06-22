@@ -35,7 +35,7 @@ ASFLAGS =
  
 # Additional linker flags and options.
 # Default: none
-LDFLAGS = $(LDFLAGS.$(TARGETS)) -u __EXEHDR__ --mapfile nhandler.map 
+LDFLAGS = $(LDFLAGS.$(TARGETS)) -u __EXEHDR__ --start-addr 0x0300 --mapfile nhandler.map 
  
 # Path to the directory containing C and ASM sources.
 # Default: src

@@ -67,7 +67,7 @@ NOTOURS:
         JMP  (NXTCMD)    ; CMD AND LET NEXT COMMAND TRY
 			 ; TO CLAIM IT.
 CMD:
-	.byte  "BEE", 'P' + $80      ; Our command
+	.byte  "BEEP"   	; Our command
  CMDLEN =  *-CMD       ; Our command length
 	;; 
 
