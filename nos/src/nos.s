@@ -2761,77 +2761,11 @@ HELP_DONE:
 
 HELP_URL:
 ;        .BYTE   'N8:HTTP://localhost:6502/'
-        .BYTE   'N8:HTTPS://raw.githubusercontent.com/michaelsternberg/fujinet-nhandler/master/nos/HELP'
+        .BYTE   'N8:HTTPS://raw.githubusercontent.com/michaelsternberg/fujinet-nhandler/nos/nos/HELP/'
 HELP_ARTICLE:
         .BYTE   $00,$00,$00,$00, $00,$00,$00,$00
         .BYTE   $00,$00,$00,$00, $00,$00,$00,$00
         .BYTE   $00,$00,$00,$00, $00,$00,$00,$00
-
-;;---------------------------------------
-;DO_HELP:
-;;---------------------------------------
-;    ; Copy the requested help topic to 
-;    ; the HELP_ARTICLE buffer
-;
-;        LDX     CMDSEP      ; Point to either HELP or article (arg1)
-;        LDY     #$00
-;
-;HELP_COPY_ARTICLE:
-;        LDA     LNBUF,X
-;        STA     HELP_ARTICLE,Y
-;
-;    ; Quit loop if EOL
-;        CMP     #EOL
-;        BEQ     HELP_NEXT
-;
-;    ; Quit loop if too long
-;        CPX     #23
-;        BPL     HELP_DONE
-;
-;    ; Iterate (always true)
-;        INX
-;        INY
-;        BNE     HELP_COPY_ARTICLE 
-;        
-;HELP_NEXT:
-;    ; Append .TXT to help topic
-;        LDY     #$00
-;@:      LDA     HELP_EXT,Y
-;        BEQ     @+      
-;        STA     HELP_ARTICLE,X
-;        INX
-;        INY
-;        BNE     @-
-;
-;    ; Initialize loop counters
-;@:      LDX     #$FF
-;        LDY     #$04
-;
-;HELP_COPY_URL:
-;        INY
-;        INX
-;
-;        LDA     HELP_URL,X
-;        STA     (INBUFF),Y
-;        CMP     #EOL
-;        BNE     HELP_COPY_URL
-;
-;HELP_DONE:
-;    ; Force arg1 to point to URL
-;        LDA     #$05
-;        STA     CMDSEP
-;        JMP     DO_TYPE
-;
-;HELP_EXT:
-;        .BYTE   '.TXT',EOL,$00
-;
-;HELP_URL:
-;        .BYTE   'N8:HTTP://localhost:6502/'
-;
-;HELP_ARTICLE:
-;        .BYTE   $00,$00,$00,$00, $00,$00,$00,$00
-;        .BYTE   $00,$00,$00,$00, $00,$00,$00,$00
-;        .BYTE   $00,$00,$00,$00, $00,$00,$00,$00
 
 ;---------------------------------------
 DO_NOBASIC:

@@ -109,7 +109,7 @@ provide text in GRAPHICS 8:
 120  GOTO 30
 
 LOAD
-"N:https://www.atariarchives.org/mapping/software/BITMAP8.BAS"
+"N8:https://www.atariarchives.org/mapping/software/BITMAP8.BAS"
 
 This program simply takes the bytes
 which represent the letters you input
@@ -139,11 +139,11 @@ program to edit character sets,
 
 TextPlot:
 RUN
-"N:https://www.atariarchives.org/c1bag/software/chapter4/P095L1.BAS"
+"N8:https://www.atariarchives.org/c1bag/software/chapter4/P095L1.BAS"
 
 SuperFont:
 RUN
-"N:https://www.atariarchives.org/c1bag/software/chapter3/P067L1.BAS"
+"N8https://www.atariarchives.org/c1bag/software/chapter3/P067L1.BAS"
 ---------------------------------------
 
 Locations 58368 to 58447 ($E400 to
