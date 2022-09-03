@@ -1,0 +1,220 @@
+
+TOPIC: MAP/UNUSED_0600
+
+1536-1791          0600-06FF
+UNUSED_0600
+
+Page six: 256 ($FF) bytes protected
+from OS use. Page six is not used by
+the OS and may be safely used for
+machine language subroutines, special
+I/O handlers, altered character sets,
+or whatever the user can fit into the
+space. Some problem may arise when the
+INPUT statement retrieves more than
+128 characters.  The locations from
+1536 to 1663 ($600 to $67F) are then
+immediately used as a buffer for the
+excess characters. To avoid overflow,
+keep INPUT statements from retrieving
+more than 128 characters. The valFORTH
+implementation of fig-FORTH (from
+ValPar International) uses all of page
+six for its boot code, so it is not
+available for your use. However, FORTH
+allows you to reserve other blocks of
+memory for similar functions. BASIC A+
+uses locations $0600 - $67F.
+
+---------------------------------------
+Locations 1792 to the address
+specified by LOMEM (locations 128,
+129; ($80, $81) - the pointer to BASIC
+low memory) are also used by DOS and
+the File Management System (FMS).
+Refer to the DOS source code and
+Inside Atari DOS for details. The
+addresses which follow are those for
+DOS 2.0S, the official Atari DOS at
+the time of this writing. Another DOS
+is available as an alternative to DOS
+2.0 -- K-DOS (TM), from K-BYTE (R).
+K-DOS is not menu driven but command
+driven. It does not use all of the
+same memory locations as the Atari DOS
+although it does use a modified
+version of the Atari FMS. (Another
+command-driven DOS, called OS/A+, is
+completely compatible with DOS 2.OS
+and is available from OSS, the
+creators of DOS 2.0S.)
+
+1792-5377      700-1501
+
+File management system RAM (pages
+seven to fifteen). FMS provides the
+interface between BASIC or DUP and the
+disk drive. It is a sophisticated
+device driver for all I/O operations
+involving the D: device. It allows
+disk users to use the special BASIC
+XIO disk commands (see the IOCB area
+832 to 959: $340 to $3BF). It is
+resident in RAM below your BASIC RAM
+and provides the entry point to DOS
+when called by BASIC.
+
+5440-13062     1540-3306
+
+DUP.SYS RAM. The top will vary with
+the amount of buffer storage space
+allocated to the drive and sector
+buffers.
+
+6780-7547      1A7C-1D7B
+
+Drive buffers and sector-data buffers.
+The amount of memory will vary with
+the number of buffers allocated.
+
+MEMLO">
+7548-MEMLO     1D7C-3306 (maximum)
+
+Non-resident portion of DUP.SYS, DOS
+utility routines. DUP provides the
+utilities chosen from the DOS menu
+page, not from BASIC. It is not
+resident in RAM when you are using
+BASIC or another cartridge; rather it
+is loaded when DOS is called from
+BASIC or on autoboot powerup (and no
+cartridge supersedes it).  When DUP is
+loaded, it overwrites the lower
+portion of memory.  If you wish to
+save your program from destruction,
+you must have created a MEM.SAV file
+on disk before you called DOS from
+your program. See the DOS Reference
+Manual.
+
+---------------------------------------
+Locations 1792 to 2047 ($700 to $7FF;
+page seven) are the user boot area.
+MEMLO and LOMEM point to 1792 when no
+DOS or DUP program is loaded. This
+area can then be used for your BASIC
+or machine language programs. The
+lowest free memory address is 1792,
+and programs may extend upwards from
+here. There is a one-page buffer
+before the program space used for the
+tokenization of BASIC statements,
+pointed to by locations 128, 129 ($80,
+$81). Actually a program may start
+from any address above 1792 and below
+the screen display list as long as it
+does not overwrite this buffer if it
+is a BASIC program. Also, 1792 is the
+start of the FMS portion of DOS when
+resident.
+
+When software is booted, the MEMLO
+pointer at 743,744 ($2E7,$2E8) in the
+OS data base (locations 512 to 1151;
+$512 to $47F) points to the first free
+memory location above that software;
+otherwise, it points to 1792. The DUP
+portion of DOS is partly resident
+here, starting at 5440 ($1540) and
+running to 13062 ($1540 to $3306). The
+location of the OS disk boot entry
+routine (DOBOOT) is 62189 ($F2ED). The
+standard Atari DOS 2.OS takes up
+sectors one through 83 ($53) on a
+disk. Sector one is the boot sector.
+Sectors two through 40 ($28) are the
+FMS portion, and sectors 41 ($29)
+through 83 are the DUP.SYS portion of
+DOS. For more information, see the DOS
+and OS source listings and Inside
+Atari DOS.
+
+---------------------------------------
+FMS, DOS.SYS and DUP.SYS
+
+Disk boot records (sector one on a
+disk) are read into 1792 ($700).
+Starting from $700 (1792), the format
+is:
+
+Byte  Hex     Label and use
+0     700     BFLAG: Boot flag equals
+              zero (unused).
+1     701     BRCNT: Number of cons-
+              ecutive sectors to read
+              (if the file is DOS,
+              then BRCNT equals one).
+2,3   702,703 BLDADR: Boot sector
+              load address ($700).
+4,5   704,705 BIWTARR: Init addr.
+6     706     JMP XBCONT: Boot cont-
+              inuation vector; $4C
+              (76): JMP command to
+              next address in bytes
+              seven and eight.
+7,8   707,708 Boot read continuation
+              address (LSB/MSB).
+9     709     SABYTE: Maximum number
+              of concurrently OPEN
+              files. The default is
+              three (see 1801 below).
+10    70A     DRVBYT: Drive bits: the
+              maximum number of
+              drives attached to the
+              system. The default is
+              two (see 1802 below).
+11    70B     (unused) Buffer alloc-
+              ation direction, set
+              to zero.
+12,13 70C,70D SASA: Buffer allocation
+              start address. Points
+              to 1995 ($7CB) when DOS
+              is loaded.
+14    70E     DSFLG: DOS flag. Boot
+              flag set to non-zero.
+              Must be non-zero for
+              the second phase of
+              boot process. Indicates
+              that the file DOS.SYS
+              has been written to the
+              disk;
+              0 = no DOS file,
+              1 = 128 byte sect disk,
+              2 = 256 byte sect disk.
+15,16 70F,710 DFLINK: Pointer to the
+              first sector of DOS.SYS
+              file.
+17    711     BLDISP: Displacement to
+              the sector link byte
+              125 ($7D). The sector
+              link byte is the poin-
+              ter to the next disk
+              sector to be read. If
+              it is zero, the end of
+              the file has been
+              reached.
+18,19 712,713 DFLADR: Address of the
+start of DOS.SYS file.
+20+   714+    Continuation of the boot
+load file. See the OS User's Manual
+and Chapter 20 of Inside Atari DOS.
+
+Data from the boot sector is placed in
+locations 1792 to 1916 ($700 to $77C).
+Data from the rest of DOS.SYS is
+located starting from 1917 ($77D). All
+binary file loads start with 255
+($FF). The next four bytes are the
+start and end addresses (LSB/MSB),
+respectively.
+

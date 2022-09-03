@@ -1,0 +1,66 @@
+
+TOPIC: MAP/INTORG
+
+59093-59715     E6D5-E943     INTORG
+
+Addresses for the interrupt handler
+routines:
+
+59123 ($E6F3) PIRQ;
+
+IRQ interrupt service routines start
+here.
+
+59126 ($E6F6);
+
+the immediate IRQ vector to the IRQ
+handler. The global NMI and IRQ RAM
+vectors in locations 512 to 527 ($200
+to $20F) are all initialized to this
+area (59142, $E706 for the new OS
+ROMs).
+
+59314 ($E7B2);
+
+the vector for the IRQ interrupts on
+powerup; it points to a PLA and RTI
+instruction sequence (new OS ROMs;
+59219; $E78F).
+
+59316 ($E7B4) PNMI;
+
+the NMI handler, tests for the reason
+for the NMI, then jumps through the
+appropriate RAM vector. Also called
+the Interrupt Service Routine (ISR).
+
+59345 ($E7D1) SYSVBL;
+
+the VBLANK routines start here,
+including frame counter, update timer,
+update hardware registers from shadow
+registers, update the attract mode
+counter and the realtime clock. The
+vertical blank immediate vector,
+VVBLKL1, normally pointed to by
+locations 546, 547 ($222, $223),
+points to here.  The Updated OS ROMs
+point to 59310 ($E7AE).
+
+59666 ($E912) SETVBL;
+
+subroutines to set the VBLANK timers
+and vectors.
+
+The vertical blank deferred interrupt,
+normally vectored from locations 548,
+549 ($224, $225), points to 59710
+($E93E). In the Updated OS ROMs, it
+points to 59653 ($E905). In both cases
+they point to the VBLANK exit routine.
+
+See page 104 of the OS User's Manual
+for a list of the vectors and MICRO,
+January 1982, for an explanation of
+the VBLANK process.
+

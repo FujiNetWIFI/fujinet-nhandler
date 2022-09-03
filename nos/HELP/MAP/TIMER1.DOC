@@ -1,0 +1,17 @@
+
+TOPIC: MAP/TIMER1
+
+780          030C          TIMER1
+
+Initial baud rate timer value.
+
+Locations 780 to 793 ($30C to $319) are
+for miscellaneous use. Locations 794 to
+831 ($31A to $33F) are handler address
+tables. To use these DCBs, the user
+must provide the required parameters to
+this block and then do a machine
+language JSR to $E453 (58451) for disk
+I/O or $E459 (58457; the SIO entry
+point) for other devices.
+

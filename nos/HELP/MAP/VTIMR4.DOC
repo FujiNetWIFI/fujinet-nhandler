@@ -1,0 +1,10 @@
+
+TOPIC: MAP/VTIMR4
+
+532          0214          VTIMR4
+
+POKEY timer four vector for AUDF4
+(53766, $D206), initialized to 59314
+($E7B2). This IRQ is only vectored in
+the "B" version of the OS ROMs.
+

@@ -1,0 +1,9 @@
+
+TOPIC: MAP/LMTR
+
+6432          1920          LMTR
+
+Test to see if DOS must load MEM.SAV
+before it performs a run at address
+command from the DOS menu.
+

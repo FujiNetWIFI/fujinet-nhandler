@@ -1,0 +1,9 @@
+
+TOPIC: MAP/FILDIR
+
+5121          1401          FILDIR
+
+File directory, a 256 ($100) byte
+sequential buffer for entries to the
+disk directory.
+

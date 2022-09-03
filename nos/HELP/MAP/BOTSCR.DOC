@@ -1,0 +1,33 @@
+
+TOPIC: MAP/BOTSCR
+
+703          02BF          BOTSCR
+
+Flag for the number of text rows
+available for printing. 24 ($18) is
+normal for text mode GR.0; four for
+the text window, zero for all graphics
+modes. In all GRAPHICS modes except
+zero, if there is no text window then
+703 will also read zero. The
+large-text displays in GR.1 and GR.2
+are treated as graphics displays for
+this purpose. The display handler
+specifically checks for split- screen
+mode by looking for the variable 24 or
+four here. If it finds 24 here, it
+assumes there is no text window; if
+not, it looks for the variable four.
+
+You can add a text window to GR.0 by
+POKEing here with four.  The top
+portion (20 lines) of the screen will
+not scroll with the bottom. To write
+to the top part of the screen you will
+have to use the PRINT#6 statement as
+with modes one and two. One possible
+application of this would be to keep a
+fixed menu at the top of the screen
+while scrolling the bottom part, as
+done with the DOS menu.
+

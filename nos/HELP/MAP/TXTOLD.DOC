@@ -1,0 +1,13 @@
+
+TOPIC: MAP/TXTOLD
+
+662-667          0296-029B
+TXTOLD
+
+These locations contain the
+split-screen equivalents of OLDROW
+(90; $5A), OLDCOL (91, 92; $5B, $5C),
+OLDCHR (location 93, $5D) and OLDADR
+(locations 94, 95; $5E, $5F). They
+hold the split-screen cursor data.
+

@@ -1,0 +1,8 @@
+
+TOPIC: MAP/BUFCNT
+
+107          006B          BUFCNT
+
+Buffer count: the screen editor
+current logical line size counter.
+

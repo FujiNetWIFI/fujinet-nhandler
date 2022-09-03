@@ -1,0 +1,10 @@
+
+TOPIC: MAP/MLTTMP
+
+102          0066          MLTTMP
+
+Also called OPNTMP and TOADR; first
+byte used in OPEN as temporary
+storage. Also used by the display
+handler as temporary storage.
+

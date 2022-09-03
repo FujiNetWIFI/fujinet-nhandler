@@ -1,0 +1,28 @@
+
+Topic: NOS/DEL
+
+DEL - Delete a file found on a mount
+point.
+
+Usage:
+
+	DEL|ERASE [N[n]]:[path/]file
+
+Only one file can be deleted per
+command. Pattern-matching using
+wildcard characters is not currently
+supported.
+
+Filenames are case-sensitive. If a
+filename contains spaces, enclose the
+entire path and filename with
+double-quotes.
+
+Examples:
+
+DEL MYFILE.AWP
+DEL N2:MyFile.AWP
+DEL N2:DOCS/MYFILE.AWP
+DEL "N2:DOCS/My File.AWP"
+ERASE "N2:DOCS/My File.AWP"
+

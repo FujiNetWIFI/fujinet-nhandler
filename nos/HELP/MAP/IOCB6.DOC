@@ -1,0 +1,17 @@
+
+TOPIC: MAP/IOCB6
+
+928-943       03A0-03AF       IOCB6
+
+IOCB six. The GRAPHICS statement OPENs
+channel six for screen display (S:),
+so once you are out of mode zero, you
+cannot use channel six unless you
+first issue a CLOSE#6 statement. If
+you CLOSE this channel, you will not
+be able to use the DRAWTO, PLOT or
+LOCATE commands until you reOPEN the
+channel. The LOAD command closes
+channel six; it also closes all
+channels except zero.
+

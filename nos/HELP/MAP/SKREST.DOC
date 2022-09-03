@@ -1,0 +1,28 @@
+
+TOPIC: MAP/SKREST
+
+53770          D20A          SKREST
+
+(W) Reset BITs 5 - 7 of the serial
+port status register at 53775 to one.
+
+              RANDOM
+
+(R) When this location is read, it
+acts as a random number generator. It
+reads the high order eight bits of the
+17 bit polynomial counter (nine bit if
+BIT 7 of AUDCTL is set) for the value
+of the number. You can use this
+location in a program to generate a
+random integer between zero and 255 by:
+
+10  PRINT PEEK(53770)
+
+This is a more elegant solution than
+INT(RND(0) * 256). For a test of the
+values in this register, use this
+simple program:
+
+10 FOR N = 1 TO 20: PRINT PEEK(53770): NEXT N
+

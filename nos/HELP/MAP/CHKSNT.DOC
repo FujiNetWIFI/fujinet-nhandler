@@ -1,0 +1,8 @@
+
+TOPIC: MAP/CHKSNT
+
+59          003B          CHKSNT
+
+Checksum sent flag (255; $FF equals
+sent).
+

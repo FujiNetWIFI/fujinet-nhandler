@@ -1,0 +1,50 @@
+
+TOPIC: MAP/CIOORG
+
+58534-59092      E4A6-E6D4   CIOORG
+
+Addresses for the Central Input/Output
+routines (CIO):
+
+58534 ($E4A6) CIOINT
+
+is the CIO initialization routine
+called by the monitor on powerup.
+
+58577 ($E4D1);
+
+move the user IOCB to the ZIOCB.
+
+58596 ($E4E4);
+
+check for a valid command.
+
+58633 ($E509);
+
+OPEN command routines.
+
+58675 ($E533);
+
+CLOSE command routines.
+
+58702 ($E54E);
+
+STATUS and special command routines.
+
+58729 ($E569) CIREAD;
+
+process the CIO commands for read and
+write, including buffer check for full
+or empty.
+
+58907 ($E61B);
+
+routine to return to the user from CIO.
+
+58941 ($E63D),
+
+routines to compute the device handler
+entry point, jump to the handler,
+transfer control, and then return to
+CIO after the operation.
+

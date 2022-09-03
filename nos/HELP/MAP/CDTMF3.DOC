@@ -1,0 +1,10 @@
+
+TOPIC: MAP/CDTMF3
+
+554          022A          CDTMF3
+
+System timer three flag, set when
+location 540, 541 ($21C, $21D) reaches
+zero. This register is also used by
+DOS as a timeout flag.
+

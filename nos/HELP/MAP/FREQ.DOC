@@ -1,0 +1,11 @@
+
+TOPIC: MAP/FREQ
+
+64          0040          FREQ
+
+Beep count retain register. Counts the
+number of beeps required by the
+cassette handler during the OPEN
+command for play or record operations;
+one beep for play, two for record.
+

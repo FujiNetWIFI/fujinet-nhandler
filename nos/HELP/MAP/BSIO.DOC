@@ -1,0 +1,8 @@
+
+TOPIC: MAP/BSIO
+
+1900          076C          BSIO
+
+Entry point to FMS disk sector I/O
+routines.
+

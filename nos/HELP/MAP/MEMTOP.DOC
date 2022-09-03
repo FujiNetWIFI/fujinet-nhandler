@@ -1,0 +1,43 @@
+
+TOPIC: MAP/MEMTOP
+
+741          02E5          MEMTOP
+
+Pointer to the top of free memory used
+by both BASIC (which calls it HIMEM)
+and the OS, passed here from TRAMSZ,
+location 6 after powerup. This address
+is the highest free location in RAM
+for programs and data. The value is
+updated on powerup, when RESET is
+pressed, when you change GRAPHICS
+mode, or when a channel (IOCB) is
+OPENed to the display. The display
+list starts at the next byte above
+MEMTOP.
+
+The screen handler will only OPEN the
+S: device if no RAM is needed below
+this value (i.e. there is enough free
+RAM below here to accommodate the
+requested GRAPHICS mode change).
+Memory above this address is used for
+the display list and the screen
+display RAM. Also, if a screen mode
+change would extend the screen mode
+memory below APPMHI (locations 14, 15:
+$E, $F), then the screen is set back
+for GR.0, MEMTOP is updated, and an
+error is returned to the user.
+Otherwise the mode change will take
+place and MEMTOP will be updated.
+
+Space saved by moving MEMTOP is below
+the display list. Be careful not to
+overwrite it if you change GRAPHICS
+modes in mid-program. When using
+memory below MEMTOP for storage, make
+sure to set APPMHI above your data to
+avoid having the screen data descend
+into it and destroy it.
+

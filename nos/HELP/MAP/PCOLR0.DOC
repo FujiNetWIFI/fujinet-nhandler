@@ -1,0 +1,121 @@
+
+TOPIC: MAP/PCOLR0
+
+704          02C0          PCOLR0
+
+Color of player 0 and missile 0.
+Locations 704 to 707 are also called
+COLPM# in some sources. This is the
+shadow for 53266 ($D012). In GTIA mode
+ten, 704 holds the background color
+(BAK; normally held by 712). You
+cannot use the SETCOLOR commands to
+change the PCOLR registers; color
+values must be POKEd into them.
+
+---------------------------------------
+Locations 704 to 712 ($2C0 to $2C8)
+are the color registers for players,
+missiles, and playfields. These are
+the RAM shadow registers for locations
+53266 to 53274 ($D012 to $D01A). For
+the latter, you can use the SETCOLOR
+command from BASIC. For all registers
+you can POKE the desired color into
+the location by using this formula:
+
+COLOR = HUE * 16 + LUMINANCE
+
+It is possible to get more colors in
+GR.8 than the one (and a half) that
+Atari says is possible by using a
+technique called artifacting. There is
+a small example of artifacting shown
+at location 710 ($2C6). See De Re
+Atari, Your Atari 400/800, Creative
+Computing, June 1981, and COMPUTE!,
+May 1982.
+
+Here are the 16 colors the Atari
+produces, along with their POKE values
+for the color registers. The POKE
+values assume a luminance of zero. Add
+the luminance value to the numbers to
+brighten the color.  The color
+registers ignore BIT 0; that's why
+there are no "odd" values for
+luminance, just even values.
+
+COLOR             VALUE
+Black           0,      0
+Rust            1,     16
+Red-orange      2,     32
+Dark orange     3,     48
+Red             4,     64
+Dk lavender     5,     80
+Cobalt blue     6,     96
+Ultramarine     7,    112
+Medium blue     8,    128
+Dark blue       9,    144
+Blue-grey      10,    160
+Olive green    11,    176
+Medium green   12,    192
+Dark green     13,    208
+Orange-green   14,    224
+Orange         15,    240
+
+The bit use of the PCOLR and COLOR
+registers is as follows:
+
+Bit     7  6  5  4  3  2  1  0
+        --color--   luminance unused
+Grey    0  0  0  0  0  0  0  Darkest
+Rust    0  0  0  1  0  0  1
+           etc. to:      etc. to:
+Orange  1  1  1  1  1  1  1  Lightest
+
+When you enable the color overlap at
+location 623 ($26F), ANTIC performs a
+logical OR on the overlap areas. For
+example:
+
+         01000010 Red, luminance two
+      OR 10011010 Dark blue, lum ten
+         --------
+Result = 10011010 Dark green, lum ten
+
+Here's a short machine language
+routine which will rotate the colors
+in registers 705 to 712:
+
+10   DIM ROT$(30)
+20   FOR LOOP = 1 TO 27: READ BYTE: ROT$(LOOP,LOOP) = CHR$(BYTE): NEXT LOOP
+.
+.    PUT YOUR GRAPHICS ROUTINE HERE
+.
+100  CHANGE = USR(ADR(ROT$))
+105  FOR LOOP = 1 TO 200: NEXT LOOP:GOTO 100
+110  DATA 104,162,0,172,193,2,189,194,2,157
+120  DATA 193,2,232,224,8,144,245,140,200,2
+130  DATA  96,65,65,65,65,65,65
+
+If you wish to rotate the colors in
+registers 704 to 711 instead, change
+lines 110 and 120 to read as follows:
+
+110  DATA 104,162,0,172,192,2,189,193,2,157
+120  DATA 192,2,232,224,8,144,245,140,199,2
+
+DOWNLOAD BOTSCR.BAS
+
+If you wish to include all of the
+registers 704 to 712 in the routine,
+make the changes as above and change
+the eight in line 120 to nine and
+restore the 199 to 200 in line 120.
+This routine works well with the GTIA
+demos at location 623 ($26F).
+
+For further detail, refer to your
+Atari BASIC Reference Manual, pp.
+45-56, and the GTIA Demo Disk from APX.

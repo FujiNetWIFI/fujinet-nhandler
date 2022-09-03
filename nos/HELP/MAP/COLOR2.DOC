@@ -1,0 +1,49 @@
+
+TOPIC: MAP/COLOR2
+
+710          02C6          COLOR2
+
+The same as above for playfield two;
+in GR.1 and GR.2, this register stores
+the color of the inverse uppercase
+letters. Shadow for 53272 ($D018).
+Used for the background color in GR.0
+and GR.8. Both use COLOR1 for the
+luminance value.
+
+Despite the official limitations of
+color selection in GR.8, it is
+possible to generate additional colors
+by "artifacting", turning on specific
+pixels (.5 color clock each) on the
+screen. Taking advantage of the
+physical structure of the TV set
+itself, we selectively turn on
+vertical lines of pixels which all
+show the same color. For example:
+
+10  A = 40: B = 30: C = 70: D = 5: F = 20:GRAPHICS 8: POKE 87,7: P0KE 710,0: POKE 709,15: COLOR 1
+30  PLOT A,D: DRAWTO A,C: COLOR 2: PLOT F,D: DRAWTO F,C:
+40  PLOT A + 1,D: DRAWTO A + 1,C
+50  COLOR 3: PLOT B,D: DRAWTO B,C
+60  GOTO 60
+
+DOWNLOAD COLOR2.BAS
+
+A little experimentation with this
+will show you that the colors obtained
+depend on which pixels are turned on
+and how close together the pixel
+columns are. There are four "colors"
+you can obtain, as shown before.
+Pixels marked one are on; marked zero
+means they are off. Each pair of
+pixels is one color clock. Three color
+clocks are shown together for clarity:
+
+00:01:00 = color A 00:11:00 = color B
+00:10:00 = color C 00:01:10 = color D
+
+See BYTE, May 1982, De Re Atari, and
+Your Atari 400/800.
+

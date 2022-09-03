@@ -1,0 +1,9 @@
+
+TOPIC: MAP/CSTAT
+
+648          0288          CSTAT
+
+Cassette status register.
+
+Locations 648 to 655 ($288 to $28F)
+are for miscellaneous OS use.

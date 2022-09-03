@@ -1,0 +1,10 @@
+
+TOPIC: MAP/ICAX6Z
+
+47          002F          ICAX6Z
+
+Spare byte. Also labelled CIOCHR, it
+is the temporary storage for the
+character byte in the current PUT
+operation.
+

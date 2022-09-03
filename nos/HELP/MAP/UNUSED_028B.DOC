@@ -1,0 +1,41 @@
+
+TOPIC: MAP/UNUSED_028B
+
+651-655          028B-028F
+UNUSED_028B
+
+Spare bytes. It is not recommended
+that you use the spare bytes for your
+own program use. In later upgrades of
+the OS, these bytes may be used,
+causing a conflict with your program.
+For example, the new OS ROMs use
+locations 652 and 653 ($28C, $28D) in
+the new IRQ interrupt handler
+routines. It is best to use a
+protected area of memory such as page
+six, locations 1536 to 1791 ($600 to
+$6FF).
+
+----------------------------------------
+Locations 656 to 703 ($290 to $2BF)
+are used for the screen RAM display
+handler (depending on GRAPHICS mode).
+
+In split-screen mode, the text window
+is controlled by the screen editor
+(E:), while the graphics region is
+controlled by the display handler
+(S:), using two separate IOCB's. Two
+separate cursors are also maintained.
+The display handler will set AUX1 of
+the IOCB to split- screen option.
+Refer to the IOCB area, locations 832
+to 959 ($340 to $3BF). See COMPUTE!,
+February 1982, for a program to put
+GR.1 and GR.2 into the text window
+area. The text window uses 160 bytes
+of RAM located just below RAMTOP (see
+location 106; $6A). See location 88
+($58) for a chart of screen RAM use.
+

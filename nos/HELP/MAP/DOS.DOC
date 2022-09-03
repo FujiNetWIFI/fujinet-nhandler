@@ -1,0 +1,10 @@
+
+TOPIC: MAP/DOS
+
+5440          1540          DOS
+
+DUP.SYS initialization address.
+Beginning of mini-DOS; the
+RAM-resident portion of DUP. Used for
+the same purpose in K- DOS.
+

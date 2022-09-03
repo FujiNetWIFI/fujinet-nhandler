@@ -1,0 +1,34 @@
+
+TOPIC: MAP/PTABW
+
+201          00C9          PTABW
+
+This location specifies the number of
+columns between TAB stops. The first
+tab will beat PEEK(201). The default
+is ten. This is the value between
+items separated in a PRINT statement
+by com- mas -- such as PRINT AS, LOOP,
+C(12) -- not by the TAB key spacing.
+
+The minimum number of spaces between
+TABS is three. If you POKE 201,2, it
+will be treated as four spaces, and
+POKE 201,1 is treated as three spaces.
+POKE 201,0 will cause the system to
+hang when it encounters a PRINT
+statement with commas. To change the
+TAB key settings, see TABMAP
+(locations 675 to 689; $2A3 - $2B1).
+PTABW is not reset to the default
+value by pressing RESET or changing
+GRAPHICS modes (unlike TABMAP).  PTABW
+works in all GRAPHICS modes, not
+merely in text modes. The size of the
+spaces between items depends on the
+pixel size in the GRAPHICS mode in
+use. For example, in GR.0, each space
+is one character wide, while in GR.8
+each space is one-half color clock
+(one dot) wide.
+

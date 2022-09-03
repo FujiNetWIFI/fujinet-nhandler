@@ -1,0 +1,40 @@
+
+TOPIC: MAP/WSYNC
+
+54282          D40A          WSYNC
+
+(W) Wait for horizontal
+synchronization. Allows the OS to
+synchronize the vertical TV display by
+causing the 6502 to halt and restart
+seven machine cycles before the
+beginning of the next TV line. It is
+used to synchronize the VBI's or DLI's
+with the screen display.
+
+To see the effect of the WSYNC
+register, type in the second example
+of a Display List Interrupt at
+location 512. RUN it and observe that
+it causes a clean separation of the
+colors at the change boundary. Now
+change line 50 to:
+
+50  DATA
+72,169,222,234,234,234,141,24,208,104,64
+
+This eliminates the WSYNC command. RUN
+it and see the difference in the
+boundary line.
+
+The keyboard handler sets WSYNC
+repeatedly while generating the
+keyboard click on the console speaker
+at 53279 ($D01F).  When interrupts are
+generated during the WSYNC period,
+they get delayed by one scan line. To
+bypass this, examine the VCOUNT
+register below and delay the interrupt
+processing by one line when no WSYNC
+delay has occurred.
+

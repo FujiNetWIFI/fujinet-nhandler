@@ -1,0 +1,42 @@
+
+TOPIC: MAP/CHBASE
+
+54281          D409          CHBASE
+
+(W) Character base address; the
+location of the start of the character
+set, either the standard Atari set or
+a user-designed set.  The default is
+224 ($E0), which points to the start
+of the Atari ROM character set.
+Iridis, a short-lived disk -and-
+documentation magazine, produced a
+good utility called FontEdit to aid in
+the design of altered character sets.
+Online Systems' program The Next Step
+is also very useful for this purpose,
+as is COMPUTE!'s "SuperFont," January
+1982. Uses shadow register 756 ($2F4).
+ Normally, this points to location
+57344 or 57856 ($E000 or $E200)
+depending on your choice of characters
+used in which text mode.  GRAPHICS
+mode zero uses the entire
+128-character set; GR.1 and GR.2 use
+only half the set (64 characters). You
+POKE a different number into the
+shadow register at 756 ($2F4) to point
+to your own character set in RAM. This
+must be an even number that points to
+a page in memory that is evenly
+divisible by two. In GR.1 and GR.2
+this number is 224 (pointing to
+$E000), giving you uppercase,
+punctuation and numbers. POKEing the
+shadow or this location (in machine
+language) with 226 will give you
+lowercase and control characters.
+
+See the information about the ROM
+character set at 57344 ($E000).
+

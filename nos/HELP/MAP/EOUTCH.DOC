@@ -1,0 +1,10 @@
+
+TOPIC: MAP/EOUTCH
+
+63140          F6A4          EOUTCH
+
+This routine puts the character
+currently in the accumulator onto the
+screen in the next print location.
+Similar to the BASIC PUT command.
+

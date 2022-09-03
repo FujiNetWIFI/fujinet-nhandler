@@ -1,0 +1,9 @@
+
+TOPIC: MAP/GLBABS
+
+736-739       02E0-02E3       GLBABS
+
+Global variables, or, four spare bytes
+for non DOS users. For DOS users they
+are used as below:
+

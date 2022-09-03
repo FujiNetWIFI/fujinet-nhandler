@@ -1,0 +1,13 @@
+
+TOPIC: MAP/DTIMLO
+
+774          0306          DTIMLO
+
+The time-out value for the handler in
+one-second units, supplied by the
+handler for use by SIO. The cassette
+time-out value is 35, just over 37
+seconds. The timer values are 64
+seconds per 60 units of measurement.
+Initialized to 31.
+

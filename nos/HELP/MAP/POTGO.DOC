@@ -1,0 +1,12 @@
+
+TOPIC: MAP/POTGO
+
+53771          D20B          POTGO
+
+(W) Start the POT scan sequence. You
+must read your POT values first and
+then start the scan sequence, since
+POTGO resets the POT registers to
+zero. Written by the stage two VBLANK
+sequence.
+

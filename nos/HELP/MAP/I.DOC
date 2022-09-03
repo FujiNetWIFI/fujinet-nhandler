@@ -1,0 +1,48 @@
+
+Topic MAP/I
+
+Memory Map by Label [I]
+
+Type HELP MAP/<LABEL> or
+Type HELP MAP/<ADDR> for more
+
+LABEL   ADDR  DESCRIPTION
+-----   ----  -------------------------
+ICAX1Z  002A  ZIOCB Aux byte 1
+ICAX2Z  002B  ZIOCB Aux byte 2
+ICAX3Z  002C  ZIOCB Used by NOTE, POINT
+ICAX4Z  002D   ""
+ICAX5Z  002E  Byte used by NOTE, POINT
+ICAX6Z  002F  Byte accessed by PUT
+ICBALZ  0024  ZIOCB Buffer address LO
+ICBAHZ  0025  ZIOCB Buffer address HI
+ICBLLZ  0028  ZIOCB Buffer length LO
+ICBLHZ  0029  ZIOCB Buffer length HI
+ICCOMT  0017  Command for CIO vector
+ICCOMZ  0022  ZIOCB command code
+ICDNOZ  0021  ZIOCB device number
+ICHIDZ  0020  ZIOCB handler index
+ICPTLZ  0026  ZIOCB vector to PUT BYTE
+ICPTHZ  0027  ZIOCB vector to PUT BYTE
+ICSTAZ  0023  ZIOCB return status
+IFP     D9AA  Integer to FP conversion
+INBUFF  00F3  Pointer to input buffer
+INISAV  179C  Entry to DOS from BASIC
+INITAD  02E2  Binary load init address
+INITIO  1979  DUP.SYS warmstart entry
+INSDAT  007D  Display handler temp var
+INTEMP  022D  SETVBL temporary variable
+INTINV  E46B  Interrupt handler init
+INTORG  E6D5-E943 Int. handler routines
+INVFLG  02B6  Inverse character flag
+IOCB0   0340-034F I/O Control Block 0
+IOCB1   0350-035F I/O Control Block 1
+IOCB2   0360-036F I/O Control Block 2
+IOCB3   0370-037F I/O Control Block 3
+IOCB4   0380-038F I/O Control Block 4
+IOCB5   0390-039F I/O Control Block 5
+IOCB6   03A0-03AF I/O Control Block 6
+IOCB7   03B0-03BF I/O Control Block 7
+IRQEN   D20E  Interrupt Request Enable
+ISRODN  19E6  Serial int output routine
+ISRSIR  1A23  Serial int ready routine

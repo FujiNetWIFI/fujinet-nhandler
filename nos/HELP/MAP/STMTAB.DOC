@@ -1,0 +1,47 @@
+
+TOPIC: MAP/STMTAB
+
+136          0088          STMTAB
+
+The address of the statement table
+(which is the beginning of the user's
+BASIC program), containing all the
+tokenized lines of code plus the
+immediate mode lines entered by the
+user. Line numbers are stored as
+two-byte integers, and immediate mode
+lines are given the default value of
+line 32768 ($8000). The first two
+bytes of a tokenized line are the line
+number, and the next is a dummy byte
+reserved for the byte count (or
+offset) from the start of this line to
+the start of the next line.
+
+Following that is another count byte
+for the start of this line to the
+start of the next statement. These
+count values are set only when
+tokenization for the line and
+statement are complete.  Tokenization
+takes place in a 256 byte ($100)
+buffer that resides at the end of the
+reserved OS RAM (pointed to by
+locations 128, 129; $80, $81).  To see
+the starting address of your BASIC
+line numbers use this routine:
+
+10 STMTAB = PEEK(136) + PEEK(137)*256
+20 NUM = PEEK(STMTAB) + PEEK (STMTAB+1)*256
+30 IF NUM = 32768 THEN END
+40 PRINT"LINE NUMBER: ";NUM;" ADDRESS: ";STMTAB
+50 STMTAB = STMTAB + PEEK(STMTAB+2)
+60 GOTO 20
+
+The August 1982 issue of ANTIC
+provided a useful program to delete a
+range of BASIC line numbers. The
+routine can be appended to your
+program and even be used to delete
+itself.
+

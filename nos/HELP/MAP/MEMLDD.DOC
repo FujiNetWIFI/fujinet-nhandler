@@ -1,0 +1,9 @@
+
+TOPIC: MAP/MEMLDD
+
+5899          170B          MEMLDD
+
+Flags that the MEM.SAV file has been
+loaded. Zero means it has not been
+loaded.
+

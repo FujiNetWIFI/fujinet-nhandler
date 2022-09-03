@@ -1,0 +1,39 @@
+
+TOPIC: MAP/SHFLOK
+
+702          02BE          SHFLOK
+
+Flag for the shift and control keys.
+It returns zero for lowercase letters,
+64 ($40) for all uppercase (called
+caps lock: uppercase is required for
+BASIC statements and is also the
+default mode on powerup). SHFLOK will
+set characters to all caps during your
+program if 64 is POKEd here. Returns
+the value 128 ($80; control-lock) when
+the CTRL key is pressed. Forced
+control-lock will cause all keys to
+output their control-code functions or
+graphics figures. Other values POKEd
+here may cause the system to crash.
+You can use this location with 694
+($2B6) above to convert all keyboard
+entries to uppercase, normal display
+by:
+
+10   OPEN #2,4,0,"K:"
+20   GET #2,A
+30   GOSUB 1000
+40   PRINT CHR$(A);: GOTO 20
+.
+.
+.
+1000 IF A = 155 THEN 1030: REM RETURN KEY
+1010 IF A > = 128 THEN A = A - 128: REM RESTORE TO NORMAL DISPLAY
+1020 IF PEEK (702) = 0 AND A > 96 THEN A = A - 32: REM LOWERCASE TO UPPER
+1030 POKE 702,64: POKE 694,0
+1040 RETURN
+
+DOWNLOAD SHFLOK.BAS
+

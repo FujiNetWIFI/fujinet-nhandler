@@ -1,0 +1,12 @@
+
+TOPIC: MAP/ICAX3Z,4Z
+
+44          002C          ICAX3Z,4Z
+
+Used by BASIC NOTE and POINT commands
+for the transfer of disk sector
+numbers. These next four bytes to
+location 47 are also labelled as:
+ICSPRZ and are defined as spare bytes
+for local CIO use.
+

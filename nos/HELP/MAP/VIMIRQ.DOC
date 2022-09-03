@@ -1,0 +1,54 @@
+
+TOPIC: MAP/VIMIRQ
+
+534          0216          VIMIRQ
+
+The IRQ immediate vector (general).
+Initialized to 59126 ($E6F6). JMP
+through here to determine cause of the
+IRQ interrupt. Note that with the new
+("B") OS ROMs, there is a BREAK key
+interrupt vector at locations 566, 567
+($236, $237).  See 53774 ($D20E) for
+more information on IRQ interrupts.
+
+The new "B" version OS ROMs change the
+vectors above as follows:
+
+VDSLST     59280 ($E790)
+VPRCED     59279 ($E78F)
+VINTER     59279 ($E78F)
+VBREAK     59279 ($E78F)
+VKEYBD     NO CHANGE
+VSERIN     60175 ($EB0F)
+VSEROR     NO CHANGE
+VSEROC     60111 ($EACF)
+VTIMR 1-4  59279 ($E78F)
+VIMIRQ     59142 ($E706)
+VVBLKI     59310 ($E7AE)
+VVBLKD     59653 ($E905)
+
+---------------------------------------
+The locations from 536 to 558 ($218 to
+$22E) are used for the system software
+timers. Hardware timers are located in
+the POKEY chip and use the AUDF
+registers. These timers count
+backwards every 1/60 second (stage one
+VBLANK) or 1/30 second (stage two
+VBLANK) interval until they reach
+zero. If the VBLANK process is
+disabled or intercepted, the timers
+will not be updated. See De Re Atari
+for information regarding setting
+these timers in an assembly routine
+using the SETVBV register (58460;
+$E45C). These locations are user-
+accessible and can be made to count
+time for music duration, game I/O,
+game clock and other functions.
+Software timers are used for durations
+greater than one VBLANK interval (1/60
+second). For periods of shorter
+duration, use the hardware registers.
+

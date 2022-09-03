@@ -1,0 +1,75 @@
+
+TOPIC: MAP/HSCROL
+
+54276          D404          HSCROL
+
+(W) Horizontal scroll enable, POKE
+HSCROL with from zero to 16 clock
+cycles for the number of cycles to
+scroll. Horizontal fine scrolls can be
+used only if BIT 4 of the display list
+instruction is set. The difficulty in
+horizontal scrolling lies in arranging
+the screen data to be scrolled in such
+a manner as to prevent wraparound
+(i.e., the bit or byte scrolled off
+screen in one line becomes the bit or
+byte scrolled on screen in an adjacent
+line).  Normal data arranged for TV
+display looks like this on the screen:
+
++----------+
+|..........|
+|..........|
+|..........|
+|..........|
+|..........|
+|..........|
++----------+
+
+where it is a one-dimensional memory
+area "folded" at the proper places to
+create the image of a two dimensional
+screen. This is done by the DL
+character or map mode instruction.
+Without other instructions, it reads
+the memory continuously from the first
+specified location, each line taking
+the correct number of bytes for the
+GRAPHICS mode specified. To properly
+scroll it horizontally, you must
+arrange it in relation to the TV
+screen like this:
+
+     +----------+
+.....|..........|.....
+.....|..........|.....
+.....|..........|.....
+.....|..........|.....
+.....|..........|.....
+.....|..........|.....
+     +----------+
+
+Now you will have to make each display
+instruction for each line into a Load
+Memory Scan (LMS) instruction. To
+direct each LMS to the proper screen
+RAM for that line, you will have to
+increment each memory location by the
+total length of the line. For example,
+if you want to scroll a 256-byte
+horizontal screen, each LMS
+instruction will have to point to a
+location in memory 256 bytes above the
+last one. Of course, you will have to
+implement error-trapping routines so
+that your screen does not extend
+beyond your desired boundaries.
+
+Coarse scrolling, one byte at a time,
+can be done without setting the HSCROL
+register by the method described
+above. For smooth scrolling, you will
+have to use this register. See De Re
+Atari.
+

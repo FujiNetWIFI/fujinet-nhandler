@@ -1,0 +1,27 @@
+
+Topic: NOS/RMDIR
+
+RMDIR - Remove an empty directory
+from a mount point
+
+Usage:
+
+RMDIR|RD [N[n]:][/][path/]dirname
+
+Where dirname is the name of the
+directory to be created.
+
+Where path is an optional parent
+directory to dirname.
+
+Examples:
+
+RMDIR MYPROJ
+RMDIR N1:MYPROJ
+RMDIR N1:/PROJECTS/MyNewProj/
+RMDIR "N2:/Projects/Big Game/"
+RD MYPROJ
+
+All files in a directory must be
+deleted before it can be removed.
+

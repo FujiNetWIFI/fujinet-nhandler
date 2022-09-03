@@ -1,0 +1,10 @@
+
+TOPIC: MAP/SAVADR
+
+104          0068          SAVADR
+
+Also called FRMADR. Temporary storage,
+used with ADRESS above for the data
+under the cursor and in moving line
+data on the screen.
+

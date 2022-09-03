@@ -1,0 +1,8 @@
+
+TOPIC: MAP/FMUL
+
+56027          DADB          FMUL
+
+FP multiplication routine; FR0 times
+FR1.
+

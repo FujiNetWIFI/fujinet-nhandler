@@ -1,0 +1,14 @@
+
+TOPIC: MAP/DBUF
+
+7668          1DF4          DBUF
+
+256 ($100) byte data buffer for COPY
+routines. Copy routines work in
+125-byte passes, equal to the number
+of data bytes in each sector on the
+disk. There are 256 bytes because
+Atari had planned a double density
+drive which has 253 data bytes in each
+sector.
+

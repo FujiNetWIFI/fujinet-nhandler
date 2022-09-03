@@ -1,0 +1,13 @@
+
+TOPIC: MAP/SHFAMT
+
+111          006F          SHFAMT
+
+Pixel justification: the amount to
+shift the right justified pixel data
+on output or the amount to shift the
+input data to right justify it.  Prior
+to the justification process, this
+value is always the same as that in
+672 ($2A0).
+

@@ -1,0 +1,219 @@
+
+TOPIC: MAP/SQR
+
+48869          BEE5          SQR
+
+Calculate square root (FR0) with
+carry.  Note that there is some
+conflict of addresses for the above
+routines. The addresses given are from
+the first edition of De Re Atari. The
+Atari OS Source Code Listing gives the
+following addresses for these FP
+routines:
+
+These are entry points, not actual
+start addresses.
+
+SIN     48513   ($BD81)
+COS     48499   ($BD73)
+ATAN    48707   ($BE43)
+SQR     48817   ($BEB1)
+
+However, after disassembling the BASIC
+ROMs, I found that the addresses in De
+Re Atari appear to be correct.
+
+49146,7        BFFA,B
+Left cartridge start address.
+
+49148          BFFC
+A non-zero number here tells the OS
+that there is no cartridge in the left
+slot.
+
+49149          BFFD
+Option byte. A cartridge which does
+not specify a disk boot may use all of
+the memory from 1152 ($480) to MEMTOP
+any way it sees fit.
+
+49150,1        BFFE,F
+Cartridge initialization address. See
+the above section on the right slot,
+32768 to 40959, for more information.
+
+-------------------------------------
+When a BASIC program is SAVEd, only 14
+of the more than 50 page zero
+locations BASIC uses are written to
+the disk or cassette with the program.
+The rest are all recalculated with a
+NEW or SAVE command, sometimes with
+RUN or GOTO. These 14 locations are:
+
+128,129   80,81    LOMEM
+130,131   82,83    VNTP
+132,133   84,85    VNTD
+134,135   86,87    VVTP
+136,137   88,89    STMTAB
+138,139   8A,8B    STMCUR
+140,141   8C,8D    STARP
+
+The string/array space is not loaded;
+STARP is included only to
+point to the end of the BASIC program.
+The two other critical BASIC page zero
+pointers, which are not
+SAVEd with the program, are:
+
+142,143   8E,8F    RUNSTK
+144,145   90,91    MEMTOP
+
+For more information concerning Atari
+BASIC, see the appendix.
+
+For detailed description, refer to the
+Atari BASIC Reference Manual. For more
+technical information, see De Re
+Atari, BYTE, February 1982, and
+COMPUTE!'s First Book of Atari and
+COMPUTE!'s Second Book of Atari.
+
+-------------------------------------
+Locations 49152 to 53247 ($C000 to
+$CFFF) are unused.  Unfortunately,
+this rather large 4K block of memory
+cannot be written to by the user, so
+it is presently useless. Apparently,
+this area of ROM is reserved for
+future expansion. Rumors abound about
+new Atari OS's that allow 3-D
+graphics, 192K of on-board RAM and
+other delights.  Most likely this
+space will be consumed in the next OS
+upgrade.  PEEKing this area will show
+it not to be completely empty; it was
+apparently used for system development
+in Atari's paleozoic age.  Although
+the Atari is technically a 64K machine
+(1K equals 1024 bytes, so 64K equals
+65536 bytes), you don't really have
+all 64K to use. The OS takes up 10K;
+there is the 4K block here that's
+unused, plus a few other unused areas
+in the ROM and, of course, there are
+the hardware chips. BASIC (or any
+cartridge) uses another 8K. The bottom
+1792 bytes are used by the OS, BASIC,
+and floating point package. Then DOS
+and DUP take up their memory space,
+not to mention the 850 handler if
+booted -- leaving you with more or
+less 38K of RAM to use for your BASIC
+programming.
+
+-------------------------------------
+Locations 53248 to 55295 ($D000 to
+$D7FF) are for ROM for the special I/O
+chips that Atari uses. The CTIA (or
+GTIA, depending on which you have)
+uses memory locations 53248 to 53503
+($D000 to $D0FF).  POKEY uses 53760 to
+54015 ($D200 to $D2FF). PIA uses 54016
+to 54271 ($D300 to $D3FF). ANTIC uses
+54272 to 54783 ($D400 to $D5FF).
+ANTIC, POKEY and G/CTIA are Large
+Scale Integration (LSI) circuit chips.
+Don't confuse this chip ROM with the
+OS ROM which is be found in higher
+memory. For the most extensive
+description of these chips, see the
+Atari Hardware Manual.
+
+There are two blocks of unused,
+unavailable memory in the I/O areas:
+53504 to 53759 ($D100 to $D1FF) and
+54784 to 55295 ($D600 to $D7FF).
+
+Many of the following registers can't
+be read directly, since they are
+hardware registers. Writing to them
+can often be difficult because in most
+cases the registers change every 30th
+second (stage two VBLANK) or even
+every 60th second (stage one VBLANK)!
+That's where the shadow registers
+mentioned earlier come in. The values
+written into these ROM locations are
+drawn from the shadow registers; to
+effect any "permanent" change in BASIC
+(i.e., while your program is running),
+you have to write to these shadow
+registers (in direct mode or while
+your program is running; these values
+will all be reset to their
+initialization state on RESET or
+powerup).
+
+Shadow register locations are enclosed
+in parentheses; see these locations
+for further descriptions. If no shadow
+register is mentioned, you may be able
+to write to the location directly in
+BASIC. Machine language is fast enough
+to write to the ROM locations and may
+be able to bypass the shadow registers
+entirely.
+
+Another feature of many of these
+registers is their dual nature. They
+are read for one value and written to
+for another. The differences between
+these functions are noted by the (R)
+for read and (W) for write functions.
+You will notice that many of these
+dual-purpose registers also have two
+labels.
+
+-------------------------------------
+CTIA or GTIA
+
+53248-53505    D000-D0FF
+
+GTIA (or CTIA) is a special television
+interface chip designed exclusively
+for the Atari to process the video
+signal. ANTIC controls most of the
+C/GTIA chip functions. The GTIA shifts
+the display by one-half color clock
+off what the CTIA displays, so it may
+display a different color than the
+CTIA in the same piece of software.
+However, this shift allows players and
+playfields to overlap perfectly.
+
+There is no text window available in
+GTIA modes, but you can create a
+defined area on your screen with
+either a DLI (see COMPUTE!, September
+1982) or by POKEing the GTIA mode
+number into location 87 ($57), POKEing
+703 with four and then setting the
+proper bits in location 623 ($26F) for
+that mode. Only in the former method
+will you be able to get a readable
+screen, however. In the latter you
+will only create a four line,
+scrolling, unreadable window. You will
+be able to input and output as with
+any normal text window; you just won't
+be able to read it! GTIA, by the way,
+apparently stands for "George's
+Television Interface Adapter." Whoever
+George is, thanks, but what is CTIA?
+See the OS User's Manual, the Hardware
+Manual, De Re Atari and COMPUTE!, July
+1982 to September 1982, for more
+information.
+

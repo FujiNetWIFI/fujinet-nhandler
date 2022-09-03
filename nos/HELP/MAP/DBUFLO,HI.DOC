@@ -1,0 +1,13 @@
+
+TOPIC: MAP/DBUFLO,HI
+
+772          0304          DBUFLO,HI
+
+Data buffer address of the source or
+destination of the data to be
+transferred or the device status
+information (or the disk sector data).
+Set by the user, it need not be set if
+there is no data transferred, as in a
+status request.
+

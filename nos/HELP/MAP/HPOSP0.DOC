@@ -1,0 +1,151 @@
+
+TOPIC: MAP/HPOSP0
+
+53248          D000          HPOSP0
+
+(W) Horizontal position of player 0.
+Values from zero to 227 ($E3) are
+possible but, depending on the size of
+the playfield, the range can be from
+48 ($30) as the leftmost position to
+208 ($D0) as the rightmost position.
+Other positions will be "off screen."
+Here are the normal screen boundaries
+for players and missiles.  The values
+may vary somewhat due to the nature of
+your TV screen. Players and missiles
+may be located outside these
+boundaries, but will not be visible
+(off screen):
+
+                 Top
+           32 for single,
+        16 for double line
+             resolution
+       +-------------------+
+       |                   |
+48 for |                   | 208 for
+ both  |                   |  both
+resol- |                   | resol-
+utions |                   | utions
+       |                   |
+       +-------------------+
+               Bottom
+           224 for single,
+         112 for double line
+             resolution
+
+Although you can POKE to these
+horizontal position registers, they
+are reset to zero immediately. The
+player or missile will stay on the
+screen at the location specified by
+the POKE, but in order to move it
+using the horizontal position
+registers, you can't use:
+
+POKE 53248, PEEK (53248) + n (or -n)
+
+which will end up generating an error
+message. Instead, you need to use
+something like this:
+
+10   POKE 704,220: GRAPHICS 1: HPOS = 53248: POKE 623,8
+20   N = 100: POKE HPOS,N: POKE 53261,255
+30   IF STICK(0) = 11 THEN N = N - 1:POKE HPOS,N: PRINT N
+40   IF STICK(0) = 7 THEN N = N + 1:POKE HPOS,N: PRINT N
+50   GOTO 30
+
+There are no vertical position
+registers for P/M graphics, so you
+must use software routines to move
+players vertically. One idea for
+vertical motion is to reposition the
+player within the P/M region rather
+than the screen RAM. For example, the
+program below uses a small machine
+language routine to accomplish this
+move:
+
+1 REM LINES 5 TO 70 SET UP THE PLAYER
+5 KEEP=PEEK(106)-16
+10 POKE 106,KEEP:POKE 54279,KEEP
+20 GRAPHICS 7+16:POKE 704,78:POKE 559,46:POKE 53277,3
+30 PMBASE=KEEP*256
+40 FOR LOOP=PMBASE+512 TO PMBASE+640:POKE LOOP,0:NEXT LOOP:REM CLEAR OUT MEMORY FIRST
+50 X=100:Y=10:POKE 53248,X
+60 FOR LOOP=0 TO 7:READ BYTE:POKE PMBASE+512+Y+LOOP,BYTE:NEXT LOOP:REM PLAYER GRAPHICS INTO MEMORY
+70 DATA 129,153,189,255,255,189,153,129
+80 REM LINES 100 TO 170 SET UP MACHINE LANGUAGE ROUTINE
+100 DIM UP$(21),DOWN$(21):UP=ADR(UP$):DOWN=ADR(DOWN$)
+110 FOR LOOP=UP TO UP+20:READ BYTE:POKE LOOP,BYTE:NEXT LOOP
+120 FOR LOOP=DOWN TO DOWN+20:READ BYTE:POKE LOOP,BYTE:NEXT LOOP
+130 DATA 104,104,133,204,104,133,203,160,1,177
+140 DATA 203,136,145,203,200,200,192,11,208,245,96
+150 DATA 104,104,133,204,104,133,203,160,10,177
+160 DATA 203,200,145,203,136,136,192,255,208,245,96
+200 REM VERTICAL CONTROL
+210 IF STICK(0)=14 THEN GOSUB 300
+220 IF STICK(0)=13 THEN D=USR(DOWN,PMBASE+511+Y):Y=Y+1
+250 GOTO 210
+300 U=USR(UP,PMBASE+511+Y):Y=Y-l
+310 RETURN
+
+DOWNLOAD MOVEPM.BAS
+
+This will move any nine-line (or less)
+size player vertically with the
+joystick. If you have a larger player
+size, increase the 11 in line 140 to a
+number two larger than the number of
+vertical lines the player uses, and
+change the ten in line 150 to one
+greater than the number of lines. To
+add horizontal movement, add the
+following lines:
+
+6   HPOS = 53248
+230 IF STICK(0) = 11 THEN X = X - 1: POKE HPOS, X
+240 IF STICK(0) = 7  THEN X = X + 1: POKE HPOS, X
+
+You can use the routine to move any
+player by changing the number 511 in
+the USR calls to one less than the
+start address of the object to be
+moved. See the appendix for a map of
+P/M graphics memory use. Missiles are
+more difficult to move vertically with
+this routine, since it moves an entire
+byte, not bits. It would be useful for
+moving all four missiles vertically if
+you need to do so; they could still be
+moved horizontally in an individual
+manner.  See COMPUTE!, December 1981,
+February 1982, and May 1982, for some
+solutions and some machine language
+move routines, and COMPUTE!, October
+1981, for a solution with animation
+involving P/M graphics.
+
+              M0PF
+
+(R) Missile 0 to playfield collision.
+This register will tell you which
+playfield the object has "collided"
+with, i.e., overlapped. If missile 0
+collides with playfield two, the
+register would read four and so on.
+Bit use is:
+
+      Bit    7  6  5   4  3  2  1  0
+Playfield    ...unused..  3  2  1  0
+  Decimal    ...........  8  4  2  1
+
+53249          D00l           HOPSP1
+
+(W) Horizontal position of player 1.
+
+              M1PF
+
+(R) Missile 1 to playfield collision.
+

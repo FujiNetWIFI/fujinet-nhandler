@@ -30,31 +30,38 @@ Prompt:
 
 	Nn:[] <-- cursor
 
-where `n` is the current default device number (1-8).
+where `n` is the current default device number (1-4).
 
 The ATARI's full-screen editor can be used to correct or cobble a command using text snippets found elsewhere on the screen.
 
 Command Summary
 ===============
 
-|Command |Purpose|
-|:------:|:------|
-|NCD   |Mount or unmount a remote directory|32400
-|NPWD  |Display the current mount point for a network drive|
-|Nn:   |Change the current default network drive|
-|DIR   |Display a list of files/directories found on a mounted network drive|
-|DEL   |Delete a file found on a mount point|
-|RENAME|Rename a file or directory on a mount point|
-|MKDIR |Create a directory on a mount point|
-|RMDIR |Delete an empty directory on a mount point|
-|CAR   |Switch to a cartridge (if installed)|
-|LOAD  |Load/Execute binary file|
-|RUN   |Execute machine code at a specified memory address|
-|REENTER|Execute machine code vectored from RUNAD or INITAD ($02E0, $02E2)|
-|NTRANS|Translate the end-of-line character between the ATARI and the remote host's operating system|
-|CLS   |Clear/Erase the screen|
-|COLD  |Execute coldstart routine COLDSV ($E477)|
-|WARM  |Execute warmstart routine WARMSV ($E474)|
+|Command  |Purpose|
+|:-------:|:------|
+|NCD      |Mount or unmount a remote directory|32400
+|NPWD     |Display the current mount point for a network drive|
+|Nn:      |Change the current default network drive|
+|DIR      |Display a list of files/directories found on a mounted network drive|
+|DEL      |Delete a file found on a mount point|
+|RENAME   |Rename a file or directory on a mount point|
+|MKDIR    |Create a directory on a mount point|
+|RMDIR    |Delete an empty directory on a mount point|
+|RUN      |Execute machine code at a specified memory address|
+|CAR      |Switch to a cartridge (if installed)|
+|LOAD     |Load/Execute binary file|
+|REENTER  |Attempt to jump to last LOADed program|
+|NTRANS   |Translate the end-of-line character between the ATARI and the remote host's operating system|
+|SOURCE   |Batch execute NOS/DOS commands in text file|
+|PRINT    |Display text messages in batch file|
+|REM      |Comment within batch file|
+|@NOSCREEN|Disable echo of commands in batch file|
+|@SCREEN  |Enable echo of commands in batch file|
+|TYPE     |Show contents of text file|
+|CLS      |Clear/Erase the screen|
+|COLD     |Execute coldstart routine COLDSV ($E477)|
+|WARM     |Execute warmstart routine WARMSV ($E474)|
+|HELP     |Online help system|
 
 Commands in Detail
 ==================
@@ -62,7 +69,7 @@ Commands in Detail
 `NCD`
 ====
 
-Mount or unmount a remote directory to a network device (N1: through N8:). The remote directory must be hosted using one of the supported FujiNet protocols (primarily TNFS).
+Mount or unmount a remote directory to a network device (N1: through N4:). The remote directory must be hosted using one of the supported FujiNet protocols (primarily TNFS).
 
 **Mounting**
 
@@ -70,7 +77,7 @@ Usage:
 
 	NCD [N[n]:]PROTO://path[/][:port]
 
-Where `n` is an optional device number 1-8. If `n` is omitted, the current default device number is implied.
+Where `n` is an optional device number 1-4. If `n` is omitted, the current default device number is implied.
 Where `PROTO` is a network protocol supported by the FujiNet, such as `TNFS`, `FTP`, `SMB`. File operations for various protocols are limited by what is supported by the protocol or FujiNet.
 
 General examples:
@@ -121,7 +128,7 @@ Usage:
 
 	NCD N[n]:
 
-Where `n` is an optional device number 1-8. If `n` is omitted, the current default device number is implied.
+Where `n` is an optional device number 1-4. If `n` is omitted, the current default device number is implied.
 
 Example:
 
@@ -136,7 +143,7 @@ Usage:
 
 	NPWD [N[n]:]
 
-Where `Nn:` is optional and `n` detotes a device number 1-8. If `n` is omitted, the current default device number is implied.
+Where `Nn:` is optional and `n` detotes a device number 1-4. If `n` is omitted, the current default device number is implied.
 
 General Examples:
 
@@ -157,7 +164,7 @@ Usage:
 
 	Nn:
 
-Where `n` is required and `n` denotes a device number 1-8.
+Where `n` is required and `n` denotes a device number 1-4.
 
 After changing the default network drive, the command prompt is updated to reflect the new default network drive. 
 
@@ -171,7 +178,7 @@ Usage:
 
 	DIR [N[n]:][path/][pattern]
 
-Where `Nn:` is optional and `n` detotes a device number 1-8. If `n` is omitted, the current default device number is implied.
+Where `Nn:` is optional and `n` detotes a device number 1-4. If `n` is omitted, the current default device number is implied.
 
 Where `[path]` is a relative path from the current working directory.
 
@@ -196,15 +203,17 @@ Delete a file found on a mount point.
 
 Usage:
 
-	DEL [N[n]]:[path/]file
+	DEL|ERASE [N[n]]:[path/]file
 
 Only one file can be deleted per command. Pattern-matching using wildcard characters is not currently supported. 
+
 Filenames are case-sensitive. If a filename contains spaces, enclose the entire path and filename with double-quotes.
 
     DEL MYFILE.AWP
     DEL N2:MyFile.AWP
     DEL N2:DOCS/MYFILE.AWP
-    DEL "N2:DOCS/MYFILE.AWP"
+    DEL "N2:DOCS/My File.AWP"
+    ERASE "N2:DOCS/My File.AWP"
 
 `RENAME`
 ---
@@ -225,15 +234,19 @@ Examples:
 
 `MKDIR`
 ---
-Create a directory on a mount point.
+Create a new directory on a mount point.
 
 Usage:
 
-	MKDIR [N[n]:]path
+	MKDIR [N[n]:][/][path/]dirname
+
+Where dirname is the name of the directory to be created.
+
+Where path is an optional parent directory to dirname. 
 
 `RMDIR`
 ---
-Delete an empty directory on a mount point.
+Remove an empty directory on a mount point.
 
 Usage:
 
@@ -332,3 +345,12 @@ Usage:
     WARM
 
 Performs a warmstart.
+
+`HELP`
+---
+
+Usage:
+
+    HELP [TOPIC][/SUBTOPIC]
+
+Online help system.

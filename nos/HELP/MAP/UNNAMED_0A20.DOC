@@ -1,0 +1,46 @@
+
+TOPIC: MAP/UNNAMED_0A20
+
+2592-2773          0A20-0AD5
+UNNAMED_0A20
+
+In COMPUTE!, May and July 1982, Bill
+Wilkinson discussed BURST I/O, which
+should not take place when a file is
+OPEN for update, but does, due to a
+minor bug in DOS 2.0 (see also Inside
+Atari DOS, Chapter 12). This will
+cause update writes to work properly,
+but update reads to be bad. The
+following POKEs will correct the
+problem. Remember to save DOS back to
+a new disk.
+
+POKE 2592,130         ($A20,82)
+POKE 2593,19          ($A21,13)
+POKE 2594,73          ($A22,49)
+POKE 2595,12          ($A23,0C)
+POKE 2596,240         ($A24,F0)
+POKE 2597,36          ($A25,24)
+POKE 2598,106         ($A26,6A)
+POKE 2599,234         ($A27,EA)
+POKE 2625,16          ($A41,10)
+POKE 2773,31          ($AD5,1F)
+
+(Note that the July 1982 issue of
+COMPUTE! contained a typo where the
+value to be POKEd into 2773 was
+mistakenly listed as 13, not 31!)
+Wilkinson points out that one way to
+completely disable BURST I/O (useful
+in some circumstances such as using
+the DOS BINARY SAVE to save the
+contents of ROM to disk!) is by:
+
+POKE 2606,0           ($A2E,0)
+
+This, however, will make the system
+LOAD and SAVE files considerably more
+slowly, so it's not recommended as a
+permanent change to DOS.
+

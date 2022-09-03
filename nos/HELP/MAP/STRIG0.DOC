@@ -1,0 +1,15 @@
+
+TOPIC: MAP/STRIG0
+
+644          0284          STRIG0
+
+Stick trigger 0. This and the next
+three locations perform the same
+function as the PTRIG locations except
+for the joysticks.  Like PTBIG, zero
+is returned when the button is
+pressed; one is returned when it is
+not. STRIG registers are shadow
+registers for GTIA/CTIA locations
+53264 to 53267 ($D010 to $D013).
+

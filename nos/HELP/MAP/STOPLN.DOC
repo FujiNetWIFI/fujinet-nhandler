@@ -1,0 +1,12 @@
+
+TOPIC: MAP/STOPLN
+
+186          00BA          STOPLN
+
+The line where a program was stopped
+either due to an error or the use of
+the BREAK key, or a STOP or a TRAP
+statement occurred. You can use PEEK
+(186) + PEEK (187) * 256 in a GOTO or
+GOSUB statement.
+

@@ -1,0 +1,21 @@
+
+TOPIC: MAP/ANTIC
+
+ANTIC
+
+54272-54783    D400-D5FF
+
+ANTIC is a special, separate
+microprocessor used in your Atari to
+control C/GTIA, the screen display,
+and other screen-related functions
+including processing the NMI
+interrupts. It uses its own
+instruction set, called the display
+list, which tells ANTIC where to find
+the screen data in RAM and how to
+display it. ANTIC also uses an
+internal four bit counter called the
+Delta Counter (DCTR) to control the
+vertical dimension of each block.
+
