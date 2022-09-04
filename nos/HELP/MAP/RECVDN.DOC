@@ -1,0 +1,8 @@
+
+TOPIC: MAP/RECVDN
+
+57          0039          RECVDN
+
+Receive done flag (255; $FF equals
+done).
+

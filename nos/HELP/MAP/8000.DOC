@@ -1,0 +1,251 @@
+
+TOPIC: MAP/MISC_3306
+
+13062          3306          ....
+
+End of DUP.SYS.
+
+The rest of RAM is available to
+location 32767 ($7FFF).
+
+--------------------------------------
+CARTRIDGE B: 8K
+
+Locations 32768 to 40959 ($8000 to
+$9FFF) are used by the right cartridge
+(Atari 800 only), when present. When
+not present, this RAM area is
+available for use in programs. When
+the 8K BASIC cartridge is being used,
+this area most frequently contains the
+display list and screen memory. As of
+this writing, the only cartridge that
+uses this slot is Monkey Wrench from
+Eastern House Software.
+
+It is possible to have 16K cartridges
+on the Atari by either combining both
+slots using two 8K cartridges or
+simply having one with large enough
+ROM chips and using one slot. In this
+case, the entire area from 32768 to
+49151 ($8000 to $BFFF) would be used
+as cartridge ROM.
+
+Technically, the right cartridge slot
+is checked first for a resident
+cartridge and initialized, then the
+left. You can confirm this by putting
+the Assembler Editor cartridge in the
+right and BASIC in the left slots.
+BASIC will boot, but not the ASED.
+Using FRE(0), you will see, however,
+that you have 8K less RAM to use; and
+PEEKing through this area will show
+that the ASED program is indeed in
+memory, but that control was passed to
+BASIC. Control will pass to the ASED
+cartridge if the cartridges are
+reversed. This is because the last six
+bytes of the cartridge programs tell
+the OS where the program begins -- in
+both cases, it is a location in the
+area dedicated to the left cartridge.
+The six bytes are as follows:
+
+Byte          Purpose
+Right(B)
+40954 ($9FFA) Cartridge start address
+  (low byte)
+40955 ($9FFB) Cartridge start address
+  (high byte)
+40956,($9FFC) Reads zero if a
+  cartridge is inserted, non-zero when
+  no cartridge is present. This
+  information is passed down to the
+  page zero RAM: if the A cartridge is
+  plugged in, then location 6 will
+  read one; if the B cartridge is 
+  plugged in, then location 7 will 
+  read one; otherwise they will read 
+  zero.
+40957 ($9FFD) Option byte. If BIT 0
+  equals one, then boot the disk (else
+  there is no disk boot). If BIT 2
+  equals one, then initialize and 
+  start the cartridge (else initialize
+  but do not start). If BIT 7 equals 
+  one, then the cartridge is a 
+  diagnostic cartridge which will take
+  control, but not initialize the OS 
+  (else non-diagnostic cartridge). 
+  Diagnostic cartridges were used by 
+  Atari in the development of the 
+  system and are not available to the
+  public.
+40958 ($9FFE) Cartridge initialization
+  address low byte.
+40959 ($9FFF) Cartridge initialization
+  address high byte. This is the 
+  address to which the OS will jump 
+  during all powerup and RESETs.
+
+The OS makes temporary use of
+locations 36876 to 36896 ($900C to
+$9020) to set up vectors for the
+interrupt handler. See the OS listings
+pages 31 and 81. This code was only
+used in the development system used to
+design the Atari.
+
+--------------------------------------
+CARTRIDGE A: 8K
+
+Byte          Purpose
+Left (A)
+49146 ($BFFA) Cart start addr (low)
+49147 ($BFFB) Cart start addr (high)
+49148 ($BFFC) Reads 0 if a cartridge
+  is inserted, non-zero when no cart-
+  ridge is present. This information
+  is passed down to the page 0 RAM:
+  if the A cartridge is plugged in,
+  then location 6 will read one;
+  if the B cartridge is plugged in,
+  then location 7 will read one;
+  otherwise they will read zero.
+49149 ($BFFD) Option byte.
+  If BIT 0 equals one, then boot
+  the disk (else there is no disk
+  boot).
+  If BIT 2 equals one, then init-
+  ialize and start the cartridge
+  (else initialize but do not start).
+  If BIT 7 equals one,
+  then the cartridge is a diagnostic
+  cartridge which will take control,
+  but not initialize the OS (else
+  non-diagnostic cartridge). Diag-
+  nostic cartridges were used by
+  Atari in the development of the
+  system and are not available to
+  the public.
+49150 ($BFFE) Cart init addr lo byte
+49151 ($BFFF) Cart init addr hi byte.
+  This is the address to which the OS
+  will jump during all powerup and
+  RESETs.
+
+Locations 40960 to 49151 ($A000 to
+$BFFF) are used by the left cartridge,
+when present. When not present, this
+RAM area is available for other use.
+The display list and the screen
+display data will be in this area when
+there is no cartridge present.
+
+Most cartridges use this slot (see
+above) including the 8K BASIC,
+Assembler-Editor, and many games.
+Below are some of the entry points for
+the routines in Atari 8K BASIC. There
+is no official Atari listing of the
+BASIC ROM yet. Many of the addresses
+below are listed in Your Atari
+400/800. Others have been provided in
+numerous magazine articles and from
+disassembling the BASIC cartridge.
+
+BASIC ROUTINES
+
+40960-41036    A000-A04C
+Cold start.
+
+41037-41055    A04D-A05F
+Warm start.
+
+41056-42081    A060-A461
+Syntax checking routines.
+
+42082-42158    A462-A4AE
+Search routines.
+
+42159-42508    A4AF-A60C
+STATEMENT name table. The statement
+TOKEN list begins at 42161 ($A4B1).
+You can print a list of these tokens
+by:
+
+5   ADDRESS = 42161
+10  IF NOT PEEK(ADDRESS) THEN PRINT:END
+15  PRINT TOKEN,
+20  BYTE = PEEK(ADDRESS): ADDRESS = ADDRESS + 1
+30  IF BYTE < 128 THEN PRINT CHR$(BYTE);: GOTO 20
+40  PRINT CHR$(BYTE - 128)
+50  ADDRESS = ADDRESS + 2: TOKEN = TOKEN + 1: GOTO 10
+
+DOWNLOAD STATMENT.BAS
+
+42509-43134    A60D-A87E
+Syntax tables. The OPERATOR token list
+begins at 42979 ($A7E3). You can print
+a list of these tokens by:
+
+5   ADDRESS = 42979: TOKEN = 16
+10  IF NOT PEEK (ADDRESS) THEN PRINT:END
+15  PRINT TOKEN,
+20  BYTE = PEEK(ADDRESS): ADDRESS = ADDRESS + 1
+30  IF BYTE < 128 THEN PRINT CHR$(BYTE);: GOTO 20
+40  PRINT CHR$(BYTE - 128)
+50  TOKEN = TOKEN + 1
+60  GOTO 10
+
+DOWNLOAD OPERATOR.BAS
+
+See COMPUTE!, January and February
+1982; BYTE, February 1982, and De Re
+Atari for an explanation of BASIC
+tokens.
+
+43135-43358    A87F-A95E
+Memory manager.
+
+43359-43519    A95F-A9FF
+Execute CONT statement.
+
+43520-43631    AA00-AA6F
+Statement table.
+
+43632-43743    AA70-AADF
+Operator table.
+
+43744-44094    AAE0-AC3E
+Execute expression routine.
+
+44095-44163    AC3F-AC83
+Operator precedence routine.
+
+44164-45001    AC84-AFC9
+Execute operator routine.
+
+45002-45320    AFCA-B108
+Execute function routine.
+
+45321-47127    B109-B817
+Execute statement routine.
+
+47128-47381    B818-B915
+CONT statement subroutines.
+
+47382-47542    B916-B9B6
+Error handling routines.
+
+47543-47732    B9B7-BA74
+Graphics handling routines.
+
+47733-48548    BA75-BDA4
+I/O routines.
+
+48549-49145    BDA5-BFF9
+Floating point routines (see below).
+

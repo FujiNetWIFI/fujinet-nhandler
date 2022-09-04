@@ -1,0 +1,73 @@
+
+TOPIC: MAP/POKMSK
+
+16          0010          POKMSK
+
+POKEY interrupts: the IRQ service uses
+and alters this location.  Shadow for
+53774 ($D20E). POKE with 112 ($70;
+also POKE this same value into 53774)
+to disable the BREAK key. If the
+following bits are set (to one), then
+these interrupts are enabled (bit
+decimal values are in parentheses):
+
+BIT DEC FUNCTION
+7   128 The BREAK key is enabled.
+6    64 The "other key" interrupt is
+        enabled.
+5    32 The serial input data ready
+        interrupt is enabled.
+4    16 The serial output data re-
+        quired interrupt is enabled.
+3     8 The serial out transmission
+        finished interrupt is enabled
+2     4 The POKEY timer four inter-
+        rupt is enabled (only in the
+        "B" or later versions of the
+        OS ROMs).
+1     2 The POKEY timer two interrupt
+        is enabled.
+0     1 The POKEY timer one interrupt
+        is enabled.
+
+Timer interrupt enable means the
+associated AUDF registers are used as
+timers and will generate an interrupt
+request when they have counted down to
+zero. See locations 528 to 535 ($210
+to $217) and the POKEY chip from
+locations 53760 ($D200) on, for a full
+explanation. 192 ($C0) is the default
+on powerup.
+
+You can also disable the BREAK key by
+POKEing here with 64 ($40; or any
+number less than 128; $80) and also in
+location 53774. The problem with
+simple POKEs is that the BREAK key is
+re-enabled when RESET is pressed and
+by the first PRINT statement that
+displays to the screen, or any OPEN
+statement that addresses the screen
+(S: or E:), or the first PRINT
+statement after such an OPEN and any
+GRAPHICS command. In order to
+continually disable the BREAK key if
+such commands are being used, it's
+best to use a subroutine that checks
+the enable bits frequently during
+input and output operations, and POKEs
+a value less than 128 into the proper
+locations, such as:
+
+1000   BREAK = PEEK(16) - 128: IF BREAK < 0 THEN RETURN
+1010   POKE 16, BREAK: POKE 53774, BREAK: RETURN
+
+The new OS "B" version ROMs have a
+vector for the BREAK key interrupt,
+which allows users to write their own
+routines to process the interrupt in
+the desired manner. It is located at
+566, 567 ($236, $237).
+

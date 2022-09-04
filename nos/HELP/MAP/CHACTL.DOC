@@ -1,0 +1,22 @@
+
+TOPIC: MAP/CHACTL
+
+54273          D401          CHACTL
+
+(W) Character mode control. See shadow
+register 755 for values that can be
+POKEd in. Only the least three bits
+(decimal zero to seven) are read, as
+below:
+
+Decimal     0  1  2  3  4  5  6  7
+Cursor
+Transparent X     X     X     X
+Opaque         X     X     X     X
+Present           X  X        X  X
+Absent      X  X        X  X
+------------------------------------
+Characters
+Normal      X  X  X  X
+Inverted                X  X  X  X
+

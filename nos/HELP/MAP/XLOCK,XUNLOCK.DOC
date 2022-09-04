@@ -1,0 +1,8 @@
+
+TOPIC: MAP/XLOCK,XUNLOCK
+
+3196          0C7C     XLOCK, XUNLOCK
+
+LOCK and UNLOCK files. UNLOCK routines
+begin at 3203 ($C83).
+

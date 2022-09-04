@@ -1,0 +1,17 @@
+
+TOPIC: MAP/CHKSUM
+
+49          0031          CHKSUM
+
+Data frame checksum used by SIO:
+single byte sum with carry to the
+least significant bit. Checksum is the
+value of the number of bytes
+transmitted (255; $FF). When the
+number of transmitted bytes equals the
+checksum, a checksum sent flag is set
+at location 59 ($3B). Uses locations
+53773 ($D20D) and 56 ($38) for
+comparison of values (bytes
+transmitted).
+

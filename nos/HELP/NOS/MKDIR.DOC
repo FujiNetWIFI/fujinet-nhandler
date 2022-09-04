@@ -1,0 +1,24 @@
+
+Topic: NOS/MKDIR 
+
+MKDIR - Create a new directory on a
+mount point.
+
+Usage:
+
+MKDIR|MD [N[n]:][/][path/]dirname
+
+Where dirname is the name of the
+directory to be created.
+
+Where path is an optional parent
+directory to dirname.
+
+Examples:
+
+MKDIR MYPROJ
+MKDIR N1:MYPROJ
+MKDIR N1:/PROJECTS/MyNewProj/
+MKDIR "N2:/Projects/Big Game/"
+MD MYPROJ
+

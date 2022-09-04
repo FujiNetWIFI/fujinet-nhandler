@@ -1,0 +1,84 @@
+
+TOPIC: MAP/VSCROL
+
+54277          D405          VSCROL
+
+(W) Vertical scroll enable, POKE
+VSCROL with from zero to 16 scan
+lines, depending on the GRAPHICS mode
+of the screen for the number of scan
+lines to scroll. Vertical fine scrolls
+can be used only if BIT 5 of the
+display list instruction has been set.
+
+Coarse scrolling can be done without
+using this register, simply by moving
+the top of the screen address (as
+defined by the DL LMS instruction) up
+or down one mode line (plus or minus
+40 or 20 bytes, depending on the
+GRAPHICS mode). The top of the screen
+address can be found by:
+
+10  DLIST = PEEK(560) + PEEK(561) * 256
+20  SCRNLO = DLIST + 4: SCRNHI = DLIST + 5: REM LSB/MSB OF SCREEN ADDRESS
+25  PRINT "SCREEN ADDRESS = " PEEK(SCRNLO) + PEEK(SCRNHI) * 256
+
+You could then add a routine to this
+for a coarse - scroll vertically
+through the memory with a joystick,
+such as:
+
+30  LOBYTE = 0: HIBYTE = 0
+40  IF STICK(0) = 14 THEN LOBYTE = LOBYTE + 40:GOTO 100
+50  IF STICK(0) = 13 THEN LOBYTE = LOBYTE - 40
+60  IF LOBYTE < 0 THEN LOBYTE = LOBYTE + 256: HIBYTE = HIBYTE - 1
+70  IF HIBYTE < 0 THEN HIBYTE = 0
+80  GOTO 200
+100 IF LOBYTE 255 THEN LOBYTE = LOBYTE - 256
+110 HIBYTE = HIBYTE + 1
+200 POKE SCRNLOW, LOBYTE: POKE SCRNHI, HIBYTE
+210 GOTO 40
+
+DOWNLOAD VSCROL.BAS
+
+Coarse scrolling is relatively easy to
+implement in the Atari: one basically
+alters the screen RAM to display the
+new material. Fine scrolling is more
+difficult: each scroll register must
+be POKEd with the number of units to
+be scrolled -- color clocks or scan
+lines -- and the corresponding display
+list instructions must have the proper
+bits set. This means you can
+selectively fine scroll any mode lines
+you wish by setting only those bits of
+the lines you intend to scroll. Other
+lines will be displayed normally. You
+can set a DL instruction for both
+horizontal and vertical scroll enable.
+ See the Hardware Manual for a
+discussion of the problems in fine
+scrolling.
+
+Fine scrolling will allow only a
+certain amount of data to be scrolled
+before the register must be reset (16
+clock bits or scan lines maximum). In
+order to make the scrolling activity
+continuous, the register involved must
+be reset to zero when the desired
+value is reached, a coarse scroll must
+be implemented (usually during a DLI
+or VBLANK interval) and a new fine
+scroll begun. This is not easily done
+in BASIC since it is too slow, and
+changing registers during ANTIC's
+display process usually causes rough
+or jerky motion. Assembly routines are
+suggested for smooth display. See De
+Re Atari, Micro, November 1981, BYTE,
+January 1982, and Santa Cruz's Tricky
+Tutorial #2 for more information.
+

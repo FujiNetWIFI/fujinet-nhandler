@@ -1,0 +1,10 @@
+
+TOPIC: MAP/TXTMSC
+
+660          0294          TXTMSC
+
+Address of the upper left corner of
+the text window. Split-screen
+equivalent of locations 88, 89 ($58,
+$59).
+

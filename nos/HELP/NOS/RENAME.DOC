@@ -1,0 +1,24 @@
+
+Topic: NOS/RENAME
+
+RENAME - Change the name on a file or
+directory on a mount point.
+
+Usage:
+
+RENAME|REN [N[n]:][path/]OLD,NEW
+
+Examples:
+
+RENAME AW.XEX,ATARIWRITER.COM
+RENAME AtariWriter.xex,AW.COM
+RENAME N2:AW.xex,ATARIWRITER.COM
+RENAME "Atari Writer.xex,AW.COM"
+RENAME "N2:APPS/Atari Writer.exe,ATARIWRITER.COM"
+
+Notes:
+
+If a filename contains a space,
+enclose the filenames in double-
+quotes.
+

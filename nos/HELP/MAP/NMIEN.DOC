@@ -1,0 +1,32 @@
+
+TOPIC: MAP/NMIEN
+
+54286          D40E          NMIEN
+
+(W) Non-maskable interrupt (NMI)
+enable. POKE with 192 to enable the
+Display List Interrupts. When BIT 7 is
+set to one, it means DL instruction
+interrupt; any display list
+instruction where BIT 7 equals one
+will cause this interrupt to be
+enabled at the start of the last video
+line displayed by that instruction.
+When BIT 6 equals one, it allows the
+Vertical Blank Interrupt and when BIT
+5 equals one, it allows the RESET
+button interrupt. The RESET interrupt
+is never disabled by the OS. You
+should never press RESET during
+powerup since it will be acted upon.
+
+NMIEN is set to 64 ($40) by the OS IRQ
+code on powerup, enabling VBI's, but
+disabling DLI's. All NMI interrupts
+are vectored through 65530 ($FFFA) to
+the NMI service routine at 59316
+($E7B4) to determine their cause.
+
+Bit         7   6   5    4  3  2  1 0
+Interrupt: DLI VBI RESET ...unused...
+

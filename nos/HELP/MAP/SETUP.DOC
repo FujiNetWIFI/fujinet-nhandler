@@ -1,0 +1,11 @@
+
+TOPIC: MAP/SETUP
+
+4452          1164          SETUP
+
+SETUP -- initialization of the FMS
+parameters. Prepares FMS to deal with
+the operation to be performed and to
+access a particular file. See Inside
+Atari DOS, Chapter seven.
+

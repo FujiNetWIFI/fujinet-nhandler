@@ -1,0 +1,71 @@
+
+TOPIC: MAP/STICK0
+
+632          0278          STICK0
+
+The value of joystick 0. STICK
+registers are shadow locations for PIA
+locations 54016 and 54017 ($D300,
+$D301). There are nine possible
+decimal values (representing 45 degree
+incrememts) read by each joystick
+register (using the STICKn command),
+depending on the position of the stick:
+
+ Decimal                Binary
+    14                    1110
+     |                      |
+  10 | 6               1010 | 0110
+    \|/                    \|/
+11--15---7          1011--1111--0111
+    /|\                    /|\
+   9 | 5               1001 | 0101
+     |                      |
+    13                    1101
+
+15 (1111) equals stick in the upright
+(neutral) position.
+
+See Micro, December 1981,for an
+article on making a proportional
+joystick. For an example of a machine
+language joystick driver you can add
+to your BASIC program, see COMPUTE!,
+July 1981.
+
+One machine language joystick reader
+is listed below, based on an article
+in COMPUTE!, August 1981:
+
+1   GOSUB 1000
+10  LOOK = STICK(0)
+20  X = USR(1764,LOOK): Y = USR(1781,LOOK)
+30  ON X GOTO 120, 100, 110
+.
+.
+.
+100 REM YOUR MOVE LEFT ROUTINE HERE
+105 GOTO 10
+110 REM YOUR MOVE RIGHT ROUTINE HERE
+115 GOTO 10
+120 ON Y GOTO 150, 130, 140
+130 REM YOUR MOVE DOWN ROUTINE HERE
+135 GOTO 10
+140 REM YOUR MOVE UP ROUTINE HERE
+145 GOTO 10
+150 REM IF X <> 1 THEN NOTHING DOING. BRANCH TO YOUR OTHER ROUTINES OR TO 155
+155 GOTO 10
+.
+.
+.
+1000 FOR LOOP = 1764 TO 1790: READ BYTE: POKE LOOP, BYTE: NEXT LOOP
+1010 DATA 104,104,133,213,104,41,12,74,74,73,2,24,105,1
+1020 DATA 133,212,96,104,104,133,213,104,41,3,76,237,6
+1030 RETURN
+
+DOWNLOAD STICK0.BAS
+
+See locations 88, 89 ($58, $59) for an
+example of a USR call using a string
+instead of a fixed memory location.
+

@@ -1,0 +1,24 @@
+
+Topic: NOS/Nn:
+
+Nn: - Change the current default
+network drive.
+
+Usage:
+
+Nn:
+
+Where n is required and n denotes a
+device number 1-4.
+
+After changing the default network
+drive, the command prompt is updated
+to reflect the new default network
+drive.
+
+Note: No check is made regarding the
+status of the mount point for the new
+default network drive. That is, it is
+possible to switch to a network drive
+that has no assigned mount point.
+

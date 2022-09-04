@@ -1,0 +1,107 @@
+
+Topic: NOS/NCD
+
+NCD - Mount or unmount network drive.
+
+Mount or unmount a remote directory
+to a network device (N1: thru N4:).
+The remote directory must be hosted
+using one of the supported FujiNet
+protocols.
+
+Mounting
+--------
+To register a N: device drive spec
+with a network resource, type NCD (or
+CD) followed by a URL.
+
+Usage:
+
+NCD|CD [N[n]:]proto://host[:port][/path][/]
+
+Where n is an optional device number
+1-4. If n is omitted, the current
+default device number is implied.
+
+Where proto is a network protocol,
+such as TNFS, FTP, SMB.
+
+Where host is the hostname or IP
+address providing the service for
+proto.
+
+Where port is an optional network
+port number for cases where a server
+is listening on a non-standard port.
+
+For example, port 80 is standard for
+HTTP, but a server might be
+configured to listen on port 8000.
+
+General examples:
+
+NCD TNFS://192.168.1.100/
+NCD N1:TNFS://192.168.1.100
+NCD N1:TNFS://192.168.1.100/action/myproj/
+NCD N2:FTP://ftp.pigwa.net/stuff/collections/
+NCD "N2:FTP://ftp.pigwa.net/stuff/collections/holmes cd/"
+NCD N3:HTTP://hobbs:8000/
+
+A trailing path separator is appended
+if one is not provided.
+
+Example:
+
+NCD N1:TNFS://192.168.1.100/myproj
+
+resolves to:
+
+NCD N1:TNFS://192.168.1.100/myproj/
+
+After establishing a mount point
+using a protocol and absolute path,
+a subsequent relative path can be
+supplied.
+
+Example:
+
+NCD N1:TNFS://192.168.1.100/
+NCD action/myproj
+
+results in the path:
+
+N1:TNFS://192.168.1.100/action/myproj/
+
+There is limited support for supp-
+lying a relative path that includes a
+reference to a parent directory.
+
+Example:
+
+NCD
+N1:TNFS://192.168.1.100/action/myproj01/
+NCD ../myproj02/
+
+results in the path:
+
+N1:TNFS://192.168.1.100/action/myproj01/../myproj02/
+
+Unmounting
+----------
+To release a remote mount point,
+enter the NCD command with only a
+device and no protocol and path.
+
+Usage:
+
+NCD|CD N[n]:
+
+Where n is an optional device number
+1-4. If n is omitted, the current
+default device number is implied.
+
+Example:
+
+NCD N2:
+CD N1:
+

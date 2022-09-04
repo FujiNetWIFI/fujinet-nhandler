@@ -1,0 +1,11 @@
+
+TOPIC: MAP/LOGCOL
+
+99          0063          LOGCOL
+
+Position of the cursor at the column
+in a logical line. A logical line can
+contain up to three physical lines, so
+LOGCOL can range between zero and 119.
+Used by the display handler.
+

@@ -1,0 +1,8 @@
+
+TOPIC: MAP/RDVTOC
+
+4235          108B          RDVTOC
+
+Read or write the volume table of
+contents (VTOC) sectors.
+

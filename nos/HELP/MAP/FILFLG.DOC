@@ -1,0 +1,10 @@
+
+TOPIC: MAP/FILFLG
+
+695          02B7          FILFLG
+
+Right fill flag for the DRAW command.
+If the current operation is a DRAW,
+then this register reads zero. If it
+is non-zero, the operation is a FILL.
+

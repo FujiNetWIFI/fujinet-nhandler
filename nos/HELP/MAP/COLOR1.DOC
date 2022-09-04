@@ -1,0 +1,15 @@
+
+TOPIC: MAP/COLOR1
+
+709          02C5          COLOR1
+
+The next four locations are the same
+as location 708 for the different
+playfields and SETCOLOB commands. In
+GR.1 and GR.2, this register stores
+the color for lowercase letters.
+COLOR1 is also used to store the
+luminance value of the color used in
+GR.0 and GR.8. Shadow for 53271
+($D017).
+

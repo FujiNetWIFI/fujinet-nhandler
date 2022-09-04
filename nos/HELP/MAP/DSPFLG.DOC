@@ -1,0 +1,27 @@
+
+TOPIC: MAP/DSPFLG
+
+766          02FE          DSPFLG
+
+Display flag, used in displaying the
+control codes not associated with an
+ESC character (see location 674;
+$2A2). If zero is returned or POKEd
+here, then the ATASCII codes 27 - 31,
+123 - 127, 187 - 191 and 251 - 255
+perform their normal display screen
+control functions (i.e., clear screen,
+cursor movement, delete/insert line,
+etc.). If any other number is
+returned, then a control character is
+displayed (as in pressing the ESC key
+with CTRL-CLEAR for a graphic
+representation of a screen clear).
+POKEing any positive number here will
+force the display instead of the
+control code action. There is,
+however, a small bug, not associated
+with location 766, in Atari BASIC: a
+PRINTed CTRL-R or CTRL-U are both
+treated as a semicolon.
+

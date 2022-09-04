@@ -1,0 +1,170 @@
+
+TOPIC: MAP/CHSET
+
+57344          E000          ....
+
+Locations 57344 to 58367 ($E000 to
+$E3FF) hold the standard Atari
+character set: at $E000 the special
+characters, punctuation and numbers
+begin; at $E100 (57600) the capital
+letters begin; at $E200 (57856) the
+special graphics begin, and at $E300
+(58112) the lowercase letters begin.
+
+There are 1024 bytes here ($400), with
+each character requiring eight bytes,
+for a total of 128 characters (inverse
+characters simply manipulate the
+information here to reverse the bits
+by performing an OR with 128 -- the
+value in location 694 ($2B6) when the
+Atari logo key is toggled -- on the
+bits. To return to the normal ATASCII
+display, the inverse characters are
+EORed with 128). The first half of the
+memory is for numerals, punctuation,
+and uppercase characters; the second
+half ($E200 to $E3FF) is for lowercase
+and control characters. When you POKE
+756 ($2F4) with 224 ($E0), you are
+POKEing it with the MSB of this
+address ($E000). When you POKE it with
+226 ($E2), you are moving the address
+pointer to the second half of the
+character set. In GR.0, you have the
+entire character set to use. In GR.1
+and GR.2, you can use only one half of
+the set at a time. You can't POKE it
+with 225 because the number POKEd must
+be evenly divisible by two.
+
+The characters stored here aren't in
+ATASCII order; they have their own
+internal order for storage. The order
+of the characters is listed on page 55
+of your BASIC Reference Manual.
+
+Here's an example of how a letter (A)
+is stored in ROM. Each line represents
+a byte. The decimal values are those
+you'd find if you PEEKed the eight
+locations where "A" is stored
+(starting at 57608; $E108):
+
+Bit 76543210   Decimal
+                       +--------+
+    00000000       0   |        |
+    00011000      24   |   ##   |
+    00111100      60   |  ####  |
+    01100110     102   | ##  ## |
+    01100110     102   | ##  ## |
+    01111110     126   | ###### |
+    01100110     102   | ##  ## |
+    00000000       0   |        |
+                       +--------+
+
+When you create your own character
+sets (or alter the Atari set when you
+move it to RAM -- see location 756;
+$2F4 for a routine to do this), you do
+a "bit-map" for each character as in
+the example above. It could as easily
+be a spaceship, a Hebrew letter, an
+APL character, or a face. Chris
+Crawford's game Eastern Front 1941
+(APX) shows excellent use of an
+altered character set to create his
+large map of Russia, plus the symbols
+for the armies.
+
+Here's an example of using the
+bit-mapping of the character set to
+provide text in GRAPHICS 8:
+
+1  GRAPHICS 8
+5  DLIST = PEEK(560) + PEEK(561)*256
+6  LOBYTE = DLIST+4: HIBYTE = DLIST + 5
+7  REAL = PEEK(LOBYTE) + PEEK(HIBYTE)*256: SCREEN = REAL: TV = SCREEN
+10  CHBASE = 57344
+20  DIM A$(128),BYTE(128),WANT(128)
+27  PRINT "INPUT A 40 CHARACTER STRING:"
+30  INPUT A$
+35  TIME = TIME + 1
+40  FOR LOOK = 1 TO LEN(A$)
+50  BYTE(LOOK) = ASC(A$(LOOK,LOOK))
+51  IF BYTE(LOOK) > 127 THEN BYTE(LOOK) = BYTE(LOOK) - 128
+52  IF BYTE(LOOK) < 32 THEN BYTE(LOOK) = BVTE(LOOK) + 64: GOTO 55
+53  IF BYTE(LOOK) < 97 THEN BVTE(LOOK) = BYTE(LOOK) - 32
+55  NEXT LOOK
+59  FOR EXTRA = 0 TO 7
+60  FOR LOOK = 1 TO LEN(A$)
+70  WANT(LOOK) = PEEK(CHBASE + EXTRA + BYTE(LOOK)*8)
+80  POKE TV + EXTRA, WANT(LOOK): TV = TV + 1
+82  NEXT LOOK
+85  SCREEN = SCREEN + 39: TV = SCREEN
+90  NEXT EXTRA
+100  SCREEN = REAL + TIME*320
+110  IF SCREEN > REAL + 6080 THEN TIME = 0: GOTO 100
+120  GOTO 30
+
+LOAD
+"N8:https://www.atariarchives.org/mapping/software/BITMAP8.BAS"
+
+This program simply takes the bytes
+which represent the letters you input
+as A$ and finds their places in the
+ROM character set.  It then proceeds
+to POKE the bytes into the screen RAM,
+using a FOR-NEXT loop.
+
+To convert ATASCII codes to the
+internal codes, use this table:
+
+  ATASCII value   Operation for
+                  internal code
+  0   --  31      add      64
+  32  --  95      subtract 32
+  96  -- 127      remains the same
+  128 -- 159      add      64
+  160 -- 223      subtract 32
+  224 -- 255      remains the same
+
+See COMPUTE!, November 1981, for the
+program "TextPlot" which displays text
+in different sizes in GRAPHICS modes
+three to eight, and January 1982 for a
+program to edit character sets,
+"SuperFont."
+
+TextPlot:
+RUN
+"N8:https://www.atariarchives.org/c1bag/software/chapter4/P095L1.BAS"
+
+SuperFont:
+RUN
+"N8https://www.atariarchives.org/c1bag/software/chapter3/P067L1.BAS"
+---------------------------------------
+
+Locations 58368 to 58447 ($E400 to
+$E44F) are the vector tables, stored
+as LSB, MSB. These base addresses are
+used by resident handlers.  Handler
+vectors use the following format:
+
+  OPEN vector
+  CLOSE vector
+  GET BYTE vector
+  PUT BYTE vector
+  GET STATUS vector
+  SPECIAL vector
+  Jump to handler initialization
+  routine (JMP LSB/MSB)
+
+The device tables in location 794
+($31A) point to the particular
+vector(s) used in each appropriate
+table. In each case, the 6502 X
+register is used to point to the
+originating IOCB.
+

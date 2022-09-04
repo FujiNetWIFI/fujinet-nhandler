@@ -1,0 +1,9 @@
+
+TOPIC: MAP/TMPX1
+
+668          029C          TMPX1
+
+Temporary register, used by the
+display handler for the scroll loop
+count record.
+

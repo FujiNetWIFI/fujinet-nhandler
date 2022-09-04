@@ -1,0 +1,14 @@
+
+TOPIC: MAP/VTIMR1
+
+528          0210          VTIMR1
+
+POKEY timer one interrupt vector,
+initialized to 59314 ($E7B2), which is
+a PLA, RTI instruction sequence. Timer
+interrupts are established when the
+POKEY timer AUDF1 (53760; $D200)
+counts down to zero. Values in the
+AUDF registers are loaded into STIMER
+at 53769 ($D209). IRQ.
+

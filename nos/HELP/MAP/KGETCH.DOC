@@ -1,0 +1,10 @@
+
+TOPIC: MAP/KGETCH
+
+63202          F6E2          KGETCH
+
+This routine waits for a key to be
+pressed and returns its value to the
+accumulator (6502 register A). Similar
+to the BASIC GET command.
+

@@ -1,0 +1,10 @@
+
+TOPIC: MAP/NOCKSM
+
+60          003C          NOCKSM
+
+Flag for "no checksum follows data."
+Not zero means no checksum follows;
+zero equals checksum follows
+transmission data.
+

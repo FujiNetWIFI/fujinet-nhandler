@@ -1,0 +1,10 @@
+
+TOPIC: MAP/DSKORG
+
+60906-61047    EDEA-EE77   DSKORG
+
+Routines for the disk handler.
+Initialization is at DINIT, 60906
+($EDEA), entry is at DSKIF, 60912
+($EDF0).
+

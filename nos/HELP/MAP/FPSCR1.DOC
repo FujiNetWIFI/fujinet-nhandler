@@ -1,0 +1,8 @@
+
+TOPIC: MAP/FPSCR1
+
+1516-1535     05EC-05FF      FPSCR1
+
+FP scratch pad use.
+
+The end of the buffer is named LBFEND.

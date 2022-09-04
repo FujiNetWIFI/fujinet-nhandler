@@ -1,0 +1,11 @@
+
+TOPIC: MAP/TXTROW
+
+656          0290          TXTROW
+
+Text window cursor row; value ranges
+from zero to three (the text window
+has only four lines). TXTROW specifies
+where the next read or write in the
+text window will occur
+

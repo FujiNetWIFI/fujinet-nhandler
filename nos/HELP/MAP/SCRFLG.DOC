@@ -1,0 +1,23 @@
+
+TOPIC: MAP/SCRFLG
+
+699          02BB          SCRFLG
+
+Scroll flag; set if a scroll occurs.
+It counts the number of physical lines
+minus one that were deleted from the
+top of the screen. This moves the
+entire screen up one physical line for
+each line scrolled off the top. Since
+a logical line has three physical
+lines, SCRFLG ranges from zero to two.
+
+Scrolling the text window is the
+equivalent to scrolling an entire GR.0
+screen. An additional 20-line
+equivalent of bytes (800) is scrolled
+upwards in the memory below the text
+window address.  This can play havoc
+with any data such as P/M graphics you
+have stored above RAMTOP
+

@@ -1,0 +1,59 @@
+
+TOPIC: MAP/CHACT
+
+755          02F3          CHACT
+
+Character Mode Register. Zero means
+normal inverse characters, one is
+blank inverse characters (inverse
+characters will be printed as blanks,
+i.e., invisible), two is normal
+characters, three is solid inverse
+characters. Four to seven is the same
+as zero to three, but prints the
+display upside down.  This register
+also controls the transparency of the
+cursor. It is transparent with values
+two and six, opaque with values three
+and seven. The cursor is absent with
+values zero, one, four and five.
+
+Toggling BIT 0 on and off can be a
+handy way to produce a blinking effect
+for printed inverse characters
+(characters with ATASCII values
+greater than 128 -- those that have
+BIT 7 set).  Shadow for 54273 ($D401).
+There is no visible cursor for the
+graphics mode output. CHACT is
+initialized to two.  Here's an example
+of blinking text using this register:
+
+10 CHACT=755:REM USE INVERSE FOR WORDS BELOW
+15 PRINT "[THIS IS A TEST OF BLINKING] [TEXT]"
+20 POKE CHACT,INT(RND(0)*4)
+30 FOR N=1 TO 100:NEXT N:GOTO 15
+
+See COMPUTE!, December 1981.
+
+Using a machine language routine and
+page six space, try:
+
+10 PAGE=1536:EXIT=1568
+20 FOR N=PAGE TO EXIT:READ BYTE:POKE N,BYTE:NEXT N
+30 PGM=USR(PAGE)
+40 PRINT "[THIS] IS A [TEST] OF [BLINKING] TEXT":REM MAKE SOME WORDS INVERSE
+50 GOTO 50
+60 DATA 104,169,17,141,40,2,169,6,141,41
+70 DATA 2,169,30,141,26,2,98,173,243,2
+80 DATA 41,1,73,1,141,243,2,169,30,141,26,2,96
+
+DOWNLOAD CHACT.BAS
+
+The blink frequency is set .5 second;
+to change it, change the 30 in line 80
+to any number from one (1/30 second)
+to 255 (eight .5 seconds). For another
+way to make the cursor visible or
+invisible, see locations 752 above.
+

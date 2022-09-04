@@ -1,0 +1,9 @@
+
+TOPIC: MAP/ICAX2Z
+
+43          002B          ICAX2Z
+
+CIO working variables, also used by
+some serial port functions.  Auxiliary
+information second byte.
+

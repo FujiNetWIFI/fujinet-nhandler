@@ -1,0 +1,23 @@
+
+TOPIC: MAP/CRSINH
+
+752          02F0          CRSINH
+
+Cursor inhibit flag. Zero turns the
+cursor on; any other number turns the
+cursor off. A visible cursor is an
+inverse blank (space) character. Note
+that cursor visibility does not change
+until the next time the cursor moves
+(if changed during a program). If you
+wish to change the cursor status
+without altering the screen data,
+follow your CRSINH change with a
+cursor movement (i.e., up, down)
+sequence. This register is set to zero
+(cursor restored) on powerup, RESET,
+BREAK, or an OPEN command to either
+the display handler (S:) or screen
+editor (E:). See location 755 for
+another means to turn off the cursor.
+

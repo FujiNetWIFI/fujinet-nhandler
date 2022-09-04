@@ -1,0 +1,8 @@
+
+TOPIC: MAP/FDIV
+
+56104          DB28          FDIV
+
+FP division routine; FR0 divided by
+FR1.
+

@@ -1,0 +1,11 @@
+
+TOPIC: MAP/SIN
+
+48551          BDA7          SIN
+
+Calculate SIN(FR0). Checks DEGFLG
+(location 251; $FB) to see if
+trigonometric calculations are in
+radians (DEGFLG equals zero) or
+degrees (DEGFLG equals six).
+

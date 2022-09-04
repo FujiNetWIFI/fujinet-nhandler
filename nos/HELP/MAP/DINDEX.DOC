@@ -1,0 +1,120 @@
+
+TOPIC: MAP/DINDEX
+
+87          0057          DINDEX
+
+Display mode/current screen mode.
+Labelled CRMODE by (*M).  DINDEX
+contains the number obtained from the
+low order four bits of most recent
+open AUX1 byte. It can be used to fool
+the OS into thinking you are in a
+different GRAPHICS mode by POKEing
+DINDEX with a number from zero to 11.
+POKE with seven after you have entered
+GRAPHICS mode eight, and it will give
+you a split screen with mode seven on
+top and mode eight below. However, in
+order to use both halves of the
+screen, you will have to modify
+location 89 (below) to point to the
+area of the screen you wish to DRAW
+in. (See Your Atan 400/800, pp. 280 -
+283.)
+
+Watch for the cursor out-of-range
+errors (number 141) when changing
+GRAPHICS modes in this manner and
+either PRINTing or DRAWing to the new
+mode screen. POKE 87 with the BASIC
+mode number, not the ANTIC mode
+number.  Did you know you can use PLOT
+and DRAWTO in GR.0? Try this:
+
+10   GR.0
+20   PLOT 0,0: DRAWTO 10,10: DRAWTO 0,10
+30   DRAWTO 39,0: DRAWTO 20,23: DRAWTO 0,20
+40   GOTO 40
+
+You can also set the text window for
+PRINT and PLOT modes by POKEing 87
+with the graphics mode for the window.
+Then you must POKE the address of the
+top left corner of the text window
+into 88 and 89 ($58, $59). The screen
+mode of the text window is stored at
+location 659 ($293).
+
+You may have already discovered that
+you cannot call up the GTIA modes from
+a direct command. Like the + 16
+GRAPHICS modes, they can only be
+called up during a program, and the
+screen display will be reset to GR.0
+on the first INPUT or PRINT (not
+PRINT#6) statement executed in these
+modes.
+
+Since this location only takes BASIC
+modes, you can't POKE it with the
+other ANTIC modes such as "E", the
+famous "seven-and- a-half" mode which
+offers higher resolution than seven
+and a four color display (used in
+Datasoft's Micropainter program). If
+you're not drawing to the screen,
+simply using it for display purposes,
+you can always go into the Display
+List and change the instructions
+there. But if you try to draw to the
+screen, you risk an out-of-bounds
+error (error number 141).
+
+See Creative Computing, March 1982,
+for an excellent look at mode 7.5. The
+short subroutine below can be used to
+change the Display List to GR.7.5:
+
+1000  GRAPHICS 8+16: DLIST = PEEK(560)) + PEEK(561) * 256:POKE DLIST + 3,78
+1010  FOR CHANGE = DLIST + 6 TO DLIST + 204: IF PEEK(CHANGE) = 15 THEN POKE CHANGE,14
+1020  IF PEEK (CHANGE) = 79 THEN POKE CHANGE,78: NEXT CHANGE
+1030  POKE 87,7:RETURN
+
+DOWNLOAD MODE75.BAS
+LOAD "N8:https://www.atariarchives.org/mapping/software/MODE75.BAS"
+
+(Actually, 15 ($F) is the DL number
+for the maximum memory mode; it also
+indicates modes eight through eleven.
+The DL's for these modes are
+identical.) Fourteen is the ANTIC E
+mode; GR.7.5 This program merely
+changes GR.8 to mode E in the Display
+List. The value 79 is 64 + 15; mode
+eight screen with BIT 6 set for a Load
+Memory Scan (LMS) instruction (see the
+DL information in locations 560, 561;
+$230, $231). It does not check for
+other DL bits.
+
+You can also POKE 87 with the GTIA
+values (nine to eleven). To get a
+pseudo-text window in GTIA modes, POKE
+the mode number here and then POKE 623
+with 64 for mode nine, 128 for mode
+ten, and 192 for mode eleven, then
+POKE 703 with four, in program mode.
+(In command mode, you will be returned
+to GR.0.) You won't be able to read
+the text in the window, but you will
+be able to write to it. However, to
+get a true text window, you'll need to
+use a Display List Interrupt (see
+COMPUTE!, September 1982). If you
+don't have the GTIA chip, it is still
+possible to simulate those GRAPHICS
+modes by using DINDEX with changes to
+the Display List Interrupt. See
+COMPUTE!, July 1981, for an example of
+simulating GR.10.
+

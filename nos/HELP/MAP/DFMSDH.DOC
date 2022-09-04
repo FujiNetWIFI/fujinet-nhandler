@@ -1,0 +1,16 @@
+
+TOPIC: MAP/DFMSDH
+
+1995          07CB          DFMSDH
+
+Entry point to a 21-byte FMS device
+(disk) handler. The address of this
+handler is placed in HATABS (locations
+794 to 831; $31A to $33F) by the FMS
+initialization routine. When CIO needs
+to call an FMS function, it will
+locate the address of that function
+via the handler address table. See
+Chapters 8-11 of Inside Atari DOS,
+published by COMPUTE! Books.
+

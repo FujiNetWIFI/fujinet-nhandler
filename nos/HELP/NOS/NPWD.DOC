@@ -1,0 +1,35 @@
+
+Topic: NOS/NPWD
+
+NPWD - Query the current mount point
+for a network drive from the FujiNet
+device and display the results.
+
+Usage:
+
+NPWD|PWD [N[n]:]
+
+Where Nn: is optional and n detotes a
+device number 1-8. If n is omitted,
+the current default device number is
+implied.
+
+Examples:
+
+NPWD
+N1:TNFS://192.168.1.100/myproj01/
+
+NPWD N2:
+N2:FTP://ftp.pigwa.net/stuff/
+
+PWD N2:
+N2:FTP://ftp.pigwa.net/stuff/
+
+In the examples, the line following
+the NPWD|PWD command is the response
+from the FujiNet device.
+
+If there is nothing mounted to on the
+N: device then the response will be
+blank.
+

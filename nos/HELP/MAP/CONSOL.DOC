@@ -1,0 +1,84 @@
+
+TOPIC: MAP/CONSOL
+
+53279          D01F          CONSOL
+
+(W/R) Used to see if one of the three
+yellow console buttons has been
+pressed (not the RESET button!). To
+clear the register, POKE CONSOL with
+eight. POKEing any number from zero to
+eight will cause a click from the
+speaker. A FOR-NEXT loop that
+alternately POKEs CONSOL with eight
+and zero or just zero, since the OS
+put in an 8 every 1/60 second, will
+produce a buzz.  Values PEEKed will
+range from zero to seven according to
+the following table:
+
+|Key  Value 0  1  2  3  4  5  6  7  |
+|                                   |
++-----------------------------------+
+|                                   |
+|OPTION     X  X  X  X              |
+|SELECT     X  X        X  X        |
+|START      X     X     X     X     |
+|                                   |
++-----------------------------------+
+Bits 2      0  0  0  0  1  1  1  1
+     1      0  0  1  1  0  0  1  1
+     0      0  1  0  1  0  1  0  1
+
+Where zero means all keys have been
+pressed, one means OPTION and SELECT
+have been pressed, etc., to seven,
+which means no keys have been pressed.
+CONSOL is updated every stage two
+VBLANK procedure with the value eight.
+
+It is possible to use the console
+speaker to generate different sounds.
+Here is one idea based on an article
+in COMPUTE!, August 1981:
+
+10   GOSUB 1000
+20   TEST = USR(1536)
+.
+.
+.
+999  END
+1000 FOR LOOP = 0 TO 26: READ BYTE: POKE 1536 + LOOP, BYTE: NEXT LOOP: RETURN
+1010 DATA 104,162,255,169,255,141,31,208,169
+1020 DATA 0,160,240,136,208,253,141,31,208,160
+1030 DATA 240,136,208,253,202,208,233,96
+
+To change the tone, you POKE 1547 and
+1555 with a higher or lower value
+(both are set to 240 above). To change
+the tone duration, you POKE 1538 with
+a lower value (it is set to 255 in the
+routine above). Do these before you do
+your USR call or alter the DATA
+statements to permanently change the
+values in your own program. Turn off
+DMA (see location 559) to get clearer
+tones.
+
+---------------------------------------
+Locations 53280 to 53503 ($D020 to
+$D0FF) are repeats of locations 53248
+to 53279 ($D000 to $D01F). You can't
+use any of the repeated locations;
+consider them "filler." They maybe
+used for other purposes in any Atari
+OS upgrade.
+
+---------------------------------------
+Locations 53504 to 53759 ($D100 to
+$D1FF) are unused. These loca- tions
+are not empty; you can PEEK into them
+and find out what's there. They
+cannot, however, be user-altered.
+---------------------------------------
+

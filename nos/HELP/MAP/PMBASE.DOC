@@ -1,0 +1,175 @@
+
+TOPIC: MAP/PMBASE
+
+54279          D407          PMBASE
+
+(W) MSB of the player/missile base
+address used to locate the graphics
+for your players and missiles (the
+address equals PMBASE * 256. P/M
+graphics are tricky to use since there
+are no direct Atari 8K BASIC commands
+to either create or move them (there
+are, however, commands for P/M
+graphics in BASIC A+ and in valFORTH
+utilities).
+
+Your P/M graphics must always begin on
+a 1K boundary (PEEK(RAMTOP)-4 for
+double line resolution players) or 2K
+boundary (PEEK(RAMTOP)-5 for single
+line resolution), so the LSB is always
+zero (page numbers always end in
+$XX00).
+
+For example:
+
+10   POKE 106, PEEK(106) - 8: GRAPHICS 8: SETCOLOR 2,3,4
+20   POKE 559,62: POKE 53248,100: POKE 704,160: POKE 53256,2
+30   MEM = PEEK(106) - 8
+40   POKE 54279, MEM: POKE 53277,3: START = MEM * 256 + 1024
+50   FOR LOOP = 100 TO 119: READ BYTE: POKE START + LOOP, BYTE: NEXT LOOP
+60   DATA 16,16,56,40,40,56,40,40,40
+70   DATA 124,84,124,84,254,146,254,170,170,68
+100  END
+
+You can change the color, width,
+resolution, and horizontal position of
+the player in the example by altering
+the registers used above.
+
+Each player is one byte (eight bits)
+wide. Single line resolution P/M
+characters (POKE 559,62) can be up to
+256 bytes high.  Double line
+resolution P/M characters (POKE
+559,46) can be up to 128 bytes high.
+In either case, they can map to the
+height of the screen. Missiles have
+the same height, but are only two bits
+wide each. Four missiles can be
+combined into a fifth player by
+setting BIT 4 of location 623 ($26F).
+You need not fill the entire height of
+a P/M character, but you should POKE
+unused bytes with zero to eliminate
+any screen garbage. You can do this by:
+
+FOR N = PMBASE + 1024 TO PMBASE + 2048:POKE N,0: NEXT N
+
+where PMBASE is the starting address
+of the reserve memory area. In double
+line resolution, change the loop value
+to N = PMBASE + 512 TO PMBASE + 1024.
+Here's a short machine language
+routine to do the same thing. You
+would put the start address of the
+area to be loaded with zero and the
+number of bytes to be cleared in with
+the USR call as the first two
+parameters. In this example, I have
+arbitrarily chosen 38012 and 2048 for
+these values.
+
+10   START = 38012: BYTE = 2048: DIM PGM$(42)
+20   FOR LOOP = 1 TO 42: READ ML: PGM $(LOOP, LOOP) = CHR$(ML): NEXT LOOP
+30   DATA 104,104,133,204,104,133,203,104,133,206,104
+40   DATA 133,205,166,206,160,0,169,0,145,203,136
+50   DATA 208,251,230,204,202,48,6,208,244,164
+60   DATA 205,208,240,198,204,160,0,145,203,96
+70   A = USR(ADR(PGM$),START,BYTE)
+
+You can use this routine to clear out
+memory anywhere in the Atari. You can
+also use it to load any one value into
+memory by changing the second zero
+(after the 169) in line 40 to the
+value desired.
+
+Locating your graphics tables at the
+high end of memory may cause
+addressing problems for playfield
+graphics, or may leave some of the
+display unusable and cause PLOT to
+malfunction. If you locate your tables
+just before the screen display, it may
+be erased if you change graphics
+modes. You can look at your highest
+RAM use graphics statement and plan
+accordingly. To calculate a safe
+starting address below the display
+list, try:
+
+100 DLIST = PEEK(560) + PEEK(561) * 256: PMBASE = INT (DLIST/SIZE -1) * SIZE
+
+where SIZE is 2048 for single line
+resolution, 1024 for double line.
+
+Once you have the starting address,
+determine the ending address of your
+table by adding the correct number of
+bytes for the size (same as the SIZE
+variable above), and POKE this number
+(LSB/MSB) into APPMHI at locations 14
+and 15 ($E, $F).  This sets the lower
+limit for playfield graphics memory
+use. If you change graphics modes in
+the program now, it should leave your
+player tables intact. For example, if
+the DL is at 39968, the PMBASE will
+equal 36864 in the equation above. Add
+2048 (single line resolution) to get
+38912. This is $9800. In decimal, the
+LSB is zero and the MSB is 152. POKE
+these values into APPMHI. This sets
+the lowest limit to which the screen
+and DL data may descend.
+
+The unused portion of the RAM set
+aside for P/M use, or any RAM reserved
+for players, but not used, may be used
+for other purposes in your program
+such as machine language routines.
+See the appendix for a map of P/M
+memory use. The register stores the
+address as below:
+
+Bit           7 6 5 4 3 2 1 0
+1 line resol: ....MSB.... ..unused..
+2 line resol: .....MSB......  unused.
+
+There are some restrictions on
+locating your P/M data above the
+display list. If not positioned far
+enough above your screen data, you may
+end up with both the normal and screen
+data being displayed at once,
+resulting in garbage on the screen. A
+display list may not cross a 1K
+boundary without a jump instruction,
+and the screen display RAM cannot
+cross a 4K boundary without an LMS
+instruction to point to the proper
+byte(s). Due to problems that arise
+when moving the GR.7 and GR.8 screens
+and data less than 4K, you should
+never reserve less than 16 pages above
+RAMTOP in these modes. If you are
+reserving more, add the pages in
+blocks of 4K (16 pages).
+
+See COMPUTE!, September 1981, for a
+discussion of the problems of
+positioning P/M graphics in memory,
+and using P/M graphics for animation.
+
+See De Re Atari, COMPUTE!, June 1982,
+and Creative Computing, April 1982,
+for a discussion of using string
+manipulation with P/M graphics. See
+Your Atari 400/800 for a general
+discussion of P/M graphics. Most of
+the popular magazines have also
+carried articles on simplifying P/M
+graphics.
+

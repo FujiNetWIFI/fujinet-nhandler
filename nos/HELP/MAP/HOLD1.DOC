@@ -1,0 +1,9 @@
+
+TOPIC: MAP/HOLD1
+
+81          0051          HOLD1
+
+Same as location 80. It is used also
+to hold the number of Display List
+entries.
+

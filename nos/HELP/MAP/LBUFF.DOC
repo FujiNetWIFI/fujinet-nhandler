@@ -1,0 +1,11 @@
+
+TOPIC: MAP/LBUFF
+
+1408-1535      0580-05FF      LBUFF
+
+BASIC line buffer; 128 bytes. Used as
+an output result buffer for the FP to
+ASCII routine at 55526 ($D8E6). The
+input buffer is pointed to by
+locations 243, 244 ($F3, $F4).
+

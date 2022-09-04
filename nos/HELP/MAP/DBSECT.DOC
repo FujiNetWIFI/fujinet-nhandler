@@ -1,0 +1,8 @@
+
+TOPIC: MAP/DBSECT
+
+577          0241          DBSECT
+
+The number of disk boot sectors read
+from the first disk record.
+

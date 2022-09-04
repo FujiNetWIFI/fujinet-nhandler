@@ -1,0 +1,22 @@
+
+Topic MAP/E
+
+Memory Map by Label [E]
+
+Type HELP MAP/<LABEL> for more.
+
+LABEL    HEX   DESCRIPTION
+-----    ----  -----------------------
+EDITRV   E400  E: entry point table
+EEXP     00ED  Value of E, the exponent
+EGETCH   F63E  E: GET CHAR routine
+ENDFMS   1501  Disk directory buffer
+ENDPT    0074  End point of drawn line
+EOUTCH   F6A4  E: PUT CHAR routine
+ERRFLG   023F  SIO error flag
+ERRNO    12B5  DOS/FMS error numbers
+ERRSAVE  00C3  Error code trapped
+ESCFLG   02A2  Escape flag
+ESIGN    00EF  Sign of exponent
+EXP10    DDCC  Base 10 exponentiation
+EXP      DDC0  Base E exponentiation

@@ -1,0 +1,37 @@
+
+TOPIC: MAP/STIMER
+
+53769          D209          STIMER
+
+(W) Start the POKEY timers (the AUDF
+registers above). You POKE any
+non-zero value here to load and start
+the timers; the value isn't itself
+used in the calculations. This resets
+all of the audio frequency dividers to
+their AUDF values. If enabled by IRQEN
+below, these AUDF registers generate
+timer interrupts when they count down
+from the number you POKEd there to
+zero. The vectors for the AUDF1, AUDF2
+and AUDF4 timer interrupts are located
+between 528 and 533 ($210 and $215).
+POKEY timer four interrupt is only
+enabled in the new "B" OS ROMs.
+
+              KBCODE
+
+(R) Holds the keyboard code which is
+then loaded into the shadow register
+(764; $2FC) when a key is hit. Usually
+read in response to the keyboard
+interrupt. Compares the value with
+that in CH1 at 754 ($2F2). If both
+values are the same, then the new code
+is accepted only if a suitable key
+debounce delay time has passed.  The
+routines which test to see if the key
+code will be accepted start at 65470
+($FFBE). BIT 7 is the control key
+flag, BIT 6 is the shift key flag.
+

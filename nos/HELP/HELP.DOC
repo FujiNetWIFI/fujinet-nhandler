@@ -1,0 +1,16 @@
+
+HELP SYSTEM
+
+Type HELP <TOPIC> for more details.
+
+Topics  Description
+------  -----------
+NOS     FujiNet NOS commands
+MAP     Memory map
+REF     Reference material
+BUGS    List of known bugs
+
+Keys    Function
+----    --------
+CTRL+1  Pause/resume text stream.
+ESC     End text stream.

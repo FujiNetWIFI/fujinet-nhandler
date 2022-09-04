@@ -1,0 +1,35 @@
+
+TOPIC: MAP/VNTD
+
+132          0084          VNTD
+
+Pointer to the ending address of the
+variable name table plus one byte.
+When fewer than 128 variables are
+present, it points to a dummy zero
+byte. When 128 variables are present,
+this points to the last byte of the
+last variable name, plus one.
+
+It is often useful to be able to list
+your program variables; using
+locations 130 to 133, you can do that
+by:
+
+10  VARI = PEEK(130) + PEEK(131) * 256 :REM This gives you the start of the table.
+20  FOR VARI = VARI TO PEEK(132) + PEEK(133) * 256 - 1: PRINT CHR$(PEEK(VARI) - 128 * PEEK(VARI > 127)); CHR$(27 + 128 * PEEK(VARI) > 127));:NEXT VARI
+25  REM this finds the end of the variable name table (remember table is end + 1). then PRINTs ASCII characters < 128
+30  NUM = 0: FOR VARI = PEEK(130) + PEEK(313) * 256 TO PEEK(132) + PEEK(131) * 256 - 1:NUM = NUM + (PEEK(VARI) < 127):NEXT VARI: PRINT NUM; "Variables in use"
+
+DOWNLOAD VNTD1.BAS
+
+Or try this, for a possibly less
+opaque example of the same routine:
+
+1000  NUM = 0: FOR LOOP = PEEK (130) + PEEK(131) * 256 TO PEEK(132) + PEEK(133) * 256 - 1
+1010  IF PEEK(LOOP) < 128 THEN PRINT CHR$(PEEK(LOOP));: GOTO 1030
+1020  PRINT CHR$(PEEK(LOOP) - 128): NUM - NUM + 1
+1030  NEXT LOOP: PRINT; PRINT NUM; "VARIABLES IN USE": END
+
+DOWNLOAD VNTD2.BAS
+

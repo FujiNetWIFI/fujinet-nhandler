@@ -1,0 +1,17 @@
+
+TOPIC: MAP/ENDFMS
+
+5377          1501          ENDFMS
+
+Disk directory (VTOC -- Volume Table
+Of Contents) buffer. 64 ($40) bytes
+are reserved, one byte for each
+possible file. It also marks the end
+of FMS. The VTOC (sector 360; $168) is
+a sequential bit map of each of the
+720 sectors on the disk. It starts at
+byte ten and continues through to byte
+99. When a bit is set (one), it
+indicates that the sector associated
+is in use.
+

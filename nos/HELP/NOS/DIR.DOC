@@ -1,0 +1,43 @@
+
+Topic: NOS/DIR - Display a list of
+files/directories found on a mounted
+network drive. Filename and file size
+are returned.
+
+Usage:
+
+DIR [N[n]:][path/][pattern]
+
+Where Nn: is optional and n detotes a
+device number 1-4. If n is omitted,
+the current default device number is
+implied.
+
+Where path is a relative path from
+the current working directory.
+
+Where pattern is optional and can
+include a pattern string including
+wildcard characters [*].
+
+Examples:
+
+DIR
+DIR *.BAS
+DIR N:
+DIR N2:
+DIR N2:*.BAS
+DIR N2:action/HELLO*.ACT
+DIR "N2:holmes cd/"
+
+Notes:
+
+1. Regardless of the pattern string,
+directory entries are always 
+returned.
+
+2. A trailing slash '/' is required 
+to display the contents of a
+sub-directory rather than the
+directory name itself.
+

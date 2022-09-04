@@ -1,0 +1,11 @@
+
+TOPIC: MAP/OLDADR
+
+94          005E          OLDADR
+
+Retains the memory location of the
+current cursor location. Used with
+location 93 (above) to restore the
+character under the cursor when the
+cursor moves
+

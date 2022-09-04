@@ -1,0 +1,65 @@
+
+TOPIC: MAP/DVSTAT
+
+746-749       02EA-02ED     DVSTAT
+
+Four device status registers used by
+the I/O status operation as follows:
+
+746 ($2EA) is the device error status
+and the command status byte. If the
+operation is a disk I/O, then the
+status returned is that of the 1771
+controller chip in your Atari disk
+drive. Bits set to one return the
+following error codes:
+
+Bit Dec Error
+0    1  An invalid command frame was
+        received (error).
+1    2  An invalid data frame was
+        received.
+2    4  An output operation was
+        unsuccessful.
+3    8  The disk is write-protected.
+4   16  The system is inactive
+        (on standby).
+7   32  The peripheral controller is
+        "intelligent" (has its own
+        microprocessor: the disk
+        drive). All Atari devices are
+        intelligent except the
+        cassette recorder, so BIT 7
+        will normally be one when a
+        device is attached.
+
+747 ($2EB) is the device status byte.
+For the disk, it holds the value of
+the status register of the drive
+controller. For the 850 Interface, it
+holds the status for DSR,CTS,CRX and
+RCV when concurrent I/O is not active
+(see the 850 Interface Manual). It
+also contains the AUX2 byte value from
+the previous operation (see the IOCB
+description at 832 to 959; $340 to
+$3AF).
+
+748 ($2EC) is the maximum device
+time-out value in seconds. A value of
+60 here represents 64 seconds. This
+value is passed back to location 582
+($246) after every disk status
+request. Initialized to 31.
+
+749 ($2ED) is used for number of bytes
+in output buffer. See 850 Manual, p.
+43.
+
+When concurrent I/O is active, the
+STATUS command returns the number of
+characters in the input buffer to
+locations 747 and 748, and the number
+of characters in the output buffer to
+location 749.
+

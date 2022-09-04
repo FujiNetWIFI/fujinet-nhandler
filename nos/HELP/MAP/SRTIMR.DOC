@@ -1,0 +1,19 @@
+
+TOPIC: MAP/SRTIMR
+
+555          022B          SRTIMR
+
+Software repeat timer, controlled by
+the IRQ device routine. It establishes
+the initial 1/2 second delay before a
+key will repeat.  Stage two VBLANK
+establishes the 1/10 second repeat
+rate, decrements the timer and
+implements the auto repeat logic.
+Every time a key is pressed, STIMER is
+set to 48 ($30). Whenever SRTIMR is
+equal to zero and a key is being
+continuously pressed, the value of
+that key is continually stored in CH,
+location 764 ($2FC).
+

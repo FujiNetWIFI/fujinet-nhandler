@@ -1,0 +1,7 @@
+
+TOPIC: MAP/FMOVE
+
+56758          DDB6          FMOVE
+
+Move the FP number from FR0 to FR1.
+

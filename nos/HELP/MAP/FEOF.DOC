@@ -1,0 +1,13 @@
+
+TOPIC: MAP/FEOF
+
+63          003F          FEOF
+
+Cassette end of file flag. If the
+value is zero, an end of file (EOF)
+has not been reached. Any other number
+means it has been detected. An EOF
+record has been reached when the
+command byte of a data record equals
+254 ($FE). See location 1021 ($3FD).
+

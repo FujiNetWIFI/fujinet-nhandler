@@ -1,0 +1,13 @@
+
+TOPIC: MAP/DOSINI
+
+12          000C          DOSINI
+
+Initialization address for the disk
+boot. Also used to store the
+cassette-boot RUN address, which is
+then moved to CASINI (2, 3). When you
+powerup without either the disk or an
+autoboot cassette tape, DOSINI will
+read zero in both locations.
+

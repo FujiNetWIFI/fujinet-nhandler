@@ -1,0 +1,22 @@
+
+TOPIC: MAP/SABYTE
+
+1801          0709          SABYTE
+
+This records the limit on the number
+of files that can be open
+simultaneously. Usually set to three,
+the maximum is seven (one for each
+available IOCB -- remember IOCB0 is
+used for the screen display). Each
+available file takes 128 bytes for a
+buffer, if you increase the number of
+buffers, you decrease your RAM space
+accordingly. You can POKE 1801 with
+your new number to increase or
+decrease the number of files and then
+rewrite DOS (by calling DOS from BASIC
+and choosing menu selection "H") and
+have this number as your default on
+the new DOS.
+

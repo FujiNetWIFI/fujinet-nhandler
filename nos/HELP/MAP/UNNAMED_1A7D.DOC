@@ -1,0 +1,18 @@
+
+TOPIC: MAP/UNNAMED_1A7D
+
+6781          1A7D          ....
+
+Start of the drive and data buffers.
+Drive buffers are numbered
+sequentially one to four, data buffers
+one to eight, assuming that many are
+allocated for each. Normally, the
+first two buffers are allocated for
+drives and the next three for data.
+Buffers are 128 ($80) bytes long each
+and start at 6908 ($1AFC), 7036
+($1B7C), 7162 ($1BFA) and 7292
+($1C7C). See locations 1801 and 1802
+($709, $70A).
+

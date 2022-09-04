@@ -1,0 +1,33 @@
+
+Topic: NOS/HELP
+
+FujiNet NOS Online Help System
+
+Usage:
+
+HELP [TOPIC][/SUBTOPIC]
+
+The HELP system displays text
+documents stored on Github. There-
+fore, the help system is unavailable
+if the FujiNet has no access to the
+Internet.
+
+Issuing the HELP command by itself
+will display a list of general
+topics.
+
+Typing HELP TOPIC (where "TOPIC" is
+an item in the list of topics) will
+show more detail and possibly a list
+of subtopics.
+
+Finally, typing HELP TOPIC/SUBTOPIC
+will show the most detail on a spec-
+ific item.
+
+Press CTRL+1 to pause/un-pause the 
+scrolling text.
+
+Press ESC to exit scrolling text.
+

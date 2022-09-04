@@ -1,0 +1,8 @@
+
+TOPIC: MAP/PTRIG4
+
+640          0280          PTRIG4
+
+PTRIG 4-7 are shadows for PIA register
+54017 ($D301).
+

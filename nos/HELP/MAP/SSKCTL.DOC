@@ -1,0 +1,30 @@
+
+TOPIC: MAP/SSKCTL
+
+562          0232          SSKCTL
+
+Serial port control register, shadow
+for 53775 ($D20F). Setting the bits in
+this register to one has the following
+effect:
+
+Bit   Dec   Function
+ 0      1   Enable the keyboard
+            debounce circuit.
+ 1      2   Enable the keyboard
+            scanning circuit.
+ 2      4   The pot counter completes
+            a read within two scan
+            lines instead of one
+            frame time.
+ 3      8   Serial output transmitted
+            as two-tone instead of
+            logic true/false (POKEY
+            two-tone mode).
+4-6  16-64  Serial port mode control.
+ 7     128  Force break; serial
+            output to zero.
+
+Initialized to 19 ($13) which sets
+bits zero, one and four.
+

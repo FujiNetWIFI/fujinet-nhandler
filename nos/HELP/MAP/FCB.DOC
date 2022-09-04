@@ -1,0 +1,66 @@
+
+TOPIC: MAP/FCB
+
+4993-5120      1381-1400      FCB
+
+Start of the FMS File Control Blocks
+(FCB's). FCB's are used to store
+information about files currently
+being processed. The eight FCB's are
+16-byte blocks that correspond in a
+one-on-one manner with the IOCB's.
+Each FCB consist of:
+
+Label  Bytes Purpose
+FCBFNO   1   File number of the cur-
+             rent file being proc'd.
+FCBOTC   1   Which mode the file has
+             been OPENed for: append
+             is one, directory read
+             is two, input is four,
+             output is eight, update
+             is twelve.
+SPARE    1   Not used.
+FCBSLT   1   Flag for the sector
+             length type; 128 or 256
+             bytes
+FCBFLG   1   Working flag. If equal
+             to 128 ($80), then the
+             file has been OPENed for
+             output or append and may
+             acquire new data sec-
+             tors. If the value is
+             64, then sector is in
+             the memory buffer await-
+             ing writing to disk.
+FCBMLN   1   Max sector data length;
+             125 or 253 bytes depend-
+             ing on drive type (sin-
+             gle or double density).
+             The last three sector
+             bytes are reserved for
+             sector link and byte
+             count data.
+FCBDLN   1   Current byte to be read
+             or modified in the oper-
+             ation in a data sector.
+FCBBUF   1   Tell FMS which buffer
+             has been allocated to
+             the file being processed
+FCBCSN   2   Sector number of the
+             sector currently in the
+             buffer.
+FCBLSN   2   Number of the next
+             sector in data chain.
+FCBSSN   2   Starting sectors for
+             appended data if the
+             file has been OPENed for
+             append.
+FCBCNT   2   Sector count for the
+             current file.
+
+DUP doesn't use these FCB's; it writes
+to the IOCB's directly.  CIO transfers
+the control to FMS as the operation
+demands, then on to SIO.
+

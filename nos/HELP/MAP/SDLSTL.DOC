@@ -1,0 +1,216 @@
+
+TOPIC: MAP/SDLSTL
+
+560          0230          SDLSTL
+
+Starting address of the display list.
+The display list is an instruction set
+to tell ANTIC where the screen data is
+and how to display it. These locations
+are the shadow for 54274 and 54275
+($D402, $D403). You can also find the
+address of the DL by PEEKing one byte
+above the top of free memory:
+
+PRINT PEEK(741) + PEEK(742) * 256 + 1.
+
+However, 560 and 561 are more reliable
+pointers since custom DL's can be
+elsewhere in memory. Atari standard
+display lists simply instruct the
+ANTIC chip as to which types of mode
+lines to use for a screen and where
+the screen data may be found in
+memory. Normally, a DL is between 24
+and 256 bytes long (most are less than
+100 bytes, however), depending on your
+GRAPHICS mode (see location 88,89 for
+a chart of DL sizes and screen display
+use).
+
+By altering the DL, you can mix
+graphics modes on the same screen;
+enable fine scrolling; change the
+location of the screen data; and force
+interrupts (DLI's) in order to perform
+short machine language routines.
+
+DL bytes five and six are the
+addresses of the screen memory data,
+the same as in locations 88 and 89
+($58, $59). Bytes four, five, and six
+are the first Load Memory Scan (LMS)
+instruction.  Byte four tells ANTIC
+what mode to use; the next two bytes
+are the location of the first byte of
+the screen RAM (LSB/MSB).  Knowing
+this location allows you to write
+directly to the screen by using POKE
+commands (you POKE the internal
+character codes, not the ATASCII codes
+-- see the BASIC Reference Manual, p.
+55).
+
+For example, the program below will
+POKE the internal codes to the various
+screen modes. You can see not only how
+each screen mode handles the codes,
+but also roughly where the text window
+is in relation to the display screen
+(the 160 bytes below RAMTOP). Note
+that the GTIA modes have no text
+window. If you don't have the GTIA
+chip, your Atari will default to
+GRAPHICS 8, but with GTIA formatting.
+
+1   TRAP 10: GRAPHICS Z
+5   SCREEN = PEEK(560) + PEEK(561) * 256
+6   TV = SCREEN + 4: TELE = SCREEN + 5
+8   DISPLAY = PEEK(TV) + PEEK(TELE) * 256
+10  FOR N = 0 TO 255: POKE DISPLAY + N,N: NEXT N
+20  DISPLAY = DISPLAY + N
+30  IF DISPLAY > 40959 THEN Z = Z + 1: GOTO 1
+40  GOTO 10
+50  Z = Z + 1:IF Z > 60 THEN END
+60  GOTO 1
+
+Here's another short program which
+will allow you to examine the DL in
+any GRAPHICS mode:
+
+10  REM CLEAR SCREEN FIRST
+20  PRINT"ENTER GRAPHICS MODE": REM ADD 16 TO THE MODE TO SUPPRESS THE TEXT WINDOW
+30  INPUT A: GRAPHICS A
+40  DLIST = PEEK(560) + PEEIK(561) * 256
+50  LOOK = PEEK(DLIST): PRINT LOOK;" ";
+60  IF LOOK <> 65 THEN DLIST = DLIST + 1: GOTO 50
+70  LPRINT PEEK(DLIST + 1);" ";PEEK(DLIST + 2)
+80  END
+
+The value 65 in the DL is the last
+instruction encountered. It tells
+ANTIC to jump to the address in the
+next two bytes to re-execute the DL,
+and wait for the next VBLANK. If you
+don't have a printer, change the
+LPRINT commands to PRINT and modify
+the routine to save the data in an
+array and PRINT it to the screen after
+(in GR.0).
+
+If you would like to examine the
+locations of the start of the Display
+List, screen, and text window, try:
+
+5   REM CLEAR SCREEN FIRST
+6   INPUT A: GRAPHICS A
+10  DIM DLIST$(10), SAVMSC$(10), TXT$(10)
+15  DLIST$ = "DLIST": SAVMSC$ = "SAVMSC": TXT$ = "TEXT"
+20  DLIST = PEEK(560) + PEEK(561) * 256
+30  SAV = PEEK(88) + PEEK(89) * 256:TXT = PEEK(660) + PEEK(66l) * 256
+40  PRINT DLIST$;" "; DLIST,SAVMSC$;" ";SAV
+50  PRINT TXT$;" "; TEXT
+60  INPUT A: GRAPHICS A: GOTO 20
+
+Since an LMS is simply a map mode
+(graphics) or character mode (text)
+instruction with BIT six set, you can
+make any or all of these instructions
+into LMS instructions quite easily,
+pointing each line to a different RAM
+area if necessary. This is discussed
+in De Re Atari on implementing
+horizontal scrolling.
+
+DL's can be used to help generate some
+of the ANTIC screen modes that aren't
+supported by BASIC, such as 7.5 (ANTIC
+mode E) or ANTIC mode three, the
+lowercase with descenders mode (very
+interesting; ten scan lines in height
+which allow true descenders on
+lowercase letters).
+
+If you create your own custom DL, you
+POKE its address here.  Hitting BESET
+or changing GRAPHICS modes will
+restore the OS DL address, however.
+The display list instruction is loaded
+into a special register called the
+Display Instruction Register (IR).
+which processes the three DL
+instructions (blank, jump, or
+display). It cannot be accessed
+directly by the programmer in either
+BASIC or machine language. A DL cannot
+cross a 1K boundary unless a jump
+instruction is used.
+
+There are only four display list
+instructions: blank line (uses BAK
+color), map mode, text mode, and jump.
+Text (character mode) instructions and
+map mode (graphics) instructions range
+from two to 15 ($2 to $F) and are the
+same as the ANTIC GRAPHICS modes. A DL
+instruction byte uses the following
+conventions (functions are enabled
+when the bit is set to one):
+
+Bit   Dec  Function
+ 7    128  Display List Interrupt
+           when set (enabled equals
+           one)
+ 6     64  Load Memory Scan. Next two
+           bytes are the LSB/MSB of
+           the data to load.
+ 5     32  Enable vertical fine
+           scrolling.
+ 4     16  Enable horizontal fine
+           scrolling.
+3-0   8-1  Mode
+           0  0  1  0  Character
+             to        Modes
+           0  1  1  1
+           . . . . . .
+           1  0  0  0  Map
+             to        Modes
+           1  1  1  1
+
+The above bits may be combined (i.e.,
+DLI, scrolling and LMS together) if
+the user wishes.
+
+Special DL instructions (with decimal
+values):
+
+Blank 1 line  =  0   5 lines =  64
+      2 lines = 16   6 lines =  80
+      3 lines = 32   7 lines =  96
+      4 lines = 48   8 lines = 112
+
+Jump instruction (JMP) = zero
+(three-byte instruction).
+
+Jump and wait for Vertical Blank (JVP)
+= 65 (three-byte instruction).
+
+Special instructions may be combined
+only with DL interrupt instructions.
+
+A Display List Interrupt is a special
+form of interrupt that takes place
+during the screen display when the
+ANTIC encounters a DL instruction with
+the interrupt BIT 7 set. See location
+512 ($200) for DLI information.
+
+Since DL's are too large a topic to
+cover properly in this manual, I
+suggest you look in the many magazines
+(i.e., Creative Computing, July 1981,
+August 1981; Micro, December 1981;
+Softside, #30 to 32, and BYTE,
+December 1981) for a more detailed
+explanation
+

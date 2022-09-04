@@ -1,0 +1,106 @@
+
+TOPIC: MAP/NMIRES
+
+54287          D40F          NMIRES
+
+(W) Reset for NMIST (below); clears
+the interrupt request register; resets
+all of the NMI status together.
+
+              NMIST
+
+(R) NMI status; holds cause for the
+NMI interrupt in BITs 5, 6 and 7;
+corresponding to the same bits in
+NMIEN above. If a DLI is pending, a
+jump is made through the global RAM
+vector VDSLST (512; $200). The OS
+doesn't use DLI's, so 512 is
+initialized to point to an RTI
+instruction and must be changed by the
+user before a DLI is allowed.
+
+If the interrupt is not a DLI, then a
+test is made to see if the interrupt
+was caused by pressing RESET key and,
+if so, a jump is made to 58484
+($E474). If not a RESET interrupt,
+then the system assumes the interrupt
+was a VBLANK interrupt, and a jump is
+made through VVBLKI at 546 ($222),
+which normally points to the stage one
+VBLANK processor. From there it checks
+the flag at CRITIC (66; $42) and, if
+not from a critical section, jumps
+through VVBLKD at 548 ($224), which
+normally points to the VBLANK exit
+routine. On powerup, the VBLANK
+interrupts are enabled while the
+display list interrupts are disabled.
+See the end of the memory map for a
+description of the VBLANK procedures.
+For IRQ interrupts, see location 53744
+($D20E).
+
+---------------------------------------
+Locations 54288 to 54303 ($D410 to
+$D41F) are repeats of locations 54272
+to 54287 ($D400 to $D40F).
+
+---------------------------------------
+Locations 54784 to 55295 ($D600 to
+$D7FF) are unused but not empty nor
+user alterable. See the note at 53504
+($D100).
+
+---------------------------------------
+OPERATING SYSTEM ROM
+
+Locations 55296 to 65535 ($D800 to
+$FFFF) are the OS ROM.  These
+locations are contained in the 10K ROM
+cartridge, which sits in the front
+slot of the Atari 800 or inside the
+Atari 400. The OS is identical for
+both computers.
+
+The locations given here are for the
+"A" version of the OS ROMs.  There are
+changes in the new "B" version ROMs,
+which are explained in the appendix.
+Most of the changes affect the
+interrupt handler routines and SIO. In
+making these changes, Atari cured some
+bugs such as the device time-out
+problem. Unfortunately, there is a
+cloud with this silver lining: not all
+of your old software will run with the
+new ROMs. Megalegs, one of my favorite
+games, cannot run under the new ROMs.
+A pity that. There are others; I'm
+sure you'll find them. The solution is
+to have both sets of ROMs so you can
+use all of your software.
+
+FLOATING POINT PACKAGE ROM
+
+Locations 55296 to 57343 ($D800 to
+$DFFF) are reserved for the ROM's
+Floating Point Mathematics Package.
+There are other areas used by the FP
+package: page zero (locations 212 to
+254; $D4 to $FE) and page five
+(locations 1406 to 1535; $57E to
+$5FF), which are used only if FP
+routines are called. There are also
+trigonometric functions in the BASIC
+cartridge located between 48549 and
+49145 ($BDA5 to $BFF9) which use the
+FP routines. See De Re Atari for more
+information.
+
+These are the entry points to some of
+the subroutines; unless otherwise
+noted, they use FP register zero (FR0
+at 212 to 217, $D4 to $DB):
+
