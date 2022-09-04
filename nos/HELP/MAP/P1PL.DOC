@@ -1,0 +1,44 @@
+
+TOPIC: MAP/GRAFP0
+
+53261          D00D          GRAFP0
+
+(W) Graphics shape for player 0
+written directly to the player
+graphics register. In using these
+registers, you bypass ANTIC.  You
+only use the GRAFP# registers when
+you are not using Direct Memory
+Access (DMA: see GRACTL at 53277).
+If DMA is enabled, then the graphics
+registers will be loaded
+automatically from the area
+specified by PMBASE (54279; $D407).
+
+The GRAF registers can only write a
+single byte to the playfield, but it
+runs the entire height of the
+screen. Try this to see:
+
+10  POKE 53248, 160: REM SET HORIZONTAL POSITION OF PLAYER 0
+20  POKE 704, 245: REM SET PLAYER 0 COLOUR TO ORANGE
+30  POKE 53261, 203: REM BIT PATTERN 11001011
+
+To remove it, POKE 53261 with zero.
+The bit order runs from seven to
+zero, left to right across the TV
+screen. Each bit set will appear as
+a vertical line on the screen. A
+value of 255 means all bits are set,
+creating a wide vertical line. You
+can also use the size registers to
+change the player width. Using the
+GRAF registers will allow you to use
+players and missiles for such things
+as boundaries on game or text fields
+quite easily.
+
+              P1PL
+
+(R) Player 1 to player collisions.
+
