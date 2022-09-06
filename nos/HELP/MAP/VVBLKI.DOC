@@ -6,13 +6,14 @@ TOPIC: MAP/VVBLKI
 VBLANK immediate register. Normally
 jumps to the stage one VBLANK vector
 NMI interrupt processor at location
-59345 ($E7D1); in the new OS "B" ROMs;
-59310, $E7AE). The NMI status register
-tests to see if the interrupt was due
-to a VBI (after testing for a DLI)
-and, if so, vectors through here to
-the VBI routine, which may be
-user-written. On powerup, VBI's are
-enabled and DLI's are disabled. See
-location 512; $200.
+59345 ($E7D1); in the new OS "B"
+ROMs; 59310, $E7AE). The NMI status
+register tests to see if the
+interrupt was due to a VBI (after
+testing for a DLI) and, if so,
+vectors through here to the VBI
+routine, which may be user-written.
+On powerup, VBI's are enabled and
+DLI's are disabled. See location
+512; $200.
 

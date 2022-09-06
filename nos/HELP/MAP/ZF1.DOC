@@ -4,7 +4,7 @@ TOPIC: MAP/ZF1
 55878          DA46          ZF1
 
 Clear the FP number from FR1,
-locations 224 to 229 ($E0 to $E5), by
-setting all bytes to zero. Also called
-AF1 by De Re Atari.
+locations 224 to 229 ($E0 to $E5),
+by setting all bytes to zero. Also
+called AF1 by De Re Atari.
 

@@ -4,32 +4,34 @@ TOPIC: MAP/VSEROC
 526          020E          VSEROC
 
 POKEY serial bus transmit complete
-interrupt vector, initialized to 60113
-($EAD1), which sets a transmission
-done flag after the checksum byte is
-sent. IRQ.
+interrupt vector, initialized to
+60113 ($EAD1), which sets a
+transmission done flag after the
+checksum byte is sent. IRQ.
 
-SIO uses the three last interrupts to
-control serial bus communication with
-the serial bus devices. During serial
-bus communication, all program
-execution is halted. The actual serial
-I/O is interrupt driven; POKEY waits
-and watches for a flag to be set when
-the requested I/O operation is
-completed. During this wait, POKEY is
-sending or receiving bits along the
-seriai bus. When the entire byte has
-been transmitted (or received), the
+SIO uses the three last interrupts
+to control serial bus communication
+with the serial bus devices. During
+serial bus communication, all
+program execution is halted. The
+actual serial I/O is interrupt
+driven; POKEY waits and watches for
+a flag to be set when the requested
+I/O operation is completed. During
+this wait, POKEY is sending or
+receiving bits along the seriai bus.
+When the entire byte has been
+transmitted (or received), the
 output needed (VSEROR) or the input
 ready (VSERIN) IRQ is generated
-according to the direction of the data
-flow. This causes the next byte to be
-processed until the entire buffer has
-been sent or is full, and a flag for
-"transmission done" is set. At this
-point, SIO exits back to the calling
-routine. You can see that SIO wastes
-time waiting for POKEY to send or
-receive the information on the bus.
+according to the direction of the
+data flow. This causes the next byte
+to be processed until the entire
+buffer has been sent or is full, and
+a flag for "transmission done" is
+set. At this point, SIO exits back
+to the calling routine. You can see
+that SIO wastes time waiting for
+POKEY to send or receive the
+information on the bus.
 
