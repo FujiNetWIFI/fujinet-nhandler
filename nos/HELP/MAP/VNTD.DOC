@@ -7,14 +7,15 @@ Pointer to the ending address of the
 variable name table plus one byte.
 When fewer than 128 variables are
 present, it points to a dummy zero
-byte. When 128 variables are present,
-this points to the last byte of the
-last variable name, plus one.
+byte. When 128 variables are
+present, this points to the last
+byte of the last variable name, plus
+one.
 
-It is often useful to be able to list
-your program variables; using
-locations 130 to 133, you can do that
-by:
+It is often useful to be able to
+list your program variables; using
+locations 130 to 133, you can do
+that by:
 
 10  VARI = PEEK(130) + PEEK(131) * 256 :REM This gives you the start of the table.
 20  FOR VARI = VARI TO PEEK(132) + PEEK(133) * 256 - 1: PRINT CHR$(PEEK(VARI) - 128 * PEEK(VARI > 127)); CHR$(27 + 128 * PEEK(VARI) > 127));:NEXT VARI

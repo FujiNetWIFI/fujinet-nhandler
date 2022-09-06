@@ -3,15 +3,15 @@ TOPIC: MAP/VKEYBD
 
 520          0208          VKEYBD
 
-POKEY keyboard interrupt vector, used
-for an interrupt generated when any
-keyboard key is pressed other than
-BREAK or the console buttons. Console
-buttons never generate an interrupt
-unless one is specifically
+POKEY keyboard interrupt vector,
+used for an interrupt generated when
+any keyboard key is pressed other
+than BREAK or the console buttons.
+Console buttons never generate an
+interrupt unless one is specifically
 user-written. VKEYBD can be used to
 process the key code before it
-undergoes conversion to ATASCII form.
-Initialized to 65470 ($FFBE) which is
-the OS keyboard IRQ routine.
+undergoes conversion to ATASCII
+form. Initialized to 65470 ($FFBE)
+which is the OS keyboard IRQ routine.
 

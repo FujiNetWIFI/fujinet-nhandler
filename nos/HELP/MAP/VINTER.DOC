@@ -3,12 +3,13 @@ TOPIC: MAP/VINTER
 
 516          0204          VINTER
 
-Serial (peripheral) interrupt vector,
-initialized to 59314 ($E7B2).  Used
-for the IRQ interrupt due to a serial
-bus I/O interrupt.  According to De Re
-Atari, this interrupt is not used and
-points to a PLA, RTI sequence. This
-interrupt is processed by PIA. See the
-OS Listing, page 33.
+Serial (peripheral) interrupt
+vector, initialized to 59314
+($E7B2).  Used for the IRQ interrupt
+due to a serial bus I/O interrupt.
+According to De Re Atari, this
+interrupt is not used and points to
+a PLA, RTI sequence. This interrupt
+is processed by PIA. See the OS
+Listing, page 33.
 

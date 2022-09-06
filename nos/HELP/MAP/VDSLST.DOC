@@ -1,58 +1,110 @@
 
 TOPIC: MAP/VDSLST
 
+--------------------------------------
+PAGES TWO TO FOUR
+
+Locations 512 to 1151 ($200 to $47F)
+are used by the OS for working
+variables, tables and data buffers.
+In this area, locations 512 to 553
+($200 to $229) are used for
+interrupt vectors, and locations 554
+to 623 ($22A to $26F) are for
+miscellaneous use. Much of pages two
+through five cannot be used except
+by the OS unless specifically noted.
+A number of bytes are marked as
+"spare", i.e., not in use currently.
+The status of these bytes may change
+with an Atari upgrade, so their use
+is not recommended.
+
+There are two types of interrupts:
+Non-Maskable Interrupts (NMI)
+processed by the ANTIC chip and
+Interrupt Requests (IRQ) processed
+by the POKEY and the PIA chips.
+NMI's are for the VBLANK interrupts
+(VBI's; 546 to 549, $222 to $225),
+display list interrupts (DLI) and
+RESET key interrupts. They initiate
+the stage one and stage two VBLANK
+procedures; usually vectored through
+an OS service routine, they can be
+vectored to point to a user routine.
+IRQ's are for the timer interrupts,
+peripheral and serial bus
+interrupts, BREAK and other key
+interrupts, and 6502 BRK instruction
+interrupts. They can usually be used
+to vector to user routines. See
+NMIST 54287 ($D40F) and IRQEN 53774
+($D20E) for more information. NMI
+interrupt vectors are marked NMI;
+IRQ interrupt vectors are marked
+IRQ.  Refer to the chart below
+location 534 for a list of the
+interrupt vectors in the new OS "B"
+version ROMs.
+
+--------------------------------------
 512          0200          VDSLST
 
 The vector for NMI Display List
 Interrupts (DLI): containing the
 address of the instructions to be
-executed during a DLI (DLI's are used
-to interrupt the processor flow for a
-few microseconds at the particular
-screen display line where the bit was
-set, allowing you to do another short
-routine such as music, changing
-graphics modes, etc.). The OS doesn't
-use DLI's; they must be user- enabled,
-written and vectored through here. The
-NMI status register at 54287 ($D40F)
-first tests to see if an interrupt was
+executed during a DLI (DLI's are
+used to interrupt the processor flow
+for a few microseconds at the
+particular screen display line where
+the bit was set, allowing you to do
+another short routine such as music,
+changing graphics modes, etc.). The
+OS doesn't use DLI's; they must be
+user- enabled, written and vectored
+through here. The NMI status
+register at 54287 ($D40F) first
+tests to see if an interrupt was
 caused by a DLI and, if so, jumps
-through VDSLST to the routine written
-by the user. DLI's are disabled on
-powerup, but VBI's are enabled (see
-546 to 549; $222 to $225).
+through VDSLST to the routine
+written by the user. DLI's are
+disabled on powerup, but VBI's are
+enabled (see 546 to 549; $222 to
+$225).
 
 VDSLST is initialized to point to
-59315 ($E7B3), which is merely an RTI
-instruction. To enable DLI's, you must
-first POKE 54286 ($D40E) with 192
-($C0); otherwise, ANTIC will ignore
-your request. You then POKE 512 and
-513 with the address (LSB/MSB) of the
-first assembly language routine to
-execute during the DLI.  You must then
-set BIT 7 of the Display List
-instruction(s) where the DLI is to
-occur. You have only between 14 and 61
-machine cycles available for your DLI,
+59315 ($E7B3), which is merely an
+RTI instruction. To enable DLI's,
+you must first POKE 54286 ($D40E)
+with 192 ($C0); otherwise, ANTIC
+will ignore your request. You then
+POKE 512 and 513 with the address
+(LSB/MSB) of the first assembly
+language routine to execute during
+the DLI.  You must then set BIT 7 of
+the Display List instruction(s)
+where the DLI is to occur. You have
+only between 14 and 61 machine
+cycles available for your DLI,
 depending on your GRAPHICS mode. You
 must first push any 6502 registers
-onto the stack, and you must end your
-DLI with an RTI instruction. Because
-you are dealing with machine language
-for your DLI, you can POKE directly
-into the hardware registers you plan
-to change, rather than using the
-shadow registers that BASIC uses.
+onto the stack, and you must end
+your DLI with an RTI instruction.
+Because you are dealing with machine
+language for your DLI, you can POKE
+directly into the hardware registers
+you plan to change, rather than
+using the shadow registers that
+BASIC uses.
 
-There is, unfortunately, only one DLI
-vector address. If you use more than
-one DLI and they are to perform
+There is, unfortunately, only one
+DLI vector address. If you use more
+than one DLI and they are to perform
 different activities, then changing
-the vectoring to point to a different
-routine must be done by the previous
-DLI's themselves.
+the vectoring to point to a
+different routine must be done by
+the previous DLI's themselves.
 
 Another way to accomplish interrupts
 is during the VBLANK interval with a
@@ -60,17 +112,17 @@ VBI. One small problem with using
 DLI's is that the keyboard "click"
 routine interferes with the DLI by
 throwing off the timing, since the
-click is provided by several calls to
-the WSYNC register at 54282 ($D40A).
-Chris Crawford discusses several
-solutions in De Re Atari, but the
-easiest of them is not to allow input
-from the keyboard! See Micro, December
-1981, Creative Computing, July 1981
-and December 1981.  Here's a short
-example of a DLI. It will print the
-lower half of your text screen upside
-down:
+click is provided by several calls
+to the WSYNC register at 54282
+($D40A). Chris Crawford discusses
+several solutions in De Re Atari,
+but the easiest of them is not to
+allow input from the keyboard! See
+Micro, December 1981, Creative
+Computing, July 1981 and December
+1981.  Here's a short example of a
+DLI. It will print the lower half of
+your text screen upside down:
 
 10  START = PEEK(560) + PEEK(561) * 256: POKE START + 16,130
 20  PAGE = 1536: FOR PGM = PAGE TO PAGE + 7: READ BYTE: POKE PGM, BYTE: NEXT PGM
@@ -87,7 +139,7 @@ screen. To use it, simply change the
 PAGE + 7 to PAGE + 10 in the program
 above and replace line 30 with:
 
-30  DATA 72,169,222,141,10,212,141,24,208,104,64
+30   DATA 72,169,222,141,10,212,141,24,208,104,64
 
 Finally, delete lines 50 and 60. See
 also location 54282 ($D40A).
