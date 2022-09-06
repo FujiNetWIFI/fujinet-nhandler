@@ -3,7 +3,7 @@ TOPIC: MAP/ICAX1Z
 
 42          002A          ICAX1Z
 
-Auxiliary information first byte used
-in OPEN to specify the type of file
-access needed.
+Auxiliary information first byte
+used in OPEN to specify the type of
+file access needed.
 

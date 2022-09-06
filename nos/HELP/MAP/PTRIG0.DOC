@@ -3,16 +3,17 @@ TOPIC: MAP/PTRIG0
 
 636          027C          PTRIG0
 
-Paddle trigger 0. Used to determine if
-the trigger or hutton on paddle 0 is
-pressed (zero is returned) or not (one
-is returned).  Since these are the
-same lines as the joystick left/right
-switches, you can use PTRIG for
-horizontal movement. PTRIG(1) -
-PTRIG(0) returns -1 (left), 0
-(center), + 1 (right). The next seven
-locations are for the other paddle
-buttons. PTRIG 0 - 3 are shadows for
-PIA register 54016 ($D300).
+Paddle trigger 0. Used to determine
+if the trigger or hutton on paddle 0
+is pressed (zero is returned) or not
+(one is returned).  Since these are
+the same lines as the joystick
+left/right switches, you can use
+PTRIG for horizontal movement.
+PTRIG(1) - PTRIG(0) returns -1
+(left), 0 (center), + 1 (right). The
+next seven locations are for the
+other paddle buttons. PTRIG 0 - 3
+are shadows for PIA register 54016
+($D300).
 

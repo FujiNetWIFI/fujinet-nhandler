@@ -3,7 +3,7 @@ TOPIC: MAP/ADDCOR
 
 782          030E          ADDCOR
 
-Addition correction flag for the baud
-rate calculations involving the timer
-registers.
+Addition correction flag for the
+baud rate calculations involving the
+timer registers.
 

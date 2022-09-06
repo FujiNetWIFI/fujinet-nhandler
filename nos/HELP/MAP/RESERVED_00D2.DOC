@@ -1,14 +1,13 @@
 
 TOPIC: MAP/RESERVED_00D2
 
-210-211          D2-D3
-RESERVED_00D2
+210-211       00D2-00D3      ....
 
-Reserved for BASIC or other cartridge
-use.
+Reserved for BASIC or other
+cartridge use.
 
-Locations 212 to 255 ($D4 to $FF) are
-reserved for the floating point
+Locations 212 to 255 ($D4 to $FF)
+are reserved for the floating point
 package use. The FP routines are in
 ROM, from locations 55296 to 57393
 ($D800 to $E031). These page zero
@@ -24,11 +23,11 @@ Floating Point uses a six-byte
 precision. The first byte of the
 Binary Coded Decimal (BCD) number is
 the exponent (where if BIT 7 equals
-zero, then the number is positive; if
-one, then it is negative). The next
-five bytes are the mantissa. If only
-that were all there was to it. The BCD
-format is rather complex and is best
-explained in chapter eight of De Re
-Atari.
+zero, then the number is positive;
+if one, then it is negative). The
+next five bytes are the mantissa. If
+only that were all there was to it.
+The BCD format is rather complex and
+is best explained in chapter eight
+of De Re Atari.
 

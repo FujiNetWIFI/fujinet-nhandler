@@ -8,15 +8,16 @@ TOPIC: MAP/GRAFP3
               TRIG0
 
 (R) Joystick trigger 0 (644).
-Controller jack one, pin six. For all
-triggers, zero equals button pressed,
-one equals not pressed. If BIT 2 of
-GRACTL (53277; $D01D) is set to one,
-then all TRIG BITs 0 are latched when
-the button is pressed (set to zero)
-and are only reset to one (not
-pressed) when BIT 2 of GRACTL is reset
-to zero. The effect of latching the
-triggers is to return a constant
-"button pressed" read until reset.
+Controller jack one, pin six. For
+all triggers, zero equals button
+pressed, one equals not pressed. If
+BIT 2 of GRACTL (53277; $D01D) is
+set to one, then all TRIG BITs 0 are
+latched when the button is pressed
+(set to zero) and are only reset to
+one (not pressed) when BIT 2 of
+GRACTL is reset to zero. The effect
+of latching the triggers is to
+return a constant "button pressed"
+read until reset.
 

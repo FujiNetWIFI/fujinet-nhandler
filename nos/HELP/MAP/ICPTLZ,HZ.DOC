@@ -6,6 +6,6 @@ TOPIC: MAP/ICPTLZ,HZ
 Put byte routine address set by the
 OS. It is the address minus one byte
 of the device's "put one byte"
-routine. It points to CIO's "IOCB not
-OPEN" on a CLOSE statement.
+routine. It points to CIO's "IOCB
+not OPEN" on a CLOSE statement.
 

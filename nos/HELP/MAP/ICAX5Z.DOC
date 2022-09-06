@@ -6,8 +6,8 @@ TOPIC: MAP/ICAX5Z
 The byte being accessed within the
 sector noted in locations 44 and 45.
 It is also used for the IOCB Number
-multiplied by 16.  Each IOCB block is
-16 bytes long. Other sources indicate
-that the 6502 X register also contains
-this information.
+multiplied by 16.  Each IOCB block
+is 16 bytes long. Other sources
+indicate that the 6502 X register
+also contains this information.
 

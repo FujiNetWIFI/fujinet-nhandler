@@ -4,13 +4,15 @@ TOPIC: MAP/STICK0
 632          0278          STICK0
 
 The value of joystick 0. STICK
-registers are shadow locations for PIA
-locations 54016 and 54017 ($D300,
-$D301). There are nine possible
-decimal values (representing 45 degree
-incrememts) read by each joystick
-register (using the STICKn command),
-depending on the position of the stick:
+registers are shadow locations for
+PIA locations 54016 and 54017
+($D300, $D301). There are nine
+possible decimal values
+(representing 45 degree incrememts)
+read by each joystick register
+(using the STICKn command),
+depending on the position of the
+stick:
 
  Decimal                Binary
     14                    1110
@@ -23,15 +25,15 @@ depending on the position of the stick:
      |                      |
     13                    1101
 
-15 (1111) equals stick in the upright
-(neutral) position.
+15 (1111) equals stick in the
+upright (neutral) position.
 
 See Micro, December 1981,for an
 article on making a proportional
-joystick. For an example of a machine
-language joystick driver you can add
-to your BASIC program, see COMPUTE!,
-July 1981.
+joystick. For an example of a
+machine language joystick driver you
+can add to your BASIC program, see
+COMPUTE!, July 1981.
 
 One machine language joystick reader
 is listed below, based on an article
@@ -65,7 +67,8 @@ in COMPUTE!, August 1981:
 
 DOWNLOAD STICK0.BAS
 
-See locations 88, 89 ($58, $59) for an
-example of a USR call using a string
-instead of a fixed memory location.
+See locations 88, 89 ($58, $59) for
+an example of a USR call using a
+string instead of a fixed memory
+location.
 

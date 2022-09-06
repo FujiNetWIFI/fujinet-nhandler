@@ -3,8 +3,8 @@ TOPIC: MAP/COPFIL
 
 8990          231E          COPFIL
 
-Copy a file. This area starts with the
-copy messages. The copy routines
+Copy a file. This area starts with
+the copy messages. The copy routines
 themselves begin at PYFIL, 9080
 ($2378).
 

@@ -3,35 +3,37 @@ TOPIC: MAP/PTIMOT
 
 28          001C          PTIMOT
 
-Printer timeout, called every printer
-status request. Initialized to 30,
-which represents 32 seconds (the value
-is 64 seconds per 60 increments in
-this register); typical timeout for
-the Atari 825 printer is five seconds.
-The value is set by your printer
-handler software. It is updated after
-each printer status request operation.
- It gets the specific timeout status
+Printer timeout, called every
+printer status request. Initialized
+to 30, which represents 32 seconds
+(the value is 64 seconds per 60
+increments in this register);
+typical timeout for the Atari 825
+printer is five seconds. The value
+is set by your printer handler
+software. It is updated after each
+printer status request operation.
+It gets the specific timeout status
 from location 748 ($2EC), which is
 loaded there by SIO.
 
 The new "B" type OS ROMs have
 apparently solved the problem of
-timeout that haunted the "A" ROMs; you
-saw it when the printer or the disk
-drive periodically went to sleep
-(timed out) for a few seconds, causing
-severe anxiety attacks in the owners
-who thought their Ataris had just
-mysteriously died. This is compounded
-when one removes a disk from the
-drive, believing the I/O process to be
-finished--only to have the drive start
-up again after the timeout and trying
-to write to or read from a nonexistent
-disk. Usually both the system and the
-user crash simultaneously at this
-point. See the appendix for more
+timeout that haunted the "A" ROMs;
+you saw it when the printer or the
+disk drive periodically went to
+sleep (timed out) for a few seconds,
+causing severe anxiety attacks in
+the owners who thought their Ataris
+had just mysteriously died. This is
+compounded when one removes a disk
+from the drive, believing the I/O
+process to be finished--only to have
+the drive start up again after the
+timeout and trying to write to or
+read from a nonexistent disk.
+Usually both the system and the user
+crash simultaneously at this point.
+See the appendix for more
 information on the new ROMs.
 

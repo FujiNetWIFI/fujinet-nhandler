@@ -4,6 +4,6 @@ TOPIC: MAP/FRESECT
 4293          10C5          FRESECT
 
 Free sector(s) routine; returns the
-number of free sectors on a disk that
-are available to the user.
+number of free sectors on a disk
+that are available to the user.
 

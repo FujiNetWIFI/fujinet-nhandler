@@ -22,6 +22,6 @@ Verify sector    86    ($56)
 
 All of the above are disk device
 commands, except write and status,
-which are also printer commands (with
-no verify).
+which are also printer commands
+(with no verify).
 

@@ -1,10 +1,11 @@
 
 TOPIC: MAP/KBDORG
 
-62436-65535    F3E4-FFFF      KBDORG
+62436-65535     F3E4-FFFF    KBDORG
 
-Routines for the display and keyboard
-handler. The display handler beqins at
-62454 ($F3F6) and the keyboard handler
-begins at 63197 ($F6DD), below.
+Routines for the display and
+keyboard handler. The display
+handler beqins at 62454 ($F3F6) and
+the keyboard handler begins at 63197
+($F6DD), below.
 

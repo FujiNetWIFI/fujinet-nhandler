@@ -1,6 +1,18 @@
-NEWCOL
-NEWROW
-NMIEN
-NMIRES
-NOCKSM
-NSIGN
+
+Topic: MAP/N
+
+Memory Map by Label [N]
+
+Type HELP MAP/<LABEL> or
+Type HELP MAP/<ADDR> for more
+
+LABEL   ADDR  DESCRIPTION
+-----   ----  -----------------------
+NEWCOL  0061  Column for DRAWTO, FILL
+NEWROW  0060  Row for DRAWTO, FILL
+NMIEN   D40E  NMI enable
+NMIRES  D40F  Reset for NMIST
+NMIST   D40F  NMI status
+NOCKSM  003C  "No Checksum" flag
+NSIGN   00EE  Sign for FP number
+

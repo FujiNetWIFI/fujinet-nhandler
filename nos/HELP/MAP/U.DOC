@@ -1,23 +1,34 @@
-UNNAMED_0779
-UNNAMED_0A20
-UNNAMED_0EC7
-UNNAMED_0EEA
-UNNAMED_12F8
-UNNAMED_1546
-UNNAMED_1A7D
-UNNAMED_1CFC
-UNNAMED_1D7C
-UNNAMED_1EF4
-UNNAMED_1FFF
-UNUSED_00CB
-UNUSED_00D0
-UNUSED_0238
-UNUSED_0245
-UNUSED_028B
-UNUSED_02E9
-UNUSED_02F5
-UNUSED_0600
-UNUSED_D20C
-UNUSED_D406
-UNUSED_D408
-USRDOS
+
+Topic: MAP/T
+
+Memory Map by Label [T]
+
+Type HELP MAP/<LABEL> or
+Type HELP MAP/<ADDR> for more
+
+LABEL   ADDR  DESCRIPTION
+-----   ----  -----------------------
+...     0779  Disk write-verify flag
+...     0A20-0AD5 Burst I/O fix
+...     0EC7  Wildcard character
+...     0EEA  Valid filename chars
+...     12F8-1372 FMS storage area
+...     1546  DOS Vector for BASIC
+...     1A7D  Start of drive buffers
+...     1CFC  MEMLO's value with DOS
+...     1D7C  Start of non-resid. DUP
+...     1EF4  Misc storage/buffers
+...     1FFF  Top of min RAM (8K)j
+...     00CB-00CF Unused
+...     00D0-00D1 Unused
+...     0238-0239 Unused
+...     0245      Unused
+...     028B-028F Unused
+...     02E9      Unused
+...     02F5-02F9 Unused
+...     0600-06FF Unused (Page 6)
+...     D20C      Unused
+...     D406      Unused
+...     D408      Unused
+USRDOS  1700  Used(?) by DOS.SYS
+

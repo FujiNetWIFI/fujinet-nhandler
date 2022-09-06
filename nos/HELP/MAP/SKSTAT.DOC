@@ -16,7 +16,7 @@ two-tone mode. (562).
 
               SKSTAT
 
-(R) Beads the serial port status. It
+(R) Reads the serial port status. It
 also returns values governed by a
 signal on the digital track of the
 cassette tape. You can generate
@@ -121,27 +121,3 @@ $D2FF) are duplications of locations
 53760 to 53775 and have no
 particular use at present.
 ---------------------------------------
-
-PIA: 6520 CHIP
-
-54016-54271    D300-D3FF
-
-The Peripheral Interface Adapter
-(PIA) integrated circuit is a
-special microprocessor used to
-control the Atari ports, controller
-jacks one to four. Ports can be used
-for both input and output
-simultaneously or alternately.
-Barely tapped at the time of this
-writing, the ports represent a major
-resource for external (and internal)
-control and expansion. PIA also
-processes two of the IRQ interrupts:
-VINTER and VPRCED, vectored at
-locations 514 to 517 ($202 to $205).
-These interrupts are unused by the
-OS, but also may be used to provide
-greater control over external
-devices.
-

@@ -4,8 +4,8 @@ TOPIC: MAP/BUFSTR
 108          006C          BUFSTR
 
 Editor low byte (AM). Display editor
-GETCH routine pointer (location 62867
-for entry; $F593). Temporary storage;
-returns the character pointed to by
-BUFCNT above.
+GETCH routine pointer (location
+62867 for entry; $F593). Temporary
+storage; returns the character
+pointed to by BUFCNT above.
 

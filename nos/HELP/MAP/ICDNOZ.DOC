@@ -4,6 +4,7 @@ TOPIC: MAP/ICDNOZ
 33          0021          ICDNOZ
 
 Device number or drive number Called
-MAXDEV by DOS to indicate the maximum
-number of devices. Initialized to one.
+MAXDEV by DOS to indicate the
+maximum number of devices.
+Initialized to one.
 

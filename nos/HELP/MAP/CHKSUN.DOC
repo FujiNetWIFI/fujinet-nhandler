@@ -5,42 +5,47 @@ TOPIC: MAP/CHKSUN
 
 According to Softside Magazine, 
 December 1981, if a PEEK here returns
-255, then you have the older OS ROM(s).
-There were some troubles with cassette
-loads in the older ROMs that sometimes
-require the following to cure:
+255, then you have the older OS 
+ROM(s). There were some troubles with
+cassette loads in the older ROMs that
+sometimes require the following to
+cure:
 
-Do an LPRINT without a printer attached
-before CLOAD. This clears the cassette
-buffer.
+Do an LPRINT without a printer 
+attached before CLOAD. This clears
+the cassette buffer.
 
-Press RESET before CSAVEing or CLOADing
-will restore the system to its initial-
-ization parameters and help with 
-loading and saving routines.
+Press RESET before CSAVEing or 
+CLOADing will restore the system to 
+its initialization parameters and 
+help with loading and saving 
+routines.
 
-There is a new OS available from Atari
-which fixes a bug that would cause the
-I/O operations to "time out" for a few
-seconds. It apparently does not alter 
-any of the routines mentioned here.
+There is a new OS available from
+Atari which fixes a bug that would
+cause the I/O operations to "time
+out" for a few seconds. It apparently
+does not alter any of the routines
+mentioned here.
 
-The chip reset interrupt (powerup) 
-vectors through location 65532 ($FFFC)
-to 58487 ($E477) where a JMP vector to
-the powerup routine is located. A chip
-reset is not the same as pressing the
-RESET key, which in itself does not 
-generate a chip reset.
+The chip reset interrupt (powerup)
+vectors through location 65532 
+($FFFC) to 58487 ($E477) where a JMP
+vector to the powerup routine is
+located. A chip reset is not the same
+as pressing the RESET key, which in
+itself does not generate a chip 
+reset.
 
-The NMI interrupts are vectored through
-65530 ($FFFA) to the NMI service 
-routine (ISR) at 59316 ($E7B4), and 
-all IRQ interrupts are vectored through
-65534 ($FFFE) to the IRQ service 
-routine at 59123 ($E6F3). In these 
-service routine areas, the cause of the
-interrupt is determined, and the appro-
-priate action is taken, either by the 
-OS or through a JMP to a RAM vector 
-where a user routine exists.
+The NMI interrupts are vectored
+through 65530 ($FFFA) to the NMI
+service routine (ISR) at 59316
+($E7B4), and all IRQ interrupts are
+vectored through 65534 ($FFFE) to the
+IRQ service routine at 59123 ($E6F3).
+In these service routine areas, the
+cause of the interrupt is determined,
+and the appropriate action is taken,
+either by the OS or through a JMP to
+a RAM vector where a user routine
+exists.

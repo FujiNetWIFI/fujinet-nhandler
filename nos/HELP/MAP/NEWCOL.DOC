@@ -3,13 +3,13 @@ TOPIC: MAP/NEWCOL
 
 97          0061          NEWCOL
 
-Point (column) to which DRAWTO and XIO
-18 (FILL) will go.  NEWROW and NEWCOL
-are initialized to the values in
-ROWCRS and COLCRS (84 to 86; $54 to
-$56) above, which represent the
-destination end point of the DRAW and
-FILL functions. This is done so that
-ROWCRS and COLCRS can be altered
-during these routines.
+Point (column) to which DRAWTO and
+XIO 18 (FILL) will go.  NEWROW and
+NEWCOL are initialized to the values
+in ROWCRS and COLCRS (84 to 86; $54
+to $56) above, which represent the
+destination end point of the DRAW
+and FILL functions. This is done so
+that ROWCRS and COLCRS can be
+altered during these routines.
 

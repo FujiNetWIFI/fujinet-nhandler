@@ -1,31 +1,32 @@
 
 TOPIC: MAP/HATABS
 
-794-831      031A-033F      HATABS
+794-831    031A-033F      HATABS
 
 Handler Address Table. Thirty-eight
 bytes are reserved for up to 12
 entries of three bytes per handler,
-the last two bytes being set to zero.
-On powerup, the HATABS table is copied
-from ROM.  Devices to be booted, such
-as the disk drive, add their handler
-information to the end of the table.
-Each entry has the character device
-name (C,D,E,K,P,S,R) in ATASCII code
-and the handler address (LSB/MSB).
-Unused bytes are all set to zero. FMS
-searches HATABS from the top for a
-device "D:" entry, and when it doesn't
-find it, it then sets the device
-vector at the end of the table to
-point to the FMS vector at 1995
-($7CB). CIO searches for a handler
-character from the bottom up. This
-allows new handlers to take precedence
-over the old. Pressing RESET clears
-HATABS of all but the resident handler
-entries!
+the last two bytes being set to
+zero. On powerup, the HATABS table
+is copied from ROM.  Devices to be
+booted, such as the disk drive, add
+their handler information to the end
+of the table. Each entry has the
+character device name
+(C,D,E,K,P,S,R) in ATASCII code and
+the handler address (LSB/MSB).
+Unused bytes are all set to zero.
+FMS searches HATABS from the top for
+a device "D:" entry, and when it
+doesn't find it, it then sets the
+device vector at the end of the
+table to point to the FMS vector at
+1995 ($7CB). CIO searches for a
+handler character from the bottom
+up. This allows new handlers to take
+precedence over the old. Pressing
+RESET clears HATABS of all but the
+resident handler entries!
 
 794   31A   (P:) Printer device ID
             init'd to 58416 ($E430).
@@ -41,14 +42,15 @@ entries!
 HATABS unused entry points:
 809 ($329), 812 ($32C), 815 ($32F),
 818 ($332), 821 ($335), 824 ($338),
-827 ($33B), and 830 ($33E). These are
-numbered sequentially from one to
-eight. There are only two bytes in the
-last entry (unused), both of which are
-set to zero. When DOS is present, it
-adds an entry to the table with the
-ATASCII code for the letter "D" and a
-vector to address 1995 ($7CB).
+827 ($33B), and 830 ($33E). These
+are numbered sequentially from one
+to eight. There are only two bytes
+in the last entry (unused), both of
+which are set to zero. When DOS is
+present, it adds an entry to the
+table with the ATASCII code for the
+letter "D" and a vector to address
+1995 ($7CB).
 
 The format for the HATABS table is:
 
@@ -57,12 +59,13 @@ Handler vector table address
 More entries
 Zero fill to the end of the table
 
-The device handler address table entry
-above for the specific handler points
-to the first byte (low byte/high byte)
-of the vector table which starts at
-58368 ($E400). Each handler is
-designed with the following format:
+The device handler address table
+entry above for the specific handler
+points to the first byte (low
+byte/high byte) of the vector table
+which starts at 58368 ($E400). Each
+handler is designed with the
+following format:
 
 OPEN vector
 CLOSE vector
@@ -77,89 +80,32 @@ CIO uses the ZIOCB (see location 32;
 $20) to pass parameters to the
 originating IOCB, the A, Y and X
 registers and CIO. It is possible to
-add your own device driver(s) to OS by
-following these rules:
+add your own device driver(s) to OS
+by following these rules:
+
 1) Load your routine, with necessary
-buffers at the address pointed to by
-MEMLO: location 743 ($2E7).
-2) Add the size of your routine to the
-MEMLO value and POKE the result back
-into MEMLO.
+   buffers at the address pointed to
+   by MEMLO: location 743 ($2E7).
+2) Add the size of your routine to
+   the MEMLO value and POKE the
+   result back into MEMLO.
 3) Store the name and address of your
-driver in the handler address table;
-HATABS.
+   driver in the handler address
+   table; HATABS.
 4) Change the vectors so that the OS
-will re-execute the above steps if
-RESET has been pressed. This is
-usually done by adjusting locations 12
-($C: DOSINIT) and 10 ($A; DOSVEC).
+   will re-execute the above steps if
+   RESET has been pressed. This is
+   usually done by adjusting
+   locations 12 ($C: DOSINIT) and 10
+   ($A; DOSVEC).
 
 See the "Insight: Atari" columns in
-COMPUTE!, January and April 1982, for
-details. The APX program "T: A Text
-Display Device" is a good example of a
-device handler application.  See De Re
-Atari for more information on the DCB
-and HATABS, including the use of a
-null handler.
-
------------------------------
-Locations 832 to 959 ($340 to $3BF)
-are reserved for the eight IOCB's
-(input/output control blocks). IOCB's
-are channels for the transfer of
-information (data bytes) into and out
-of the Atari, or between devices.  You
-use them to tell the computer what
-operation to perform, how much data to
-move and, if necessary, where the data
-to be moved is located. Each block has
-16 bytes reserved for it.
-
-What is an IOCB? Every time you PRINT
-something on the screen or the
-printer, every time you LOAD or SAVE a
-file, every time you OPEN a channel,
-you are using an IOCB. In some cases,
-operations have automatic OPEN and
-CLOSE functions built in--like LPRINT.
-In others, you must tell the Atari to
-do each step as you need it. Some
-IOCB's are dedicated to specific use,
-such as zero for the screen display.
-Others can be used for any I/O
-function you wish. The information you
-place after the OPEN command tells CIO
-how you want the data transferred to
-or from the device. It is SIO and the
-device handlers that do the actual
-transfer of data.
-
-You can easily POKE the necessary
-values into the memory locations and
-use a machine language subroutine
-through a USR function to call the CIO
-directly (you must still use an OPEN
-and CLOSE statement for the channel,
-however). This is useful because BASIC
-only supports either record or single
-byte data transfer, while the CIO will
-handle complete buffer I/O. See the
-CIO entry address, location 58454
-($E456), for more details. These
-blocks are used the same way as the
-page zero IOCB (locations 32 to 47;
-$20 to $2F). The OS takes the
-information here, moves it to the
-ZIOCB for use by the ROM CIO, then
-returns the updated information back
-to the user area when the operation is
-done.
-
-Note that when BASIC encounters a DOS
-command, it CLOSEs all channels except
-zero. Refer to the Atari Hardware
-Manual and the 850 Interface Manual
-for more detailed use of these
-locations.
+COMPUTE!, January and April 1982,
+for details. The APX program "T: A
+Text Display Device" is a good
+example of a device handler
+application.  See De Re Atari for
+more information on the DCB and
+HATABS, including the use of a null
+handler.
 

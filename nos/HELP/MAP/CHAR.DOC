@@ -5,11 +5,12 @@ TOPIC: MAP/CHAR
 
 Internal code value for the most
 recent character read or written
-(internal code for the value in ATACHR
-below). This register is difficult to
-use with PEEK statements since it
-returns the most recent character;
-most often the cursor value (128, $80
-for a visible, zero for an invisible
+(internal code for the value in
+ATACHR below). This register is
+difficult to use with PEEK
+statements since it returns the most
+recent character; most often the
+cursor value (128, $80 for a
+visible, zero for an invisible
 cursor).
 

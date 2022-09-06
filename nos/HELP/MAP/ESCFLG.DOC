@@ -3,13 +3,13 @@ TOPIC: MAP/ESCFLG
 
 674          02A2          ESCFLG
 
-Escape flag. Normally zero, it is set
-to 128 ($80) if the ESC key is pressed
-(on detection of the ESC character;
-27, $1B). It is reset to zero
-following the output of the next
-character. To display ATASCII control
-codes without the use of an ESC
-character, set location 766 ($2FE) to
-a non-zero value.
+Escape flag. Normally zero, it is
+set to 128 ($80) if the ESC key is
+pressed (on detection of the ESC
+character; 27, $1B). It is reset to
+zero following the output of the
+next character. To display ATASCII
+control codes without the use of an
+ESC character, set location 766
+($2FE) to a non-zero value.
 

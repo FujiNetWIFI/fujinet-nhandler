@@ -5,9 +5,9 @@ TOPIC: MAP/EGETCH
 
 Like the BASIC INPUT command, EGETCH
 gets a line from the screen and
-keyboard, but only one character at a
-time. You must do a JSR $F63E for each
-character input. This is also the
-address of the beginning of the screen
-editor routines.
+keyboard, but only one character at
+a time. You must do a JSR $F63E for
+each character input. This is also
+the address of the beginning of the
+screen editor routines.
 

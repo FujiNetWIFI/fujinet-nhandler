@@ -6,34 +6,35 @@ TOPIC: MAP/CHBAS
 Character Base Register, shadow for
 54281 ($D409). The default
 (initialization value) is 224 ($E0)
-for uppercase characters and numbers;
-POKE CHBAS with 226 ($E2) to get the
-lowercase and the graphics characters
-in GR.1 and GR.2. In GR.0 you get the
-entire set displayed to the screen,
-but in GR.1 and GR.2, you must POKE
-756 for the appropriate half-set to be
-displayed.
+for uppercase characters and
+numbers; POKE CHBAS with 226 ($E2)
+to get the lowercase and the
+graphics characters in GR.1 and
+GR.2. In GR.0 you get the entire set
+displayed to the screen, but in GR.1
+and GR.2, you must POKE 756 for the
+appropriate half-set to be displayed.
 
-How do you create an altered character
-set? First you must reserve an area in
-memory for your set (512 or 1024
-bytes; look at location 106; $6A to
-see how). Then either you move the ROM
-set (or half set, if that's all you
-intend to change) into that area and
-alter the selected characters, or you
-fill up the space with bytes which
-make up your own set. Then you POKE
-756 with the MSB of the location of
-your set so the computer knows where
-to find it.
+How do you create an altered
+character set? First you must
+reserve an area in memory for your
+set (512 or 1024 bytes; look at
+location 106; $6A to see how). Then
+either you move the ROM set (or half
+set, if that's all you intend to
+change) into that area and alter the
+selected characters, or you fill up
+the space with bytes which make up
+your own set. Then you POKE 756 with
+the MSB of the location of your set
+so the computer knows where to find
+it.
 
 What does an altered character set
 look like? Each character is a block
-one byte wide by eight bytes high. You
-set the bits for the points on the
-screen you wish to be "on" when
+one byte wide by eight bytes high.
+You set the bits for the points on
+the screen you wish to be "on" when
 displayed. Here are two examples:
 
 one byte wide:
@@ -62,23 +63,24 @@ one byte wide:
 Tie-fighter
 
 You can turn these characters into
-DATA statements to be POKEd into your
-reserved area by using the values for
-the bytes as in the above examples. To
-change the ROM set once it is moved,
-you look at the internal code (see the
-BASIC Reference Manual, p.  55) and
-find the value of the letter you want
-to replace--such as the letter A--code
+DATA statements to be POKEd into
+your reserved area by using the
+values for the bytes as in the above
+examples. To change the ROM set once
+it is moved, you look at the
+internal code (see the BASIC
+Reference Manual, p.  55) and find
+the value of the letter you want to
+replace--such as the letter A--code
 33. Multiply this by eight bytes for
-each code number from the start of the
-set (33 * eight equals 264). You then
-replace the eight bytes used by the
-letter A, using a FOR-NEXT loop with
-the values for your own character. For
-example, add these lines to the
-machine language found a few pages
-further on:
+each code number from the start of
+the set (33 * eight equals 264). You
+then replace the eight bytes used by
+the letter A, using a FOR-NEXT loop
+with the values for your own
+character. For example, add these
+lines to the machine language found
+a few pages further on:
 
 1000 FOR LOOP=1 TO 4:READ CHAR:SET=CHACT+CHAR*8
 1010 FOR TIME=0 TO 7:READ BYTE:POKE SET+TIME,BYTE: NEXT TIME
@@ -93,68 +95,72 @@ RUN it and type the letters A to D.
 
 Why 224 and 226? Translated to hex,
 these values are $E0 and $E2,
-respectively. These are the high bytes
-(MSB) for the location of the
+respectively. These are the high
+bytes (MSB) for the location of the
 character set stored in ROM: $E000
 (57344) is the address for the start
 of the set (which begins with
 punctuation, numbers and uppercase
 letters), and $E200 (57856), for the
-second half of the ROM set, lowercase
-and graphic control characters (both
-start on page boundaries). The ROM set
-uses the internal order given on page
-55 of your BASIC Reference Manual, not
-the ATASCII order. See also location
+second half of the ROM set,
+lowercase and graphic control
+characters (both start on page
+boundaries). The ROM set uses the
+internal order given on page 55 of
+your BASIC Reference Manual, not the
+ATASCII order. See also location
 57344 ($E000).
 
-You will notice that using the PRINT#6
-command will show you that your
-characters have more than one color
-available to them in GR.1 and GR.2.
-Try PRINTing lowercase or inverse
-characters when you are using the
-uppercase set. This effect can be very
-useful in creating colorful text
-pages. Uppercase letters, numbers, and
-special characters use color register
-zero (location 708; $2C4 - orange) for
-normal display, and color register two
-(710; $2C6 - blue) for inverse
+You will notice that using the
+PRINT#6 command will show you that
+your characters have more than one
+color available to them in GR.1 and
+GR.2. Try PRINTing lowercase or
+inverse characters when you are
+using the uppercase set. This effect
+can be very useful in creating
+colorful text pages. Uppercase
+letters, numbers, and special
+characters use color register zero
+(location 708; $2C4 - orange) for
+normal display, and color register
+two (710; $2C6 - blue) for inverse
 display. Lowercase letters use
 register one (709; $2C5 - aqua) for
 normal display and register three
 (711; $2C7 - pink) for inverse. See
-COMPUTE!, December 1981, page 98, for
-a discussion of using the CTRL keys
-with letter keys to get different
-color effects.
+COMPUTE!, December 1981, page 98,
+for a discussion of using the CTRL
+keys with letter keys to get
+different color effects.
 
-One problem with POKEing 756 with 226
-is that there is no blank space
-character in the second set: you get a
-screen full of hearts.  You have two
-choices: you can change the color of
-register zero to the same as the
-background and lose those characters
-which use register zero--the control
-characters--but get your blanks (and
-you still have registers one, two and
-three left). Or you can redefine your
-own set with a blank character in it.
-The latter is obviously more work. See
-"Ask The Readers," COMPUTE!, July 1982.
+One problem with POKEing 756 with
+226 is that there is no blank space
+character in the second set: you get
+a screen full of hearts.  You have
+two choices: you can change the
+color of register zero to the same
+as the background and lose those
+characters which use register
+zero--the control characters--but
+get your blanks (and you still have
+registers one, two and three left).
+Or you can redefine your own set
+with a blank character in it. The
+latter is obviously more work. See
+"Ask The Readers," COMPUTE!, July
+1982.
 
-It is seldom mentioned in the manuals,
-but you cannot set 756 to 225 ($El) or
-any other odd number. Doing so will
-only give you screen garbage. The page
-number 756 points to must be evenly
-divisible by two.
+It is seldom mentioned in the
+manuals, but you cannot set 756 to
+225 ($El) or any other odd number.
+Doing so will only give you screen
+garbage. The page number 756 points
+to must be evenly divisible by two.
 
-When you create your own character set
-and store it in memory, you need to
-reserve at least 1K for a full
+When you create your own character
+set and store it in memory, you need
+to reserve at least 1K for a full
 character set (1024 bytes --$400 or
 four pages), and you must begin on a
 page boundary.  In hex these are the
@@ -166,120 +172,126 @@ and assumes that the LSB is always
 zero--or rather a page boundary. You
 can reserve memory by:
 
-POKE 106,PEEK(106)-4 (or any multiple
-of four)
+POKE 106,PEEK(106)-4 (or any
+multiple of four)
 
-And do a GRAPHICS command immediately
-after to have your new memory value
-accepted by the computer. If you are
-using only one half of the entire set,
-for GR.1 or GR.2, you need only
-reserve 512 bytes, and it may begin on
-a .5K boundary (like $E200; these are
-hexadecimal memory locations that end
-in $X200). If you plan to switch to
-different character sets, you will
-need to reserve the full 1K or more,
-according to the number of different
-character sets you need to display.
-RAM for half-K sets can be reserved by:
+And do a GRAPHICS command
+immediately after to have your new
+memory value accepted by the
+computer. If you are using only one
+half of the entire set, for GR.1 or
+GR.2, you need only reserve 512
+bytes, and it may begin on a .5K
+boundary (like $E200; these are
+hexadecimal memory locations that
+end in $X200). If you plan to switch
+to different character sets, you
+will need to reserve the full 1K or
+more, according to the number of
+different character sets you need to
+display. RAM for half-K sets can be
+reserved by:
 
-POKE 106,PEEK(106)-2 (or a multiple of
-two)
+POKE 106,PEEK(106)-2 (or a multiple
+of two)
 
 The location for your set will then
-begin at PEEK(106)*256.  Because BASIC
-cannot always handle setting up a
-display list for GR.7 and GR.8 when
-you modify location 106 by less than
-4K (16 pages), you may find you must
-use PEEK(106)-16. See location 88,89
-($58,$59) and 54279 ($D407) for
-information regarding screen use and
-reserving memory.
+begin at PEEK(106)*256.  Because
+BASIC cannot always handle setting
+up a display list for GR.7 and GR.8
+when you modify location 106 by less
+than 4K (16 pages), you may find you
+must use PEEK(106)-16. See location
+88,89 ($58,$59) and 54279 ($D407)
+for information regarding screen use
+and reserving memory.
 
 Make sure you don't have your
 character set overlap with your
 player/missile graphics. Be very
 careful when using altered character
-sets in high memory. Changing GRAPHICS
-modes, a CLEAR command, or scrolling
-the text window all clear memory past
-the screen display. When you scroll
-the text window, you don't simply
-scroll the four lines; you actually
-scroll a full 24 (20 additional lines
-* 40 bytes equals 800 bytes scrolled
-past memory)! This messes up the
-memory past the window display
-address, so position your character
-sets below all possible interference
-(or don't scroll or clear the screen).
+sets in high memory. Changing
+GRAPHICS modes, a CLEAR command, or
+scrolling the text window all clear
+memory past the screen display. When
+you scroll the text window, you
+don't simply scroll the four lines;
+you actually scroll a full 24 (20
+additional lines * 40 bytes equals
+800 bytes scrolled past memory)!
+This messes up the memory past the
+window display address, so position
+your character sets below all
+possible interference (or don't
+scroll or clear the screen).
 
 You can create and store as many
 character sets as your memory will
 allow. You switch back and forth
-between them and the ROM set by simply
-POKEing the MSB of the address into
-756. Of course, you can display only
-one set at a time unless you use an
-altered display list and DLI to call
-up other sets. There are no
-restrictions outside of memory
-requirements on using altered
+between them and the ROM set by
+simply POKEing the MSB of the
+address into 756. Of course, you can
+display only one set at a time
+unless you use an altered display
+list and DLI to call up other sets.
+There are no restrictions outside of
+memory requirements on using altered
 character sets with P/M graphics as
-long as the areas reserved for them do
-not overlap.
+long as the areas reserved for them
+do not overlap.
 
-A GRAPHICS command such as GR.0, RESET
-or a DOS call restores the character
-set pointer to the ROM location, so
-you must always POKE it again with the
-correct location of your new set after
-any such command. A useful place to
-store these sets is one page after the
-end of RAM, assuming you've gone back
-to location 106 ($6A) and subtracted
+A GRAPHICS command such as GR.0,
+RESET or a DOS call restores the
+character set pointer to the ROM
+location, so you must always POKE it
+again with the correct location of
+your new set after any such command.
+A useful place to store these sets
+is one page after the end of RAM,
+assuming you've gone back to
+location 106 ($6A) and subtracted
 the correct number of pages from the
-value it holds (by POKE 106,PEEK(106)
-minus the number of pages to be
-reserved; see above). Then you can
-reset the character set location by
-simply using POKE 756,PEEK(106)+1 (the
-plus one simply makes sure you start
-at the first byte of your set).
+value it holds (by POKE
+106,PEEK(106) minus the number of
+pages to be reserved; see above).
+Then you can reset the character set
+location by simply using POKE
+756,PEEK(106)+1 (the plus one simply
+makes sure you start at the first
+byte of your set).
 
 A full character set requires 1024
-bytes (1K: four pages) be reserved for
-it. Why? Because there are 128
-characters, each represented by eight
-bytes, so 128 * eight equals 1024. If
-you are using a graphics mode that
-uses only half the character set, you
-need only reserve 512 bytes (64 *
-eight equals 512). Remember to begin
-either one on a page boundary (1K
-boundary for full sets or .5K for half
-sets). By switching back and forth
-between two character sets, you could
-create the illusion of animation.
+bytes (1K: four pages) be reserved
+for it. Why? Because there are 128
+characters, each represented by
+eight bytes, so 128 * eight equals
+1024. If you are using a graphics
+mode that uses only half the
+character set, you need only reserve
+512 bytes (64 * eight equals 512).
+Remember to begin either one on a
+page boundary (1K boundary for full
+sets or .5K for half sets). By
+switching back and forth between two
+character sets, you could create the
+illusion of animation.
 
 Many magazines have published good
 utilities to aid in the design of
 altered character sets, such as the
 January 1982 Creative Computing, and
-SuperFont in COMPUTE!, January 1982. I
-suggest that you examine The Next Step
-from Online, Instedit from APX, or
-FontEdit from the Code Works for very
-useful set generators. One potentially
-useful way to alter just a few of the
-characters is to duplicate the block
-of memory which holds the ROM set by
-moving it byte by byte into RAM. A
-BASIC FOR-NEXT loop can accomplish
-this, although it's very slow. For
-example:
+SuperFont in COMPUTE!, January 1982.
+I suggest that you examine The Next
+Step from Online, Instedit from APX,
+or FontEdit from the Code Works for
+very useful set generators. One
+potentially useful way to alter just
+a few of the characters is to
+duplicate the block of memory which
+holds the ROM set by moving it byte
+by byte into RAM. A BASIC FOR-NEXT
+loop can accomplish this, although
+it's very slow. For example:
 
 5 CH=57344
 10 START=PEEK(106)-4:PLACE=START*256:POKE 106,PEEK(106)-5:GRAPHICS 0: REM RESERVE EXTRA IN CASE OF SCREEN CLEAR
@@ -300,7 +312,8 @@ move the set:
 80 DATA 202,208,240,96
 90 Z=USR(ADR(BYTE$),224*256,CHACT)
 .
-. ADD YOUR OWN ALTERATION PROGRAM OR THE EARLIER EXAMPLE HERE
+. ADD YOUR OWN ALTERATION PROGRAM OR
+THE EARLIER EXAMPLE HERE
 .
 .
 1500 POKE MEM-1,0:POKE 756,MEM
@@ -310,20 +323,21 @@ A+, you can do this very easily with
 the MOVE command!
 
 Remember, when altering the ROM set,
-that the characters aren't in ATASCII
-order; rather they are in their own
-internal order.  Your own set will
-have to follow this order if you wish
-to have the characters correlate to
-the keyboard and the ATASCII values.
-See page 55 of your BASIC Reference
-Manual for a listing of the internal
-order. Creative Computing, January
-1982, had a good article on character
-sets, as well as a useful method of
-transferring the ROM set to RAM using
-string manipulation. See also "Using
-Text Plot for Animated Games" in
+that the characters aren't in
+ATASCII order; rather they are in
+their own internal order.  Your own
+set will have to follow this order
+if you wish to have the characters
+correlate to the keyboard and the
+ATASCII values.  See page 55 of your
+BASIC Reference Manual for a listing
+of the internal order. Creative
+Computing, January 1982, had a good
+article on character sets, as well
+as a useful method of transferring
+the ROM set to RAM using string
+manipulation. See also "Using Text
+Plot for Animated Games" in
 COMPUTE!, April 1982, for an example
 of using character sets for animated
 graphics.

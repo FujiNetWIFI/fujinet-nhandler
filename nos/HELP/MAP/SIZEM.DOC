@@ -3,8 +3,8 @@ TOPIC: MAP/SIZEM
 
 53260          D00C          SIZEM
 
-(W) Size for all missiles; set bits as
-below (decimal values included):
+(W) Size for all missiles; set bits
+as below (decimal values included):
 
 Bits               Size:
                    Normal Double Quad
@@ -13,8 +13,8 @@ Bits               Size:
 3 & 2: missile 1   0,  8    4      12
 1 & 0: missile 0   0,  2    1       3
 
-where turning on the bits in each each
-pair above does as follows:
+where turning on the bits in each
+each pair above does as follows:
 
 0 and 0: normal size -- two color
          clocks wide
@@ -26,14 +26,15 @@ pair above does as follows:
 
 So, to get a double-sized missile 2,
 you would set BITs 5 and 6, or POKE
-53260,48. Each missile can have a size
-set separately from the other missiles
-or players when using the GRAF
-registers.  A number of sources,
-including De Re Atari, say that you
-can set neither missile sizes nor
-shapes separately. Here's a routine to
-show that you can in fact do both:
+53260,48. Each missile can have a
+size set separately from the other
+missiles or players when using the
+GRAF registers.  A number of
+sources, including De Re Atari, say
+that you can set neither missile
+sizes nor shapes separately. Here's
+a routine to show that you can in
+fact do both:
 
 10  POKE 53265,255: REM SHAPE START
 15  GR.7
@@ -57,13 +58,13 @@ $D0lD and $D400):
 30  INPUT SIZE: POKE 53260, SIZE
 40  GOTO 30
 
-See 54279 ($D407) for more information
-on P/M graphics.
+See 54279 ($D407) for more
+information on P/M graphics.
 
               P0PL
 
-(R) Player 0 to player collisions. Bit
-use is:
+(R) Player 0 to player collisions.
+Bit use is:
 
 Bit     7   6   5   4   3   2   1   0
 Player  ...unused....   3   2   1   0

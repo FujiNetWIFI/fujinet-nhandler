@@ -3,13 +3,14 @@ TOPIC: MAP/COLPM0
 
 53266          D012          COLPM0
 
-(W) Color and luminance of player and
-missile 0 (704). Missiles share the
-same colors as their associated
-players except when joined together to
-make a fifth player. Then they take on
-the same value as in location 53733
-($D019; color register 3).
+(W) Color and luminance of player
+and missile 0 (704). Missiles share
+the same colors as their associated
+players except when joined together
+to make a fifth player. Then they
+take on the same value as in
+location 53733 ($D019; color
+register 3).
 
               TRIG2
 

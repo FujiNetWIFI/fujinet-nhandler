@@ -6,24 +6,25 @@ TOPIC: MAP/DOSVEC
 Start vector for disk (or
 non-cartridge) software. This is the
 address BASIC jumps to when you call
-up DOS. Can be set by user to point to
-your own routine, but RESET will
-return DOSVEC to the original address.
-To prevent this, POKE 5446 with the
-LSB and 5450 with the MSB of your
-vector address and re-save DOS using
-the WRITE DOS FILES option in the
-menu. Locations 10 and 11 are usually
-loaded with 159 and 23 ($9F and $17),
-respectively. This allows the DUPSYS
-section of DOS to be loaded when
-called. It is initially set to
-blackboard mode vector (58481;
-$E471--called by typing "BYE" or "B."
-from BASIC); it will also vector to
-the cassette run address if no DOS
-vector is loaded in. If you create an
-AUTORUN.SYS file that doesn't end with
-an RTS instruction, you should set
-BOOT? to one and 580 ($244) to zero.
+up DOS. Can be set by user to point
+to your own routine, but RESET will
+return DOSVEC to the original
+address. To prevent this, POKE 5446
+with the LSB and 5450 with the MSB
+of your vector address and re-save
+DOS using the WRITE DOS FILES option
+in the menu. Locations 10 and 11 are
+usually loaded with 159 and 23 ($9F
+and $17), respectively. This allows
+the DUPSYS section of DOS to be
+loaded when called. It is initially
+set to blackboard mode vector
+(58481; $E471--called by typing
+"BYE" or "B." from BASIC); it will
+also vector to the cassette run
+address if no DOS vector is loaded
+in. If you create an AUTORUN.SYS
+file that doesn't end with an RTS
+instruction, you should set BOOT? to
+one and 580 ($244) to zero.
 

@@ -3,40 +3,44 @@ TOPIC: MAP/AUDF1
 
 53760          D200          AUDF1
 
-(W) Audio channel one frequency. This
-is actually a number (N) used in a
-"divide by N circuit"; for every N
-pulses coming in (as set by the POKEY
-clock), one pulse goes out. As N gets
-larger, output pulses will decrease,
-and thus the sound produced will be a
-lower note. N can be in the range from
-one to 256; POKEY adds one to the
-value in the AUDF register. See BYTE,
-April 1982, for a program to create
-chords instead of single tones.
+(W) Audio channel one frequency.
+This is actually a number (N) used
+in a "divide by N circuit"; for
+every N pulses coming in (as set by
+the POKEY clock), one pulse goes
+out. As N gets larger, output pulses
+will decrease, and thus the sound
+produced will be a lower note. N can
+be in the range from one to 256;
+POKEY adds one to the value in the
+AUDF register. See BYTE, April 1982,
+for a program to create chords
+instead of single tones.
 
               POT0
 
-(R) Pot (paddle) 0 (624); pot is short
-for potentiometer. Turning the paddle
-knob clockwise results in decreasing
-pot values. For machine language use:
-these pot values are valid only 228
-scan lines after the POTGO command or
-after ALLPOT changes (see 53768; $D208
-and 53771; $D20B). POT registers
-continually count down to zero,
-decrementing every scan line. They are
-reset to 228 when they reach zero or
-by the values read from the shadow
+(R) Pot (paddle) 0 (624); pot is
+short for potentiometer. Turning the
+paddle knob clockwise results in
+decreasing pot values. For machine
+language use: these pot values are
+valid only 228 scan lines after the
+POTGO command or after ALLPOT
+changes (see 53768; $D208 and 53771;
+$D20B). POT registers continually
+count down to zero, decrementing
+every scan line. They are reset to
+228 when they reach zero or by the
+values read from the shadow
 registers. This makes them useful as
-system timers. See COMPUTE!, February
-1982, for an example of this use.
+system timers. See COMPUTE!,
+February 1982, for an example of
+this use.
 
-The POTGO sequence (see 53771; $D20B)
-resets the POT registers to zero, then
-reads them 228 scan lines later. For
-the fast pot scan, BIT 2 of SKCTL at
-53775 ($D20F) must be set.
+The POTGO sequence (see 53771;
+$D20B) resets the POT registers to
+zero, then reads them 228 scan lines
+later. For the fast pot scan, BIT 2
+of SKCTL at 53775 ($D20F) must be
+set.
 

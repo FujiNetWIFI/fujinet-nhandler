@@ -3,7 +3,7 @@ TOPIC: MAP/ICBLLZ,HZ
 
 40          0028          ICBLLZ,HZ
 
-Buffer length byte count used for PUT
-and GET operations; decreased by one
-for each byte transferred.
+Buffer length byte count used for
+PUT and GET operations; decreased by
+one for each byte transferred.
 

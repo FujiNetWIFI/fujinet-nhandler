@@ -5,6 +5,6 @@ TOPIC: MAP/KGETCH
 
 This routine waits for a key to be
 pressed and returns its value to the
-accumulator (6502 register A). Similar
-to the BASIC GET command.
+accumulator (6502 register A).
+Similar to the BASIC GET command.
 

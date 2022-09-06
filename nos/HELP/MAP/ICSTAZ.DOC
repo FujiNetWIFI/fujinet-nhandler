@@ -4,7 +4,8 @@ TOPIC: MAP/ICSTAZ
 35          0023          ICSTAZ
 
 Status of the last IOCB action
-returned by the device, set by the OS.
-May or may not be the same status
-returned by the STATUS command.
+returned by the device, set by the
+OS. May or may not be the same
+status returned by the STATUS
+command.
 

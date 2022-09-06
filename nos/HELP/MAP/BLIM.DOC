@@ -8,11 +8,11 @@ contains the number of active data
 bytes in the cassette buffer for the
 record being read or written, at
 location 1021 ($3FD). Values range
-from zero to 128 (cassette record size
-is 128; $80). The pointer to the byte
-being read or written is at 61 ($3D).
-The value of BLIM is drawn from the
-control bytes that precede every
-cassette record, as explained in
-location 1021.
+from zero to 128 (cassette record
+size is 128; $80). The pointer to
+the byte being read or written is at
+61 ($3D). The value of BLIM is drawn
+from the control bytes that precede
+every cassette record, as explained
+in location 1021.
 

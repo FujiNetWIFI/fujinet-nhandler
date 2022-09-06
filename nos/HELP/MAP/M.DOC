@@ -1,10 +1,26 @@
-MEMFLG
-MEMLDD
-MEMLO
-MEMSAV_277F
-MEMSAVE
-MEMTOP
-MISC_2E41
-MISC_3306
-MLTTMP
-MONORG
+
+Topic MAP/M
+
+Memory Map by Label [M]
+
+Type HELP MAP/<LABEL> or
+Type HELP MAP/<ADDR> for more
+
+LABEL   ADDR  DESCRIPTION
+-----   ----  -------------------------
+MEMFLG  179E  MEM.SAV written flag
+MEMLDD  170B  MEM.SAV loaded flag
+MEMLO   02E7  Bottom of free memory
+....    277F  Write MEM.SAV routine
+MEMSAVE 173B  MEM.SAV file creation
+MEMTOP  02E5  Top of free memory
+....    2E41  Misc subroutines
+....    3306  End of DUP.SYS
+M0PL    D008  Missile 0/Player coll.
+M1PF    D001  Missile 1/PF collision
+M1PL    D009  Missile 1/Player coll.
+M2PF    D002  Missile 2/PF collision
+M2PL    D00A  Missile 2/Player coll.
+M3PL    D00B  Missile 3/Player coll.
+MLTTMP  0066  Temp storage
+MONORG  F0E3-F3E3 Monitor handler

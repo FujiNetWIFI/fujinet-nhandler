@@ -1,19 +1,29 @@
-RADFLG
-RAMLO
-RAMSIZ
-RAMTOP
-RBLOKV
-RDDIR
-RDNXTS
-RDVTOC
-RECVDN
-RENFIL
-RESERVED_00D2
-RMARGN
-ROM_AB_CHK
-ROWAC
-ROWCRS
-ROWINC
-RTCLOK
-RUNAD
-RUNSTK
+
+Topic: MAP/R
+
+Memory Map by Label [R]
+
+Type HELP MAP/<LABEL> or
+Type HELP MAP/<ADDR> for more
+
+LABEL   ADDR  DESCRIPTION
+-----   ----  -----------------------
+RADFLG  00FB  Radian flag for trig.
+RAMLO   0004  RAM test/Disk boot addr
+RAMSIZ  02E4  RAM size MSB only
+RAMTOP  006A  RAM size
+RANDOM  D20A  Random number generator
+RBLOKV  E47A  Read block from cass.
+RDDIR   106E  Read/write dir sectors
+RDNXTS  100F  Read data sectors
+RDVTOC  108B  Read/write VTOC
+RECVDN  0039  Receive done flag
+RENFI   2637  Rename file routines
+RMARGN  0053  Right margin
+ROWAC   0070  Temp accum for plotting
+ROWCRS  0054  Current cursor row
+ROWINC  0079  Row inc/dec value
+RTCLOK  0012  Internal realtime clock
+RUNAD   02E0  Binary file entry point
+RUNSTK  008E  Pointer to GOSUB stack
+

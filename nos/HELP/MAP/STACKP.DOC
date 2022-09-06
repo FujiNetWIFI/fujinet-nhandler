@@ -3,8 +3,8 @@ TOPIC: MAP/STACKP
 
 792          0318          STACKP
 
-SIO stack pointer register. Points to
-a byte in the stack being used in the
-current operation (locations 256 to
-511; $100 to $1FF).
+SIO stack pointer register. Points
+to a byte in the stack being used in
+the current operation (locations 256
+to 511; $100 to $1FF).
 

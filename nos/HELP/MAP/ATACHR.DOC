@@ -8,17 +8,17 @@ read or written or the value of a
 graphics point. ATACHR is used in
 converting the ATASCII code to the
 internal character code passed to or
-from CIO. It also returns the value of
-the graphics point. The FILL and DRAW
-commands use this location for the
-color of the line drawn, ATACHR being
-temporarily loaded with the value in
-FILDAT, location 765; $2FD. To force a
-color change in the line, POKE the
-desired color number here (color *
-sixteen + luminance). To see this
-register in use as character storage,
-try:
+from CIO. It also returns the value
+of the graphics point. The FILL and
+DRAW commands use this location for
+the color of the line drawn, ATACHR
+being temporarily loaded with the
+value in FILDAT, location 765; $2FD.
+To force a color change in the line,
+POKE the desired color number here
+(color * sixteen + luminance). To
+see this register in use as
+character storage, try:
 
 10 OPEN#2,4,0,"K:"
 20 GET#2,A

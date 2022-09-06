@@ -5,8 +5,9 @@ TOPIC: MAP/DRAW
 
 Screen draw routines begin here, end
 at 65092 ($FE44). See Creative
-Computing, March 1982, for an example
-of a modification to the draw routines
-to avoid the "out-of-bounds" error for
-use in GR.7+.
+Computing, March 1982, for an
+example of a modification to the
+draw routines to avoid the
+"out-of-bounds" error for use in
+GR.7+.
 

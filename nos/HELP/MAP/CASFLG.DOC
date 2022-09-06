@@ -3,8 +3,8 @@ TOPIC: MAP/CASFLG
 
 783          030F          CASFLG
 
-Cassette mode when set. Used by SIO to
-control the program flow through
+Cassette mode when set. Used by SIO
+to control the program flow through
 shared code. When set to zero, the
 current operation is a standard SIO
 operation; when non-zero, it is a

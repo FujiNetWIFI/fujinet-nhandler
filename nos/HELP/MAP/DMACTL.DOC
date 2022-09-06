@@ -1,6 +1,25 @@
 
 TOPIC: MAP/DMACTL
 
+ANTIC
+
+54272-54783    D400-D5FF
+
+ANTIC is a special, separate
+microprocessor used in your Atari to
+control C/GTIA, the screen display,
+and other screen-related functions
+including processing the NMI
+interrupts. It uses its own
+instruction set, called the display
+list, which tells ANTIC where to
+find the screen data in RAM and how
+to display it. ANTIC also uses an
+internal four bit counter called the
+Delta Counter (DCTR) to control the
+vertical dimension of each block.
+
+
 54272          D400          DMACTL
 
 (W) Direct Memory Access (DMA)
@@ -11,8 +30,8 @@ missiles. Values are POKEd into the
 shadow register, 559 ($22F), and are
 also described there.
 
-You POKE the shadow register with the
-following numbers in order to:
+You POKE the shadow register with
+the following numbers in order to:
 
 Turn off the playfield              0
 Use narrow playfield                1
@@ -24,15 +43,16 @@ Enable both player and missile DMA 12
 Single line player resolution      16
 Enable DMA Fetch instructions      32
 
-Double line resolution is the default
-status. Use this register in
+Double line resolution is the
+default status. Use this register in
 conjunction with GRACTL at 53277
-($D01D). Both must be set properly or
-no display will result. BIT 5 enables
-DMA to fetch the display list
-instructions. If BIT 5 is not set (BIT
-5 equals zero), ANTIC will not work.
-DMACTL is initialized to 34 ($22).
+($D01D). Both must be set properly
+or no display will result. BIT 5
+enables DMA to fetch the display
+list instructions. If BIT 5 is not
+set (BIT 5 equals zero), ANTIC will
+not work. DMACTL is initialized to
+34 ($22).
 
 A player in single line resolution
 might look like this:
@@ -46,9 +66,10 @@ might look like this:
 00111100               ####
 00011000                ##
 
-so that each byte is displayed on one
-TV line. The same player in double
-line resolution would look like this:
+so that each byte is displayed on
+one TV line. The same player in
+double line resolution would look
+like this:
 
 00011000                ##
 00011000                ##
@@ -67,6 +88,6 @@ line resolution would look like this:
 00011000                ##
 00011000                ##
 
-where every byte is displayed over two
-TV lines.
+where every byte is displayed over
+two TV lines.
 

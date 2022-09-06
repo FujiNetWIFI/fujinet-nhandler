@@ -4,21 +4,23 @@ TOPIC: MAP/GRAFM
 53265          D011          GRAFM
 
 (W) Graphics for all missiles, not
-used with DMA. GRAFM works the same as
-GRAFP0 above. Each pair of bits
-represents one missile, with the same
-allocation as in 53260 ($D00C) above.
+used with DMA. GRAFM works the same
+as GRAFP0 above. Each pair of bits
+represents one missile, with the
+same allocation as in 53260 ($D00C)
+above.
 
 Bit      7 6  5 4  3 2  1 0
 Missile  -3-  -2-  -1-  -0-
 
 Each bit set will create a vertical
-line running the entire height of the
-TV screen. Missile graphics shapes may
-be set separately from each other by
-using the appropriate bit pairs. To
-mask out unwanted players, write zeros
-to the bits as above.
+line running the entire height of
+the TV screen. Missile graphics
+shapes may be set separately from
+each other by using the appropriate
+bit pairs. To mask out unwanted
+players, write zeros to the bits as
+above.
 
               TRIG1
 

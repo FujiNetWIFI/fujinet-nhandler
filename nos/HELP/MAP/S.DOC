@@ -1,55 +1,68 @@
-SABYTE
-SAVADR
-SAVFIL
-SAVIO
-SAVMSC
-SCRENV
-SCRFLG
-SCROLL
-SDLSTL
-SDMCTL
-SENDEV
-SEROUT
-SETUP
-SETVBV
-SFDIR
-SFLOAD
-SHFAMT
-SHFLOK
-SIN
-SIOINV
-SIOORG
-SIOV
-SIZEM
-SIZEP0
-SIZEP1
-SIZEP2
-SIZEP3
-SKCTL
-SKREST
-SOUNDR
-SPARE
-SQR
-SRTIMR
-SSFLAG
-SSKCTL
-STACK
-STACKP
-STARP
-STATUS
-STCAR
-STICK0
-STICK1
-STICK2
-STICK3
-STIMER
-STMCUR
-STMTAB
-STOPLN
-STRIG0
-STRIG1
-STRIG2
-STRIG3
-SUBTMP
-SWPFLG
-SYSVBV
+
+Topic: MAP/S
+
+Memory Map by Label [S]
+
+Type HELP MAP/<LABEL> or
+Type HELP MAP/<ADDR> for more
+
+LABEL   ADDR  DESCRIPTION
+-----   ----  -----------------------
+SABYTE  0709  Max files allowed open
+SAVADR  0068  Temp reg for screen
+SAVFIL  2F2E  Save binary file
+SAVIO   0316  Save serial data
+SAVMSC  0058  Lowest addr of screen
+SCRENV  E410  Display handler (S:)
+SCRFLG  02BB  Scroll flag
+SCROLL  FBAC  Screen scroll routine
+SDLSTL  0230  Ptr to display list
+SDMCTL  022F  DMA enable
+SENDEV  E468  Send enable routine
+SERIN   D20D  Serial port input
+SEROUT  D20D  Serial port output
+SETUP   1164  Initialize FMS params
+SETVBV  E45C  VBLANK, set sys. timers
+SFDIR   0F21  Directory search
+SFLOAD  15A4  Load MEM.SAV if exists
+SHFAMT  006F  Pixel justification
+SHFLOK  02BE  Shift/control key flag
+SIN     BDA7  Calculate SIN
+SIOINV  E465  SIO utility init
+SIOORG  E944-EDE9 SIO routines
+SIOV    E459  SIO utility entry point
+SIZEM   D00C  Size for all missiles
+SIZEP0  D008  Size for player 0
+SIZEP1  D009  Size for player 1
+SIZEP2  D00A  Size for player 2 
+SIZEP3  D00B  Size for player 3 
+SKCTL   D20F  Serial port control
+SKREST  D20A  Reset ser port status
+SKSTAT  D20F  Read serial port status
+SOUNDR  0041  SIO noise flag
+SPARE   0233  Unused
+SQR     BEE5  Calculate square root
+SRTIMR  022B  Software repeat timer
+SSFLAG  02FF  Start/stop screen flag
+SSKCTL  0232  Serial port control
+STACK   0100  6502 hardware stack
+STACKP  0318  SIO stack pointer
+STARP   008C  Addr to str/array table
+STATUS  0030  Internal SIO status
+STCAR   26EE  Run cartridge
+STICK0  0278  Value of joystick 0
+STICK1  0279  Value of joystick 1
+STICK2  027A  Value of joystick 2
+STICK3  027B  Value of joystick 3
+STIMER  D209  Start POKEY timers
+STMCUR  008A  Ptr to curr BASIC stmt
+STMTAB  0088  Ptr to BASIC stmt table
+STOPLN  00BA  Line where BASIC stop'd
+STRIG0  0284  Joystick trigger 0
+STRIG1  0285  Joystick trigger 1
+STRIG2  0286  Joystick trigger 2
+STRIG3  0287  Joystick trigger 3
+SUBTMP  029E  Temporary storage
+SWPFLG  007B  Split screen cursor ctl
+SYSVBV  E45F  Stage one VBLANK entry
+

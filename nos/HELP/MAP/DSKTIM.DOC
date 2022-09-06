@@ -3,28 +3,29 @@ TOPIC: MAP/DSKTIM
 
 582          0246          DSKTIM
 
-Disk time-out register (the address of
-the OS worst case disk time- out). It
-is said by many sources to be set to
-160 at initialization which represents
-a 171 second time-out, but my system
-shows a value of 224 on
-initialization. Timer values are 64
-seconds for each 60 units of
-measurement expressed.
+Disk time-out register (the address
+of the OS worst case disk time-
+out). It is said by many sources to
+be set to 160 at initialization
+which represents a 171 second
+time-out, but my system shows a
+value of 224 on initialization.
+Timer values are 64 seconds for each
+60 units of measurement expressed.
 
 It is updated after each disk status
 request to contain the value of the
 third byte of the status frame
 (location 748; $2EC). All disk
 operations have a seven second
-time-out (except FORMAT), established
-by the disk handler (you had noticed
-that irritating little delay, hadn't
-you?). The "sleeping disk syndrome"
-(the printer suffers from this malady
-as well) happens when your drive times
-out, or the timer value reaches zero.
-This has been cured by the new OS "B"
-version ROMs.
+time-out (except FORMAT),
+established by the disk handler (you
+had noticed that irritating little
+delay, hadn't you?). The "sleeping
+disk syndrome" (the printer suffers
+from this malady as well) happens
+when your drive times out, or the
+timer value reaches zero. This has
+been cured by the new OS "B" version
+ROMs.
 

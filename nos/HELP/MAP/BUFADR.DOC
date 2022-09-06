@@ -3,7 +3,7 @@ TOPIC: MAP/BUFADR
 
 21          0015          BUFADR
 
-Indirect buffer address register (page
-zero). Temporary pointer to the
-current disk buffer.
+Indirect buffer address register
+(page zero). Temporary pointer to
+the current disk buffer.
 

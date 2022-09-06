@@ -4,17 +4,17 @@ TOPIC: MAP/COLRSH
 79          004F          COLRSH
 
 Color shift mask; attract color
-shifter; the color registers are EORd
-with locations 78 and 79 at the stage
-two VBLANK (see locations 18 - 20; $12
-- $14). When set to zero and location
-78 equals 246, color luminance is
-reduced 50%. COLRSH contains the
-current value of location 19,
-therefore is given a new color value
-every 4.27 seconds.
+shifter; the color registers are
+EORd with locations 78 and 79 at the
+stage two VBLANK (see locations 18 -
+20; $12 - $14). When set to zero and
+location 78 equals 246, color
+luminance is reduced 50%. COLRSH
+contains the current value of
+location 19, therefore is given a
+new color value every 4.27 seconds.
 
-Bytes 80 to 122 ($50 to $7A) are used
-by the screen editor and display
-handler.
+Bytes 80 to 122 ($50 to $7A) are
+used by the screen editor and
+display handler.
 

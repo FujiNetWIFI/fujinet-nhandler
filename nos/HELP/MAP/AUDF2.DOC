@@ -3,9 +3,9 @@ TOPIC: MAP/AUDF2
 
 53762          D202          AUDF2
 
-(W) Audio channel two frequency. Also
-used with AUDF3 to store the 19200
-baud rate for SIO.
+(W) Audio channel two frequency.
+Also used with AUDF3 to store the
+19200 baud rate for SIO.
 
               POT2
 

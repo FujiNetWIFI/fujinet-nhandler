@@ -3,29 +3,31 @@ TOPIC: MAP/MEMLO
 
 743          02E7          MEMLO
 
-Pointer to the bottom of free memory,
-initialized to 1792 ($700) and updated
-by the presence of DOS or any other
-low-memory application program. It is
-used by the OS; the BASIC pointer to
-the bottom of free memory is at
-locations 128, 129 ($80, $81). The
-value in MEMLO is never altered by the
-OS after powerup.
+Pointer to the bottom of free
+memory, initialized to 1792 ($700)
+and updated by the presence of DOS
+or any other low-memory application
+program. It is used by the OS; the
+BASIC pointer to the bottom of free
+memory is at locations 128, 129
+($80, $81). The value in MEMLO is
+never altered by the OS after
+powerup.
 
-This is the address of the first free
-location in RAM available for program
-use. Set after all FMS buffers have
-been allocated (see locations 1801 and
-1802; $709 and $70A). The address of
-the last sector buffer is incremented
-by 128 (the buffer size in bytes) and
-the value placed in MEMLO. The value
+This is the address of the first
+free location in RAM available for
+program use. Set after all FMS
+buffers have been allocated (see
+locations 1801 and 1802; $709 and
+$70A). The address of the last
+sector buffer is incremented by 128
+(the buffer size in bytes) and the
+value placed in MEMLO. The value
 updates on powerup or when RESET is
-pressed. This value is passed back to
-locations 128, 129 ($80, $81) on the
-execution of the BASIC NEW command,
-but not RUN, LOAD or RESET.
+pressed. This value is passed back
+to locations 128, 129 ($80, $81) on
+the execution of the BASIC NEW
+command, but not RUN, LOAD or RESET.
 
 If you are reserving space for your
 own device driver(s) or reserving
@@ -37,35 +39,37 @@ plus one back into MEMLO.
 
 When you don't have DOS or any other
 application program using low-memory
-resident, MEMLO points to 1792 ($700.
-With DOS 2.0 present, MEMLO points to
-7420 ($1CFC). If you change the buffer
-defaults mentioned earlier, you will
-raise or lower this latter value by
-128 ($80) bytes for every buffer added
-or deleted, respectively. When you
-boot up the 850 Interface with or
-without disk, you add another 1728
-($6C0) bytes to the value in MEMLO.
+resident, MEMLO points to 1792
+($700. With DOS 2.0 present, MEMLO
+points to 7420 ($1CFC). If you
+change the buffer defaults mentioned
+earlier, you will raise or lower
+this latter value by 128 ($80) bytes
+for every buffer added or deleted,
+respectively. When you boot up the
+850 Interface with or without disk,
+you add another 1728 ($6C0) bytes to
+the value in MEMLO.
 
-You can alter MEMLO to protect an area
-of memory below your program. This is
-an alternative to protecting an area
-above RAMTOP (location 106; $6A) and
-avoids the problem of the CLEAR SCREEN
-routine destroying data. However,
-unless you have created a MEM.SAV
-file, the data will be wiped out when
-you call DOS. To alter MEMLO, you
-start by POKEing WARMST (location 8)
-with zero, then doing a JMP to the
-BASIC cartridge entry point at
-40960($A000) after defining your area
-to protect.
+You can alter MEMLO to protect an
+area of memory below your program.
+This is an alternative to protecting
+an area above RAMTOP (location 106;
+$6A) and avoids the problem of the
+CLEAR SCREEN routine destroying
+data. However, unless you have
+created a MEM.SAV file, the data
+will be wiped out when you call DOS.
+To alter MEMLO, you start by POKEing
+WARMST (location 8) with zero, then
+doing a JMP to the BASIC cartridge
+entry point at 40960($A000) after
+defining your area to protect.
 
 For example, try this:
 
-10 DIM MEM$(24):PROTECT=700:REM NUMBER OF BYTES TO CHANGE 15 HIBYTE=INT(PROTECT/256):LOBYTE=PROTECT-256*HIBYTE
+10 DIM MEM$(24):PROTECT=700:REM NUMBER OF BYTES TO CHANGE
+15 HIBYTE=INT(PROTECT/256):LOBYTE=PROTECT-256*HIBYTE
 20 FOR N=1 TO 24:READ PRG:MEM$(N)=CHR$(PRG):NEXT N
 30 MEM$(6,6)=CHR$(LOBYTE):MEM$(14,14)=CHR$(HIBYTE)
 40 RESERVE=USR(ADR(MEM$))
@@ -75,11 +79,11 @@ For example, try this:
 DOWNLOAD MEMLO.BAS
 
 You will find the address of your
-reserved memory by: PRINT PEEK(743) +
-PEEK(744) * 256 before you run the
-program. This program will wipe itself
-out when run. Altering MEMLO is the
-method used by both DOS and the RS-232
-port driver in the 850 Interface. See
-COMPUTE!, July 1981.
+reserved memory by: PRINT PEEK(743)
++ PEEK(744) * 256 before you run the
+program. This program will wipe
+itself out when run. Altering MEMLO
+is the method used by both DOS and
+the RS-232 port driver in the 850
+Interface. See COMPUTE!, July 1981.
 

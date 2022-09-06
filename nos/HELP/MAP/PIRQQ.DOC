@@ -3,18 +3,19 @@ TOPIC: MAP/PIRQQ
 
 65470          FFBE          PIRQQ
 
-Subroutines to test the acceptance of
-the last key pressed and to process
-the debounce delay routines start
-here.  When a key is pressed, it
-initiates an IRQ through VKEYBD at
-locations 520, 521 ($208, $209) to
-65470 ($FFBE). This is the keyboard
-service routine. It processes
-debounce, and SHIFT- CTRL logic (see
-location 559; $22F); saves the
-internal keyboard code in 754 ($2F2)
-and 764 ($2FC); sets the ATTRACT mode
-flag at 77 ($4D) and sets location 555
-($22B -- SRTIMR) to 48 ($30).
+Subroutines to test the acceptance
+of the last key pressed and to
+process the debounce delay routines
+start here.  When a key is pressed,
+it initiates an IRQ through VKEYBD
+at locations 520, 521 ($208, $209)
+to 65470 ($FFBE). This is the
+keyboard service routine. It
+processes debounce, and SHIFT- CTRL
+logic (see location 559; $22F);
+saves the internal keyboard code in
+754 ($2F2) and 764 ($2FC); sets the
+ATTRACT mode flag at 77 ($4D) and
+sets location 555 ($22B -- SRTIMR)
+to 48 ($30).
 

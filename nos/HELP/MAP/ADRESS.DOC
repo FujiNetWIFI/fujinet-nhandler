@@ -3,13 +3,14 @@ TOPIC: MAP/ADRESS
 
 100          0064          ADRESS
 
-Temporary storage used by the display
-handler for the Display List address,
-line buffer (583 to 622; $247 to
-$26E), new MEMTOP value after DL
-entry, row column address, DMASK
-value, data to the right of cursor,
-scroll, delete, the clear screen
-routine and for the screen address
-memory (locations 88, 89; $58, $59).
+Temporary storage used by the
+display handler for the Display List
+address, line buffer (583 to 622;
+$247 to $26E), new MEMTOP value
+after DL entry, row column address,
+DMASK value, data to the right of
+cursor, scroll, delete, the clear
+screen routine and for the screen
+address memory (locations 88, 89;
+$58, $59).
 

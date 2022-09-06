@@ -3,11 +3,11 @@ TOPIC: MAP/CHACTL
 
 54273          D401          CHACTL
 
-(W) Character mode control. See shadow
-register 755 for values that can be
-POKEd in. Only the least three bits
-(decimal zero to seven) are read, as
-below:
+(W) Character mode control. See
+shadow register 755 for values that
+can be POKEd in. Only the least
+three bits (decimal zero to seven)
+are read, as below:
 
 Decimal     0  1  2  3  4  5  6  7
 Cursor

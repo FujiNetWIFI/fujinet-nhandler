@@ -1,16 +1,16 @@
 
 TOPIC: MAP/UNUSED_00D0
 
-208-209          D0-D1
-UNUSED_00D0
+208-209        00D0-00D1     ....
 
-Unused by BASIC. The only time I have
-seen any of these unused locations in
-use is in COMPUTE! (March 1982 and
-October 1981), when they were used for
-user sort routines, and in ANTIC (June
-1982), where they were used as flags
-in a graphic demonstration. The bytes
+Unused by BASIC. The only time I
+have seen any of these unused
+locations in use is in COMPUTE!
+(March 1982 and October 1981), when
+they were used for user sort
+routines, and in ANTIC (June 1982),
+where they were used as flags in a
+graphic demonstration. The bytes
 from 203 to 209 ($CB to $D1) are the
 only page zero bytes uncontestably
 left free by BASIC.

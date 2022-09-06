@@ -3,9 +3,9 @@ TOPIC: MAP/CASSBT
 
 75          004B          CASSBT
 
-Cassette boot flag. The Atari attempts
-both a disk and a cassette boot
-simultaneously. Zero here means no
-cassette boot was suc- cessful. See
-location 9
+Cassette boot flag. The Atari
+attempts both a disk and a cassette
+boot simultaneously. Zero here means
+no cassette boot was suc- cessful.
+See location 9
 

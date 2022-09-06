@@ -1,5 +1,15 @@
-OLDADR
-OLDCHR
-OLDCOL
-OLDROW
-OPT
+
+Topic: MAP/O
+
+Memory Map by Label [O]
+
+Type HELP MAP/<LABEL> or
+Type HELP MAP/<ADDR> for more
+
+LABEL   ADDR  DESCRIPTION
+-----   ----  -----------------------
+OLDADR  005E  Ptr to cursor location
+OLDCHR  005D  Character under cursor
+OLDCOL  005B  Previous cursor column
+OLDROW  005A  Previous cursor row
+OPT     159E  Chosen disk menu option

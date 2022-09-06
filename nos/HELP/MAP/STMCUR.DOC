@@ -3,34 +3,35 @@ TOPIC: MAP/STMCUR
 
 138          008A          STMCUR
 
-Current BASIC statement pointer, used
-to access the tokens being currently
-processed within a line of the
-statement table.  When BASIC is
-awaiting input, this pointer is set to
-the beginning of the immediate mode
-(line 32768).
+Current BASIC statement pointer,
+used to access the tokens being
+currently processed within a line of
+the statement table.  When BASIC is
+awaiting input, this pointer is set
+to the beginning of the immediate
+mode (line 32768).
 
-Using the address of the variable name
-table, the length, and the current
-statement (locations 130 to 133, 138,
-139), here is a way to protect your
-programs from being LISTed or LOADed:
-they can only be RUN! Remember, that
-restricts you too, so make sure you
-have SAVEd an unchanqed version before
-you do this:
+Using the address of the variable
+name table, the length, and the
+current statement (locations 130 to
+133, 138, 139), here is a way to
+protect your programs from being
+LISTed or LOADed: they can only be
+RUN! Remember, that restricts you
+too, so make sure you have SAVEd an
+unchanqed version before you do this:
 
 32000 FOR VARI = PEEK(130) + PEEK(131) * 256 TO PEEK(132) + PEEK(133) * 256:POKE VARI,155:NEXT VARI
 32100 POKE PEEK(138) + PEEK(139) * 256 + 2,0: SAVE "D:filename": NEW
 
-This will cause all variable names to
-be replaced with a RETURN character.
-Other characters may be used: simply
-change 155 for the appropriate ATASCII
-code for the character desired. Make
-sure that these are the last two lines
-of your program and that NEW is the
-last statement. CLOAD will not work,
-but a filename with C: will.
+This will cause all variable names
+to be replaced with a RETURN
+character. Other characters may be
+used: simply change 155 for the
+appropriate ATASCII code for the
+character desired. Make sure that
+these are the last two lines of your
+program and that NEW is the last
+statement. CLOAD will not work, but
+a filename with C: will.
 

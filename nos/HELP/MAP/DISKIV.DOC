@@ -6,7 +6,7 @@ TOPIC: MAP/DISKIV
 Disk handler initialization vector,
 initialized to 60906 ($EDEA).
 
----------------------------------------
+-------------------------------------
 Locations 58448 to 58533 ($E450 to
 $E4A5) are more vectors: those to
 location 58495 ($E47F) are Jump

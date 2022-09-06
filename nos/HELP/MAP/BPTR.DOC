@@ -8,7 +8,7 @@ index into the portion of data being
 read or written. Ranges from zero to
 the current value at location 650
 ($28A). When these values are equal,
-the buffer at 1021 ($3FD) is empty if
-reading or full if writing.
+the buffer at 1021 ($3FD) is empty
+if reading or full if writing.
 Initialized to 128 ($80).
 

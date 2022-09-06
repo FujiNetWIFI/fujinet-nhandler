@@ -6,47 +6,50 @@ TOPIC: MAP/APPMHI
 Applications memory high limit and
 pointer to the end of your BASIC
 program, used by both the OS and
-BASIC. It contains the lowest address
-you can use to set up a screen and
-Display List (which is also the
-highest address usable for programs
-and data below which the display RAM
-may not be placed). The screen handler
-will not OPEN the "S:" device if it
-would extend the screen RAM or the
-Display List below this address;
-memory above this address may be used
-for the screen display and other data
-(PM graphics, etc.).
+BASIC. It contains the lowest
+address you can use to set up a
+screen and Display List (which is
+also the highest address usable for
+programs and data below which the
+display RAM may not be placed). The
+screen handler will not OPEN the
+"S:" device if it would extend the
+screen RAM or the Display List below
+this address; memory above this
+address may be used for the screen
+display and other data (PM graphics,
+etc.).
 
 If an attempted screen mode change
 would extend the screen memory below
-APPMHI, then the screen is set up for
-GRAPHICS mode zero; MEMTOP (locations
-741, 742; $2E5, $2E6) is updated and
-an error is returned to the user.
-Otherwise, the memory is not too small
-for the screen editor; the mode change
-will take effect and MEMTOP will be
-updated. This is one of five locations
-used by the OS to keep track of the
-user and display memory.  Initialized
-to zero by the OS at powerup.
-Remember, you cannot set up a screen
-display below the location specified
-here.
+APPMHI, then the screen is set up
+for GRAPHICS mode zero; MEMTOP
+(locations 741, 742; $2E5, $2E6) is
+updated and an error is returned to
+the user. Otherwise, the memory is
+not too small for the screen editor;
+the mode change will take effect and
+MEMTOP will be updated. This is one
+of five locations used by the OS to
+keep track of the user and display
+memory.  Initialized to zero by the
+OS at powerup. Remember, you cannot
+set up a screen display below the
+location specified here.
 
-If you use the area below the Display
-List for your character sets, PM
-graphics or whatever, be sure to set
-APPMHI above the last address used so
-that the screen or the DL data will
-not descend and destroy your own data.
-See RAMTOP location 106 ($6A), MEMTOP
-at 741, 742 ($2E5, $2E6), PMBASE at
-54279 ($D407) and CHBASE at 54281
-($D409) for more information.
+If you use the area below the
+Display List for your character
+sets, PM graphics or whatever, be
+sure to set APPMHI above the last
+address used so that the screen or
+the DL data will not descend and
+destroy your own data. See RAMTOP
+location 106 ($6A), MEMTOP at 741,
+742 ($2E5, $2E6), PMBASE at 54279
+($D407) and CHBASE at 54281 ($D409)
+for more information.
 
-Locations 16 through 127 ($10-$7F) are
-cleared on either cold- or warmstart.
+Locations 16 through 127 ($10-$7F)
+are cleared on either cold- or
+warmstart.
 

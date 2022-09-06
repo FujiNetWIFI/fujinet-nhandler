@@ -6,14 +6,15 @@ TOPIC: MAP/SEROUT
 (W) Serial port data output. Usually
 written to in the event of a serial
 data out interrupt. Writes to the
-eight bit (one byte) parallel holding
-register that is transferred to the
-serial shift register when a full byte
-of data has been transmitted. This
-"holding" register is used to contain
-the bits to be transmitted one at a
-time (serially) as a one-byte unit
-before transmission.
+eight bit (one byte) parallel
+holding register that is transferred
+to the serial shift register when a
+full byte of data has been
+transmitted. This "holding" register
+is used to contain the bits to be
+transmitted one at a time (serially)
+as a one-byte unit before
+transmission.
 
               SERIN
 
@@ -32,7 +33,7 @@ checksum value at location 49 ($31).
 The serial bus is the port on the
 Atari into which you plug your
 cassette or disk cable. For the pin
-values of this port, see the OS User's
-Manual, p. 133, and the Hardware
-Manual.
+values of this port, see the OS
+User's Manual, p. 133, and the
+Hardware Manual.
 

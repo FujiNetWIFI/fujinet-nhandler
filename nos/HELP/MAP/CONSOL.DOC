@@ -3,19 +3,19 @@ TOPIC: MAP/CONSOL
 
 53279          D01F          CONSOL
 
-(W/R) Used to see if one of the three
-yellow console buttons has been
-pressed (not the RESET button!). To
-clear the register, POKE CONSOL with
-eight. POKEing any number from zero to
-eight will cause a click from the
-speaker. A FOR-NEXT loop that
-alternately POKEs CONSOL with eight
-and zero or just zero, since the OS
-put in an 8 every 1/60 second, will
-produce a buzz.  Values PEEKed will
-range from zero to seven according to
-the following table:
+(W/R) Used to see if one of the
+three yellow console buttons has
+been pressed (not the RESET
+button!). To clear the register,
+POKE CONSOL with eight. POKEing any
+number from zero to eight will cause
+a click from the speaker. A FOR-NEXT
+loop that alternately POKEs CONSOL
+with eight and zero or just zero,
+since the OS put in an 8 every 1/60
+second, will produce a buzz.  Values
+PEEKed will range from zero to seven
+according to the following table:
 
 |Key  Value 0  1  2  3  4  5  6  7  |
 |                                   |
@@ -33,14 +33,15 @@ Bits 2      0  0  0  0  1  1  1  1
 Where zero means all keys have been
 pressed, one means OPTION and SELECT
 have been pressed, etc., to seven,
-which means no keys have been pressed.
-CONSOL is updated every stage two
-VBLANK procedure with the value eight.
+which means no keys have been
+pressed. CONSOL is updated every
+stage two VBLANK procedure with the
+value eight.
 
 It is possible to use the console
-speaker to generate different sounds.
-Here is one idea based on an article
-in COMPUTE!, August 1981:
+speaker to generate different
+sounds. Here is one idea based on an
+article in COMPUTE!, August 1981:
 
 10   GOSUB 1000
 20   TEST = USR(1536)
@@ -53,32 +54,118 @@ in COMPUTE!, August 1981:
 1020 DATA 0,160,240,136,208,253,141,31,208,160
 1030 DATA 240,136,208,253,202,208,233,96
 
-To change the tone, you POKE 1547 and
-1555 with a higher or lower value
-(both are set to 240 above). To change
-the tone duration, you POKE 1538 with
-a lower value (it is set to 255 in the
-routine above). Do these before you do
-your USR call or alter the DATA
-statements to permanently change the
-values in your own program. Turn off
-DMA (see location 559) to get clearer
-tones.
+To change the tone, you POKE 1547
+and 1555 with a higher or lower
+value (both are set to 240 above).
+To change the tone duration, you
+POKE 1538 with a lower value (it is
+set to 255 in the routine above). Do
+these before you do your USR call or
+alter the DATA statements to
+permanently change the values in
+your own program. Turn off DMA (see
+location 559) to get clearer tones.
 
 ---------------------------------------
 Locations 53280 to 53503 ($D020 to
-$D0FF) are repeats of locations 53248
-to 53279 ($D000 to $D01F). You can't
-use any of the repeated locations;
-consider them "filler." They maybe
-used for other purposes in any Atari
-OS upgrade.
+$D0FF) are repeats of locations
+53248 to 53279 ($D000 to $D01F). You
+can't use any of the repeated
+locations; consider them "filler."
+They maybe used for other purposes
+in any Atari OS upgrade.
 
 ---------------------------------------
 Locations 53504 to 53759 ($D100 to
 $D1FF) are unused. These loca- tions
-are not empty; you can PEEK into them
-and find out what's there. They
+are not empty; you can PEEK into
+them and find out what's there. They
 cannot, however, be user-altered.
 ---------------------------------------
+
+POKEY
+
+53760-54015    D200-D2FF
+
+POKEY is a digital I/O chip that
+controls the audio frequency and
+control registers, frequency
+dividers, poly noise counters, pot
+(paddle) controllers, the random
+number generator, keyboard scan,
+serial port I/O, and the IRQ
+interrupts.
+
+The AUDF# (audio frequency)
+locations are used for the pitch for
+the corresponding sound channels,
+while the AUDC# (audio control
+registers) are the volume and
+distortion values for those same
+channels. To POKE sound values, you
+must first POKE zero into locations
+53768 ($D208) and a three into 53775
+($D20F).
+
+Frequency values can range from zero
+to 255 ($FF), although the value is
+increased by the computer by one to
+range from one to 256. Note that the
+sum of the volumes should not exceed
+32, since volume is controlled by
+the least four bits. It is set from
+zero as no volume to 15 ($F) as the
+highest. A POKE with 16 ($10) forces
+sound output even if volume is not
+set (i.e., it pushes the speaker
+cone out. A tiny "pop" will be
+heard). The upper four bits control
+distortion: 192 ($C0) is for pure
+tone; other values range from 32 to
+192. Note that in BASIC, the BREAK
+key will not turn off the sound;
+RESET will, however. See De Re Atari
+and BYTE, April 1982, for more
+information on sound generation.
+
+The AUDF registers are also used as
+the POKEY hardware timers.  These
+are generally used when counting an
+interval less than one VBLANK. For
+longer intervals, use the software
+timers in locations 536 to 545 ($218
+to $221). You load the AUDCTL
+register with the number for the
+desired clock frequency. You then
+set the volume to zero in the AUDC
+register associated with the AUDF
+register you plan to use as a timer.
+You load the AUDF register itself
+with the number of clock intervals
+you wish to count. Then you load
+your interrupt routine into memory,
+and POKE the address into the
+appropriate timer vector between
+locations 528 and 533 ($210 and
+$215). You must set the proper
+bit(s) in IRQEN and its shadow
+register POKMSK at location 16 ($10)
+to enable the interrupt.  Finally,
+you load STIMER with any value to
+load and start the timer(s). The OS
+will force a jump to the timer
+vector and then to your routine when
+the AUDF register counts down to
+zero. Timer processing can be
+preempted by ANTIC's DMA, a DLI, or
+the VBLANK process.
+
+POT values are for the paddles,
+ranging from zero to 240, increasing
+as the paddle knob is turned
+counterclockwise, but values less
+than 40 and greater than 200
+represent an area on either edge of
+the screen that may not be visible
+on all TV sets or monitors.
 

@@ -6,6 +6,6 @@ TOPIC: MAP/SAVIO
 Save serial data-in port used to
 detect, and updated after, each bit
 arrival. Used to retain the state of
-BIT 4 of location 53775 ($D20F; serial
-data-in register).
+BIT 4 of location 53775 ($D20F;
+serial data-in register).
 

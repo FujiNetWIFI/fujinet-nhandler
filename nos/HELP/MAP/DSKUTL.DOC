@@ -6,7 +6,7 @@ TOPIC: MAP/DSKUTL
 The disk utilities pointer. Called
 BUFADR by DOS, it points to the area
 saved for a buffer for the utilities
-package (data buffer; DBUF) or for the
-program area (MEMLO; 743, 744; $2E7,
-$2E8).
+package (data buffer; DBUF) or for
+the program area (MEMLO; 743, 744;
+$2E7, $2E8).
 

@@ -5,62 +5,17 @@ TOPIC: MAP/STACK
 PAGE ONE: THE STACK
 
 Locations 256 to 511 ($100 to $1FF)
-are the stack area for the OS, DOS and
-BASIC. This area is page one. Machine
-language JSR, PHA and interrupts all
-cause data to be written to page one,
-and RTS, PLA and RTI instructions all
-read data from page one. On powerup or
-RESET, the stack pointer is
-initialized to point to location 511
-($1FF). The stack then pushes downward
-with each entry to 256 ($100). In case
-of overflow, the stack will wrap
-around from 256 back to 511 again.
-
---------------------------------------
-PAGES TWO TO FOUR
-
-Locations 512 to 1151 ($200 to $47F)
-are used by the OS for working
-variables, tables and data buffers. In
-this area, locations 512 to 553 ($200
-to $229) are used for interrupt
-vectors, and locations 554 to 623
-($22A to $26F) are for miscellaneous
-use. Much of pages two through five
-cannot be used except by the OS unless
-specifically noted. A number of bytes
-are marked as "spare", i.e., not in
-use currently. The status of these
-bytes may change with an Atari
-upgrade, so their use is not
-recommended.
-
-There are two types of interrupts:
-Non-Maskable Interrupts (NMI)
-processed by the ANTIC chip and
-Interrupt Requests (IRQ) processed by
-the POKEY and the PIA chips. NMI's are
-for the VBLANK interrupts (VBI's; 546
-to 549, $222 to $225), display list
-interrupts (DLI) and RESET key
-interrupts. They initiate the stage
-one and stage two VBLANK procedures;
-usually vectored through an OS service
-routine, they can be vectored to point
-to a user routine. IRQ's are for the
-timer interrupts, peripheral and
-serial bus interrupts, BREAK and other
-key interrupts, and 6502 BRK
-instruction interrupts. They can
-usually be used to vector to user
-routines. See NMIST 54287 ($D40F) and
-IRQEN 53774 ($D20E) for more
-information. NMI interrupt vectors are
-marked NMI; IRQ interrupt vectors are
-marked IRQ.  Refer to the chart below
-location 534 for a list of the
-interrupt vectors in the new OS "B"
-version ROMs.
+are the stack area for the OS, DOS
+and BASIC. This area is page one.
+Machine language JSR, PHA and
+interrupts all cause data to be
+written to page one, and RTS, PLA
+and RTI instructions all read data
+from page one. On powerup or RESET,
+the stack pointer is initialized to
+point to location 511 ($1FF). The
+stack then pushes downward with each
+entry to 256 ($100). In case of
+overflow, the stack will wrap around
+from 256 back to 511 again.
 

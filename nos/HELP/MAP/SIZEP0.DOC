@@ -5,13 +5,14 @@ TOPIC: MAP/SIZEP0
 
 (W) Size of player 0. POKE with zero
 or two for normal size (eight color
-clocks wide), POKE with one to double
-a player's width (sixteen color clocks
-wide), and POKE with three for
-quadruple width (32 color clocks
-wide). Each player can have its own
-width set.  A normal size player might
-look something like this:
+clocks wide), POKE with one to
+double a player's width (sixteen
+color clocks wide), and POKE with
+three for quadruple width (32 color
+clocks wide). Each player can have
+its own width set.  A normal size
+player might look something like
+this:
 
 00011000
 00111100
@@ -22,8 +23,8 @@ look something like this:
 00111100
 00011000
 
-In double width, the same player would
-like this:
+In double width, the same player
+would like this:
 
 0000001111000000
 0000111111110000

@@ -7,8 +7,8 @@ Internal realtime clock. Location 20
 increments every stage one VBLANK
 interrupt (1/60 second = one jiffy)
 until it reaches 255 ($FF); then
-location 19 is incremented by one and
-20 is reset to zero (every 4.27
+location 19 is incremented by one
+and 20 is reset to zero (every 4.27
 seconds). When location 19 reaches
 255, it and 20 are reset to zero and
 location 18 is incremented by one
@@ -18,41 +18,45 @@ timer of seconds, try:
 
 TIME = INT((PEEK(18) * 65536 + PEEK(19) * 256 + PEEK(20) )/60)
 
-To see the count in jiffies, eliminate
-the "/60" at the end. To see the count
-in minutes, change "/60" to "/360."
-The maximum value of the RT clock is
-16,777,215. When it reaches this
-value, it will be reset to zero on the
-next VBLANK increment. This value is
-the result of cubing 256 (i.e., 256 *
-256 * 256), the maximum number of
-increments in each clock register. The
-RT clock is always updated every
-VBLANK regardless of the time-critical
-nature of the code being processed.
+To see the count in jiffies,
+eliminate the "/60" at the end. To
+see the count in minutes, change
+"/60" to "/360." The maximum value
+of the RT clock is 16,777,215. When
+it reaches this value, it will be
+reset to zero on the next VBLANK
+increment. This value is the result
+of cubing 256 (i.e., 256 * 256 *
+256), the maximum number of
+increments in each clock register.
+The RT clock is always updated every
+VBLANK regardless of the
+time-critical nature of the code
+being processed.
 
-A jiffy is actually a long time to the
-computer. It can perform upwards of
-8000 machine cycles in that time.
+A jiffy is actually a long time to
+the computer. It can perform upwards
+of 8000 machine cycles in that time.
 Think of what can be done in the
-VBLANK interval (one jiffy). In human
-terms, a jiffy can be upwards of 20
-minutes, as witnessed in the phrase
-"I'll be ready in a jiffy." Compare
-this to the oft-quoted phrase, "I'll
-be there in a minute," used by intent
-programmers to describe a time frame
-upwards of one hour.  Users can POKE
-these clock registers with suitable
-values for their own use. The realtime
-clock is always updated during the
-VBLANK interval. Some of the other
-timer registers (locations 536 to 544;
+VBLANK interval (one jiffy). In
+human terms, a jiffy can be upwards
+of 20 minutes, as witnessed in the
+phrase "I'll be ready in a jiffy."
+Compare this to the oft-quoted
+phrase, "I'll be there in a minute,"
+used by intent programmers to
+describe a time frame upwards of one
+hour.  Users can POKE these clock
+registers with suitable values for
+their own use. The realtime clock is
+always updated during the VBLANK
+interval. Some of the other timer
+registers (locations 536 to 544;
 $218 to $220) are not always updated
-when the OS is executing time critical
-code.  Here's one way to use the
-realtime clock for a delay timer:
+when the OS is executing time
+critical code.  Here's one way to
+use the realtime clock for a delay
+timer:
 
 10 GOSUB 100
 .
@@ -64,12 +68,14 @@ realtime clock for a delay timer:
 
 Line 110 waits to see if location 19
 returns to zero and, when it does,
-passes control to the RETURN statement.
+passes control to the RETURN
+statement.
 
 See COMPUTE!, August 1982, for a
 useful program to create a small
 realtime clock that will continue to
-display during your BASIC programming.
-See also De Re Atari for another
-realtime clock application.
+display during your BASIC
+programming. See also De Re Atari
+for another realtime clock
+application.
 

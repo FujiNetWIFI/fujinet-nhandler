@@ -4,59 +4,63 @@ TOPIC: MAP/COLCRS
 85          0055          COLCRS
 
 Current graphics or text mode cursor
-column; values range from zero to 319
-(high byte, for screen mode eight)
-depending on current GRAPHICS mode
-(maximum numher of columns minus one).
-Location 86 will always be zero in
-modes zero through seven. Home
-position is 0,0 (upper left-hand
-corner). Columns run vertically from
-the top to the bottom down the TV
-screen, the leftmost column being
-number zero, the rightmost column the
-maximum value in that mode. The cursor
-has a complete top to bottom, left to
+column; values range from zero to
+319 (high byte, for screen mode
+eight) depending on current GRAPHICS
+mode (maximum numher of columns
+minus one). Location 86 will always
+be zero in modes zero through seven.
+Home position is 0,0 (upper
+left-hand corner). Columns run
+vertically from the top to the
+bottom down the TV screen, the
+leftmost column being number zero,
+the rightmost column the maximum
+value in that mode. The cursor has a
+complete top to bottom, left to
 right wraparound on the screen.
 
 ROWCRS and COLCRS define the cursor
 location for the next element to be
 read from or written to in the main
-screen segment of the display. For the
-text window cursor, values in
+screen segment of the display. For
+the text window cursor, values in
 locations 656 to 667 ($290 to $29B)
-are exchanged with the current values
-in locations 84 to 95 ($54 to $5F),
-and location 123 ($7B) is set to 255
-($FF) to indicate the swap has taken
-place. ROWCRS and COLCRS are also used
-in the DRAW and FILL functions to
-contain the values of the endpoint of
-the line being drawn. The color of the
-line is kept in location 763 ($2FB).
-These values are loaded into locations
-96 to 98 ($60 to $62) so that ROWCRS
-and COLCRS may be altered during the
+are exchanged with the current
+values in locations 84 to 95 ($54 to
+$5F), and location 123 ($7B) is set
+to 255 ($FF) to indicate the swap
+has taken place. ROWCRS and COLCRS
+are also used in the DRAW and FILL
+functions to contain the values of
+the endpoint of the line being
+drawn. The color of the line is kept
+in location 763 ($2FB). These values
+are loaded into locations 96 to 98
+($60 to $62) so that ROWCRS and
+COLCRS may be altered during the
 operation.
 
 BASIC's LOCATE statement not only
 examines the screen, but also moves
 the cursor one position to the right
-at the next PRINT or PUT statement. It
-does this by updating locations 84 and
-85, above. You can override the cursor
-advance by saving the contents of the
-screen before the LOCATE command, then
-restoring them after the LOCATE. Try:
+at the next PRINT or PUT statement.
+It does this by updating locations
+84 and 85, above. You can override
+the cursor advance by saving the
+contents of the screen before the
+LOCATE command, then restoring them
+after the LOCATE. Try:
 
 100  REM: THE SCREEN MUST HAVE BEEN 0PENED FOR READ OR READ/WRITE PREVIOUSLY
 110  LOOK = PEEK(84): SEE = PEEK(85)
 120  LOCATE X,Y,THIS
 130  POKE 84, LOOK: POKE 65, SEE
 
-Note that CHR$(253) is a non-printing
-character, the bell, and doesn't
-affect the cursor position.
+Note that CHR$(253) is a
+non-printing character, the bell,
+and doesn't affect the cursor
+position.
 
 See COMPUTE!, August 1981, for an
 example of using COLCRS for dynamic

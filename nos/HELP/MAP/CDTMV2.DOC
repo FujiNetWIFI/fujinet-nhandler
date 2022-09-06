@@ -9,9 +9,9 @@ every stage one VBLANK, subject to
 critical section test as defined by
 setting of CRITIC flag (location 66;
 $42). This timer may miss (skip) a
-count when time-critical code (CRITIC
-equals non-zero) is being executed. It
-performs a JSR through location 552,
-553 ($228, $229) when the value counts
-down to zero.
+count when time-critical code
+(CRITIC equals non-zero) is being
+executed. It performs a JSR through
+location 552, 553 ($228, $229) when
+the value counts down to zero.
 

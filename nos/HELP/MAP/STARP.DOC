@@ -4,16 +4,17 @@ TOPIC: MAP/STARP
 140          008C          STARP
 
 The address for the string and array
-table and a pointer to the end of your
-BASIC program. Arrays are stored as
-six-byte binary coded decimal numbers
-(BCD) while string characters use one
-bye each. The address of the strings
-in the table are the same as those
-returned by the BASIC ADR function.
-Always use this function under program
-control, since the addresses in the
-table change according to your program
+table and a pointer to the end of
+your BASIC program. Arrays are
+stored as six-byte binary coded
+decimal numbers (BCD) while string
+characters use one bye each. The
+address of the strings in the table
+are the same as those returned by
+the BASIC ADR function. Always use
+this function under program control,
+since the addresses in the table
+change according to your program
 size. Try:
 
 10  DIM A$(10),B$(10)
@@ -26,17 +27,18 @@ size. Try:
 This table is expanded as each
 dimension is processed by BASIC,
 reducing available memory. A
-ten-element numeric array will require
-60 bytes for storage. An array
-variable such as DIM A(100) will cost
-the program 600 bytes (100 * six per
-dimensioned number equals 600). On the
-other hand, a string array such as DIM
-A$(100) will only cost 100 bytes! It
-would save a lot of memory to write
-your arrays as strings and retrieve
-the array values using the VAL
-statement. For example:
+ten-element numeric array will
+require 60 bytes for storage. An
+array variable such as DIM A(100)
+will cost the program 600 bytes (100
+* six per dimensioned number equals
+600). On the other hand, a string
+array such as DIM A$(100) will only
+cost 100 bytes! It would save a lot
+of memory to write your arrays as
+strings and retrieve the array
+values using the VAL statement. For
+example:
 
 10  DIM A$(10): A$ = "1234567890"
 20  PRINT VAL(A$)
