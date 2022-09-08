@@ -26,8 +26,10 @@ Finally, typing HELP TOPIC/SUBTOPIC
 will show the most detail on a spec-
 ific item.
 
-Press CTRL+1 to pause/un-pause the 
-scrolling text.
+If a document is larger than one
+screen, the text stream will pause.
+Press any key to resume the text 
+stream.
 
 Press ESC to exit scrolling text.
 

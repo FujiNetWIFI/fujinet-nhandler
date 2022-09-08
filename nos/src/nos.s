@@ -91,13 +91,16 @@ ICAX4   =   IOCB+13     ; AUX 4
 ICAX5   =   IOCB+14     ; AUX 5
 ICAX6   =   IOCB+15     ; AUX 6
 
+ROWCRS  =   $0054
+SCROLL  =   $02BB       ; Scroll flag
+CH      =   $02FC       ; Hardware code for last key pressed
+CH1     =   $02F2       ; Prior keyboard character code
 LNBUF   =   $0582       ; Line Buffer (128 bytes)
 
 ;---------------------------------------
 ; HARDWARE REGISTERS
 ;---------------------------------------
 
-CH      =   $02FC       ; Hardware code for last key pressed
 PORTB   =   $D301       ; On XL/XE, used to enable/disable BASIC
 PACTL   =   $D302       ; PIA CTRL A
 
@@ -1738,7 +1741,6 @@ DO_DIR:
         JMP     PRINT_ERROR ; exit
 
 DIR_LOOP:
-
     ;---------------------------------------
     ; Send Status request to SIO
     ;---------------------------------------
@@ -1780,12 +1782,22 @@ DIR_NEXT1:
         JSR     DIR_PRINT   ; xfer payload to screen
 
     ;---------------------------------------
+    ; Pause output if SPACE key code found
+    ;---------------------------------------
+DIR_WAIT:
+        LDX     CH
+        CPX     #$21        ; Space Key
+        BEQ     DIR_WAIT
+
+
+    ;---------------------------------------
     ; Exit loop if ESC key code found
     ;---------------------------------------
         LDA     CH
         CMP     #ESC_KEY    ; hardware code for ESC key
         BEQ     DIR_NEXT
 
+    
     ;---------------------------------------
     ; Loop if more data to read
     ;---------------------------------------
@@ -1793,32 +1805,51 @@ DIR_NEXT1:
         BNE     DIR_LOOP    ; If yes, then do it again
 
 DIR_NEXT:
+        LDA     #$FF        ; Clear key
+        STA     CH
         JMP     DIR_CLOSE
 
 DIRRDCB:
-        .BYTE      DEVIDN  ; DDEVIC
-        .BYTE      $FF     ; DUNIT
-        .BYTE      'R'     ; DCOMND
-        .BYTE      $40     ; DSTATS
-        .BYTE      <RBUF   ; DBUFL
-        .BYTE      >RBUF   ; DBUFH
-        .BYTE      $1F     ; DTIMLO
-        .BYTE      $00     ; DRESVD
-        .BYTE      $00     ; DBYTL
-        .BYTE      $00     ; DBYTH
-        .BYTE      $00     ; DAUX1
-        .BYTE      $00     ; DAUX2
+        .BYTE   DEVIDN      ; DDEVIC
+        .BYTE   $FF         ; DUNIT
+        .BYTE   'R'         ; DCOMND
+        .BYTE   $40         ; DSTATS
+        .BYTE   <RBUF       ; DBUFL
+        .BYTE   >RBUF       ; DBUFH
+        .BYTE   $1F         ; DTIMLO
+        .BYTE   $00         ; DRESVD
+        .BYTE   $00         ; DBYTL
+        .BYTE   $00         ; DBYTH
+        .BYTE   $00         ; DAUX1
+        .BYTE   $00         ; DAUX2
 
 ;---------------------------------------
 ; Set DUNITs in all DCBs used by DIR
 ;---------------------------------------
 DIR_INIT:
 ;---------------------------------------
-        JSR     GET_DOSDR       ; On return, X <- n in Nn:
-        STX     DIRODCB+1       ; DUNIT for Open
-        STX     STADCB+1        ; DUNIT for Status
-        STX     DIRRDCB+1       ; DUNIT for Read
-        STX     CLODCB+1        ; DUNIT for Close
+        JSR     GET_DOSDR   ; On return, X <- n in Nn:
+        STX     DIRODCB+1   ; DUNIT for Open
+        STX     STADCB+1    ; DUNIT for Status
+        STX     DIRRDCB+1   ; DUNIT for Read
+        STX     CLODCB+1    ; DUNIT for Close
+
+;    ; ----------------------------------
+;    ; Initialize pagination
+;    ; ----------------------------------
+;    ; CA is scroll limit
+;    ; init scroll limit = ROWCRS - 4
+;    ; CA = 0 if CA < 0
+;    ; ----------------------------------
+;;        LDA     #$00        ; Clear scroll counter
+;;        STA     SCROLL
+;        SEC
+;        LDA     ROWCRS      ; $CA = ROWCRS - 4
+;        SBC     #$04
+;        BMI     @+
+;        LDA     #$01        ; $CA = 0 if $CA < 0
+;@:      STA     $CA
+
         RTS
 
 ;---------------------------------------
@@ -1856,41 +1887,68 @@ DIR_OPEN_NEXT:
         LDY     #>DIRODCB
         JMP     DOSIOV
 
-DIR_OPEN_STR:
-        .BYTE   'N :*.*',EOL
-
-DIRODCB:
-        .BYTE   DEVIDN      ; DDEVIC
-        .BYTE   $FF         ; DUNIT
-        .BYTE   'O'         ; DCOMND
-        .BYTE   $80         ; DSTATS
-        .BYTE   $FF         ; DBUFL
-        .BYTE   $FF         ; DBUFH
-        .BYTE   $1F         ; DTIMLO
-        .BYTE   $00         ; DRESVD
-        .BYTE   $00         ; DBYTL
-        .BYTE   $01         ; DBYTH
-        .BYTE   $06         ; DAUX1
-        .BYTE   $80         ; DAUX2 (Long Dir)
-
-; End of DIR_OPEN
-;---------------------------------------
-
 ;---------------------------------------
 DIR_ERROR:
 ;---------------------------------------
         LDA     #<DIR_ERROR_STR
         LDY     #>DIR_ERROR_STR
         JSR     PRINT_STRING
-        LDY     #$01        ; Return error
+        LDY     #$01            ; Return error
         RTS
 
 DIR_ERROR_STR:
         .BYTE   'UNABLE TO READ DIR',EOL
 
+DIR_OPEN_STR:
+        .BYTE   'N :*.*',EOL
+
+DIRODCB:
+        .BYTE   DEVIDN          ; DDEVIC
+        .BYTE   $FF             ; DUNIT
+        .BYTE   'O'             ; DCOMND
+        .BYTE   $80             ; DSTATS
+        .BYTE   $FF             ; DBUFL
+        .BYTE   $FF             ; DBUFH
+        .BYTE   $1F             ; DTIMLO
+        .BYTE   $00             ; DRESVD
+        .BYTE   $00             ; DBYTL
+        .BYTE   $01             ; DBYTH
+        .BYTE   $06             ; DAUX1
+        .BYTE   $80             ; DAUX2 (Long Dir)
+
+; End of DIR_OPEN
+;---------------------------------------
+
 ;---------------------------------------
 DIR_PRINT:
 ;---------------------------------------
+;    ; Pagination routine
+;    ;-----------------------------------
+;    ; Enter keypress loop
+;    ; when scroll counter (SCROLL)
+;    ; reaches scroll limit ($CA)
+;    ;-----------------------------------
+;        LDA     SCROLL          ; Check # lines scrolled
+;        CMP     $CA             ; if SCROLL <=limit 
+;        BCC     DIR_PRINT_NEXT  ; then skip to print routine
+;        BEQ     DIR_PRINT_NEXT
+;    ; Here if scroll limit hit
+;        LDA     #$12            ; After 1st page,
+;        STA     $CA             ; set scroll limit to ~18 rows
+;        LDA     #$00            ; Reset scroll counter
+;        STA     SCROLL
+;    ; Wait for keypress
+;        LDA     #$FF            ; Clear key
+;        STA     CH
+;DIR_WAIT:
+;        LDX     CH              ; Loop until key press
+;        INX                     ; (CH is cleared later)
+;        BEQ     DIR_WAIT
+;    ; End of pagination
+;    ;-----------------------------------
+
+
+DIR_PRINT_NEXT:
         ; Print results using CIO
         LDX     #$00
         LDA     #PUTCHR
@@ -2613,11 +2671,40 @@ TYPE_SKIP:
 
 TYPE_NEXT:
 
+    ; Initialize pagination
+        JSR     DO_CLS
+        LDA     #21
+        STA     SCROLL
+
+TYPE_LOOP:
     ; Bail if ESC key is pressed
         LDA     CH
         CMP     #ESC_KEY
         BEQ     TYPE_DONE
 
+    ; Check if page is full
+        LDA     SCROLL
+        CMP     #22         ; if SCROLL < 21
+        BCC     TYPE_READ   ; then skip to read
+
+    ; Here if page is full
+    ; Wait for keypress
+        LDA     #$FF    ; Clear keypress
+        STA     CH
+
+TYPE_WAIT:
+        LDX     CH
+        INX
+        BEQ     TYPE_WAIT
+
+        CPX     #ESC_KEY
+        BEQ     TYPE_DONE
+
+    ; Reset pagination
+        LDA     #$00
+        STA     SCROLL
+
+TYPE_READ:
     ; Read from file
         LDX     #$10
         LDA     #$01
@@ -2649,9 +2736,11 @@ TYPE_NEXT2:
 
 TYPE_NEXT3:
     ; Do next
-        JMP     TYPE_NEXT
+        JMP     TYPE_LOOP
         
 TYPE_DONE:
+        LDA     #$FF
+        STA     CH
         LDX     #$10            ; Close File #1
         JMP     CIOCLOSE        ; 
 
@@ -3289,7 +3378,7 @@ CIOHND  .WORD   OPEN-1
 
        ; BANNERS
 
-BREADY  .BYTE   '#FUJINET NOS v0.3.0-alpha',EOL
+BREADY  .BYTE   '#FUJINET NOS v0.3.1-alpha',EOL
 BERROR  .BYTE   '#FUJINET ERROR',EOL
 
         ; MESSAGES
