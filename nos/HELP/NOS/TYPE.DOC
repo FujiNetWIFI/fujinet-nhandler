@@ -1,0 +1,25 @@
+
+Topic: NOS/TYPE
+
+TYPE - Displays the contents of a
+text file to the screen.
+
+Usage:
+
+    TYPE [N[n]:][path/]filename
+
+The `TYPE` command clears the screen
+and prints the contents of a text
+file to the  display.
+
+The text stream is paused once the
+screen is full.  Press any key to
+display the next page.
+
+Press the `ESC` key to exit the
+text stream.
+
+Known issue: Executing `TYPE` on a
+non-text file can overrun the
+assigned buffer and corrupt memory.
+

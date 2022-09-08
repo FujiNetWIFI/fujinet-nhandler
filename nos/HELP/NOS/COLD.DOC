@@ -1,0 +1,18 @@
+
+Topic: NOS/COLD
+
+COLD - Reboot the ATARI
+
+Usage:
+
+COLD
+
+Execution jumps from the command pro-
+cessor to the COLDSV ($E477) vector.
+
+COLD can be used to disable/enable
+ATARI BASIC on non-400/800 computers
+by holding (or not) the OPTION
+console key at the moment the command
+is launched.
+

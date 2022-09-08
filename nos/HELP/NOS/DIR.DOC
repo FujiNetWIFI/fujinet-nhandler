@@ -49,7 +49,7 @@ directory name itself.
 Key             Purpose
 ---             -------
 SPACE           Pause
-Any Other Key   Resume
-CTRL+1          Pause/Resume
+Non-SPACE Key   Resume
 ESC             Quit
+CTRL+1          Pause/Resume
 
