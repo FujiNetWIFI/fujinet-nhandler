@@ -206,8 +206,7 @@ START:  LDA     DOSINI
         LDA     #>DOS
         STA     DOSVEC+1
 
-        JSR     ALTMEML     ; Alter MEMLO
-        RTS
+        JMP     ALTMEML     ; Alter MEMLO
 
 RESET:  JSR     $FFFF       ; Jump to extant DOSINI
 
@@ -2043,9 +2042,7 @@ LOAD_READ2:
         STA     STADCB+1
         LDA     #<STADCB
         LDY     #>STADCB
-        JSR     DOSIOV
-
-        RTS
+        JMP     DOSIOV
 
 ;---------------------------------------
 LOAD_CHKFF:
@@ -2059,8 +2056,7 @@ TEST2:  LDX     BAH
         INX
         BEQ     ITSFF
         RTS
-ITSFF:  JSR     LOAD_READ2  ; Get start address and return
-        RTS
+ITSFF:  JMP     LOAD_READ2  ; Get start address and return
 
 ;        LDA     #<LOAD_ERROR_STR2
 ;        LDY     #>LOAD_ERROR_STR2
@@ -2575,8 +2571,7 @@ SOURCE_NEXT4:
 
 SOURCE_DONE
         LDX     #$10
-        JSR     CIOCLOSE
-        RTS
+        JMP     CIOCLOSE
 
 ; End of DO_SOURCE
 ;---------------------------------------
