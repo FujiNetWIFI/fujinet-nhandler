@@ -6,33 +6,34 @@ TOPIC: MAP/RUNSTK
 Address of the runtime stack which
 holds the GOSUB entries	(four bytes
 each) and the FOR-NEXT entries (16
-bytes each). The POP command in BASIC
-affects this stack, pulling entries
-off it one at a time for each POP
-executed. The stack expands and
-contracts as necessary while the
+bytes each). The POP command in
+BASIC affects this stack, pulling
+entries off it one at a time for
+each POP executed. The stack expands
+and contracts as necessary while the
 program is running.
 
 Each GOSUB entry consists of four
 bytes in this order: a zero to
 indicate a GOSUB, a two-byte integer
 line number on which the call
-occurred, and an offset into that line
-so the RETURN can come back and
+occurred, and an offset into that
+line so the RETURN can come back and
 execute the next statement.
 
-Each FOR-NEXT entry contains 16 bytes
-in this order: first, the limit the
-counter variable can reach; second,
-the step or counter increment. These
-two are allocated six bytes each in
-BCD format (12 bytes total). The 13th
-byte is the counter variable number
-with the MSB set; the 14th and 15th
-are the line number and the 16th is
-the line offset to the FOR statement.
-RUNSTK is also called ENDSTAR; it is
-used by BASIC to point to the end of
-the string/array space pointed to by
+Each FOR-NEXT entry contains 16
+bytes in this order: first, the
+limit the counter variable can
+reach; second, the step or counter
+increment. These two are allocated
+six bytes each in BCD format (12
+bytes total). The 13th byte is the
+counter variable number with the MSB
+set; the 14th and 15th are the line
+number and the 16th is the line
+offset to the FOR statement.  RUNSTK
+is also called ENDSTAR; it is used
+by BASIC to point to the end of the
+string/array space pointed to by
 STARR above.
 

@@ -1,7 +1,8 @@
 
 TOPIC: MAP/FPSCR
 
-1510-1515     05E6-05EB     FPSCR
+1510-1515          05E6-05EB
+ FPSCR
 
 FP scratch pad use.
 

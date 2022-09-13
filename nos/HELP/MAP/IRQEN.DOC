@@ -4,14 +4,14 @@ TOPIC: MAP/IRQEN
 53774          D20E          IRQEN
 
 (W) Interrupt request enable. Zero
-turns off all interrupt requests such
-as the BREAK key; to disable or
+turns off all interrupt requests
+such as the BREAK key; to disable or
 re-enable interrupts, POKE with the
 values according to the following
 chart (setting a bit to one -- i.e.,
 true -- enables that interrupt;
-decimal values are also shown for each
-bit):
+decimal values are also shown for
+each bit):
 
 Bit Dec Interrupt         Vector
 0   1 |Timer 1           |VTIMR1
@@ -34,39 +34,40 @@ Bit Dec Interrupt         Vector
 Here is the procedure for the BREAK
 key interrupt: clear the interrupt
 register. Set BRKKEY (17; $11) to
-zero; clear the start/stop flag SSFLAG
-at 767 ($2FF); clear the cursor
-inhibit flag CRSINH at 752 ($2F0);
-clear the attract mode flag at 77
-($4D), and return from the interrupt
-after restoring the 6502 A register.
-(There is now (in the OS "B" ROMs) a
-proper vector for BREAK key interrupts
-at 566, 567 ($236, $237) which is
-initialized to point to 59220
-($E754).) If the interrupt was due to
-a serial I/O bus proceed line
-interrupt, then vector through VPRCED
-at 514 ($202). If due to a serial I/O
-bus interrupt line interrupt, then
-vector through VINTER at 516 ($204).
-If due to a 6502 BRK instruction, then
-vector through VBREAK at 518 ($206).
+zero; clear the start/stop flag
+SSFLAG at 767 ($2FF); clear the
+cursor inhibit flag CRSINH at 752
+($2F0); clear the attract mode flag
+at 77 ($4D), and return from the
+interrupt after restoring the 6502 A
+register. (There is now (in the OS
+"B" ROMs) a proper vector for BREAK
+key interrupts at 566, 567 ($236,
+$237) which is initialized to point
+to 59220 ($E754).) If the interrupt
+was due to a serial I/O bus proceed
+line interrupt, then vector through
+VPRCED at 514 ($202). If due to a
+serial I/O bus interrupt line
+interrupt, then vector through
+VINTER at 516 ($204). If due to a
+6502 BRK instruction, then vector
+through VBREAK at 518 ($206).
 
-Timers relate to audio dividers of the
-same number (an interrupt is processed
-when the dividers count down to zero).
-These bits in IRQEN are not set on
-powerup and must be initiated by the
-user program before enabling the
-processor IRQ.
+Timers relate to audio dividers of
+the same number (an interrupt is
+processed when the dividers count
+down to zero). These bits in IRQEN
+are not set on powerup and must be
+initiated by the user program before
+enabling the processor IRQ.
 
 There	are two other interrupts,
 processed by PIA, generated over the
 serial bus Proceed and Interrupt
 lines, set by the bits in the PACTL
-and PBCTL registers (54018 and 54019;
-$D302, $D303):
+and PBCTL registers (54018 and
+54019; $D302, $D303):
 
 Bit|Dec|Loc  |Interrupt
 0  |  1|PACTL|Peripheral A (PORTA)
@@ -81,35 +82,38 @@ Bit|Dec|Loc  |Interrupt
 The latter PORT interrupts are
 automatically disabled on powerup.
 Only the BREAK key and data key
-interrupts are enabled on powerup. The
-shadow register is 16 ($10).
+interrupts are enabled on powerup.
+The shadow register is 16 ($10).
 
               IRQST
 
 (R) Interrupt request status. Bit
-functions are the same as IRQEN except
-that they register the interrupt
-request when it is zero rather than
-the enable when a bit equals one.
-IRQST is used to determine the cause
-of interrupt request with IRQEN, PACTL
-and PBCTL as above.
+functions are the same as IRQEN
+except that they register the
+interrupt request when it is zero
+rather than the enable when a bit
+equals one. IRQST is used to
+determine the cause of interrupt
+request with IRQEN, PACTL and PBCTL
+as above.
 
 All IRQ interrupts are normally
-vectored through 65534 ($FFFE) to the
-IRQ service routine at 59123 ($E6F3),
-which determines the cause of the
-interrupt. The IRQ global RAM vector
-VIMIRQ at 534 ($216) ordinarily points
-to the IRQ processor at 59126 ($E6F6).
-The processor then examines 53774
-($D20E) and the PIA registers at 54018
-and 54019 to determine the interrupt
-cause. Once determined, the routine
-vectors through one of the IRQ RAM
-vectors in locations 514 to 526 ($202
-to $20E). For Non-Maskable Interrupts
-(NMI's), see locations 54286 to 54287
-($D40E; $D40F).  See the OS User's
-Manual for complete details.
+vectored through 65534 ($FFFE) to
+the IRQ service routine at 59123
+($E6F3), which determines the cause
+of the interrupt. The IRQ global RAM
+vector VIMIRQ at 534 ($216)
+ordinarily points to the IRQ
+processor at 59126 ($E6F6). The
+processor then examines 53774
+($D20E) and the PIA registers at
+54018 and 54019 to determine the
+interrupt cause. Once determined,
+the routine vectors through one of
+the IRQ RAM vectors in locations 514
+to 526 ($202 to $20E). For
+Non-Maskable Interrupts (NMI's), see
+locations 54286 to 54287 ($D40E;
+$D40F).  See the OS User's Manual
+for complete details.
 

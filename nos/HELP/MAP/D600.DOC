@@ -1,0 +1,9 @@
+
+Topic: MAP/D600
+
+-------------------------------------
+Locations 54784 to 55295 ($D600 to
+$D7FF) are unused but not empty nor
+user alterable. See the note at
+53504 ($D100).
+

@@ -4,13 +4,14 @@ TOPIC: MAP/VCOUNT
 54283          D40B          VCOUNT
 
 (R) Vertical line counter. Used to
-keep track of which line is currently
-being generated on the screen. Used
-during Display List Interrupts to
-change color or graphics modes.
-PEEKing here returns the line count
-divided by two, ranging from zero to
-130 ($82; zero to 155 on the PAL
-system; see 53268; $D014) for the 262
-lines per TV frame.
+keep track of which line is
+currently being generated on the
+screen. Used during Display List
+Interrupts to change color or
+graphics modes. PEEKing here returns
+the line count divided by two,
+ranging from zero to 130 ($82; zero
+to 155 on the PAL system; see 53268;
+$D014) for the 262 lines per TV
+frame.
 

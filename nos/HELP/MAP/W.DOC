@@ -1,8 +1,19 @@
-WARMST
-WARMSV
-WBOOT
-WMODE
-WRTDOS
-WRTNXS
-WSYNC
-WTBUR
+
+Topic: MAP/W
+
+Memory Map by Label [W]
+
+Type HELP MAP/<LABEL> or
+Type HELP MAP/<ADDR> for more
+
+LABEL   ADDR  DESCRIPTION
+-----   ----  -----------------------
+WARMST  0008  Warmstart flag
+WARMSV  E474  Warmstart entry point
+WBOOT   27D9  Write DOS/DUP to disk
+WMODE   0289  Read/write mode for C:
+WRTDOS  120A  Write DOS.SYS to disk
+WRTNXS  0F94  Write data sector
+WSYNC   D40A  Wait for horiz sync
+WTBUR   0A1F  Burst I/O routines
+

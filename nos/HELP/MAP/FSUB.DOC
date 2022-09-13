@@ -3,6 +3,6 @@ TOPIC: MAP/FSUB
 
 55904          DA60          FSUB
 
-FP subtract routine, the value in FR0
-minus the value in FR1.
+FP subtract routine, the value in
+FR0 minus the value in FR1.
 

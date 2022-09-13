@@ -6,8 +6,8 @@ TOPIC: MAP/ENDPT
 End point of the line to be drawn.
 Contains the larger value of either
 DELTAR or DELTAC (locations 118 and
-119, below) to be used in conjunction
-with ROWAC/COLAC (locations 112 and
-114, above) to control the plotting of
-line points.
+119, below) to be used in
+conjunction with ROWAC/COLAC
+(locations 112 and 114, above) to
+control the plotting of line points.
 

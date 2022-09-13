@@ -20,43 +20,43 @@ are used for the device handler and
 vectors to the handler routines
 (devices S:, P:, E:, D:, C:, R: and
 K:).  A device handler is a routine
-used by the OS to control the transfer
-of data in that particular device for
-the task allotted (such as read,
-write, save, etc.). The resident D:
-handler does not conform entirely with
-the other handler--SIO calling
-routines. Instead, you use the DCB to
-communicate directly with the disk
-handler. The device handler for R: is
-loaded in from the 850 interface
-module. See De Re Atari, the 850
-Interface Manual, and the OS Listings
-pages 64 - 65.
+used by the OS to control the
+transfer of data in that particular
+device for the task allotted (such
+as read, write, save, etc.). The
+resident D: handler does not conform
+entirely with the other handler--SIO
+calling routines. Instead, you use
+the DCB to communicate directly with
+the disk handler. The device handler
+for R: is loaded in from the 850
+interface module. See De Re Atari,
+the 850 Interface Manual, and the OS
+Listings pages 64 - 65.
 
 Locations 768 to 779 ($300 to $30B)
-are the resident Device Control Block
-(DCB) addresses, used for I/O
+are the resident Device Control
+Block (DCB) addresses, used for I/O
 operations that require the serial
 bus; also used as the disk DCB.
 DUP.SYS uses this block to interface
 the FMS with the disk handler. The
-Atari disk drive uses a serial access
-at 19,200 baud (about 20 times slower
-than the Apple!). It has its own
-microprocessor, a 6507, plus 128 bytes
-of RAM, a 2316 2K masked ROM chip
-(like a 2716), a 2332 RAM-I/O timer
-chip with another 128 bytes of RAM
-(like the PIA chip) and a WD 1771 FD
-controller chip.  See the "Outpost
-Atari" column, Creative Computing, May
-1982, for an example of using the disk
-DCB.
+Atari disk drive uses a serial
+access at 19,200 baud (about 20
+times slower than the Apple!). It
+has its own microprocessor, a 6507,
+plus 128 bytes of RAM, a 2316 2K
+masked ROM chip (like a 2716), a
+2332 RAM-I/O timer chip with another
+128 bytes of RAM (like the PIA chip)
+and a WD 1771 FD controller chip.
+See the "Outpost Atari" column,
+Creative Computing, May 1982, for an
+example of using the disk DCB.
 
 All of the parameters passed to SIO
-are contained in the DCB. SIO uses the
-DCB information and returns the status
-in the DCB for subsequent use by the
-device handler.
+are contained in the DCB. SIO uses
+the DCB information and returns the
+status in the DCB for subsequent use
+by the device handler.
 

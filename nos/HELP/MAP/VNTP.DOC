@@ -3,48 +3,50 @@ TOPIC: MAP/VNTP
 
 130          0082          VNTP
 
-Beginning address of the variable name
-table. Variable names are stored in
-the order input into your program, in
-ATASCII format. You can have up to 128
-variable names. These are stored as
-tokens representing the variable
-number in the tokenized BASIC program,
-numbered from 128 to 255 ($80 to $FF).
+Beginning address of the variable
+name table. Variable names are
+stored in the order input into your
+program, in ATASCII format. You can
+have up to 128 variable names. These
+are stored as tokens representing
+the variable number in the tokenized
+BASIC program, numbered from 128 to
+255 ($80 to $FF).
 
-The table continues to store variable
-names, even those no longer used in
-your program and those used in direct
-mode entry. It is not cleared by
-SAVEing your program. LOADing a new
-program replaces the current VNT with
-the one it retrieves from the file.
-You must LIST the program to tape or
-disk to save your program without
-these unwanted variables from the
-table. LIST does not SAVE the variable
-name or variable value tables with
-your program. It stores the program in
+The table continues to store
+variable names, even those no longer
+used in your program and those used
+in direct mode entry. It is not
+cleared by SAVEing your program.
+LOADing a new program replaces the
+current VNT with the one it
+retrieves from the file.  You must
+LIST the program to tape or disk to
+save your program without these
+unwanted variables from the table.
+LIST does not SAVE the variable name
+or variable value tables with your
+program. It stores the program in
 ATASCII, not tokenized form, and
-requires an ENTER command to retrieve
-it. You would use a NEW statement to
-clear the VNT in memory once you have
-LISTed your program.
+requires an ENTER command to
+retrieve it. You would use a NEW
+statement to clear the VNT in memory
+once you have LISTed your program.
 
 Each variable name is stored in the
-order it was entered, not the ATASCII
-order. With numeric (scalar)
-variables, the MSB is set on the last
-character in a name. With string
-variables, the last character is a "$"
-with the MSB (BIT 7) set. With array
-variables, the last character is a "("
-with the MSB set. Setting the MSB
-turns the character into its inverse
-representation so it can be easily
-recognized.  You can use variable
-names for GOSUB and GOTO routines,
-such as:
+order it was entered, not the
+ATASCII order. With numeric (scalar)
+variables, the MSB is set on the
+last character in a name. With
+string variables, the last character
+is a "$" with the MSB (BIT 7) set.
+With array variables, the last
+character is a "(" with the MSB set.
+Setting the MSB turns the character
+into its inverse representation so
+it can be easily recognized.  You
+can use variable names for GOSUB and
+GOTO routines, such as:
 
 10  CALCULATE = 1000
 .
@@ -54,23 +56,24 @@ such as:
 This can save a lot of bytes for a
 frequently called routine. But
 remember, each variable used for a
-GOSUB or GOTO address uses one of the
-128 possible variable names. A
+GOSUB or GOTO address uses one of
+the 128 possible variable names. A
 disadvantage of using variable names
-for GOTO and GOSUB references is when
-you try to use a line renumbering
-program. Line renumbering programs
-will not change references to lines
-with variable names, only to lines
-with numbered references.
+for GOTO and GOSUB references is
+when you try to use a line
+renumbering program. Line
+renumbering programs will not change
+references to lines with variable
+names, only to lines with numbered
+references.
 
-Here's a small routine you can add to
-the start of your BASIC program (or
-the end if you change the line
+Here's a small routine you can add
+to the start of your BASIC program
+(or the end if you change the line
 numbers) to print out the variable
 names used in your program. You call
-it up with a GOTO statement in direct
-mode:
+it up with a GOTO statement in
+direct mode:
 
 1  POKE 1664, PEEK(130): POKE 1665,PEEK (131)
 2  IF PEEK(1664) = PEEK(132) THEN IF PEEK(1665) = PEEK(133) THEN STOP

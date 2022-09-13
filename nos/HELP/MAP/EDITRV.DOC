@@ -5,3 +5,26 @@ TOPIC: MAP/EDITRV
 
 Screen Editor (E:) entry point table.
 
+Locations 58368 to 58447 ($E400 to
+$E44F) are the vector tables, stored
+as LSB, MSB. These base addresses
+are used by resident handlers.
+Handler vectors use the following
+format:
+
+  OPEN vector
+  CLOSE vector
+  GET BYTE vector
+  PUT BYTE vector
+  GET STATUS vector
+  SPECIAL vector
+  Jump to handler initialization
+  routine (JMP LSB/MSB)
+
+The device tables in location 794
+($31A) point to the particular
+vector(s) used in each appropriate
+table. In each case, the 6502 X
+register is used to point to the
+originating IOCB.
+

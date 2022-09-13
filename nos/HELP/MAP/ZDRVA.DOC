@@ -4,8 +4,8 @@ TOPIC: MAP/ZDRVA
 69          0045          ZDRVA
 
 Page zero drive pointer. Copied to
-here from DBUFAL and DBUFAH; 4905 and
-4913 ($1329, $1331). Also used in FMS
-"free sector," setup and "get sector"
-routines.
+here from DBUFAL and DBUFAH; 4905
+and 4913 ($1329, $1331). Also used
+in FMS "free sector," setup and "get
+sector" routines.
 

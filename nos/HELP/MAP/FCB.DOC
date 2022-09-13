@@ -54,13 +54,13 @@ FCBLSN   2   Number of the next
              sector in data chain.
 FCBSSN   2   Starting sectors for
              appended data if the
-             file has been OPENed for
-             append.
+             file has been OPENed
+             for append.
 FCBCNT   2   Sector count for the
              current file.
 
-DUP doesn't use these FCB's; it writes
-to the IOCB's directly.  CIO transfers
-the control to FMS as the operation
-demands, then on to SIO.
+DUP doesn't use these FCB's; it
+writes to the IOCB's directly.  CIO
+transfers the control to FMS as the
+operation demands, then on to SIO.
 

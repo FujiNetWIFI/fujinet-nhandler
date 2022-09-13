@@ -3,6 +3,6 @@ TOPIC: MAP/FLD1P
 
 56732          DD9C          FLD1P
 
-Load the FP number into FR1 from user
-program, using FLPTR.
+Load the FP number into FR1 from
+user program, using FLPTR.
 

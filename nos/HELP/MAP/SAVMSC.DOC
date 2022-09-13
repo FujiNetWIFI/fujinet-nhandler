@@ -8,16 +8,16 @@ memory, corresponding to the upper
 left corner of the screen (where the
 value at this address will be
 displayed). The upper left corner of
-the text window is stored at locations
-660, 661 ($294, $295).  You can verify
-this for yourself by:
+the text window is stored at
+locations 660, 661 ($294, $295).
+You can verify this for yourself by:
 
 WINDOW = PEEK(88) + PEEK(89) * 256: POKE WINDOW,33
 
 This will put the letter "A" in the
-upper left corner in GR.0, 1 and 2. In
-other GRAPHICS modes, it will print a
-colored block or bar.
+upper left corner in GR.0, 1 and 2.
+In other GRAPHICS modes, it will
+print a colored block or bar.
 
 To see this effect, try:
 
@@ -30,26 +30,28 @@ To see this effect, try:
 
 DOWNLOAD SAVEMSC1.BAS
 
-You will notice that you get the Atari
-internal character code, not the
-ATASCII code. See also locations 560,
-561 ($230, $231) and 57344 ($E000).
+You will notice that you get the
+Atari internal character code, not
+the ATASCII code. See also locations
+560, 561 ($230, $231) and 57344
+($E000).
 
-How do you find the entire screen RAM?
-First, look at the chart below and
-find your GRAPHICS mode. Then you
-multiply the number of rows-per-screen
-type by the number of bytes-per-line.
-This will tell you how many bytes each
-screen uses. Add this value, minus
-one, to the address specified by
-SAVMSC.  However, if you subtract
-MEMTOP (locations 741, 742; $2E5,
-$2E6) from RAMTOP (106; $6A * 256 for
-the number of bytes), you will see
-that there is more memory reserved
-than just the screen area. The extra
-is taken up by the display list or the
+How do you find the entire screen
+RAM? First, look at the chart below
+and find your GRAPHICS mode. Then
+you multiply the number of
+rows-per-screen type by the number
+of bytes-per-line.  This will tell
+you how many bytes each screen uses.
+Add this value, minus one, to the
+address specified by SAVMSC.
+However, if you subtract MEMTOP
+(locations 741, 742; $2E5, $2E6)
+from RAMTOP (106; $6A * 256 for the
+number of bytes), you will see that
+there is more memory reserved than
+just the screen area. The extra is
+taken up by the display list or the
 text window, or is simply not used
 (see the second chart below).
 
@@ -80,38 +82,38 @@ Split       1174 2174 4190 8112  --
 
 (1) According to the Atari BASIC
 Reference Manual, p.45; OS User's
-Manual, p.172, and Your Atari 400/800,
-p.360.
+Manual, p.172, and Your Atari
+400/800, p.360.
 
 (2) According to Your Atari 400/800,
 p.274, and Atari Microsoft Basic
 Manual, p.69. This is also the value
-you get when you subtract MEMTOP from
-RAMTOP (see above).
+you get when you subtract MEMTOP
+from RAMTOP (see above).
 
-For example, to POKE the entire screen
-RAM in GR.4, you would find the start
-address of the screen (PEEK(88) +
-PEEK(89) * 256), then use a FOR-NEXT
-loop to POKE all the locations
-specified above:
+For example, to POKE the entire
+screen RAM in GR.4, you would find
+the start address of the screen
+(PEEK(88) + PEEK(89) * 256), then
+use a FOR-NEXT loop to POKE all the
+locations specified above:
 
 10 GRAPHICS 4: SCRN = PEEK(88) + PEEK(89) * 256
-20 FOR LOOP = SCRN to SCRN + 479: REM
-48 ROWS * 10 BYTES - 1
+20 FOR LOOP = SCRN to SCRN + 479: REM 48 ROWS * 10 BYTES - 1
 30 POKE LOOP,35: NEXT LOOP
 
 DOWNLOAD SAVEMSC2.BAS
 
-Why the minus one in the calculation?
-The first byte of the screen is the
-first byte in the loop. If we add the
-total size, we will go one byte past
-the end of the soreen, so we subtract
-one from the total.  Here's how to
-arrive at the value for the total
-amount ot memory located for screen
-use, display list and Text window:
+Why the minus one in the
+calculation? The first byte of the
+screen is the first byte in the
+loop. If we add the total size, we
+will go one byte past the end of the
+soreen, so we subtract one from the
+total.  Here's how to arrive at the
+value for the total amount ot memory
+located for screen use, display list
+and Text window:
 
    Total memory allocation for the
 screen
@@ -151,53 +153,55 @@ The number of bytes from RAMTOP
 the left text window column towards
 the total column.  MEMTOP (741, 742;
 $2E5, $2E6) points to one byte below
-RAMTOP * 256 minus the number of bytes
-in the total column. If 16 is added to
-the GRAPHICS mode (no text window),
-then the conditional unused bytes are
-added to the total. Then the bytes
-normally added for the text window
-become unused, and the Display List
-expands slightly. (See COMPUTE!,
-September 1981.)
+RAMTOP * 256 minus the number of
+bytes in the total column. If 16 is
+added to the GRAPHICS mode (no text
+window), then the conditional unused
+bytes are added to the total. Then
+the bytes normally added for the
+text window become unused, and the
+Display List expands slightly. (See
+COMPUTE!, September 1981.)
 
 When you normally PRINT CHR$(125)
-(clear screen), Atari sends zeroes to
-the memory starting at locations 88
-and 89. It continues to do this until
-it reaches one byte less than the
-contents of RAMTQP (location 106;
-$6A). Here is a potential source of
-conflict with your program, however:
-CHR$(125)--CLEAR SCREEN--and any
-GRAPHICS command actually continue to
-clear the first 64 ($40) bytes above
-RAMTOP!
+(clear screen), Atari sends zeroes
+to the memory starting at locations
+88 and 89. It continues to do this
+until it reaches one byte less than
+the contents of RAMTQP (location
+106; $6A). Here is a potential
+source of conflict with your
+program, however: CHR$(125)--CLEAR
+SCREEN--and any GRAPHICS command
+actually continue to clear the first
+64 ($40) bytes above RAMTOP!
 
-It would have no effect on BASIC since
-BASIC is a ROM cartridge. The OS
-Source Listing seems to indicate that
-it ends at RAMTOP, but Atari assumed
-that there would be nothing after
-RAMTOP, so no checks were provided.
-Don't reserve any data within 64 bytes
-of RAMTOP or else it will be eaten by
-the CLEAR SCREEN routine, or avoid
-using a CLEAR SCREEN or a GRAPHICS
-command. Scrolling the text window
-also clears 800 bytes of memory above
+It would have no effect on BASIC
+since BASIC is a ROM cartridge. The
+OS Source Listing seems to indicate
+that it ends at RAMTOP, but Atari
+assumed that there would be nothing
+after RAMTOP, so no checks were
+provided. Don't reserve any data
+within 64 bytes of RAMTOP or else it
+will be eaten by the CLEAR SCREEN
+routine, or avoid using a CLEAR
+SCREEN or a GRAPHICS command.
+Scrolling the text window also
+clears 800 bytes of memory above
 RAMTOP.
 
-You can use this to clear other areas
-of memory by POKEing the LSB and MSB
-of the area to be cleared into these
-locations. Your routine should always
-end on a $FF boundary (RAMTOP
-indicates the number of pages).
-Remember to POKE back the proper
-screen locations or use a GRAPHICS
-command immediately after doing so to
-set the screen right. Try this:
+You can use this to clear other
+areas of memory by POKEing the LSB
+and MSB of the area to be cleared
+into these locations. Your routine
+should always end on a $FF boundary
+(RAMTOP indicates the number of
+pages). Remember to POKE back the
+proper screen locations or use a
+GRAPHICS command immediately after
+doing so to set the screen right.
+Try this:
 
 10  BOTTOM = 30000: TOP = 36863: REM LOWEST AND HIGHEST ADDRESS TO CLEAR = $7530 & $8FFF
 20  RAMTOP = PEEK(106): POKE 106, INT(TOP + 1 / 256)
@@ -209,14 +213,15 @@ set the screen right. Try this:
 DOWNLOAD SAVEMSC3.BAS
 
 This will clear the specified memory
-area and update the address of screen
-memory. If you don't specify TOP, the
-CLEAR SCREEN will continue merrily
-cleaning out memory and, most likely,
-will cause your program to crash. Use
-it with caution.  Here's a means to
-SAVE your current GR.7 screen display
-to disk using BASIC:
+area and update the address of
+screen memory. If you don't specify
+TOP, the CLEAR SCREEN will continue
+merrily cleaning out memory and,
+most likely, will cause your program
+to crash. Use it with caution.
+Here's a means to SAVE your current
+GR.7 screen display to disk using
+BASIC:
 
 1000  SCREEN = PEEK(88) + PEEK(89) * 256
 1010  OPEN #2,8,0,"D:picturename"
@@ -228,18 +233,18 @@ DOWNLOAD SAVEMSC4.BAS
 
 To use this with other screen modes,
 you will have to change the value of
-3199 in line 1040 to suit your screen
-RAM (see the chart above). For
-example, GR.7 + 16 would require 3839
-bytes (3840 minus one). You can use
-the same routine with cassette by
-using device C:. To retrieve your
+3199 in line 1040 to suit your
+screen RAM (see the chart above).
+For example, GR.7 + 16 would require
+3839 bytes (3840 minus one). You can
+use the same routine with cassette
+by using device C:. To retrieve your
 picture, you use GET#2 and POKE
-commands. You will, however, find both
-routines very slow. Using THE CIO
-routine at 58454 ($E456) and the
-IOCBs, try this machine language save
-routine:
+commands. You will, however, find
+both routines very slow. Using THE
+CIO routine at 58454 ($E456) and the
+IOCBs, try this machine language
+save routine:
 
 10  DIM ML$(10): B$(10): GR.8+16
 20  B$ = "your picture name":Q = PEEK(559)
@@ -265,44 +270,47 @@ of the file. You will have to make
 suitable adjustments when SAVEing a
 picture in other than GR.8 + 16 --
 such as changing the total amount of
-screen memory to be SAVEd, POKEd into
-856 and 857. Also, you will need a
-line such as 1000 GOTO 1000 to keep a
-GTIA or + 16 mode screen intact. See
-the Atari column in InfoAge Magazine,
-July 1982, for more on this idea. See
-location 54277 ($D405) for some ideas
-on scrolling the screen RAM.
+screen memory to be SAVEd, POKEd
+into 856 and 857. Also, you will
+need a line such as 1000 GOTO 1000
+to keep a GTIA or + 16 mode screen
+intact. See the Atari column in
+InfoAge Magazine, July 1982, for
+more on this idea. See location
+54277 ($D405) for some ideas on
+scrolling the screen RAM.
 
 ---------------------------------------
 A SHORT DIGRESSION
-There are two techniques used in this
-hook for calling a machine language
-program from BASIC with the USR
-command. One method is to POKE the
-values into a specific address -- say,
-page six -- and use the starting
-address for the USR call, such as X =
-USR(1536). For an example of this
-technique, see location 632 ($278).
+There are two techniques used in
+this hook for calling a machine
+language program from BASIC with the
+USR command. One method is to POKE
+the values into a specific address
+-- say, page six -- and use the
+starting address for the USR call,
+such as X = USR(1536). For an
+example of this technique, see
+location 632 ($278).
 
-The other technique, used above, is to
-make a string (ML$) out of the routine
-by assigning to the elements of the
-string the decimal equivalents of the
-machine language code by using a
-FOR-NEXT and READ-DATA loop. To call
-this routine, you would use X =
-USR(ADR(ML$)). This tells the Atari to
-call the machine language routine
+The other technique, used above, is
+to make a string (ML$) out of the
+routine by assigning to the elements
+of the string the decimal
+equivalents of the machine language
+code by using a FOR-NEXT and
+READ-DATA loop. To call this
+routine, you would use X =
+USR(ADR(ML$)). This tells the Atari
+to call the machine language routine
 located at the address where ML$ is
-stored. This address will change with
-program size and memory use. The
-string method won't be overwritten by
-another routine or data since it
-floats around safely in memory. The
-address of the string itself is stored
-by the string/array table at location
-140 ($8C).
+stored. This address will change
+with program size and memory use.
+The string method won't be
+overwritten by another routine or
+data since it floats around safely
+in memory. The address of the string
+itself is stored by the string/array
+table at location 140 ($8C).
 ---------------------------------------
 

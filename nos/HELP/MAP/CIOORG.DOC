@@ -1,10 +1,10 @@
 
 TOPIC: MAP/CIOORG
 
-58534-59092      E4A6-E6D4   CIOORG
+58534-59092    E4A6-E6D4   CIOORG
 
-Addresses for the Central Input/Output
-routines (CIO):
+Addresses for the Central
+Input/Output routines (CIO):
 
 58534 ($E4A6) CIOINT
 
@@ -33,18 +33,19 @@ STATUS and special command routines.
 
 58729 ($E569) CIREAD;
 
-process the CIO commands for read and
-write, including buffer check for full
-or empty.
+process the CIO commands for read
+and write, including buffer check
+for full or empty.
 
 58907 ($E61B);
 
-routine to return to the user from CIO.
+routine to return to the user from
+CIO.
 
 58941 ($E63D),
 
-routines to compute the device handler
-entry point, jump to the handler,
-transfer control, and then return to
-CIO after the operation.
+routines to compute the device
+handler entry point, jump to the
+handler, transfer control, and then
+return to CIO after the operation.
 

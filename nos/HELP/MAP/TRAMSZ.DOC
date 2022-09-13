@@ -3,11 +3,11 @@ TOPIC: MAP/TRAMSZ
 
 6          0006          TRAMSZ
 
-Temporary Register for RAM size; used
-during powerup
+Temporary Register for RAM size;
+used during powerup
 sequence to test RAM availability.
 This value is then moved to RAMTOP,
-location 106 ($6A). Reads one when the
-BASIC or the A (left) cartridge is
-plugged in.
+location 106 ($6A). Reads one when
+the BASIC or the A (left) cartridge
+is plugged in.
 

@@ -10,7 +10,7 @@ specified here, followed by the
 remaining records to be read.
 Normally, with DOS, this address is
 1792 ($700), the value also stored
-temporarily in RAMLO at 4, 5. Address
-62189 ($F2ED) is the OS disk boot
-routine entry point (DOBOOT).
+temporarily in RAMLO at 4, 5.
+Address 62189 ($F2ED) is the OS disk
+boot routine entry point (DOBOOT).
 

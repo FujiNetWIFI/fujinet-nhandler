@@ -6,60 +6,65 @@ TOPIC: MAP/CIOV
 Central Input/Output (CIO) utility
 entry. CIO handles all of the I/O
 operations or data transfers.
-Information placed in the IOCB's tells
-CIO what operations are necessary. CIO
-passes this information to the correct
-device driver routine and then passes
+Information placed in the IOCB's
+tells CIO what operations are
+necessary. CIO passes this
+information to the correct device
+driver routine and then passes
 control to the Device Control Block
 (DCB). This in turn calls up SIO
 (below) to control the actual
 peripheral(s). CIO treats all I/O in
 the same manner: device independent.
-The differentiation between operations
-is done by the actual device drivers.
+The differentiation between
+operations is done by the actual
+device drivers.
 
 You jump to here to use the IOCB
 handler routines in ROM.  BASIC
 supports only record I/O or
-one-byte-at-a-time I/O (GET and PUT).
-Addressing CIOV directly will allow
-the user to input or output a buffer
-of characters at a time, such as
-loading a machine language program
-directly into memory from a disk file.
- This is considerably faster than
-using BASIC functions such as GET.
-Here is a typical machine language
-subroutine to do this:
+one-byte-at-a-time I/O (GET and
+PUT). Addressing CIOV directly will
+allow the user to input or output a
+buffer of characters at a time, such
+as loading a machine language
+program directly into memory from a
+disk file.  This is considerably
+faster than using BASIC functions
+such as GET. Here is a typical
+machine language subroutine to do
+this:
 
   PLA, PLA, PLA, TAX, JMP $E456
   (104,104,104,170,76,86,228)
   ($68,$68,$68,$AA,$4C,$56,$E4)
 
 This gets the IOCB number into the
-6502 X register and the return address
-on the stack. CIOV expects to find the
-IOCB number 16 in the 6502 X register
-(i.e., IOCB zero is zero, IOCB one is
-16; $10, IOCB two is 32, $20, etc.).
-$E456 is the CIO initialization entry
-point (this address).
+6502 X register and the return
+address on the stack. CIOV expects
+to find the IOCB number 16 in the
+6502 X register (i.e., IOCB zero is
+zero, IOCB one is 16; $10, IOCB two
+is 32, $20, etc.). $E456 is the CIO
+initialization entry point (this
+address).
 
 To use CIOV in a program, first you
 must have OPENed a channel for the
-appropriate actions, POKEd the correct
-IOCB (locations 848 to 959; $350 to
-$3BF) with the correct values, and
-established a location in which to
-load your file (IOCB address plus four
-and plus five). One use is calling up
-a high-res picture from a disk and
-storing it in the screen memory
-(locations 88, 89; $58, $59). You can
-POKE the appropriate decimal values
-into memory and call it with a USR
-call, or make it into a string (START$
-= "hhh*LVd" where the * and the d are
+appropriate actions, POKEd the
+correct IOCB (locations 848 to 959;
+$350 to $3BF) with the correct
+values, and established a location
+in which to load your file (IOCB
+address plus four and plus five).
+One use is calling up a high-res
+picture from a disk and storing it
+in the screen memory (locations 88,
+89; $58, $59). You can POKE the
+appropriate decimal values into
+memory and call it with a USR call,
+or make it into a string (START$ =
+"hhh*LVd" where the * and the d are
 both inverse characters) and call it
 by:
 
@@ -68,10 +73,10 @@ by:
 This method is used to start the
 concurrent mode in the RS-232 of the
 850 interface in the 850 Interface
-Manual. See location 88, 89 ($58, $59)
-for another example of the machine
-language routine technique. Still
-another use of this method can be
-found in De Re Atari. Initialized to
-58564 ($E4C4).
+Manual. See location 88, 89 ($58,
+$59) for another example of the
+machine language routine technique.
+Still another use of this method can
+be found in De Re Atari. Initialized
+to 58564 ($E4C4).
 

@@ -4,6 +4,6 @@ TOPIC: MAP/OLDCHR
 93          005D          OLDCHR
 
 Retains the value of the character
-under the cursor used to restore that
-character when the cursor moves
+under the cursor used to restore
+that character when the cursor moves
 

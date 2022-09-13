@@ -1,0 +1,35 @@
+
+Topic: NOS/NTRANS
+
+NTRANS - Translate the end-of-line
+character when transferring text data
+between a remote host's operating
+system and the ATARI computer.
+
+Usage:
+
+NTRANS [N[n]:] 0|1|2|3
+
+Examples:
+NTRANS
+NTRANS 3
+NTRANS N1: 0
+
+The ATARI's native end-of-line char-
+actor is $9B. Windows uses CRLF ($0D,
+$0A) and Unix (Linux, Mac OS) uses 
+newline ($0A).
+
+Mode Description      Host <--> ATARI
+---- -----------      ---------------
+0    No translation    $9B <--> $9B
+1    Carriage Return   $0D ---> $9B
+2    Newline           $0A ---> $9B
+3    CRLF          $0D,$0A <--> $9B
+
+Notice that only mode 3 offers two
+way translation. Modes 1 and 2 will
+translate data read into the ATARI
+but will not translate files written
+to the remote host.
+

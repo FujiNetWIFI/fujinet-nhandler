@@ -3,6 +3,6 @@ TOPIC: MAP/SFDIR
 
 3873          0F21          SFDIR
 
-Directory search routines; search for
-the user-specified file name.
+Directory search routines; search
+for the user-specified file name.
 

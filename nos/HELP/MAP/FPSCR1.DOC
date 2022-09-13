@@ -1,8 +1,8 @@
 
 TOPIC: MAP/FPSCR1
 
-1516-1535     05EC-05FF      FPSCR1
+1516-1535      05EC-05FF     FPSCR1
 
-FP scratch pad use.
+Ditto. The end of the buffer is named
+LBFEND.
 
-The end of the buffer is named LBFEND.

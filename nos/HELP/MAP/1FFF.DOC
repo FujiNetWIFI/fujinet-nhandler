@@ -1,1 +1,21 @@
-UNNAMED_1FFF.DOC
+
+TOPIC: MAP/UNNAMED_1FFF
+
+8191          1FFF        ....
+
+This is the top of the minimum RAM
+required for operation (8K).
+To use DOS, you must have a minimum
+of 16K.
+
+---------------------------------------
+DUP.SYS ROUTINES
+
+Locations 8192 to 32767 ($2000 to
+$7FFF) are the largest part of the
+RAM expansion area; this space is
+generally for your own use. If you
+have DOS.SYS or DUP.SYS loaded in,
+they also use a portion of this area
+to 13062 ($3306) as below:
+

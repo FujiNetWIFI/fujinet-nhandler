@@ -3,8 +3,8 @@ TOPIC: MAP/FPTR2
 
 254          00FE          FPTR2
 
-Pointer to the user's second FP number
-to be used in an operation.
+Pointer to the user's second FP
+number to be used in an operation.
 
 End of the page zero RAM.
 

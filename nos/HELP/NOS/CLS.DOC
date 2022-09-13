@@ -1,0 +1,11 @@
+
+Topic: NOS/CLS
+
+CLS - Clear the screen.
+
+Usage:
+CLS
+
+Same as BASIC code:
+PRINT CHR$(125)
+

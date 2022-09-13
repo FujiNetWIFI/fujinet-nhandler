@@ -3,6 +3,6 @@ TOPIC: MAP/SFLOAD
 
 5540          15A4          SFLOAD
 
-Routines to load a MEM.SAV file if it
-exists.
+Routines to load a MEM.SAV file if
+it exists.
 

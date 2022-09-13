@@ -3,11 +3,11 @@ TOPIC: MAP/PORTB
 
 54017          D301          PORTB
 
-(W/R) Port B. Reads or writes data to
-and/or from jacks three and four. Same
-as PORTA, above, for the respective
-jacks. Shadow registers are: STICK2
-(634; $27A, jack three), STICK3 (635,
-$27B, jack four), and PTRIG4-7
-(640-643; $280-$283).
+(W/R) Port B. Reads or writes data
+to and/or from jacks three and four.
+Same as PORTA, above, for the
+respective jacks. Shadow registers
+are: STICK2 (634; $27A, jack three),
+STICK3 (635, $27B, jack four), and
+PTRIG4-7 (640-643; $280-$283).
 

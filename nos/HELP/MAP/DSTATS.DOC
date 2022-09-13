@@ -7,14 +7,15 @@ The status code upon return to user.
 Also used to set the data direction;
 whether the device is to send or
 receive a data frame.  This byte is
-used by the device handler to indicate
-to SIO what to do after the command
-frame is sent and acknowledged. Prior
-to the SIO call, the handler examines
-BIT 6 (one equals receive data) and
-BIT 7 (one equals send data). If both
-bits are zero, then no data transfer
-is associated with the operation. Both
+used by the device handler to
+indicate to SIO what to do after the
+command frame is sent and
+acknowledged. Prior to the SIO call,
+the handler examines BIT 6 (one
+equals receive data) and BIT 7 (one
+equals send data). If both bits are
+zero, then no data transfer is
+associated with the operation. Both
 bits set to one is invalid. SIO uses
 it to indicate to the handler the
 status of the requested operation

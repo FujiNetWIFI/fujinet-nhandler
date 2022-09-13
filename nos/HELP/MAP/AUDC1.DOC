@@ -5,9 +5,9 @@ TOPIC: MAP/AUDC1
 
 (W) Audio channel one control. Each
 AUDF register has an associated
-control register which sets volume and
-distortion levels.  The bit assignment
-is:
+control register which sets volume
+and distortion levels.  The bit
+assignment is:
 
             Bits
 -----------------------------
@@ -21,12 +21,13 @@ Distortion Volume    Volume
           (forced
            output)
 
-The values for the distortion bits are
-as follows. The first process is to
-divide the clock value by the
-frequency, then mask the output using
-the polys in the order below. Finally,
-the result is divided by two.
+The values for the distortion bits
+are as follows. The first process is
+to divide the clock value by the
+frequency, then mask the output
+using the polys in the order below.
+Finally, the result is divided by
+two.
 
 Bit
 7    6    5
@@ -43,12 +44,12 @@ Bit
 
 In general, the tones become more
 regular (a recognizable droning
-becomes apparent) with fewer and lower
-value polys masking the output. This
-is all the more obvious at low
-frequency ranges. POKE with 160 ($A0)
-or 224 ($E0) plus the volume for pure
-tones.
+becomes apparent) with fewer and
+lower value polys masking the
+output. This is all the more obvious
+at low frequency ranges. POKE with
+160 ($A0) or 224 ($E0) plus the
+volume for pure tones.
 
 See De Re Atari and the Hardware
 Manual for details.

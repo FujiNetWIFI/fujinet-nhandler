@@ -1,8 +1,10 @@
 
-Topic: NOS/DIR - Display a list of
-files/directories found on a mounted
-network drive. Filename and file size
-are returned.
+Topic: NOS/DIR 
+
+DIR - Display a list of files/direct-
+ories found on a mounted network 
+drive. Filename and file size are 
+returned.
 
 Usage:
 
@@ -29,6 +31,7 @@ DIR N2:
 DIR N2:*.BAS
 DIR N2:action/HELLO*.ACT
 DIR "N2:holmes cd/"
+DIR TNFS://localhost/
 
 Notes:
 
@@ -40,4 +43,13 @@ returned.
 to display the contents of a
 sub-directory rather than the
 directory name itself.
+
+3. For long listings:
+
+Key             Purpose
+---             -------
+SPACE           Pause
+Non-SPACE Key   Resume
+ESC             Quit
+CTRL+1          Pause/Resume
 

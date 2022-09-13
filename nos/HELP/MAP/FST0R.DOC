@@ -3,6 +3,6 @@ TOPIC: MAP/FST0R
 
 56743          DDA7          FST0R
 
-Store the FP number into the 6502 X,Y
-registers from FR0.
+Store the FP number into the 6502
+X,Y registers from FR0.
 

@@ -4,17 +4,17 @@ TOPIC: MAP/PACTL
 54018          D302          PACTL
 
 (W/R) Port A controller (see 54016
-above). POKE with 60 ($3C) to turn the
-cassette motor off, POKE with 52 to
-turn it on. You can put a music
+above). POKE with 60 ($3C) to turn
+the cassette motor off, POKE with 52
+to turn it on. You can put a music
 cassette in your program recorder,
 press PLAY and then POKE 54018,52.
 Your music will play through the TV
 speaker or external amplifier while
 you work at the Atari. You can use
-this technique to add voice tracks to
-your programs. To turn off the music
-or voice, type POKE 54018,60.
+this technique to add voice tracks
+to your programs. To turn off the
+music or voice, type POKE 54018,60.
 
 PACTL can be used for other external
 applications by the user.
@@ -23,26 +23,27 @@ Bit use is as follows:
 
 Bit           Function
 7 (read only) Peripheral A interrupt
-              (IRQ) status bit. Set by
-              Peripheral (PORT) A. 
+              (IRQ) status bit. Set
+              by Peripheral (PORT) A.
               Reset by reading PORTA
               (53774; $D20E).
 6             Set to zero.
 5             Set to one.
 4             Set to one.
-3 (write)     Peripheral motor control
-              line (turn the cassette
-              on or off; zero equals 
-              on).
+3 (write)     Peripheral motor
+              control line (turn the
+              cassette on or off;
+              zero equals on).
 2 (write)     Controls PORTA
               addressing. One equals
-              PORTA register;
-              zero equals direction 
+              PORTA register; zero
+              equals direction
               control register.
 1             Set to zero.
 0 (write)     Peripheral A interrupt
-              (IRQ) enable. One equals
-              enable. Set by the OS 
-              but available to the 
-              user; reset on powerup.
+              (IRQ) enable. One
+              equals enable. Set by
+              the OS but available to
+              the user; reset on
+              powerup.
 

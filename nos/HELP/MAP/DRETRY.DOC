@@ -3,6 +3,6 @@ TOPIC: MAP/DRETRY
 
 55          0037          DRETRY
 
-Number of device retries. The default
-is one.
+Number of device retries. The
+default is one.
 

@@ -8,5 +8,6 @@ vector is available only with the
 version "B" OS ROMs, not the earlier
 version. You can use this vector to
 write your own BREAK key interrupt
-routine.  Initialized to 59220 ($E754).
+routine.  Initialized to 59220
+($E754).
 

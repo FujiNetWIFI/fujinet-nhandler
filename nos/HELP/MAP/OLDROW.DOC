@@ -3,9 +3,9 @@ TOPIC: MAP/OLDROW
 
 90          005A          OLDROW
 
-Previous graphics cursor row. Updated
-from location 84 ($54) before every
-operation. Used to determine the
-starting row for the DRAWTO and XIO 18
-(FILL command).
+Previous graphics cursor row.
+Updated from location 84 ($54)
+before every operation. Used to
+determine the starting row for the
+DRAWTO and XIO 18 (FILL command).
 

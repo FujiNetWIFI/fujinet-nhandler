@@ -7,6 +7,6 @@ TOPIC: MAP/POTGO
 must read your POT values first and
 then start the scan sequence, since
 POTGO resets the POT registers to
-zero. Written by the stage two VBLANK
-sequence.
+zero. Written by the stage two
+VBLANK sequence.
 

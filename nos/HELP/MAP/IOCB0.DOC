@@ -1,44 +1,109 @@
 
 TOPIC: MAP/IOCB0
 
-832-847       0340-034F       IOCB0
+Locations 832 to 959 ($340 to $3BF)
+are reserved for the eight IOCB's
+(input/output control blocks).
+IOCB's are channels for the transfer
+of information (data bytes) into and
+out of the Atari, or between
+devices.  You use them to tell the
+computer what operation to perform,
+how much data to move and, if
+necessary, where the data to be
+moved is located. Each block has 16
+bytes reserved for it.
+
+What is an IOCB? Every time you
+PRINT something on the screen or the
+printer, every time you LOAD or SAVE
+a file, every time you OPEN a
+channel, you are using an IOCB. In
+some cases, operations have
+automatic OPEN and CLOSE functions
+built in--like LPRINT. In others,
+you must tell the Atari to do each
+step as you need it. Some IOCB's are
+dedicated to specific use, such as
+zero for the screen display. Others
+can be used for any I/O function you
+wish. The information you place
+after the OPEN command tells CIO how
+you want the data transferred to or
+from the device. It is SIO and the
+device handlers that do the actual
+transfer of data.
+
+You can easily POKE the necessary
+values into the memory locations and
+use a machine language subroutine
+through a USR function to call the
+CIO directly (you must still use an
+OPEN and CLOSE statement for the
+channel, however). This is useful
+because BASIC only supports either
+record or single byte data transfer,
+while the CIO will handle complete
+buffer I/O. See the CIO entry
+address, location 58454 ($E456), for
+more details. These blocks are used
+the same way as the page zero IOCB
+(locations 32 to 47; $20 to $2F).
+The OS takes the information here,
+moves it to the ZIOCB for use by the
+ROM CIO, then returns the updated
+information back to the user area
+when the operation is done.
+
+Note that when BASIC encounters a
+DOS command, it CLOSEs all channels
+except zero. Refer to the Atari
+Hardware Manual and the 850
+Interface Manual for more detailed
+use of these locations.
+
+-----------------------------
+
+832-847       0340-034F      IOCB0
 
 I/O Control Block (IOCB) zero.
 Normally used for the screen editor
 (E:). You can POKE 838,166 and POKE
 839,238 and send everything to the
-printer instead of to the screen (POKE
-838,163, and POKE 839,246 to send
-everything back to the screen again).
-You could use this in a program to
-toggle back and forth between screen
-and printed copy when prompted by user
-input. This will save you multiple
-PRINT and LPRINT coding.
+printer instead of to the screen
+(POKE 838,163, and POKE 839,246 to
+send everything back to the screen
+again).  You could use this in a
+program to toggle back and forth
+between screen and printed copy when
+prompted by user input. This will
+save you multiple PRINT and LPRINT
+coding.
 
 You can use these locations to
-transfer data to other devices as well
-since they point to the address of the
-device's "put one byte" routine. See
-the OS Manual for more information.
-Location 842 can be given the value 13
-for read from screen and 12 for write
-to screen. POKE 842,13 puts the Atari
-into "RETURN key mode" by setting the
+transfer data to other devices as
+well since they point to the address
+of the device's "put one byte"
+routine. See the OS Manual for more
+information. Location 842 can be
+given the value 13 for read from
+screen and 12 for write to screen.
+POKE 842,13 puts the Atari into
+"RETURN key mode" by setting the
 auxiliary byte one (ICAX1) to screen
-input and output. POKEing 842 with 12
-returns it to keyboard input and
+input and output. POKEing 842 with
+12 returns it to keyboard input and
 screen output mode. The former mode
 allows for dynamic use of the screen
 to act upon commands the cursor is
 made to move across.
 
-You can use this "forced read" mode to
-read data on the screen into BASIC
-without user intervention. For
+You can use this "forced read" mode
+to read data on the screen into
+BASIC without user intervention. For
 example, in the program below, lines
-100 through 200 will be deleted by the
-program itself as it runs.
+100 through 200 will be deleted by
+the program itself as it runs.
 
 10 GRAPHICS 0:POSITlON 2,4
 20 PRINT 100:PRINT 150:PRINT 200
@@ -54,21 +119,22 @@ program itself as it runs.
 DOWNLOAD FORCREAD.BAS
 
 See COMPUTE!, August 1981, for a
-sample of this powerful technique. See
-Santa Cruz's Tricky Tutorial #1
+sample of this powerful technique.
+See Santa Cruz's Tricky Tutorial #1
 (display lists) for another
-application. The last four bytes (844
-to 847; $34C to $34F in this case) are
-spare (auxiliary) bytes in all IOCB's.
- When you are in a GRAPHICS mode other
-than zero, channel zero is OPENed for
-the text window area. If the window is
-absent and you OPEN channel zero, the
-whole screen returns to mode zero. A
-BASIC NEW or RUN command closes all
+application. The last four bytes
+(844 to 847; $34C to $34F in this
+case) are spare (auxiliary) bytes in
+all IOCB's.  When you are in a
+GRAPHICS mode other than zero,
+channel zero is OPENed for the text
+window area. If the window is absent
+and you OPEN channel zero, the whole
+screen returns to mode zero. A BASIC
+NEW or RUN command closes all
 channels except zero. OPENing a
-channel to S: or E: always clears the
-display screen.
+channel to S: or E: always clears
+the display screen.
 
 See COMPUTE!, October 1981,for an
 example of using an IOCB with the

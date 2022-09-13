@@ -5,6 +5,6 @@ TOPIC: MAP/DOS
 
 DUP.SYS initialization address.
 Beginning of mini-DOS; the
-RAM-resident portion of DUP. Used for
-the same purpose in K- DOS.
+RAM-resident portion of DUP. Used
+for the same purpose in K- DOS.
 

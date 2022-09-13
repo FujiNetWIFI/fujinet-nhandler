@@ -1,43 +1,62 @@
-PACTL
-PADDL0
-PADDL1
-PADDL2
-PADDL3
-PADDL4
-PADDL5
-PADDL6
-PADDL7
-PBCTL
-PBPNT
-PBUFSZ
-PCOLR0
-PCOLR1
-PCOLR2
-PCOLR3
-PENH
-PENV
-PIA
-PIRQQ
-PLYARG
-PLYEVL
-PMBASE
-POKEY
-POKMSK
-PORTA
-PORTB
-POTGO
-PRINTV
-PRIOR
-PRNBUF
-PRNORG
-PTABW
-PTEMP
-PTIMOT
-PTRIG0
-PTRIG1
-PTRIG2
-PTRIG3
-PTRIG4
-PTRIG5
-PTRIG6
-PTRIG7
+
+Topic: MAP/P
+
+Memory Map by Label [P]
+
+Type HELP MAP/<LABEL> or
+Type HELP MAP/<ADDR> for more
+
+LABEL   ADDR  DESCRIPTION
+-----   ----  -----------------------
+P0PF    D004  Player 0/PF collision
+P0PL    D00C  Player 0/Player coll.
+P1PF    D005  Player 1/PF collision
+P1PL    D00D  Player 1/Player coll.
+P2PF    D006  Player 2/PF collision
+P2PL    D00E  Player 2/Player coll.
+P3PF    D007  Player 3/PF collision
+P3PL    D00F  Player 3/PF collision
+PACTL   D302  Port A controller
+PADDL0  0270  Paddle 0 value
+PADDL1  0271  Paddle 1 value
+PADDL2  0272  Paddle 2 value
+PADDL3  0273  Paddle 3 value
+PADDL4  0274  Paddle 4 value
+PADDL5  0275  Paddle 5 value
+PADDL6  0276  Paddle 6 value
+PADDL7  0277  Paddle 7 value
+PBCTL   D303  Port B controller
+PBPNT   001D  Print buffer pointer
+PBUFSZ  001E  Print buffer size
+PCOLR0  02C0  Player/Missile 0 color
+PCOLR1  02C1  Player/Missile 1 color
+PCOLR2  02C2  Player/Missile 2 color
+PCOLR3  02C3  Player/Missile 3 color
+PENH    D40C  Light pen horiz pos
+PENV    D40D  Light pen vertical pos
+PIA     D300-D3FF PIA 6520 chip
+PIRQQ   FFBE  Key press subroutines
+PLYARG  05E0  Polynomial args
+PLYEVL  DD40  Polynomial eval routine
+PMBASE  D407  MSB of P/M base address
+POKEY   D200-D2FF POKEY chip
+POKMSK  0010  POKEY interrupt masks
+PORTA   D300  R/W controller jack 1,2
+PORTB   D301  R/W controller jack 3,4
+POTGO   D20B  Start of POS scan sequ.
+PRINTV  E430  Printer handler P:
+PRIOR   D01B  Graphics priorities
+PRNBUF  03C0-03E7 Printer buffer
+PRNORG  EE78-EF40 Printer handler
+PTABW   00C9  Tab width
+PTEMP   001F  Temp register for P:
+PTIMOT  001C  Printer timeout
+PTRIG0  027C  Paddle trigger 0
+PTRIG1  027D  Paddle trigger 1
+PTRIG2  027E  Paddle trigger 2
+PTRIG3  027F  Paddle trigger 3
+PTRIG4  0280  Paddle trigger 4
+PTRIG5  0281  Paddle trigger 5
+PTRIG6  0282  Paddle trigger 6
+PTRIG7  0283  Paddle trigger 7
+

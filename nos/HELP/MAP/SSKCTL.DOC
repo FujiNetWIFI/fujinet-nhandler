@@ -4,9 +4,9 @@ TOPIC: MAP/SSKCTL
 562          0232          SSKCTL
 
 Serial port control register, shadow
-for 53775 ($D20F). Setting the bits in
-this register to one has the following
-effect:
+for 53775 ($D20F). Setting the bits
+in this register to one has the
+following effect:
 
 Bit   Dec   Function
  0      1   Enable the keyboard

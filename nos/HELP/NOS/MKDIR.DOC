@@ -21,4 +21,3 @@ MKDIR N1:MYPROJ
 MKDIR N1:/PROJECTS/MyNewProj/
 MKDIR "N2:/Projects/Big Game/"
 MD MYPROJ
-

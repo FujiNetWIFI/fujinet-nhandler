@@ -6,17 +6,17 @@ TOPIC: MAP/SSFLAG
 Start/stop display screen flag, used
 to stop the scrolling of the screen
 during a DRAW or graphics routine, a
-LISTing or a PRINTing. When the value
-is zero, the screen output is not
-stopped. When the value is 255 ($FF;
-the one's complement), the output to
-the screen is stopped, and the machine
-waits for the value to become zero
-again before continuing with the
-scrolling display. Normally SSFLAG is
-toggled by the user during these
-operations by pressing the CTRL-1 keys
-combination to both start and stop the
-scroll. Set to zero by RESET and
-powerup.
+LISTing or a PRINTing. When the
+value is zero, the screen output is
+not stopped. When the value is 255
+($FF; the one's complement), the
+output to the screen is stopped, and
+the machine waits for the value to
+become zero again before continuing
+with the scrolling display. Normally
+SSFLAG is toggled by the user during
+these operations by pressing the
+CTRL-1 keys combination to both
+start and stop the scroll. Set to
+zero by RESET and powerup.
 

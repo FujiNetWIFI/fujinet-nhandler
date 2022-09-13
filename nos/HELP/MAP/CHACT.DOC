@@ -6,28 +6,30 @@ TOPIC: MAP/CHACT
 Character Mode Register. Zero means
 normal inverse characters, one is
 blank inverse characters (inverse
-characters will be printed as blanks,
-i.e., invisible), two is normal
-characters, three is solid inverse
-characters. Four to seven is the same
-as zero to three, but prints the
-display upside down.  This register
-also controls the transparency of the
-cursor. It is transparent with values
-two and six, opaque with values three
-and seven. The cursor is absent with
-values zero, one, four and five.
+characters will be printed as
+blanks, i.e., invisible), two is
+normal characters, three is solid
+inverse characters. Four to seven is
+the same as zero to three, but
+prints the display upside down.
+This register also controls the
+transparency of the cursor. It is
+transparent with values two and six,
+opaque with values three and seven.
+The cursor is absent with values
+zero, one, four and five.
 
 Toggling BIT 0 on and off can be a
-handy way to produce a blinking effect
-for printed inverse characters
-(characters with ATASCII values
-greater than 128 -- those that have
-BIT 7 set).  Shadow for 54273 ($D401).
-There is no visible cursor for the
-graphics mode output. CHACT is
-initialized to two.  Here's an example
-of blinking text using this register:
+handy way to produce a blinking
+effect for printed inverse
+characters (characters with ATASCII
+values greater than 128 -- those
+that have BIT 7 set).  Shadow for
+54273 ($D401). There is no visible
+cursor for the graphics mode output.
+CHACT is initialized to two.  Here's
+an example of blinking text using
+this register:
 
 10 CHACT=755:REM USE INVERSE FOR WORDS BELOW
 15 PRINT "[THIS IS A TEST OF BLINKING] [TEXT]"
@@ -50,10 +52,11 @@ page six space, try:
 
 DOWNLOAD CHACT.BAS
 
-The blink frequency is set .5 second;
-to change it, change the 30 in line 80
-to any number from one (1/30 second)
-to 255 (eight .5 seconds). For another
-way to make the cursor visible or
-invisible, see locations 752 above.
+The blink frequency is set .5
+second; to change it, change the 30
+in line 80 to any number from one
+(1/30 second) to 255 (eight .5
+seconds). For another way to make
+the cursor visible or invisible, see
+locations 752 above.
 

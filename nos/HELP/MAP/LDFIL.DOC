@@ -3,7 +3,7 @@ TOPIC: MAP/LDFIL
 
 10522          291A          LDFIL
 
-Load a binary file into memory. If it
-has a run address specified in the
-file, it will autoboot.
+Load a binary file into memory. If
+it has a run address specified in
+the file, it will autoboot.
 

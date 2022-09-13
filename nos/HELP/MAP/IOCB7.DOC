@@ -3,30 +3,33 @@ TOPIC: MAP/IOCB7
 
 944-959       03B0-03BF      IOCB7
 
-IOCB seven. LPRINT automatically uses
-channel seven for its use. If the
-channel is OPEN for some other use and
-an LPRINT is done, an error will
-occur, the channel will be CLOSEd, and
-subsequent LPRINTs will work. The LIST
-command also uses channel seven, even
-if channel seven is already OPEN.
-However, when the LIST is done, it
-CLOSEs channel seven. The LOAD command
-uses channel seven to transfer
-programs to and from the recorder or
-disk. LIST (except to the display
-screen), LOAD and LPRINT also close
-all sound voices. The RUN from tape or
-disk and SAVE commands use channel
-seven, as does LIST.  The bytes within
-each IOCB are used as follows:
+IOCB seven. LPRINT automatically
+uses channel seven for its use. If
+the channel is OPEN for some other
+use and an LPRINT is done, an error
+will occur, the channel will be
+CLOSEd, and subsequent LPRINTs will
+work. The LIST command also uses
+channel seven, even if channel seven
+is already OPEN. However, when the
+LIST is done, it CLOSEs channel
+seven. The LOAD command uses channel
+seven to transfer programs to and
+from the recorder or disk. LIST
+(except to the display screen), LOAD
+and LPRINT also close all sound
+voices. The RUN from tape or disk
+and SAVE commands use channel seven,
+as does LIST.  The bytes within each
+IOCB are used as follows:
 
 Label    Offset Bytes Description
 -------------------------------------
 ICHID    0      1     Index into the
-  device name table for the currently
-  OPEN file. Set by the OS. If not in
+  device name table for the
+currently
+  OPEN file. Set by the OS. If not
+in
   use, the value is 255 ($FF), which
   is also the initialization value.
 
@@ -113,219 +116,184 @@ Use  ....unused...   W   R   D   A
 W equals write, R equals read, D
 equals directory, A equals append.
 
-ICAX2     11      1     Auxiliary byte
-two, referred to as AUX2. Special use
-by each device driver; some serial
-port functions may use this byte.
-Auxiliary bytes two to five have no
-fixed use; they are used to contain
-device-dependent and/or
-user-established data.
+ICAX2     11      1     Auxiliary
+byte two, referred to as AUX2.
+Special use by each device driver;
+some serial port functions may use
+this byte. Auxiliary bytes two to
+five have no fixed use; they are
+used to contain device-dependent
+and/or user-established data.
 
 ICAX3/4   12,13   2     Auxiliary
-bytes three and four; used to maintain
-a record of the disk sector number for
-the BASIC NOTE and POINT commands.
+bytes three and four; used to
+maintain a record of the disk sector
+number for the BASIC NOTE and POINT
+commands.
 
-ICAX5     14      1     Auxiliary byte
-five. Used by NOTE and POINT to
-maintain a record of the byte within a
-sector.  It stores the relative
+ICAX5     14      1     Auxiliary
+byte five. Used by NOTE and POINT to
+maintain a record of the byte within
+a sector.  It stores the relative
 displacement in sector from zero to
 124 ($7C). Bytes 125 and 126 of a
 sector are used for sector-link
-values, and byte 127 ($7F) is used as
-a count of the number of data bytes in
-actual use in that sector.
+values, and byte 127 ($7F) is used
+as a count of the number of data
+bytes in actual use in that sector.
 
 ICAX6     15      1     Spare
 auxiliary byte.
 
-Offset is the number you would add to
-the start of the IOCB in order to POKE
-a value into the right field, such as
-POKE 832 + OFFSET, 12.
+Offset is the number you would add
+to the start of the IOCB in order to
+POKE a value into the right field,
+such as POKE 832 + OFFSET, 12.
 
-The following is a list of the values
-associated with OPEN parameter number
-1. Most of these values are listed in
-Your Atari 400/800. These are the
-values found in ICAX1, not the ICCOM
-values.
+The following is a list of the
+values associated with OPEN
+parameter number 1. Most of these
+values are listed in Your Atari
+400/800. These are the values found
+in ICAX1, not the ICCOM values.
 
-Device        Task #    Description
----------------------------------------
-Cassette       4        Read
-recorder       8        Write (can do
-either, not both)
+Device  Task# Description
+------- ----- ----------------------
+Cassette   4  Read
+recorder   8  Write (can do either,
+              not both)
 
-Disk           4        Read
-file           6        Read disk
-directory
-               8        Write new
-file. Any file OPENed in this mode
-will be deleted, and the first byte
-written will be at the start of the
-file.
-               9        Write--append.
-In this mode the file is left intact,
-and bytes written are put at the end
-of the file.
-              12        Read and
-write--update. Bytes read or written
-will start at the first byte in the
-file.
+Disk       4  Read
+file       6  Read disk directory
+           8  Write new file. Any
+              file OPENed in this
+              mode will be deleted,
+              and the first byte
+              written will be at the
+              start of the file.
+           9  Write--append. In this
+              mode the file is left
+              intact, and bytes 
+              written are put at the
+              end of the file.
+          12  Read and write--update. 
+              Bytes read or written
+              will start at the first
+              byte in the file.
 
 D: if BIT 0 equals one and BIT 3
-equals one in AUX1,then operation will
-be appended output.
+equals one in AUX1,then operation
+will be appended output.
 
-Screen         8        Screen output
-editor        12        Keyboard input
-and screen output
-(E:)          13        Screen input
-and output
+Screen     8  Screen output
+editor    12  Keyboard input and 
+              screen output
+(E:)      13  Screen input and output
 
 E: BIT 0 equals one is a forced read
 (GET command).
 
-Keyboard       4        Read
+Keyboard   4  Read
+Printer    8  Write
+RS-232     5  Concurrent read
+serial     8  Block write
+port       9  Concurrent write
+          13  Concurrent read & write
 
-Printer        8        Write
-
-RS-232         5        Concurrent read
-serial         8        Block write
-port           9        Concurrent
-write
-              13        Concurrent
-read and write
-
-                 Clear      Text
-Read
-                 Screen     Window
-Oper-
-                 after GR.  also
-ation
-
-Screen         8        yes        no
-      no
-display       12        yes        no
-      yes
-(S:)          24        yes        yes
-      no
-              28        yes        yes
-      yes
-              40        no         no
-      no
-              44        no         no
-      yes
-              56        no         yes
-      no
-              60        no         yes
-      yes
+              Clear     Text    Read
+              Screen    Window  Oper-
+              after GR. also    ation
+              --------  ----    -----
+Screen     8  yes       no      no
+display   12  yes       no      yes
+(S:)      24  yes       yes     no
+          28  yes       yes     yes
+          40  no        no      no
+          44  no        no      yes
+          56  no        yes     no
+          60  no        yes     yes
 
 Note that with S:, the screen is
-always cleared in GR.0 and there is no
-separate text window in GR.0 unless
-specifically user- designed. Without
-the screen clear, the previous
-material will remain on screen between
-GRAPHICS mode changes, but will not be
-legible in other modes. The values
-with S: are placed in the first
-auxiliary byte of the IOCB. All of the
-screen values above are also a write
+always cleared in GR.0 and there is
+no separate text window in GR.0
+unless specifically user- designed.
+Without the screen clear, the
+previous material will remain on
+screen between GRAPHICS mode
+changes, but will not be legible in
+other modes. The values with S: are
+placed in the first auxiliary byte
+of the IOCB. All of the screen
+values above are also a write
 operation.
 
 The second parameter in an OPEN
 statement (placed in the second
-auxiliary byte) is far more restricted
-in its use. Usually set to zero. If
-set to 128 ($80) for the cassette, it
-changes from normal to short
-inter-record gaps (AUX2).
+auxiliary byte) is far more
+restricted in its use. Usually set
+to zero. If set to 128 ($80) for the
+cassette, it changes from normal to
+short inter-record gaps (AUX2).
 
 With the Atari 820 printer, 83 ($53;
 AUX byte two) means sideways
 characters (Atari 820 printer only).
-Other printer variables (all for AUX2
-as well) are: 70 ($4E) for normal 40
-character per line printing and 87
-($57) for wide printing mode.  With
-the screen (S:), a number can be used
-to specify the GRAPHICS modes zero
+Other printer variables (all for
+AUX2 as well) are: 70 ($4E) for
+normal 40 character per line
+printing and 87 ($57) for wide
+printing mode.  With the screen
+(S:), a number can be used to
+specify the GRAPHICS modes zero
 through eleven. If mode zero is
-chosen, then the AUX1 options as above
-are ignored.  For the ICCOM field, the
-following values apply (BASIC XIO
-commands use the same values):
+chosen, then the AUX1 options as
+above are ignored.  For the ICCOM
+field, the following values apply
+(BASIC XIO commands use the same
+values):
 
-Command                       Decimal
- Hex
------------------------------
-Open channel                      3
-   3
-Get text record (line)            5
-   5   BASIC:
+Command              Dec Hex
+---------------------------------
+Open channel           3 3
+Get text record
+  (line)               5 5  BASIC:
+                            INPUT
+                            #n,A
+Get binary record      7 7  BASIC:
+  (buffer)                  GET #n,A 
+Put text record        9 9
+  (line)
+Put binary record     11 B  BASIC:
+  (buffer)                  PUT #n,A
+Close                 12 C
+Dynamic (channel)     13 D
+   status
 
-INPUT
+BASIC uses a special "put byte"
+vector in the IOCB to talk directly
+to the handler for the PRINT#n,A$
+command.  Disk File Management
+System Commands (BASIC XIO command):
 
-#n,A
-Get binary record (buffer)        7
-   7   BASIC:
-
-GET #n,A
-Put text record (line)            9
-   9
-Put binary record (buffer)       11
-   B   BASIC:
-
-PUT #n,A
-Close                            12
-   C
-Dynamic (channel) status         13
-   D
-
-BASIC uses a special "put byte" vector
-in the IOCB to talk directly to the
-handler for the PRINT#n,A$ command.
-Disk File Management System Commands
-(BASIC XIO command):
-
-Rename                           32
-  20
-Erase (delete)                   33
-  21
-Protect (lock)                   35
-  23
-Unprotect (unlock)               36
-  24
-Point                            37
-  25
-Note                             38
-  26
-Format                          254
-  FE
+Rename                32 20
+Erase (delete)        33 21
+Protect (lock)        35 23
+Unprotect (unlock)    36 24
+Point                 37 25
+Note                  38 26
+Format               254 FE
 
 In addition, XIO supports the
 following commands:
 
-Get character                     7
-   7
-Put character                    11
-   B
-Draw line                        17
-  11   Display
-
-handler
-
-only.
-Fill area                        18
-  12   Display
-
-handler
-
-only.
+Get character          7 7
+Put character         11 B
+Draw line             17 11   Display
+                              handler
+                              only.
+Fill area             18 12   Display
+                              handler
+                              only.
 
 FILL is done in BASIC with XIO
 18,#6,12,0,"S:" (see the BASIC
@@ -333,16 +301,12 @@ Reference Manual for details).
 
 For the RS-232 (R:), XIO supports:
 
-Output partial block             32
-  20
-Control RTS,XMT,DTR              34
-  22
-Baud, stop bits, word size       36
-  24
-Translation mode                 38
-  26
-Concurrent mode                  40
-  28
+Output partial block  32 20
+Control RTS,XMT,DTR   34 22
+Baud, stop bits,      36 24
+  word size 
+Translation mode      38 26
+Concurrent mode       40 28
 
 (see the 850 Interface Manual for
 details)
@@ -350,12 +314,12 @@ details)
 CIO treats any command byte value
 greater than 13 ($D) as a special
 case, and transfers control over to
-the device handler for processing. For
-more information on IOCB use, read
-Bill Wilkinson's "Insight: Atari"
-columns in COMPUTE!, November and
-December 1981, and in Microcomputing,
-August 1982. Also refer to the OS
-User's Manual and De Re Atari.
+the device handler for processing.
+For more information on IOCB use,
+read Bill Wilkinson's "Insight:
+Atari" columns in COMPUTE!, November
+and December 1981, and in
+Microcomputing, August 1982. Also
+refer to the OS User's Manual and De
+Re Atari.
 
------------------------------

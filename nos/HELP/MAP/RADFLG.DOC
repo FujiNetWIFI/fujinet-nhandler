@@ -3,10 +3,10 @@ TOPIC: MAP/RADFLG
 
 251          00FB          RADFLG
 
-Also called DEGFLG. When set to zero,
-all of the trigonometric functions are
-performed in radians; when set to six,
-they are done in degrees. BASIC's NEW
-command and RESET both restore RADFLG
-to radians.
+Also called DEGFLG. When set to
+zero, all of the trigonometric
+functions are performed in radians;
+when set to six, they are done in
+degrees. BASIC's NEW command and
+RESET both restore RADFLG to radians.
 

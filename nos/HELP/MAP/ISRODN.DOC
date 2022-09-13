@@ -1,9 +1,9 @@
 
 TOPIC: MAP/ISRODN
 
-663C           19E6           ISRODN  
-                                      
-Start of the serial interrupt service 
-routine to output data needed routines
-in DUP.SYS.                           
-                          
+663C           19E6         ISRODN
+
+Start of the serial interrupt
+service routine to output data
+needed routines in DUP.SYS.
+

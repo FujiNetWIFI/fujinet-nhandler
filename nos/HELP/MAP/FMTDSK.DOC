@@ -5,12 +5,12 @@ TOPIC: MAP/FMTDSK
 
 Format the entire disk. There is no
 way to format specific sectors of a
-disk with the "C" ROMs currently used
-in your 810 drives.  There is a new
-ROM, the "E" version, which not only
-allows selective sector formatting,
-but is also considerably faster. It
-was not known at the time of this
-writing whether Atari would release
-the "E" version.
+disk with the "C" ROMs currently
+used in your 810 drives.  There is a
+new ROM, the "E" version, which not
+only allows selective sector
+formatting, but is also considerably
+faster. It was not known at the time
+of this writing whether Atari would
+release the "E" version.
 

@@ -1,0 +1,123 @@
+
+TOPIC: MAP/SKCTL
+
+53775          D20F          SKCTL
+
+(W) Serial port control. Holds the
+value 255 ($255) if no key is
+pressed, 251 ($FB) for most other
+keys pressed, 247 ($F7) for SHIFT
+key pressed (*M). See the (R) mode
+below for an explanation of the bit
+functions. POKE with three to stop
+the occasional noise from cassette
+after I/O to bring POKEY out of the
+two-tone mode. (562).
+
+              SKSTAT
+
+(R) Reads the serial port status. It
+also returns values governed by a
+signal on the digital track of the
+cassette tape. You can generate
+certain values using the SOUND
+command in BASIC and a PEEK to
+SKSTAT:
+
+SOUND 0,5,10,15 returns a value to
+here of 255 (or, on occasion, 127).
+SOUND 0,8,10,3 returns a value of
+239.
+
+This is handy for adding a voice
+track to Atari tapes. You use the
+left channel for your voice track
+and the right for the tone(s) you
+want to use as cuing marks. You can
+use the speaker on your TV to
+generate the tones by placing the
+right microphone directly in front
+of the speaker. The computer will
+register these tones in this
+register when it encounters them
+during a later cassette load. See
+COMPUTE!, July 1981, for some other
+suggestions on doing this.
+Bemember, you can turn the cassette
+off by POKEing 54018 ($D302) with 60
+($3C) and back on with 52 ($34).
+
+Bits in the SKCTL (W) register are
+normally zero and perform the
+functions below when set to one. The
+status when used as (R) is listed
+below the write (W) function:
+
+Bit   Function
+0     (W) Enable keyboard debounce
+          circuits.
+      (R) Not used by SKSTAT.
+1     (W) Enable keyboard scanning
+          circuit.
+      (R) Serial input shift register
+      busy.
+2     (W) Fast pot scan: the pot scan
+          counter completes its sequ-
+          ence in two TV line times
+          instead of one frame time
+          (228 scan lines).
+          Not as accurate as the
+          normal pot scan, however.
+      (R) the last key is still
+          pressed.
+3     (W) Serial output is trans-
+          mitted as a two-tone
+signal
+          rather than a logic true/
+          false. POKEY two-tone mode.
+      (R) The shift key is pressed.
+4,5,6 (W) Serial port mode control
+          used to set the bi-direct-
+          ional clock lines so that
+          you can either receive ext-
+          ernal clock data or provide
+          clock data to external dev-
+          ices (see the Hardware
+          Manual, p. II.27). There
+          are two pins on the serial
+          port for Clock IN and Clock
+          OUT data. See the OS User's
+           Manual, p. 133.
+4     (R) Data can be read directly
+          from the serial input port,
+          ignoring the shift register
+5     (R) Keyboard over-run. Reset
+          BITs 7 to 5 (latches) to
+          one using SKRES at 53770
+         ($D20A).
+6     (R) Serial data input over-run.
+          Reset latches as above.
+7     (W) Force break (serial output
+          to zero).
+      (R) Serial data input frame
+          error caused by missing or
+          extra bits. Reset latches
+          as above.
+
+BIT 2 is first set to zero to reset
+POT registers to zero (dumping the
+capacitors used to change the POT
+registers). Then BIT 2 is set to one
+to enable the fast scan. Fast scan
+is not as accurate as the normal
+scan routine. BIT 2 must be reset to
+zero to enable the normal scan mode;
+otherwise, the capacitors will never
+dump.
+
+---------------------------------------
+Locations 53776 to 54015 ($D210 to
+$D2FF) are duplications of locations
+53760 to 53775 and have no
+particular use at present.
+---------------------------------------

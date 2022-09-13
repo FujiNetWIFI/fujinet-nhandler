@@ -3,7 +3,7 @@ TOPIC: MAP/HOLDCH
 
 124          007C          HOLDCH
 
-A character value is moved here before
-the control and shift logic are
-processed for it.
+A character value is moved here
+before the control and shift logic
+are processed for it.
 

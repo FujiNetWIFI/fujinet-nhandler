@@ -3,9 +3,10 @@ TOPIC: MAP/ICHIDZ
 
 32          0020          ICHIDZ
 
-Handler index number. Set by the OS as
-an index to the device name table for
-the currently open file. If no file is
-open on this IOCB (IOCB free), then
-this register is set to 255 ($FF).
+Handler index number. Set by the OS
+as an index to the device name table
+for the currently open file. If no
+file is open on this IOCB (IOCB
+free), then this register is set to
+255 ($FF).
 

@@ -1,42 +1,43 @@
 
 TOPIC: MAP/TABMAP
 
-675-689          02A3-02B1
-TABMAP
+675-689       02A3-02B1      TABMAP
 
 Map of the TAB stop positions. There
-are 15 byte (120 bits) here, each bit
-corresponding to a column in a logical
-line. A one in any bit means the TAB
-is set; to clear all TABs simply POKE
-every location with zero. There are
-120 TAB locations because there are
-three physical lines to one logical
-line in GRAPHICS mode zero, each
-consisting of 40 columns. Setting the
-TAB locations for one logical line
-means they will also be set for each
-subsequent logical line until changed.
-Each physical line in one logical line
-can have different TAB settings,
-however.
+are 15 byte (120 bits) here, each
+bit corresponding to a column in a
+logical line. A one in any bit means
+the TAB is set; to clear all TABs
+simply POKE every location with
+zero. There are 120 TAB locations
+because there are three physical
+lines to one logical line in
+GRAPHICS mode zero, each consisting
+of 40 columns. Setting the TAB
+locations for one logical line means
+they will also be set for each
+subsequent logical line until
+changed. Each physical line in one
+logical line can have different TAB
+settings, however.
 
-To POKE TAB locations from BASIC, you
-must POKE in the number (i.e., set the
-bit) that corresponds to the location
-of the bit in the byte (there are five
-bytes in each line). For example: To
-set tabs at locations 5, 23, 27 and
-32, first visualize the line as a
-string of zeros with a one at each
-desired tab setting:
+To POKE TAB locations from BASIC,
+you must POKE in the number (i.e.,
+set the bit) that corresponds to the
+location of the bit in the byte
+(there are five bytes in each line).
+For example: To set tabs at
+locations 5, 23, 27 and 32, first
+visualize the line as a string of
+zeros with a one at each desired tab
+setting:
 
 0000100000000000000000100010000100000000
 
 Then break it into groups of eight
-bits (one byte units). There are three
-bytes with ones (bits set), two with
-all zeros:
+bits (one byte units). There are
+three bytes with ones (bits set),
+two with all zeros:
 
 00001000 =  8
 00000000 =  0
@@ -45,25 +46,26 @@ all zeros:
 00000000 =  0
 
 Converting these to decimal, we get
-the values listed at the right of each
-byte. These are the numbers you'd POKE
-into locations 675 (the first byte) to
-679 (the fifth byte on the line). On
-powerup or when you OPEN the display
-screen (S: or E:), each byte is given
-a value of one (i.e., 00000001) so
-that there are tab default tab stops
-at 7, 15, 23, etc., incrementing by
-eight to 119. Also, the leftmost
-screen edge is also a valid TAB stop
-(2, 42, and 82).  In BASIC, these are
-set by the SET-TAB and CLR-TAB keys.
-TABMAP also works for the lines in the
-text display window in split-screen
+the values listed at the right of
+each byte. These are the numbers
+you'd POKE into locations 675 (the
+first byte) to 679 (the fifth byte
+on the line). On powerup or when you
+OPEN the display screen (S: or E:),
+each byte is given a value of one
+(i.e., 00000001) so that there are
+tab default tab stops at 7, 15, 23,
+etc., incrementing by eight to 119.
+Also, the leftmost screen edge is
+also a valid TAB stop (2, 42, and
+82).  In BASIC, these are set by the
+SET-TAB and CLR-TAB keys.  TABMAP
+also works for the lines in the text
+display window in split-screen
 formats. TABMAP is reset to the
 default values on pressing RESET or
-changing GRAPHICS modes.  See location
-201 ($C9) about changing the TAB
-settings used when a PRINT statement
-encounters a comma.
+changing GRAPHICS modes.  See
+location 201 ($C9) about changing
+the TAB settings used when a PRINT
+statement encounters a comma.
 

@@ -66,7 +66,7 @@ Command Summary
 Commands in Detail
 ==================
 
-`NCD`
+`NCD`|`CD`
 ====
 
 Mount or unmount a remote directory to a network device (N1: through N4:). The remote directory must be hosted using one of the supported FujiNet protocols (primarily TNFS).
@@ -75,7 +75,7 @@ Mount or unmount a remote directory to a network device (N1: through N4:). The r
 
 Usage:
 
-	NCD [N[n]:]PROTO://path[/][:port]
+	NCD|CD [N[n]:]PROTO://path[/][:port]
 
 Where `n` is an optional device number 1-4. If `n` is omitted, the current default device number is implied.
 Where `PROTO` is a network protocol supported by the FujiNet, such as `TNFS`, `FTP`, `SMB`. File operations for various protocols are limited by what is supported by the protocol or FujiNet.
@@ -87,6 +87,7 @@ General examples:
 	NCD N1:TNFS://192.168.1.100/action/myproj/
 	NCD N2:FTP://ftp.pigwa.net/stuff/collections/
 	NCD "N2:FTP://ftp.pigwa.net/stuff/collections/holmes cd/"
+	CD "N2:FTP://ftp.pigwa.net/stuff/collections/holmes cd/"
 
 A required trailing path separator is appended if none is provided.
 
@@ -126,22 +127,23 @@ To release a remote mount point, enter the `NCD` command with only a device and 
 
 Usage:
 
-	NCD N[n]:
+	NCD|CD N[n]:
 
 Where `n` is an optional device number 1-4. If `n` is omitted, the current default device number is implied.
 
 Example:
 
 	NCD N2:
+	CD N2:
 
 
-`NPWD`
+`NPWD`|`PWD`
 ---
 Query the current mount point for a network drive from the FujiNet device and display the results.
 
 Usage:
 
-	NPWD [N[n]:]
+	NPWD|PWD [N[n]:]
 
 Where `Nn:` is optional and `n` detotes a device number 1-4. If `n` is omitted, the current default device number is implied.
 
@@ -264,7 +266,13 @@ Control is yielded to the warmstart vector defined within the cartridge. This sh
 
 `LOAD`
 ---
-Load a binary file into memory. Machine code vectored from INITAD ($02E2) or RUNAD ($02E0) is executed as appropriate.
+Load a binary file into memory.
+
+Usage:
+
+    LOAD [N[n]:][path/]filename
+
+The `LOAD` command is used to execute a binary programs. Machine code vectored from INITAD ($02E2) is executed as encountered. Machine code vectored from RUNAD ($02E0) is executed when the end-of-file is encountered.
 
 	LOAD JUMPMANJR.XEX
 	LOAD N2:ATARIWRITER.COM
@@ -273,13 +281,15 @@ Load a binary file into memory. Machine code vectored from INITAD ($02E2) or RUN
 `RUN`
 ---
 
-Begin executing machine code at a specified memory address.
+Jump to a specified memory address.
+
+Usage:
 
 	RUN hexaddr
 
-Where `hexaddr` is a four-character hexadecimal address. Leading the address with a `$` returns an error.
+Where `hexaddr` is a four-character hexadecimal address. Leading the address with a `$` returns an error. Addresses lower than `$1000` require a leading zero.
 
-Example:
+Examples:
 	
 	RUN A000
 	RUN 0600
@@ -287,13 +297,15 @@ Example:
 `REENTER`
 ---
 
-Attempt to re-enter a memory-resident program by jumping to the address loitering in `RUNAD` ($02E0). 
+Jump to the memory address stored in `RUNAD ($02E0).
 
 Usage:
 
     REENTER
 
-For example, if an application has a `QUIT TO DOS` function, it may be possible to exit, perform a task in `DOS`, and then jump back into the application without having to re-load the application from the network.
+Attempt to re-enter a memory-resident program by jumping from the command processor to the address loitering in `RUNAD` ($02E0).
+
+For example, if an application has a `QUIT TO DOS` function, it may be possible to exit, perform a task in the NOS command processor, and then jump back into the application without having to re-load the application from the network.
 
 The success of the `REENTER` command depends on the application. Also, be aware that the entry point for an application may clear any previous work in memory, so save any work before quitting to DOS.
 
@@ -328,10 +340,23 @@ Usage:
 
 	CLS
 
+`TYPE`
+---
+Displays the contents of a text file to the screen.
+
+Usage:
+
+    TYPE [N[n]:][path/]filename
+
+The `TYPE` command clears the screen and prints the contents of a text file to the  display. The text stream is paused once the screen is full. Press any key to display the next page. Press the `ESC` key to exit the text stream.
+
+Known issue: Executing `TYPE` on a non-text file can overrun the assigned buffer and corrupt memory.
+
+
 `COLD`
 ---
 
-Reboots the computer. Can be used to disable/enable ATARI BASIC on non-400/800 computers by holding (or not) the `OPTION` console key at the moment the command is launched.
+Reboots the ATARI. Can be used to disable/enable ATARI BASIC on non-400/800 computers by holding (or not) the `OPTION` console key at the moment the command is launched.
 
 Usage:
 
@@ -348,9 +373,20 @@ Performs a warmstart.
 
 `HELP`
 ---
+Online help system.
 
 Usage:
 
     HELP [TOPIC][/SUBTOPIC]
+  
+Typing `HELP` by itself provides a list of top-level topics. To show what's available under a top-level topic, type `HELP` followed by the topic name. Finally, there may be a list of sub-topics available under the topic. Type `HELP TOPIC/SUBTOPIC` to view the article related to the sub-topic.
 
-Online help system.
+Examples:
+
+    HELP
+    HELP NOS
+    HELP NOS/MKDIR
+    HELP REF
+    HELP REF/ATASCII
+
+The help articles are hosted by github.com. If a help command returns a HTTP 404 error, ensure a TOPIC was entered if one was required. For example, `HELP MKDIR` is incorrect and `HELP NOS/MKDIR` is correct.

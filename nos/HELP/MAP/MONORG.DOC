@@ -1,16 +1,16 @@
 
 TOPIC: MAP/MONORG
 
-61667-62435          F0E3-F3E3
- MONORG
+61667-62435     F0E3-F3E3    MONORG
 
-Routines for the monitor handler. This
-is also the address area of PWRUP, the
-powerup module (61733; $F125).
-Coldstart routines are initialized to
-this location. The routine to check
-for cartridge installation begins at
-61845 ($F195). Hardware initialization
+Routines for the monitor handler.
+This is also the address area of
+PWRUP, the powerup module (61733;
+$F125). Coldstart routines are
+initialized to this location. The
+routine to check for cartridge
+installation begins at 61845
+($F195). Hardware initialization
 begins at 62081 ($F281).
 
 61723 ($F11B) RESET;
@@ -24,8 +24,8 @@ initialization routines.
 
 62100 ($F294) OSRAM;
 
-the start of the OS RAM initialization
-and setup routines.
+the start of the OS RAM
+initialization and setup routines.
 
 62159 ($F2CF) BOOT;
 

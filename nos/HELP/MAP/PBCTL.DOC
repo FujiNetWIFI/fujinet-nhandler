@@ -4,36 +4,38 @@ TOPIC: MAP/PBCTL
 54019          D303          PBCTL
 
 (W/R) Port B controller. Initialized
-to 60 ($3C) by the OS IRQ code. PBCTL
-is the same as PACTL, above, with the
-following exception (this may actually
-perform the same function as in PACTL,
-but I am not sure of the distinction
-between descriptions):
+to 60 ($3C) by the OS IRQ code.
+PBCTL is the same as PACTL, above,
+with the following exception (this
+may actually perform the same
+function as in PACTL, but I am not
+sure of the distinction between
+descriptions):
 
-Bit             Function
-3               Peripheral command
-identification (serial bus command),
-initialized to 60 ($3C).
+Bit Function
+3   Peripheral command identification
+    (serial bus command), initialized
+    to 60 ($3C).
 
-Ports can be used for external control
-applications by the technically minded
-reader who is willing to do some
-soldering to develop cables and
-connectors. A good example can be
-found in COMPUTE!, February 1981,
-where the author gives directions for
-using jacks three and four as a
-printer port. The Macrotronic printer
-cables use just this method, bypassing
-the 830 interface entirely (one way of
+Ports can be used for external
+control applications by the
+technically minded reader who is
+willing to do some soldering to
+develop cables and connectors. A
+good example can be found in
+COMPUTE!, February 1981, where the
+author gives directions for using
+jacks three and four as a printer
+port. The Macrotronic printer cables
+use just this method, bypassing the
+830 interface entirely (one way of
 reducing your hardware costs).
-Theoretically, the entire Atari can be
-controlled through the ports!
+Theoretically, the entire Atari can
+be controlled through the ports!
 
----------------------------------------
+-------------------------------------
 Locations 54020 to 54271 ($D304 to
 $D3FF) are repeats of locations
 54016 to 54019 ($D300 to $D303).
----------------------------------------
+-------------------------------------
 

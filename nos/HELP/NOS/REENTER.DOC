@@ -1,0 +1,32 @@
+
+Topic NOS/REENTER
+
+REENTER - 
+
+Jump to the memory address stored in
+RUNAD ($02E0).
+
+Usage:
+
+REENTER
+
+Attempt to re-enter a memory-resident
+program by jumping from the command
+processor to the address loitering in
+RUNAD ($02E0).
+
+For example, if an application has a
+`QUIT TO DOS` function, it may be
+possible to exit, perform a task in
+the NOS command processor, and then
+jump back into the application with-
+out having to re-load the binary file
+from the network.
+
+The success of the `REENTER` command
+depends on the application. Also, be
+aware that the entry point for an
+application may clear any previous
+work in memory, so save any work
+before quitting to DOS.
+

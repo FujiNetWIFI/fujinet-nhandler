@@ -3,9 +3,9 @@ TOPIC: MAP/CDTMV5
 
 544          0220          CDTMV5
 
-System timer five. Same as 538 ($21A).
-Timers three, four, and five all set
-flags at 554, 556 and 558 ($22A, $22C,
-$22E), respectively, when they
-decrement to zero.
+System timer five. Same as 538
+($21A). Timers three, four, and five
+all set flags at 554, 556 and 558
+($22A, $22C, $22E), respectively,
+when they decrement to zero.
 

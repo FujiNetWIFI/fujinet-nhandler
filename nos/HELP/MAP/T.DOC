@@ -1,21 +1,36 @@
-TABMAP
-TEMP1
-TEMP2
-TEMP3
-TEMP
-TESTVER2
-TIMER1
-TIMER2
-TIMFLG
-TINDEX
-TMPCOL
-TMPLBT
-TMPROW
-TMPX1
-TRAMSZ
-TSTAT
-TSTDAT
-TXTCOL
-TXTMSC
-TXTOLD
-TXTROW
+
+Topic: MAP/T
+
+Memory Map by Label [T]
+
+Type HELP MAP/<LABEL> or
+Type HELP MAP/<ADDR> for more
+
+LABEL   ADDR  DESCRIPTION
+-----   ----  -----------------------
+TABMAP  02A3-02B1 Map of TAB stops
+TEMP1   0312  Temp storage for SIO
+TEMP2   0314  Temp storage
+TEMP3   0315  Temp storage
+TEMP    023E  Temp storage for SIO
+TESTVER2 28F3 Test for DOS version 2
+TIMER1  030C  Initial baud rate value
+TIMER2  0310  Final baud rate value
+TIMFLG  0317  Baud rate time-out flag
+TINDEX  0293  Mode for split text wnd
+TMPCOL  02B9  COLCRS temp register
+TMPLBT  02A1  Bit mask temp storage
+TMPROW  02B8  ROWCRS temp register
+TMPX1   02B8  Scroll loop temp reg
+TRAMSZ  0006  RAM size temp register
+TRIG0   D010  Joystick trigger 0
+TRIG1   D011  Joystick trigger 1
+TRIG2   D012  Joystick trigger 2
+TRIG3   D013  Joystick trigger 3
+TSTAT   0319  Temp status holder
+TSTDAT  0007  RAM test data register
+TXTCOL  0291  Text window cursor col
+TXTMSC  0294  Split-screen text start
+TXTOLD  0296-029B Split-screen regs
+TXTROW  0290  Text window cursor row
+

@@ -1,16 +1,17 @@
 
 TOPIC: MAP/ROM_AB_CHK
 
-58383          E40F          ....
+58383          E40F     ....
 
-If you PEEK here and get back 56, then
-you have the older "A" version of the
-OS ROMs. If you get back zero, then
-you have the newer "B" version that
-was released in January 1982. The "B"
-version fixes some minor bugs,
-including the device time-out
-problems, enables POKEY timer four,
-and provides a vector for BREAK key
-interrupts. See Appendix 4.
+If you PEEK here and get back 56,
+then you have the older "A" version
+of the OS ROMs. If you get back
+zero, then you have the newer "B"
+version that was released in January
+1982. The "B" version fixes some
+minor bugs, including the device
+time-out problems, enables POKEY
+timer four, and provides a vector
+for BREAK key interrupts. See
+Appendix 4.
 

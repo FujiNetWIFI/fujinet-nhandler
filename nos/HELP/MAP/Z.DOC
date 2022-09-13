@@ -1,8 +1,19 @@
-ZBUFP
-ZDRVA
-ZF1
-ZFR0
-ZSBA
-ZTEMP1
-ZTEMP3
-ZTEMP4
+
+Topic: MAP/Z
+
+Memory Map by Label [Z]
+
+Type HELP MAP/<LABEL> or
+Type HELP MAP/<ADDR> for more
+
+LABEL   ADDR  DESCRIPTION
+-----   ----  -----------------------
+ZBUFP   0043  Zero page filename buf
+ZDRVA   0045  Zero page drive pointer
+ZF1     DA46  Clear FP1
+ZFR0    DA44  Clear FP0
+ZSBA    0047  Zero page sect buff ptr
+ZTEMP1  00F5  Temporary register
+ZTEMP3  00F9  Temporary register
+ZTEMP4  00F7  Temporary register
+

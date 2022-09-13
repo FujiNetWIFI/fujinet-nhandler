@@ -3,6 +3,7 @@ TOPIC: MAP/TMPCOL
 
 697          02B9          TMPCOL
 
-Temporary register for column used by
-COLCRS (locations 85, 86; $55, $56).
+Temporary register for column used
+by COLCRS (locations 85, 86; $55,
+$56).
 

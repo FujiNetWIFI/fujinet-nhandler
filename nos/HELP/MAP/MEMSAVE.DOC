@@ -4,13 +4,14 @@ TOPIC: MAP/MEMSAVE
 5947          173B          MEMSAVE
 
 The MEM.SAV (MEMSAVE) file creation
-routines begin here.  They start with
-the file name MEM.SAV stored in
+routines begin here.  They start
+with the file name MEM.SAV stored in
 ATASCII format. The write routines
-begin at MWRITE, 5958 ($1746). The DOS
-utility MEMSAVE copies the lower 6000
-bytes of memory to disk to save your
-BASIC program from being destroyed
-when you call DOS, which then loads
-DUP.SYS into that area of memory.
+begin at MWRITE, 5958 ($1746). The
+DOS utility MEMSAVE copies the lower
+6000 bytes of memory to disk to save
+your BASIC program from being
+destroyed when you call DOS, which
+then loads DUP.SYS into that area of
+memory.
 

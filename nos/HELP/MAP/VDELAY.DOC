@@ -5,15 +5,16 @@ TOPIC: MAP/VDELAY
 
 (W) Vertical delay register. Used to
 give one-line resolution movement
-capability in the vertical positioning
-of an object when the two line
-resolution display is enabled. Setting
-a bit in VDELAY to one moves the
-corresponding object down by one TV
-line. If DMA is enabled, then moving
-an object by more than one line is
-accomplished by moving bits in the
-memory map instead.
+capability in the vertical
+positioning of an object when the
+two line resolution display is
+enabled. Setting a bit in VDELAY to
+one moves the corresponding object
+down by one TV line. If DMA is
+enabled, then moving an object by
+more than one line is accomplished
+by moving bits in the memory map
+instead.
 
 Bit   Decimal   Object
 7       128     Player 3

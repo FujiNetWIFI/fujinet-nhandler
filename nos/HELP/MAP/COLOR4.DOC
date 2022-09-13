@@ -5,13 +5,13 @@ TOPIC: MAP/COLOR4
 
 The same as the above but for the
 background (BAK) and border color.
-Shadow for 53274 ($D01A). In GTIA mode
-ten, 704 stores the background color
-(BAK), while 712 becomes a normal
-color register.
+Shadow for 53274 ($D01A). In GTIA
+mode ten, 704 stores the background
+color (BAK), while 712 becomes a
+normal color register.
 
-Here are the default (powerup) values
-for the COLOR registers (PCOL
+Here are the default (powerup)
+values for the COLOR registers (PCOL
 registers are all set to zero on
 powerup):
 
@@ -22,9 +22,9 @@ Register    Color  =  Hue  Luminance
 711 (CO.3)    70       4       6
 712 (CO.4)     0       0       0
 
---------------------------------------
+-------------------------------------
 Locations 713 to 735 ($2C9 to $2DF)
-are spare bytes. Locations 736 to 767
-($2E0 to $2FF) are for miscellaneous
-use.
+are spare bytes. Locations 736 to
+767 ($2E0 to $2FF) are for
+miscellaneous use.
 

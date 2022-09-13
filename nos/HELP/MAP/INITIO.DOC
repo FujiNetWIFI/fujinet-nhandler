@@ -3,12 +3,13 @@ TOPIC: MAP/INITIO
 
 6518          1979          INITIO
 
-DUP.SYS warmstart entry. An excellent
-program to eliminate the need for
-DUP.SYS and MEM.SAV (not to mention
-the time required to load them!) was
-presented in COMPUTE!, July 1982,
-called MicroDOS; it's well worth
-examining. See also "The Atari Wedge,"
-COMPUTE!, December 1982.
+DUP.SYS warmstart entry. An
+excellent program to eliminate the
+need for DUP.SYS and MEM.SAV (not to
+mention the time required to load
+them!) was presented in COMPUTE!,
+July 1982, called MicroDOS; it's
+well worth examining. See also "The
+Atari Wedge," COMPUTE!, December
+1982.
 

@@ -4,28 +4,30 @@ TOPIC: MAP/PORTA
 54016          D300          PORTA
 
 (W/R) Reads or writes data from
-controller jacks one and two if BIT 2
-of PACTL (location 54018) is one.
+controller jacks one and two if BIT
+2 of PACTL (location 54018) is one.
 Writes to direction control if BIT 2
 of PACTL is zero.
 
-These two port registers also control
-the direction of data flow to the
-port, if the controller register
-(54018, below) is POKEd with 48 ($30).
-Then, if the bits in the register read
-zero, it is in input (R) mode; if they
-read one, it is in output (W) mode. A
-zero POKEd here makes all bits input,
-a 255 ($FF) makes all bits output.
-BITs 0 to 3 address pins one to four
-on jack one, BITs 4 to 7 address pins
+These two port registers also
+control the direction of data flow
+to the port, if the controller
+register (54018, below) is POKEd
+with 48 ($30). Then, if the bits in
+the register read zero, it is in
+input (R) mode; if they read one, it
+is in output (W) mode. A zero POKEd
+here makes all bits input, a 255
+($FF) makes all bits output. BITs 0
+to 3 address pins one to four on
+jack one, BITs 4 to 7 address pins
 one to four on jack two. POKE 54018
 with 52 to make this location into a
-data register again. Shadow registers
-are: STICK0 (632; $278, jack one),
-STICK1 (633; $279, jack two) and
-PTRIG0-3 (636-639; $27C-$27F).
+data register again. Shadow
+registers are: STICK0 (632; $278,
+jack one), STICK1 (633; $279, jack
+two) and PTRIG0-3 (636-639;
+$27C-$27F).
 
 Bits used as data register
 7    6    5    4    3    2    1    0
@@ -39,8 +41,8 @@ Right    = BIT 3, 7 = 1
 Neutral  = All four jack bits = 1
 
 PORTA is also used to test if the
-paddle 0-3 triggers (PTRIG) have been
-pressed, using these bits:
+paddle 0-3 triggers (PTRIG) have
+been pressed, using these bits:
 
 Bit   7  6  5  4  3  2  1  0
 PTRIG 3  2  -  -  1  0  -  -
@@ -57,9 +59,9 @@ Bit   7   6   5   4   3   2   1  0
 Row   4   3   2  Top  4   3   2 Top
 Jack  ......2........ ......1........
 
-Columns for the keyboard operation are
-read through the POT (PADDL) and TRIG
-registers. See Micro, May 1982, and
-the Hardware Manual for more
+Columns for the keyboard operation
+are read through the POT (PADDL) and
+TRIG registers. See Micro, May 1982,
+and the Hardware Manual for more
 information on jacks and ports.
 

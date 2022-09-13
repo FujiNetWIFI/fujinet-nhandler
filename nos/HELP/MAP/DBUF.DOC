@@ -9,6 +9,6 @@ routines. Copy routines work in
 of data bytes in each sector on the
 disk. There are 256 bytes because
 Atari had planned a double density
-drive which has 253 data bytes in each
-sector.
+drive which has 253 data bytes in
+each sector.
 
