@@ -3,9 +3,10 @@
 
         ;; Authors: Thomas Cherryhomes
         ;;   <thom.cherryhomes@gmail.com>
+
         ;; Michael Sternberg
         ;;   <mhsternberg@gmail.com>
-        ;; CURRENT IOCB IN ZERO PAGE
+
 
         ;; Optimizations being done by djaybee!
         ;; Thank you so much!
@@ -13,6 +14,7 @@
 DOSVEC  =   $0A         ; DOSVEC
 DOSINI  =   $0C         ; DOSINI
 
+        ;; CURRENT IOCB IN ZERO PAGE
 ZIOCB   =   $20         ; ZP IOCB
 ZICHID  =   ZIOCB       ; ID
 ZICDNO  =   ZIOCB+1     ; UNIT #
@@ -92,7 +94,7 @@ ICAX5   =   IOCB+14     ; AUX 5
 ICAX6   =   IOCB+15     ; AUX 6
 
 ROWCRS  =   $0054
-SCROLL  =   $02BB       ; Scroll flag
+SCRFLG  =   $02BB       ; Scroll flag
 CH      =   $02FC       ; Hardware code for last key pressed
 CH1     =   $02F2       ; Prior keyboard character code
 LNBUF   =   $0582       ; Line Buffer (128 bytes)
@@ -109,8 +111,6 @@ PACTL   =   $D302       ; PIA CTRL A
 ;---------------------------------------
 FASC    =   $D8E6       ; Floating point to ASCII
 IFP     =   $D9AA       ; Integer to floating point
-;LDBUFA  =   $DA51       ; Set INBUFF to $0580
-;SKPSPC  =   $DBA1       ; Increment CIX to next whitespace
 
 ;---------------------------------------
 ; OS ROM VECTORS
@@ -140,6 +140,7 @@ CR      =   $0D         ; Carrige Return
 LF      =   $0A         ; Linefeed
 
 ESC_KEY =   $1C         ; Hardware code for ESC
+SPC_KEY =   $21         ; Hardware code for SPACE
 
 OINPUT  =   $04         ; CIO/SIO direction
 OOUTPUT =   $08         ; CIO/SIO direction
@@ -1785,9 +1786,8 @@ DIR_NEXT1:
     ;---------------------------------------
 DIR_WAIT:
         LDX     CH
-        CPX     #$21        ; Space Key
+        CPX     #SPC_KEY
         BEQ     DIR_WAIT
-
 
     ;---------------------------------------
     ; Exit loop if ESC key code found
@@ -1795,7 +1795,6 @@ DIR_WAIT:
         LDA     CH
         CMP     #ESC_KEY    ; hardware code for ESC key
         BEQ     DIR_NEXT
-
     
     ;---------------------------------------
     ; Loop if more data to read
@@ -1832,23 +1831,6 @@ DIR_INIT:
         STX     STADCB+1    ; DUNIT for Status
         STX     DIRRDCB+1   ; DUNIT for Read
         STX     CLODCB+1    ; DUNIT for Close
-
-;    ; ----------------------------------
-;    ; Initialize pagination
-;    ; ----------------------------------
-;    ; CA is scroll limit
-;    ; init scroll limit = ROWCRS - 4
-;    ; CA = 0 if CA < 0
-;    ; ----------------------------------
-;;        LDA     #$00        ; Clear scroll counter
-;;        STA     SCROLL
-;        SEC
-;        LDA     ROWCRS      ; $CA = ROWCRS - 4
-;        SBC     #$04
-;        BMI     @+
-;        LDA     #$01        ; $CA = 0 if $CA < 0
-;@:      STA     $CA
-
         RTS
 
 ;---------------------------------------
@@ -1921,33 +1903,6 @@ DIRODCB:
 ;---------------------------------------
 DIR_PRINT:
 ;---------------------------------------
-;    ; Pagination routine
-;    ;-----------------------------------
-;    ; Enter keypress loop
-;    ; when scroll counter (SCROLL)
-;    ; reaches scroll limit ($CA)
-;    ;-----------------------------------
-;        LDA     SCROLL          ; Check # lines scrolled
-;        CMP     $CA             ; if SCROLL <=limit 
-;        BCC     DIR_PRINT_NEXT  ; then skip to print routine
-;        BEQ     DIR_PRINT_NEXT
-;    ; Here if scroll limit hit
-;        LDA     #$12            ; After 1st page,
-;        STA     $CA             ; set scroll limit to ~18 rows
-;        LDA     #$00            ; Reset scroll counter
-;        STA     SCROLL
-;    ; Wait for keypress
-;        LDA     #$FF            ; Clear key
-;        STA     CH
-;DIR_WAIT:
-;        LDX     CH              ; Loop until key press
-;        INX                     ; (CH is cleared later)
-;        BEQ     DIR_WAIT
-;    ; End of pagination
-;    ;-----------------------------------
-
-
-DIR_PRINT_NEXT:
         ; Print results using CIO
         LDX     #$00
         LDA     #PUTCHR
@@ -2100,7 +2055,9 @@ LOAD_READ2:
         STA     STADCB+1
         LDA     #<STADCB
         LDY     #>STADCB
-        JMP     DOSIOV
+        JSR     DOSIOV
+
+        RTS
 
 ;---------------------------------------
 LOAD_CHKFF:
@@ -2114,7 +2071,8 @@ TEST2:  LDX     BAH
         INX
         BEQ     ITSFF
         RTS
-ITSFF:  JMP     LOAD_READ2  ; Get start address and return
+ITSFF:  JSR     LOAD_READ2  ; Get start address and return
+        RTS
 
 ;        LDA     #<LOAD_ERROR_STR2
 ;        LDY     #>LOAD_ERROR_STR2
@@ -2629,7 +2587,8 @@ SOURCE_NEXT4:
 
 SOURCE_DONE
         LDX     #$10
-        JMP     CIOCLOSE
+        JSR     CIOCLOSE
+        RTS
 
 ; End of DO_SOURCE
 ;---------------------------------------
@@ -2669,7 +2628,7 @@ TYPE_NEXT:
     ; Initialize pagination
         JSR     DO_CLS
         LDA     #21
-        STA     SCROLL
+        STA     SCRFLG
 
 TYPE_LOOP:
     ; Bail if ESC key is pressed
@@ -2678,8 +2637,8 @@ TYPE_LOOP:
         BEQ     TYPE_DONE
 
     ; Check if page is full
-        LDA     SCROLL
-        CMP     #22         ; if SCROLL < 21
+        LDA     SCRFLG
+        CMP     #22         ; if SCRFLG < 21
         BCC     TYPE_READ   ; then skip to read
 
     ; Here if page is full
@@ -2697,7 +2656,7 @@ TYPE_WAIT:
 
     ; Reset pagination
         LDA     #$00
-        STA     SCROLL
+        STA     SCRFLG
 
 TYPE_READ:
     ; Read from file
@@ -2775,7 +2734,7 @@ DO_CAR_NEXT
         JMP     ($BFFA)
 
 DO_CAR_ERR:
-        .BYTE   'NO CARTRIDGE FOUND',EOL
+        .BYTE   'NO CARTRIDGE',EOL
 
 ;---------------------------------------
 DO_CLS:
@@ -2961,7 +2920,7 @@ DO_REM:
 DO_RUN:
 ;---------------------------------------
         LDA     CMDSEP      ; Get position for address arg
-        TAY
+        TAY                 ; Offset to arg used later
         CLC
         ADC     #$04
         STA     RBUF
@@ -3373,7 +3332,7 @@ CIOHND  .WORD   OPEN-1
 
        ; BANNERS
 
-BREADY  .BYTE   '#FUJINET NOS v0.3.1-alpha',EOL
+BREADY  .BYTE   '#FUJINET NOS v0.3.2-alpha',EOL
 BERROR  .BYTE   '#FUJINET ERROR',EOL
 
         ; MESSAGES
@@ -3387,25 +3346,25 @@ MISSING_FILE_STR:
 
         ; VARIABLES
 
-DOSDR   .BYTE   1           ; DOS DRIVE
-CMD     .DS     1
-CMDPRV  .DS     1
+DOSDR   .BYTE   $01         ; DOS DRIVE
+CMD     .BYTE   $01
+CMDPRV  .BYTE   $01
 CURSCR  .BYTE   $01         ; echo batch cmds (1=enabled,0=disabled)
 
-TRIP    .DS     1           ; INTR FLAG
-RLEN    .DS     MAXDEV      ; RCV LEN
-ROFF    .DS     MAXDEV      ; RCV OFFSET
-TOFF    .DS     MAXDEV      ; TRX OFFSET
-INQDS   .DS     1           ; DSTATS INQ
+TRIP    .BYTE   $01         ; INTR FLAG
+RLEN    :MAXDEV .BYTE $00   ; RCV LEN
+ROFF    :MAXDEV .BYTE $00   ; RCV OFFSET
+TOFF    :MAXDEV .BYTE $00   ; TRX OFFSET
+INQDS   .BYTE   $01         ; DSTATS INQ
 
-DVS2    .DS     MAXDEV      ; DVSTAT+2 SAVE
-DVS3    .DS     MAXDEV      ; DVSTAT+3 SAVE
+DVS2    :MAXDEV .BYTE $00   ; DVSTAT+2 SAVE
+DVS3    :MAXDEV .BYTE $00   ; DVSTAT+3 SAVE
 
        ; BUFFERS (PAGE ALIGNED)
-        .ALIGN  $100
+        .ALIGN  $100, $00
 
-RBUF    .DS     $80         ; 128 bytes
-TBUF    .DS     $80         ; 128 bytes
+RBUF    :$80 .BYTE $00      ; 128 bytes
+TBUF    :$80 .BYTE $00      ; 128 bytes
 
 ; Binary loader working variables
 BAL     = RBUF
