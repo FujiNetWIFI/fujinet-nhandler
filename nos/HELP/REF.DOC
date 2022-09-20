@@ -7,4 +7,5 @@ Type HELP REF/<TOPIC> for more.
 TOPIC    DESCRIPTION
 -----    -----------
 ATASCII  Character codes
+KEYCODES Hardware keyboard codes
 
