@@ -1967,7 +1967,7 @@ GETFIL: JSR     LOAD_READ2      ; Get two bytes (binary header)
 @:      JSR     JINIT           ; Attempt initialization
         JMP     GETFIL
 JINIT:  JMP     (INITAD)        ; Will either RTS or perform INIT
-JSTART: JSR     JINIT           ; Some binfiles launch from INITAD
+JSTART: ;JSR     JINIT           ; Some binfiles launch from INITAD
         JMP     (RUNAD)         ; Godspeed.
 
 R:      RTS                     ; Stunt-double for (INITAD),(RUNAD)
