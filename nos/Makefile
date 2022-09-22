@@ -3,20 +3,16 @@
 ##
 
 ifeq ($(OUTFILE),)
-OUTFILE := nos.xfd
+OUTFILE := nos.atr
 endif
 
 .PHONY: all clean
 
-all: xfdtoatr nos.xfd
+all: nos.atr
 
-xfdtoatr:
-	gcc -otools/xfdtoatr tools/xfdtoatr.c
-
-nos.xfd: xfdtoatr
+nos.atr: src/nos.s
 	mads src/nos.s -l:nos.lst -o:$(OUTFILE)
-	tools/xfdtoatr nos.xfd nos.atr
 
 clean:
-	rm -rf nos* dist/nos* tools/xfdtoatr.exe tools/xfdtoatr
+	rm -rf nos* dist/nos* 
 

@@ -11,6 +11,11 @@
         ;; Optimizations being done by djaybee!
         ;; Thank you so much!
 
+        ;; If SYNCALC is defined, then holes for Syncalc are inserted
+;SYNCALC	=	1
+        ;; If SYNCALD is defined, then CLI commands are removed
+;SYNCALD	=	1
+
 DOSVEC  =   $0A         ; DOSVEC
 DOSINI  =   $0C         ; DOSINI
 
@@ -186,15 +191,34 @@ CMD_WARM            = $F0
         .ENDL
         .ENDM
 
+; ATR Header
+	ORG	$6f0
+        OPT     h-
+;        ORG     $0700
+	DTA	$96,$02,$80,$16,$80
+	:11 DTA	$00
+
 ;;; Initialization ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        ORG     $0700
-        OPT     h-
+;        ORG     $0700
+;        OPT     h-
 
 HDR:    .BYTE   $00                 ; BLFAG: Boot flag equals zero (unused)
-        .BYTE   [PGEND-HDR]/128-2   ; BRCNT: Number of consecutive sectors to read
-        .WORD   $0700               ; BLDADR: Boot sector load address ($700).
+        .BYTE   [BOOTEND-HDR]/128   ; BRCNT: Number of consecutive sectors to read
+        .WORD   HDR                 ; BLDADR: Boot sector load address ($700).
         .WORD   $E4C0               ; BIWTARR: Init addr (addr of RTS in ROM)
+
+;HDR:    .BYTE   $00                 ; BLFAG: Boot flag equals zero (unused)
+;        .BYTE   [PGEND-HDR]/128-2   ; BRCNT: Number of consecutive sectors to read
+;        .WORD   $0700               ; BLDADR: Boot sector load address ($700).
+;        .WORD   $E4C0               ; BIWTARR: Init addr (addr of RTS in ROM)
+
+	JMP	START
+;	ORG	*+$64
+
+.ifdef SYNCALC
+	:($076B-*) DTA $00
+.endif
 
 START:  LDA     DOSINI
         STA     RESET+1
@@ -795,6 +819,10 @@ SPEDCB  .BYTE   DEVIDN      ; DDEVIC
 ; End CIO SPECIAL
 ;---------------------------------------
 
+.ifdef SYNCALC
+	:($0ABD-*) DTA $00
+.endif
+
 ;#######################################
 ;#                                     #
 ;#             CIO Functions           # 
@@ -916,6 +944,7 @@ CIOGETREC:
         STA     ICBLL,X
         TYA                 ; Get Buffer length Hi
         STA     ICBLH,X
+
         JSR     CIOV        ; Bon voyage
         BPL     CIOGETREC_DONE
 ;        JMP     PRINT_ERROR
@@ -1239,6 +1268,10 @@ GETCMD_WR_OFFSET:
 
 GETCMD_DONE:
         RTS
+
+.ifdef SYNCALC
+	:($0D15-*) DTA $00
+.endif
 
 CMDSEP: .BYTE $FF,$FF,$FF
 DELIM:  .BYTE ' '
@@ -1741,6 +1774,7 @@ DO_DIR:
         JMP     PRINT_ERROR ; exit
 
 DIR_LOOP:
+
     ;---------------------------------------
     ; Send Status request to SIO
     ;---------------------------------------
@@ -1795,7 +1829,7 @@ DIR_WAIT:
         LDA     CH
         CMP     #ESC_KEY    ; hardware code for ESC key
         BEQ     DIR_NEXT
-    
+
     ;---------------------------------------
     ; Loop if more data to read
     ;---------------------------------------
@@ -2055,9 +2089,7 @@ LOAD_READ2:
         STA     STADCB+1
         LDA     #<STADCB
         LDY     #>STADCB
-        JSR     DOSIOV
-
-        RTS
+        JMP     DOSIOV
 
 ;---------------------------------------
 LOAD_CHKFF:
@@ -2071,8 +2103,7 @@ TEST2:  LDX     BAH
         INX
         BEQ     ITSFF
         RTS
-ITSFF:  JSR     LOAD_READ2  ; Get start address and return
-        RTS
+ITSFF:  JMP     LOAD_READ2  ; Get start address and return
 
 ;        LDA     #<LOAD_ERROR_STR2
 ;        LDY     #>LOAD_ERROR_STR2
@@ -2434,6 +2465,11 @@ PWDDCB:
 ; End of DO_NPWD
 ;---------------------------------------
 
+.ifdef SYNCALC
+	:($129B-*) DTA $00
+.endif
+
+.ifndef SYNCALD
 ;---------------------------------------
 DO_NTRANS:
 ;---------------------------------------
@@ -2483,6 +2519,8 @@ PARSE_MODE:
         BCS     NTRANS_ERROR
         EOR     #%00110000      ; Here if valid parameter
         STA     NTRDCB+11       ; Assign parameter to DCB
+.endif
+; SYNCALD
 
     ;---------------------------------------
     ; Call SIO
@@ -2518,6 +2556,7 @@ NTRDCB:
 ; End of DO_NTRANS
 ;---------------------------------------
 
+.ifndef SYNCALD
 ;---------------------------------------
 DO_SOURCE:
 ;---------------------------------------
@@ -2587,8 +2626,7 @@ SOURCE_NEXT4:
 
 SOURCE_DONE
         LDX     #$10
-        JSR     CIOCLOSE
-        RTS
+        JMP     CIOCLOSE
 
 ; End of DO_SOURCE
 ;---------------------------------------
@@ -2751,6 +2789,10 @@ DO_COLD:
 ;---------------------------------------
         JMP     COLDSV
 
+.endif
+; SYNCALD
+.ifndef SYNCALC
+
 ;---------------------------------------
 DO_HELP:
 ;---------------------------------------
@@ -2809,6 +2851,10 @@ HELP_ARTICLE:
         .BYTE   $00,$00,$00,$00, $00,$00,$00,$00
         .BYTE   $00,$00,$00,$00, $00,$00,$00,$00
         .BYTE   $00,$00,$00,$00, $00,$00,$00,$00
+
+.endif
+;SYNCALC
+.ifndef SYNCALD
 
 ;---------------------------------------
 DO_NOBASIC:
@@ -2971,6 +3017,8 @@ RUN_ERROR_STR:
 DO_WARM:
 ;---------------------------------------
         JMP     WARMSV
+.endif
+; SYNCALD
 
 ;---------------------------------------
 REMOUNT_DRIVE:
@@ -3101,6 +3149,7 @@ PRMPT:
                 LOCK                ;  5
                 MKDIR               ;  6
                 NPWD                ;  7
+.ifndef SYNCALD
                 NTRANS              ;  8
                 RENAME              ;  9
                 RMDIR               ; 10
@@ -3110,7 +3159,11 @@ PRMPT:
                 CAR                 ; 14
                 CLS                 ; 15
                 COLD                ; 16
+.endif
+.ifndef SYNCALC
                 HELP                ; 17
+.endif
+.ifndef SYNCALD
                 NOBASIC             ; 18
                 NOSCREEN            ; 19
                 PRINT               ; 20
@@ -3119,6 +3172,7 @@ PRMPT:
                 RUN                 ; 23
                 SCREEN              ; 24
                 WARM                ; 25
+.endif
                 DRIVE_CHG           ; 26
         .ENDE
 
@@ -3131,6 +3185,7 @@ CMD_DCOMND:
         .BYTE   CMD_LOCK            ;  5 LOCK
         .BYTE   CMD_MKDIR           ;  6 MKDIR
         .BYTE   CMD_NPWD            ;  7 NPWD
+.ifndef SYNCALD
         .BYTE   CMD_NTRANS          ;  8 NTRANS
         .BYTE   CMD_RENAME          ;  9 RENAME
         .BYTE   CMD_RMDIR           ; 10 RMDIR
@@ -3140,7 +3195,11 @@ CMD_DCOMND:
         .BYTE   CMD_CAR             ; 14 CAR
         .BYTE   CMD_CLS             ; 15 CLS
         .BYTE   CMD_COLD            ; 16 COLD
+.endif
+.ifndef SYNCALC
         .BYTE   CMD_HELP            ; 17 HELP
+.endif
+.ifndef SYNCALD
         .BYTE   CMD_NOBASIC         ; 18 NOBASIC
         .BYTE   CMD_NOSCREEN        ; 19 NOSCREEN
         .BYTE   CMD_PRINT           ; 20 PRINT
@@ -3149,6 +3208,7 @@ CMD_DCOMND:
         .BYTE   CMD_RUN             ; 23 RUN
         .BYTE   CMD_SCREEN          ; 24 SCREEN
         .BYTE   CMD_WARM            ; 25 WARM
+.endif
         .BYTE   CMD_DRIVE_CHG       ; 26
 
 COMMAND:
@@ -3176,6 +3236,7 @@ COMMAND:
         .CB     "NPWD"              ;  7 NPWD
         .BYTE   CMD_IDX.NPWD             
 
+.ifndef SYNCALD
         .CB     "NTRANS"            ;  8 NTRANS
         .BYTE   CMD_IDX.NTRANS          
 
@@ -3203,8 +3264,12 @@ COMMAND:
         .CB     "COLD"              ; 16 COLD
         .BYTE   CMD_IDX.COLD              
 
+.endif
+.ifndef SYNCALC
         .CB     "HELP"              ; 17 HELP
         .BYTE   CMD_IDX.HELP                
+.endif
+.ifndef SYNCALD
                                         
         .CB     "NOBASIC"           ; 18 NOBASIC
         .BYTE   CMD_IDX.NOBASIC         
@@ -3257,6 +3322,8 @@ COMMAND:
 
         .CB     "@"                 ; @ = SOURCE
         .BYTE   CMD_IDX.SOURCE
+.endif
+;SYNCALD
 
         ; Drive Change intentionally omitted
 
@@ -3272,6 +3339,7 @@ CMD_TAB_L:
         .BYTE   <(DO_LOCK-1)        ;  5 LOCK
         .BYTE   <(DO_GENERIC-1)     ;  6 MKDIR
         .BYTE   <(DO_NPWD-1)        ;  7 NPWD
+.ifndef SYNCALD
         .BYTE   <(DO_NTRANS-1)      ;  8 NTRANS
         .BYTE   <(DO_GENERIC-1)     ;  9 RENAME
         .BYTE   <(DO_GENERIC-1)     ; 10 RMDIR
@@ -3281,7 +3349,11 @@ CMD_TAB_L:
         .BYTE   <(DO_CAR-1)         ; 14 CAR
         .BYTE   <(DO_CLS-1)         ; 15 CLS
         .BYTE   <(DO_COLD-1)        ; 16 COLD
+.endif
+.ifndef SYNCALC
         .BYTE   <(DO_HELP-1)        ; 17 HELP
+.endif
+.ifndef SYNCALD
         .BYTE   <(DO_NOBASIC-1)     ; 18 NOBASIC
         .BYTE   <(DO_NOSCREEN-1)    ; 19 NOSCREEN
         .BYTE   <(DO_PRINT-1)       ; 20 PRINT
@@ -3291,6 +3363,7 @@ CMD_TAB_L:
         .BYTE   <(DO_SCREEN-1)      ; 23 SCREEN
         .BYTE   <(DO_WARM-1)        ; 24 WARM
         .BYTE   <(DO_DRIVE_CHG-1)   ; 25
+.endif
 
 CMD_TAB_H:
         .BYTE   >(DO_GENERIC-1)     ;  0 NCD
@@ -3301,6 +3374,7 @@ CMD_TAB_H:
         .BYTE   >(DO_LOCK-1)        ;  5 LOCK
         .BYTE   >(DO_GENERIC-1)     ;  6 MKDIR
         .BYTE   >(DO_NPWD-1)        ;  7 NPWD
+.ifndef SYNCALD
         .BYTE   >(DO_NTRANS-1)      ;  8 NTRANS
         .BYTE   >(DO_GENERIC-1)     ;  9 RENAME
         .BYTE   >(DO_GENERIC-1)     ; 10 RMDIR
@@ -3310,7 +3384,11 @@ CMD_TAB_H:
         .BYTE   >(DO_CAR-1)         ; 14 CAR
         .BYTE   >(DO_CLS-1)         ; 15 CLS
         .BYTE   >(DO_COLD-1)        ; 16 COLD
+.endif
+.ifndef SYNCALC
         .BYTE   >(DO_HELP-1)        ; 17 HELP
+.endif
+.ifndef SYNCALD
         .BYTE   >(DO_NOBASIC-1)     ; 18 NOBASIC
         .BYTE   >(DO_NOSCREEN-1)    ; 19 NOSCREEN
         .BYTE   >(DO_PRINT-1)       ; 20 PRINT
@@ -3320,6 +3398,7 @@ CMD_TAB_H:
         .BYTE   >(DO_SCREEN-1)      ; 24 SCREEN
         .BYTE   >(DO_WARM-1)        ; 25 WARM
         .BYTE   >(DO_DRIVE_CHG-1)   ; 26
+.endif
 
         ; DEVHDL TABLE FOR N:
 
@@ -3332,8 +3411,13 @@ CIOHND  .WORD   OPEN-1
 
        ; BANNERS
 
+.ifdef SYNCALC
+BREADY  .BYTE   '#FUJI NOS-SC5a 0.3.2',EOL
+BERROR  .BYTE   '#FUJI ERR',EOL
+.else
 BREADY  .BYTE   '#FUJINET NOS v0.3.2-alpha',EOL
 BERROR  .BYTE   '#FUJINET ERROR',EOL
+.endif
 
         ; MESSAGES
 
@@ -3362,6 +3446,7 @@ DVS3    :MAXDEV .BYTE $00   ; DVSTAT+3 SAVE
 
        ; BUFFERS (PAGE ALIGNED)
         .ALIGN  $100, $00
+BOOTEND:
 
 RBUF    :$80 .BYTE $00      ; 128 bytes
 TBUF    :$80 .BYTE $00      ; 128 bytes
@@ -3385,5 +3470,33 @@ BODYSZL = TBUF+12   ; # Bytes to read at a time in Body
 BODYSZH = TBUF+13
 
 PGEND   = *
+
+; =================================================================
+; VTOC and Directory
+;
+
+; $10 is the added ATR-header
+	:($B390-*+HDR-$10) DTA $00
+VTOCSTA
+	DTA $02,$BD,$02
+VTOCEND
+; Fill the remaining bytes of the VTOC sector
+	:($80+VTOCSTA-VTOCEND) DTA $00
+
+DIRSTA
+	DTA $42,$00,$00,$00,$00,c"***********"
+	DTA $42,$00,$00,$00,$00,c"* FujiNet *"
+	DTA $42,$00,$00,$00,$00,c"* Network *"
+	DTA $42,$00,$00,$00,$00,c"*   OS    *"
+	DTA $42,$00,$00,$00,$00,c"*         *"
+	DTA $42,$00,$00,$00,$00,c"* v0.3.2  *"
+	DTA $42,$00,$00,$00,$00,c"*  alpha  *"
+	DTA $42,$00,$00,$00,$00,c"***********"
+DIREND
+; Fill the remaining sectors of the directory
+	:($400+DIRSTA-DIREND) DTA $00
+	
+; Sectors behind directory
+	:($80*352) DTA $00
 
        END
