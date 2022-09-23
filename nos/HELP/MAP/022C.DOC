@@ -1,1 +1,9 @@
-CDTMF4.DOC
+
+TOPIC: MAP/CDTMF4
+
+556          022C          CDTMF4
+
+System timer four flag. Set when
+location 542, 543 ($21E, $21F)
+counts down to zero.
+

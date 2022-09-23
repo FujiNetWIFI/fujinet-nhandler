@@ -1,1 +1,60 @@
-DMASK.DOC
+
+TOPIC: MAP/DMASK
+
+672          02A0          DMASK
+
+Pixel location mask. DMASK contains
+zeroes tor all bits which do not
+correspond to the specific pixel to
+be operated upon, and ones for bits
+which do correspond, according to
+the GRAPHICS mode in use, as follows:
+
+                     Pixels per
+          GR. Modes  display byte
+11111111  0,1,2      1
+11110000  9,10,11    2
+00001111
+11000000  3,5,7      4
+00110000
+00001100
+00000011
+10000000  4,6,8      8
+01000000
+
+etc. to:
+
+00000001
+
+A pixel (short for picture cell or
+picture element) is a logical unit
+of video size which depends on the
+GRAPHICS mode in use for its
+dimensions. The smallest pixel is in
+GR.8 where it is only .5 color clock
+wide and one scan line high. In GR.0
+it is also only .5 color clock wide,
+but it is eight scan lines high.
+Here is a chart of the pixel sizes
+for each mode:
+
+Modes;      Text       Graphics
+          +-----+  +--------------+
+GR. mode: 0  1  2  3  4  5  6  7  8
+Scan lines/pixel
+          8  8 16  8  4  4  2  2  1
+Bits/pixel
+          1  1  1  2  1  2  1  2  1
+Color clocks/pixel
+         .5  1  1  4  2  2  1  1 .5
+Chars/line
+         40 20 20  -  -  -  -  -   -
+Pixels/width
+         -  -  - 40 80 80 160 160 320
+
+The number of pixels per screen
+width is based on the normal
+playfield screen. See location 559
+($22F) for information on playfield
+size.
+

@@ -1,1 +1,10 @@
-INSDAT.DOC
+
+TOPIC: MAP/INSDAT
+
+125          007D          INSDAT
+
+Temporary storage byte used by the
+display handler for the character
+under the cursor and end of line
+detection.
+

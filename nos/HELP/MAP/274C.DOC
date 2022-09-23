@@ -1,1 +1,8 @@
-BRUN.DOC
+
+TOPIC: MAP/BRUN
+
+10060          274C          BRUN
+
+Run a binary file at the
+user-specified address.
+

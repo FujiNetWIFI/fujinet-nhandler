@@ -1,1 +1,9 @@
-LOADFLG.DOC
+
+TOPIC: MAP/LOADFLG
+
+5535          159F          LOADFLG
+
+If this location reads 128, then a
+memory file (MEM.SAV) file doesn't
+have to be loaded.
+

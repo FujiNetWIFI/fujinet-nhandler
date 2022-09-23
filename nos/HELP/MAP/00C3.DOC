@@ -1,1 +1,12 @@
-ERRSAVE.DOC
+
+TOPIC: MAP/ERRSAVE
+
+195          00C3          ERRSAVE
+
+The number of the error code that
+caused the stop or the TRAP.  You
+can use this location in a program
+in a line such as:
+
+10 IF PEEK(195) <> 144 THEN 100
+

@@ -1,1 +1,174 @@
-GPRIOR.DOC
+
+TOPIC: MAP/GPRIOR
+
+623          026F          GPRIOR
+
+Priority selection register, shadow
+for 53275 ($D01B). Priority options
+select which screen objects will be
+"in front" of others. It also
+enables you to use all four missiles
+as a fifth player and allows certain
+overlapping players to have
+different colors in the areas of
+overlap. You add your options up as
+in location 559, prior to POKEing
+the total into 623. In this case,
+choose only one of the four
+priorities stated at the beginning.
+BAK is the background or border. You
+can also use this location to select
+one of GTIA GRAPHICS modes nine,
+ten, or eleven.
+
+Dec Bit   Priority options in order
+  1   0   Player 0-3, playfield 0-3,
+          BAK (background)
+  2   1   Player 0-1, playfield 0-3,
+          player 2-3, BAK
+
+  4   2   Playfield 0-3, player 0-3,
+          BAK
+  8   3   Playfield 0-1, player 0-3,
+          playfield 2-3, BAK
+
+
+            Other Options
+ 16   4   4 missiles = 5th player
+ 32   5   Overlaps of players have
+          3rd color
+ 64   6   GRAPHICS  9 (GTIA mode)
+128   7   GRAPHICS 10 (GTIA mode)
+192  6,7  GRAPHICS 11 (GTIA mode)
+
+It is quite easy to set conflicting
+priorities for players and
+playfields. In such a case, areas
+where both overlap when a conflict
+occurs will turn black. The same
+happens if the overlap option is not
+chosen.
+
+With the color/overlap enable, you
+can get a multicolor player by
+combining players. The Atari
+performs a logical OR to colors of
+players 0/1 and 2/3 when they
+overlap. Only the 0/1, 2/3
+combinations are allowed; you will
+not get a third color when players 1
+and 3 overlap, for example (you will
+get black instead).  If player one
+is pink and player 0 is blue, the
+overlap is green. If you don't
+enable the overlap option, the area
+of overlap for all players will be
+black.
+
+In GTIA mode nine, you have 16
+different luminances of the same
+hue. In BASIC, you would use
+SETCOLOR 4,HUE,0. To see an example
+of GTIA mode nine, try:
+
+10   GRAPHICS 9: SETCOLOR 4,9,0
+20   FOR LOOP = 1 TO 15: COLOR LOOP
+30   FOR LINE = 1 TO 2
+40   FOR TEST = 1 TO 25: PLOT 4 + TEST, LOOP + LINE +  SPACE: NEXT TEST
+45   NEXT LINE
+50   SPACE = SPACE + 4
+60   NEXT LOOP
+70   GOTO 70: REM WITHOUT THIS LINE, SCREEN WILL RETURN TO GR.0
+
+DOWNLOAD GTIA9.BAS
+
+In GTIA mode ten, you have all nine
+color registers available; hue and
+luminance may be set separately for
+each (it would otherwise allow 16
+colors, but there are only nine
+registers). Try this to see:
+
+10   N = 0: GRAPHICS 10
+20   FOR Q = 1 TO 2
+30   FOR B = 0 TO 8: POKE 704 + B, N * 16 + A
+35   IF A > 15 THEN A = 0
+40   COLOR B
+45   A = A + 1: N = N + 1
+50   IF N > 15 THEN N = 0
+60   NEXT B
+65   TRAP 70: NEXT Q
+70   POP: N = N + 1: FOR Z = 1 TO 200 : NEXT Z
+75   GOTO 30
+
+DOWNLOAD GTIA10.BAS
+
+GTIA mode eleven is similar to mode
+nine except that it allows 16
+different hues, all of the same
+luminance. In BASIC, use SETCOLOR
+4,O,luminance. Try this for a GTIA
+mode eleven demonstration:
+
+10   GRAPHICS 11
+20   FOR LOOP = 0 TO 79: COLOR LOOP:PLOT LOOP,0: DRAWTO LOOP,191: NEXT LOOP
+30   GOTO 30
+
+DOWNLOAD GTIA11.BAS
+
+You can use these examples with the
+routine to rotate colors, described
+in the text preceding location 704.
+GTIA mode pixels are long and
+skinny; they have a four to one
+horizontal length to height ratio.
+This obviously isn't very good for
+drawing curves and circles!
+
+GTIA modes are cleared on the OPEN
+command. How can you tell if you
+have the GTIA chip? Try POKE 623,64.
+If you have the GTIA, the screen
+will go all black. If not, you don't
+have it. Here is a short routine,
+written by Craig Chamberlain and
+Sheldon Leemon for COMPUTE!, which
+allows an Atari to test itself for
+the presence of a CTIA or GTIA chip.
+The routine flashes the answer on
+the screen, hut can easily be
+modified so a program will "know"
+which chip is present so it can
+adapt itself accordingly:
+
+10 POKE 66,1:GRAPHICS 8:POKE
+709,0:POKE 710,0:POKE 66,0:POKE
+623,64:P0KE 53248,42:POKE
+5326l,3:PUT#6,1
+20 POKE 53278,0:FOR K=1 TO 300:NEXT
+K:GRAPHICS 18:POKE 53248,0:POSITION
+8,5:? #6;CHR$(71-PEEK(53252));"TIA"
+30 POKE 708,PEEK(20):GOTO 30
+
+DOWNLOAD CTIAGTIA.BAS
+
+How can you get the GTIA if you
+don't have one? Ask your local Atari
+service representative or dealer, or
+write directly to Atari in
+Sunnyvale, California.
+
+See the GTIA/CTIA introduction at
+location 53248 ($D000) for more
+discussion of the chip. See BYTE,
+May 1982, COMPUTE!, July through
+September 1982, and De Re Atari for
+more on the GTIA chip, and the GTIA
+Demonstration Diskette from the
+Atari Program Exchange (APX).
+
+---------------------------------------
+Locations 624 to 647 ($270 to $287)
+are used for game controllers:
+paddle, joystick and lightpen values.
+

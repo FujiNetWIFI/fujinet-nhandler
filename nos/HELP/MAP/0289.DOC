@@ -1,1 +1,11 @@
-WMODE.DOC
+
+TOPIC: MAP/WMODE
+
+649          0289          WMODE
+
+Register to store either the read or
+the write mode for the cassette
+handler, depending on the operation:
+zero equals read, 128 ($80) equals
+write.
+

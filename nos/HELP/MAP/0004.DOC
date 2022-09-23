@@ -1,1 +1,11 @@
-RAMLO.DOC
+
+TOPIC: MAP/RAMLO
+
+4          0004          RAMLO
+
+RAM pointer for the memory test used
+on powerup. Also used to store the
+disk boot address--normally 1798
+($706)--for the boot continuation
+routine.
+

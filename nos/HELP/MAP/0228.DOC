@@ -1,1 +1,13 @@
-CDTMA2.DOC
+
+TOPIC: MAP/CDTMA2
+
+552          0228          CDTMA2
+
+System timer two jump address. Not
+used by the OS, available to user to
+enter the address of his or her own
+routine to JMP to when the timer two
+(538, 539; $21A, $21B) count reaches
+zero.  Initialized to zero; the
+address must be user specified. NMI
+

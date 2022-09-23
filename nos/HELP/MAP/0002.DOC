@@ -1,1 +1,23 @@
-CASINI.DOC
+
+TOPIC: MAP/CASINI
+
+2          0002          CASINI
+
+Cassette initialization vector: JSR
+through here if the cassette boot
+was successful. This address is
+extracted from the first six bytes
+of a cassette boot file. The first
+byte is ignored. The second contains
+the number of records, the third and
+fourth contain the low and high
+bytes of the load address, and the
+fifth and sixth contain the low and
+high bytes of the initialization
+address.  Control upon loading jumps
+to the load address plus six for a
+multi-stage load and through CASINI
+for initialization. JSR through
+DOSVEC (10 and 11; $A,$B) to
+transfer control to the application.
+

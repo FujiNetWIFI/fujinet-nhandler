@@ -1,1 +1,114 @@
-RAMTOP.DOC
+
+TOPIC: MAP/RAMTOP
+
+106          006A          RAMTOP
+
+RAM size, defined by powerup as
+passed from TRAMSZ (location 6),
+given in the total number of
+available pages (one page equals 256
+bytes, so PEEK(106) * 256 will tell
+you where the Atari thinks the last
+usable address --byte-- of RAM is).
+MEMIOP (741, 742; $2E5. $2E6) may
+not extend below this value. In a
+48K Atari, RAMTOP is initialized to
+160 ($A0), which points to location
+40960 ($A000). The user's highest
+address will be one byte less than
+this value.
+
+This is initially the same value as
+in location 740. PEEK(740) / 4 or
+PEEK(106) / 4 gives the number of 1K
+blocks. You can fool the computer
+into thinking you have less memory
+than you actually have, thus
+reserving a relatively safe area for
+data (for your new character set or
+player/missile characters, for
+example) or machine language
+subroutines by:
+
+POKE(106), PEEK(106) - # of pages
+you want to reserve.
+
+The value here is the number of
+memory pages (256-byte blocks)
+present. This is useful to know when
+changing GR.7 and GR.8 screen RAM.
+If you are reserving memory for PM
+graphics, POKE 54279, PEEK(106) - #
+of pages you are reserving before
+you actually POKE 106 with that
+value. To test to see if you have
+exceeded your memory by reserving
+too much memory space, you can use:
+
+10  SIZE = (PEEK(106) - # of pages)
+* 256
+20  IF SIZE < = PEEK(144) +
+PEEK(145) * 256 THEN PRINT "TOO MUCH
+MEMORY USED"
+
+If you move RAMTOP to reserve
+memory, always issue a GRAPHICS
+command (even issuing one to the
+same GRAPHICS mode you are in will
+work) immediately so that the
+display list and data are moved
+beneath the new RAMTOP.
+
+You should note that a GRAPHICS
+command and a CLEAR command (or
+PRINT CHR$(125)) actually clear the
+first 64 bytes above RAMTOP (see
+location 88; $58 for further
+discussion).  Scrolling the text
+window of a GRAPHICS mode clears up
+to 800 ($320) bytes above RAMTOP
+(the text window scroll actually
+scrolls an entire GR.0 screen-worth
+of data, so the unseen 20 lines * 40
+bytes equals 800 bytes). PM graphics
+may be safe (unless you scroll the
+text window) since the first 384 or
+768 bytes (double or single line
+resolution, respectively) are
+unused.  However, you should take
+both of these effects into account
+when writing your programs.  To
+discover the exact end of memory,
+use this routine (it's a tad slow):
+
+10  RAMTOP = 106: TOP = PEEK(RAMTOP)
+20  BYTE = TOP * 256: TEST = 255 -
+PEEK(BYTE): POKE BYTE,TEST
+30  IF PEEK(BYTE) = TEST THEN TOP =
+TOP +1: POKE BYTE, 255 - TEST
+40  GOTO 20
+50  PRINT "MEMORY ENDS AT "; BYTE
+
+One caution: BASIC cannot always
+handle setting up a display list and
+display memory for GRAPHICS 7 and
+GRAPHICS 8 when you modify this
+location by less than 4K (16 pages;
+4096 bytes). Some bizarre results
+may occur if you use PEEK(106) - 8
+in these modes, for example. Use a
+minimum of 4K (PEEK(106) - 16) to
+avoid trouble. This may explain why
+some people have difficulties with
+player/missile graphics in the
+hi-res (high resolution; GR.7 and
+GR.8) modes. See location 54279
+($D407).
+
+Another alternative to reserving
+memory in high RAM is to save an
+area below MEMLO, location 743
+($2E7: below your BASIC program).
+See also MEMTOP, locations 741, 742
+($2E5, $2E6).
+

@@ -1,1 +1,10 @@
-FNDCODE.DOC
+
+TOPIC: MAP/FNDCODE
+
+3742          0E9E          FNDCODE
+
+File name decode, including wildcard
+validity test. The current file name
+is pointed to by ZBUFP at locations
+67, 68 ($43, $44).
+

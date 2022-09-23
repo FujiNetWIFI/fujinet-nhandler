@@ -1,1 +1,35 @@
-COLDST.DOC
+
+TOPIC: MAP/COLDST
+
+580          0244          COLDST
+
+Coldstart flag. Zero is normal, if
+zero, then pressing RESET will not
+result in reboot. If POKEd with one
+(powerup in progress flag), the
+computer will reboot whenever the
+RESET key is pressed. Any non-zero
+number indicates the initial powerup
+routine is in progress.
+
+If you create an AUTORUN.SYS file,
+it should end with an RTS
+instruction. If not, it should POKE
+580 with zero and POKE 9 with one.
+You can turn any binary file that
+boots when loaded with DOS menu
+selection "L" into an auto-boot file
+simply by renaming it "AUTORUN.SYS".
+Be careful not to use the same name
+for any two files on the same disk.
+
+When this is combined with the
+disabling of the BREAK key discussed
+in location 16 ($10) and the program
+protection scheme discussed in
+location 138 ($8A), you have the
+means to protect your BASIC software
+fairly effectively from being LISTed
+or examined, although not from being
+copied.
+

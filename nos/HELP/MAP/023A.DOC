@@ -1,1 +1,12 @@
-CDEVIC.DOC
+
+TOPIC: MAP/CDEVIC
+
+570          023A          CDEVIC
+
+Four-byte command frame buffer (CFB)
+address for a device -- used by SIO
+while performing serial I/O, not for
+user access.  CDEVIC is used for the
+SIO bus ID number The other three
+CFB bytes are:
+

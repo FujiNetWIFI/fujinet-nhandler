@@ -1,1 +1,8 @@
-CAUX2.DOC
+
+TOPIC: MAP/CAUX2
+
+573          023D          CAUX2
+
+Command auxiliary byte two, loaded
+from location 779 ($30B) by SIO.
+

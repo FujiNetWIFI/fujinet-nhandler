@@ -1,1 +1,9 @@
-DUPFLG.DOC
+
+TOPIC: MAP/DUPFLG
+
+5533          159D          DUPFLG
+
+Flag to test if DUP is already
+resident in memory. Zero equals DUP
+is not there.
+

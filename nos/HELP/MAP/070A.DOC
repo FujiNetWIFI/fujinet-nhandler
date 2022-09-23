@@ -1,1 +1,47 @@
-DRVBYT.DOC
+
+TOPIC: MAP/DRVBYT
+
+1802          070A          DRVBYT
+
+The maximum number of disk drives in
+your system, the DOS 2.0 default
+value is two. The least four bits
+are used to record which drives are
+available, so if you have drives
+one, three and four, this location
+would read:
+
+00001101 or 13 in decimal.
+
+Each drive has a separate buffer of
+128 bytes reserved for it in RAM. If
+you have more or less than the
+default (two), then POKE 1802 with
+the appropriate number:
+
+1 drive  =  1 BIT  0  Binary 00000001
+2 drives =  3 BITS 0,1       00000011
+3 drives =  7 BITS 0,1,2     00000111
+4 drives = 15 BITS 0,1,2,3   00001111
+
+This assumes you have them numbered
+sequentially. If not, POKE the
+appropriate decimal translation for
+the correct binary code: each drive
+is specified by one of the least
+four bits from one in BIT 0 to four
+in BIT 3. If you PEEK (1802) and get
+back three, for example, it means
+drives one and two are allocated,
+not three drives.
+
+You can save your modification to a
+new disk by calling up DOS and
+choosing menu selection "H." This
+new DOS will then boot up with the
+number of drives and buffers you
+have allocated. A one-drive system
+can save 128 bytes this way (256 if
+one less data buffer is chosen). See
+the DOS Manual, page G.87.
+

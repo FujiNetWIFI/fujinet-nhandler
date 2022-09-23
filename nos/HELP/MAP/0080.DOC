@@ -1,1 +1,75 @@
-LOMEM.DOC
+
+TOPIC: MAP/LOMEM
+
+128          0080          LOMEM
+
+Pointer to BASIC's low memory (at
+the high end of OS RAM space). The
+first 256 bytes of the memory
+pointed to are the token output
+buffer, which is used by BASIC to
+convert BASIC statements into
+numeric representation (tokens; see
+locations 136, 137; $88, $89). This
+value is loaded from MEMLO
+(locations 743, 744; $2E7, $2E8) on
+initialization or the execution of a
+NEW command (not on RESET!).
+Remember to update this value when
+changing MEMLO to reserve space for
+drivers or buffers.  When a BASIC
+SAVE is made, two blocks of
+information are written: the first
+block is the seven pointers from
+LOMEM to STARP (128 to 141; $80 to
+$8D). The value of LOMEM is
+subtracted from each of these
+two-byte pointers in the process, so
+the first two bytes written will
+both be zero. The second block
+contains the following: the variable
+name table, the variable value
+table, the tokenized program, and
+the immediate mode line.
+
+When a BASIC LOAD is made, BASIC
+adds the value at MEMLO (743, 744;
+$2E7, $2E8) to each of the two-byte
+pointers SAVEd as above. The
+pointers are placed back in page
+zero, and the values of RUNSTK (142,
+143; $8E, $8F) and MEMTOP (144, 145;
+$90, $91) are set to the value in
+STARP. Then 256 bytes are reserved
+above the value in MEMLO for the
+token output buffer, and the program
+is read in immediately following
+this buffer.  When you don't have
+DOS or any other application program
+using low memory loaded, LOMEM
+points to 1792 ($700). When DOS 2.0
+is present, it points to 7420
+($1CFC). When you change your drive
+and data buffer defaults (see 1801,
+1802; $709, $70A), you will raise or
+lower this figure by 128 bytes for
+each buffer added or deleted,
+respectively. When you boot up the
+RS-232 handler, add another 1728
+($6C0) bytes used.  LOMEM is also
+called ARGOPS by BASIC when used in
+expression evaluation. When BASIC
+encounters any kind of expression,
+it puts the immediate results into a
+stack. ARGOPS points to the same 256
+byte area; for this operation it is
+reserved for both the argument and
+operator stack. It is also called
+OUTBUFF for another operation,
+pointing to the same 256 byte buffer
+as ARGOPS points to. Used by BASIC
+when checking a line for syntax and
+converting it to tokens. This buffer
+temporarily stores the tokens before
+moving them to the program.
+

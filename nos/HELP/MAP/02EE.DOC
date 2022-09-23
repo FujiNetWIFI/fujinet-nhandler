@@ -1,1 +1,20 @@
-CBAUDL,H.DOC
+
+TOPIC: MAP/CBAUDL,H
+
+750          02EE          CBAUDL,H
+
+Cassette baud rate low and high
+bytes. Initialized to 1484 ($5CC),
+which represents a nominal 600 baud
+(bits per second).  After baud rate
+calculations, these locations will
+contain POKEY values for the
+corrected baud rate. The baud rate
+is adjusted by SIO to account for
+motor variations, tape stretch, etc.
+The beginning of every cassette
+record contains a pattern of
+alternating off/on bits (zero/one)
+which are used solely for speed
+(baud) correction.
+

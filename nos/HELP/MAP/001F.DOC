@@ -1,1 +1,25 @@
-PTEMP.DOC
+
+TOPIC: MAP/PTEMP
+
+31          001F          PTEMP
+
+Temporary register used by the
+printer handler for the value of the
+character being output to the
+printer.
+
+Locations 32 to 47 ($20 to $2F) are
+the ZIOCB: Page zero Input-Output
+Control Block. They use the same
+structure as the IOCB's at locations
+832 to 959 ($340 to $3BF). The ZIOCB
+is used to communicate I/O con- trol
+data between CIO and the device
+handlers. When a CIO opera- tion is
+initiated, the information stored in
+the IOCB channel is moved here for
+use by the CIO routines. When the
+operation is finished, the updated
+information is returned to the user
+area.
+

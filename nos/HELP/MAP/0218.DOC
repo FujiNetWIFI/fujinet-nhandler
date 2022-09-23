@@ -1,1 +1,27 @@
-CDTMV1.DOC
+
+TOPIC: MAP/CDTMV1
+
+536          0218          CDTMV1
+
+System timer one value. Counts
+backwards from 255. This SIO timer
+is decremented every stage one
+VBLANK. When it reaches zero, it
+sets a flag to jump (JSR) through
+the address stored in locations 550,
+551 ($226, $227). Only the realtime
+clock (locations 18-20; $12-14),
+timer one, and the attract mode
+register (77; $4D) are updated when
+the VBLANK routine is cut short
+because time-critical code (location
+66; $42 set to non-zero for critical
+code) is executed by the OS. Since
+the OS uses timer one for its I/O
+routines and for timing serial bus
+operations (setting it to different
+values for timeout routines), you
+should use another timer to avoid
+conflicts or interference with the
+operation of the system.
+

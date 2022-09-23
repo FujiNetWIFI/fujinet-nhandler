@@ -1,1 +1,15 @@
-TIMFLG.DOC
+
+TOPIC: MAP/TIMFLG
+
+791          0317          TIMFLG
+
+Time-out flag for baud rate
+correction, used to define an
+unsuccessful baud rate value.
+Initially set to one, it is
+decremented during the I/O
+operation. If it reaches zero (after
+two seconds) before the first byte
+of the cassette record is read, the
+operation will be aborted.
+

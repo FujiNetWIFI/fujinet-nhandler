@@ -1,1 +1,36 @@
-LPENV.DOC
+
+TOPIC: MAP/LPENV
+
+565          0235          LPENV
+
+Light pen vertical value: shadow for
+54285 ($D40D). Value is the same as
+VCOUNT register for two-line
+resolution (see 54283; $D40B). Both
+light pen values are modified when
+the trigger is pressed (pulled low).
+The light pen positions are not the
+same as the normal screen row and
+column positions. There are 96
+vertical positions, numbered from 16
+at the top to 111 at the bottom,
+each one equivalent to a scan line.
+Horizontal positions are marked in
+color clocks. There are 228
+horizontal positions, numbered from
+67 at the left. When the LPENH value
+reaches 255, it is reset to zero and
+begins counting again by one to the
+rightmost edge, which has a value of
+seven.
+
+Obviously, because of the number of
+positions readable and the small
+size of each, a certain leeway must
+be given by the programmer when
+using light pen readouts on a
+program. At the time of this
+writing, Atari had not yet released
+its light pen onto the market,
+although other companies have.
+
