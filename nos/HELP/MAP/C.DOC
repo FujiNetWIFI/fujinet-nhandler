@@ -5,72 +5,73 @@ Memory Map by Label [C]
 
 Type HELP MAP/<LABEL> for more.
 
-LABEL    HEX   DESCRIPTION
------    ----  -----------------------
-CASBUF   03FD-047F Cassette buffer
-CASETV   E440  Cassette handler
-CASFLG   030F  Cassette mode
-CASINI   0002  Cassette init vector
-CASORG   EF41-F0E2 Cassette routines
-CASSBT   004B  Cassette boot flag
-CAUX1    023C  SIO Command Aux byte one
-CAUX2    023D  SIO Command Aux byte two
+LABEL   HEX   DESCRIPTION
+-----   ----  -----------------------
+CASBUF  03FD-047F Cassette buffer
+CASETV  E440  Cassette handler
+CASFLG  030F  Cassette mode
+CASINI  0002  Cassette init vector
+CASORG  EF41-F0E2 Cassette routines
+CASSBT  004B  Cassette boot flag
+CAUX1   023C  SIO Command Aux byte 1
+CAUX2   023D  SIO Command Aux byte 2
 CBAUDL,H 02EE  Cassette baud rate
-CCOMND   023B  SIO bus command code
-CDEVIC   023A  SIO bus ID number
-CDTMA1   0226  System timer 1 jump addr
-CDTMA2   0228  System timer 2 jump addr
-CDTMF3   022A  System timer 3 flag
-CDTMF4   022C  System timer 4 flag
-CDTMF5   022E  System timer 5 flag
-CDTMV1   0218  System timer 1 value
-CDTMV2   021A  System timer 2 value
-CDTMV3   021C  System timer 3 value
-CDTMV4   021E  System timer 4 value
-CDTMV5   0220  System timer 5 value
-CH1      02F2  Prior keyboard char code
-CHACT    02F3  Character mode Register
-CHACTL   D401  Character mode control
-CHAR     02FA  Most recent char code
-CHBAS    02F4  Character Base Register
-CHBASE   D409  Character base address
-CH       02FC  Hardware code key press
-CHKSNT   003B  Checksum sent flag
-CHKSUM   0031  SIO data frame checksum
-CHKSUN   FFF8  Checksum bytes
-CHSET    E000  Atari character set
-CIOINV   E46E  CIO utility init OS-only
-CIOORG   E4A6-E6D4 CIO routines
-CIOV     E456  CIO utility entry point
-CIX      00F2  Character input index
-CKEY     004A  Cass boot request flag
-CLMJMP   1912  DOS flag for MEM.SAV
-COLAC    0072  Column point plotting
-COLBK    D01A  Color/lumin background
-COLCRS   0055  Current cursor column
-COLDST   02FF  Coldstart flag
-COLDSV   E477  Coldstart entry point
-COLINC   007A  Column inc/dec value
-COLOR0   02C4  Color register 0
-COLOR1   02C5  Color register 1
-COLOR2   02C6  Color register 2
-COLOR3   02C7  Color register 3
-COLOR4   02C8  Color register 4
-COLPF0   D016  Color/lumin playfield 0
-COLPF1   D017  Color/lumin playfield 1
-COLPF2   D018  Color/lumin playfield 2
-COLPF3   D019  Color/lumin playfield 3
-COLPM0   D012  Color P/M 0, TRIG2
-COLPM1   D013  Color P/M 1, TRIG3
-COLPM2   D014  Color P/M 2, PAL/NTSC?
-COLPM3   D015  Color P/M 3
-COLRSH   004F  Color shift mask
-CONSOL   D01F  Console switches
-COPFIL   231E  DOS copy file
-COS      BDB1  Calc cosine with carry
-COUNTR   007E  Line drawing counter
-CRETRY   0036  SIO #cmd frame retries
-CRITIC   0042  Critical I/O region flag
-CRSINH   02F0  Cursor inhibit flag
-CSOPIV   E47D  Cassette OPEN vector
-CSTAT    0288  Cassette status register
+CCOMND  023B  SIO bus command code
+CDEVIC  023A  SIO bus ID number
+CDTMA1  0226  System timer 1 jump adr
+CDTMA2  0228  System timer 2 jump adr
+CDTMF3  022A  System timer 3 flag
+CDTMF4  022C  System timer 4 flag
+CDTMF5  022E  System timer 5 flag
+CDTMV1  0218  System timer 1 value
+CDTMV2  021A  System timer 2 value
+CDTMV3  021C  System timer 3 value
+CDTMV4  021E  System timer 4 value
+CDTMV5  0220  System timer 5 value
+CH1     02F2  Prior keybrd char code
+CHACT   02F3  Character mode Register
+CHACTL  D401  Character mode control
+CHAR    02FA  Most recent char code
+CHBAS   02F4  Character Base Register
+CHBASE  D409  Character base address
+CH      02FC  Hardware code key press
+CHKSNT  003B  Checksum sent flag
+CHKSUM  0031  SIO data frame checksum
+CHKSUN  FFF8  Checksum bytes
+CHSET   E000  Atari character set
+CIOINV  E46E  CIO util init OS-only
+CIOORG  E4A6-E6D4 CIO routines
+CIOV    E456  CIO utility entry point
+CIX     00F2  Character input index
+CKEY    004A  Cass boot request flag
+CLMJMP  1912  DOS flag for MEM.SAV
+COLAC   0072  Column point plotting
+COLBK   D01A  Color/lumin background
+COLCRS  0055  Current cursor column
+COLDST  02FF  Coldstart flag
+COLDSV  E477  Coldstart entry point
+COLINC  007A  Column inc/dec value
+COLOR0  02C4  Color register 0
+COLOR1  02C5  Color register 1
+COLOR2  02C6  Color register 2
+COLOR3  02C7  Color register 3
+COLOR4  02C8  Color register 4
+COLPF0  D016  Color/lumin playfield 0
+COLPF1  D017  Color/lumin playfield 1
+COLPF2  D018  Color/lumin playfield 2
+COLPF3  D019  Color/lumin playfield 3
+COLPM0  D012  Color P/M 0, TRIG2
+COLPM1  D013  Color P/M 1, TRIG3
+COLPM2  D014  Color P/M 2, PAL/NTSC?
+COLPM3  D015  Color P/M 3
+COLRSH  004F  Color shift mask
+CONSOL  D01F  Console switches
+COPFIL  231E  DOS copy file
+COS     BDB1  Calc cosine with carry
+COUNTR  007E  Line drawing counter
+CRETRY  0036  SIO #cmd frame retries
+CRITIC  0042  Critical I/O region flg
+CRSINH  02F0  Cursor inhibit flag
+CSOPIV  E47D  Cassette OPEN vector
+CSTAT   0288  Cassette status reg
+

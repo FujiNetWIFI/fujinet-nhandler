@@ -1,1 +1,59 @@
-CASBUF.DOC
+
+TOPIC: MAP/CASBUF
+
+1021-1151     03FD-047F      CASBUF
+
+Cassette buffer. These locations are
+used by the cassette handler to read
+data from and write data to the
+program (tape) recorder.  The 128
+($80) data bytes for each cassette
+record are stored beginning at 1024
+($400 - page four). The current
+buffer size is found in location 650
+($28A). Location 61 ($3D) points to
+the current byte being written or
+read.  CASBUF is also used in the
+disk boot process; the first disk
+record is read into this buffer.
+
+A cassette record consists of 132
+bytes: two control bytes set to 85
+($55; alternating zeros and ones)
+for speed measurement in the baud
+rate correction routine; one control
+byte (see below); 128 data bytes
+(compared to 125 data bytes for a
+disk sector), and a checksum byte.
+Only the data bytes are stored in
+the cassette buffer. See De Re Atari
+for more ~nformaUon on the cassette
+recorder.
+
+
+CONTROL BYTE VALUES
+
+Value      Meaning
+250 ($FA)  Partial record follows.
+           The actual number of bytes
+           is stored in the last byte
+           of the record (127).
+252 ($FC)  Record full; 128 bytes
+           follow.
+254 ($FE)  End of File (EOF) record;
+           followed by 128 zero bytes
+
+-------------------------------------
+Locations 1152 to 1791 ($480 to
+$6FF) are for user RAM (outer
+environment) requirements, depending
+on the amount of RAM available in
+the machine. Provided you don't use
+the FP package or BASIC, you have
+640 ($280) free bytes here.
+Locations 1152 to 1279 ($480 to
+$4FF) are 128 ($80) spare bytes.
+The floating point package, when
+used, requires locations 1406 to
+1535 ($57E to $5FF).
+

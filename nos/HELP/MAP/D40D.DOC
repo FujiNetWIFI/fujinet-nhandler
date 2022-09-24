@@ -1,1 +1,12 @@
-PENV.DOC
+
+TOPIC: MAP/PENV
+
+54285          D40D          PENV
+
+(R) Light pen vertical position
+(565). Holds the VCOUNT value
+(above) when the pen trigger is
+pressed. See the Hardware Manual, p.
+II-32, for a description of light
+pen operation.
+

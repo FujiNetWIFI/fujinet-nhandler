@@ -1,1 +1,24 @@
-CASORG.DOC
+
+TOPIC: MAP/CASORG
+
+61249-61666    EF41-F0E2     CASORG
+
+Routines for the cassette handler.
+
+The buzz used in the cassette CLOAD
+command can be called up from BASIC
+by:
+
+BUZZ = USR(61530).
+
+You can turn it off with the RESET
+key. While this isn't terribly
+exciting, it points to the potential
+of using the console speaker for
+sound instead of merely for beeps
+(the RAM location for the speaker is
+at 53279; $D01F). See the speaker
+location and COMPUTE!, August 1981,
+for a short routine to use the
+speaker for sound effects.
+

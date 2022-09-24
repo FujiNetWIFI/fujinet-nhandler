@@ -1,1 +1,7 @@
-PLYEVL.DOC
+
+TOPIC: MAP/PLYEVL
+
+56640          DD40          PLYEVL
+
+FP polynomial evaluation.
+

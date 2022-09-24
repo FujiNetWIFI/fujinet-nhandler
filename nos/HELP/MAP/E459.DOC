@@ -1,1 +1,34 @@
-SIOV.DOC
+
+TOPIC: MAP/SIOV
+
+58457          E459          SIOV
+
+Serial Input/Output (SIO) utility
+entry point. SIO drives the serial
+bus and the peripherals. When a
+request is placed in the Device
+Control Block (DCB) by a device
+handler, SIO takes control and uses
+the data in the DCB to perform the
+operation required. SIO takes care
+of the transfer of data as defined
+by the DCB. CIO (above) is
+responsible for the "packaging" of
+the data and transfers control to
+SIO when necessary. See the DCB
+locations 768 to 779 ($300-$30B).
+
+SIO first sends a command frame to
+the device, consisting of five
+bytes: the device ID, the command
+BYTE, two auxiliary bytes for
+device-specific information, then a
+checksum (which is the sum of the
+first four bytes). If the device
+acknowledges this frame, it is
+followed, if necessary, by the data
+frame of a fixed number of bytes
+depending on the device record size,
+plus a checksum byte. Initialized to
+59737 ($E959).
+

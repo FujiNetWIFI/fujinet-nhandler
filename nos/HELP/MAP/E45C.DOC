@@ -1,1 +1,19 @@
-SETVBV.DOC
+
+TOPIC: MAP/SETVBV
+
+58460          E45C          SETVBV
+
+Set system timers during the VBLANK
+routine. Uses the 6502 X register
+for the MSB of vector/times, Y for
+the LSB and A for the number of the
+vector to hack (change). SETVBV
+insures that both bytes of the
+vector addressed will be updated
+while VBLANK is enabled. You can JSR
+here when creating your own timer
+routines. See COMPUTE!, November
+1981, for an application.
+Initialized to 59666 ($E912) old
+ROMs, 59629 ($E8ED) new ROMs.
+

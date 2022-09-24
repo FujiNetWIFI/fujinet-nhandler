@@ -1,10 +1,93 @@
 
-TOPIC: MAP/3306
+TOPIC: MAP/8000
 
-13062          3306          ....
+CARTRIDGE B: 8K
 
-End of DUP.SYS.
+Locations 32768 to 40959 ($8000 to
+$9FFF) are used by the right cart-
+ridge (Atari 800 only), when present.
+When not present, this RAM area is
+available for use in programs. When
+the 8K BASIC cartridge is being used,
+this area most frequently contains
+the display list and screen memory.
+As of this writing, the only cart-
+ridge that uses this slot is Monkey
+Wrench from Eastern House Software.
 
-The rest of RAM is available to
-location 32767 ($7FFF).
+It is possible to have 16K cartridges
+on the Atari by either combining both
+slots using two 8K cartridges or
+simply having one with large enough
+ROM chips and using one slot. In this
+case, the entire area from 32768 to
+49151 ($8000 to $BFFF) would be used
+as cartridge ROM.
 
+Technically, the right cartridge slot
+is checked first for a resident
+cartridge and initialized, then the
+left. You can confirm this by putting
+the Assembler Editor cartridge in the
+right and BASIC in the left slots.
+BASIC will boot, but not the ASED.
+Using FRE(0), you will see, however,
+that you have 8K less RAM to use; and
+PEEKing through this area will show
+that the ASED program is indeed in
+memory, but that control was passed
+to BASIC. Control will pass to the
+ASED cartridge if the cartridges are
+reversed. This is because the last
+six bytes of the cartridge programs
+tell the OS where the program begins
+-- in both cases, it is a location in
+the area dedicated to the left cart-
+ridge.
+
+The six bytes are as follows:
+
+Byte          Purpose
+Right(B)
+40954 ($9FFA) Cartridge start address
+  (low byte)
+40955 ($9FFB) Cartridge start address
+  (high byte)
+40956,($9FFC) Reads zero if a
+  cartridge is inserted, non-zero when
+  no cartridge is present. This
+  information is passed down to the
+  page zero RAM: if the A cartridge is
+  plugged in, then location 6 will
+  read one; if the B cartridge is 
+  plugged in, then location 7 will 
+  read one; otherwise they will read 
+  zero.
+40957 ($9FFD) Option byte. If BIT 0
+  equals one, then boot the disk (else
+  there is no disk boot). If BIT 2
+  equals one, then initialize and 
+  start the cartridge (else initialize
+  but do not start). If BIT 7 equals 
+  one, then the cartridge is a 
+  diagnostic cartridge which will take
+  control, but not initialize the OS 
+  (else non-diagnostic cartridge). 
+  Diagnostic cartridges were used by 
+  Atari in the development of the 
+  system and are not available to the
+  public.
+40958 ($9FFE) Cartridge initialization
+  address low byte.
+40959 ($9FFF) Cartridge initialization
+  address high byte. This is the 
+  address to which the OS will jump 
+  during all powerup and RESETs.
+
+The OS makes temporary use of
+locations 36876 to 36896 ($900C to
+$9020) to set up vectors for the
+interrupt handler. See the OS list-
+ings pages 31 and 81. This code was
+only used in the development system
+used to design the Atari.

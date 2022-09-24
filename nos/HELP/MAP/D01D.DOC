@@ -1,1 +1,48 @@
-GRACTL.DOC
+
+TOPIC: MAP/GRACTL
+
+53277          D01D          GRACTL
+
+(W) Used with DMACTL (location
+54272; $D400) to latch all stick and
+paddle triggers (to remember if
+triggers on joysticks or paddles
+have been pressed), to turn on
+players and to turn on missiles. To
+get the values to be POKEd here, add
+the following options together for
+the desired function:
+
+                        Decimal   Bit
+To turn on missiles        1       0
+To turn on players         2       1
+To latch trigger inputs    4       2
+
+To revoke P/M authorization and turn
+off both players and missiles, POKE
+53277,0. Once latched, triggers will
+give a continuous "button pressed"
+read the first time they are pressed
+until BIT 2 is restored to zero.
+Triggers are placed in "latched"
+mode when each individual trigger is
+pressed, but you cannot set the
+latch mode for individual triggers.
+
+Have you ever hit BREAK during a
+program and still had players or
+their residue left on the screen?
+Sometimes hitting RESET doesn't
+clear this material from the screen.
+There are ways to get rid of it:
+
+POKE 623,4:   This moves all players
+              behind playfields.
+POKE 53277,0: This should turn them
+              off.
+POKE 559,2:   This should return you
+              to a blank screen.
+
+Make sure you SAVE your program
+before POKEing, just in case!
+

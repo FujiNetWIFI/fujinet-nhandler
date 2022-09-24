@@ -1,25 +1,32 @@
 
 Topic: MAP
 
-Memory Map using text from "Mapping
-the ATARI" by Ian Chadwick
+Memory Map using text from 
+"Mapping the ATARI" by Ian Chadwick
 
 Type HELP MAP/<TOPIC> for more.
 
+***** List by LABEL ******
+
 TOPIC     DESCRIPTION
 -----     -----------
-0000      Zero Page variables
+A         List ADDCOR to AUDF4
+B         List BFENLO to BUFSTR
+...
+Z         List ZBUFP to ZTEMP4
+
+*****  List by ADDRESS *****
+
+TOPIC     DESCRIPTION
+-----     -----------
+00XX      Zero Page variables
 0100      Hardware Stack
-0200      OS Variables
-0300      Device Handlers & Vectors
-0500      OS Variables
-0700      DOS
+02XX      OS Variables
+03XX      Device Handlers & Vectors
+05XX      OS Variables
+0600      Page 6
 8000      Cartridge B (8K)
 A000      Cartridge A (8K)
-D000      GTIA, POKEY, PIA, ANTIC
-E000      Character Set in ROM
-A         List by Label (A*)
-B         List by Label (B*)
-..        ..and so on..
-Z         List by Label (Z*)
-
+DXXX      GTIA, POKEY, PIA, ANTIC
+EXXX      Character Set in ROM
+FXXX      E: K: ANTIC tables

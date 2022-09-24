@@ -1,1 +1,13 @@
-LINBUF.DOC
+
+TOPIC: MAP/LINBUF
+
+583-622       0247-026E     LINBUF
+
+Forty-byte character line buffer,
+used to temporarily buffer one
+physical line of text when the
+screen editor is moving screen data.
+The pointer to this buffer is stored
+in 100, 101 ($64, $65) during the
+routine.
+

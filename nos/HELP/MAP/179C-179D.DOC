@@ -1,1 +1,9 @@
-INISAV.DOC
+
+TOPIC: MAP/INISAV
+
+6044        179C-179D      INISAV
+
+DOSINI (see location 12, 13; $C, $D)
+vector save location. Entry point to
+DOS on a call from BASIC.
+

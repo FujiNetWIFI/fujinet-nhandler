@@ -5,57 +5,57 @@ Memory Map by Label [D]
 
 Type HELP MAP/<LABEL> for more.
 
-LABEL    HEX   DESCRIPTION
------    ----  -----------------------
-DAUX1    030A  Disk handler AUX1
-DAUX2    030B  Disk handler AUX2
-DBSECT   0241  #disk boot sectors read
-DBUF     1DF4  DOS copy buffer
-DBUFLO,H 0304  SIO data buffer address
+LABEL   HEX   DESCRIPTION
+-----   ----  -----------------------
+DAUX1   030A  Disk handler AUX1
+DAUX2   030B  Disk handler AUX2
+DBSECT  0241  #disk boot sectors read
+DBUF    1DF4  DOS copy buffer
+DBUFLO,H 0304  SIO data buffer addr
 DBYTLO,H 0308  SIO data length
-DCOMND   0302  SIO command
-DDEVIC   0300  SIO device ID
-DDMG     29C2  DOS duplicate disk
-DELFIL   21C9  DOS delete file
-DELTAC   0077  Delta column
-DELTAR   0076  Delta row
-DFFM     2D08  DOS duplicate file
-DFLAGS   0240  Boot file disk flags
-DFMCLS   0B15  DOS/FMS CLOSE routine
-DFMDDC   0BA7  DOS/FMS SPECIAL routine
-DFMGET   0ABF  DOS/FMS GET BYTE routine
-DFMOPN   08AB  DOS/FMS OPEN routines
-DFMPUT   0900  DOS/FMS PUT BYTE routine
-DFMSDH   07CB  DOS/FMS handler entry
-DFMSTA   0B01  DOS/FMS STATUS routine
-DIGRT    00F1  #digits right of decimal
-DINDEX   0057  Display mode/screen mode
-DINT     07E0  DOS/FMS init routine
-DIRLST   1540  Directory listing
-DISKIV   E450  Disk handler init vector
-DLISTL   D402  Display list pointer LO
-DLISTH   D403  Display list pointer HI
-DMACTL   D400  DMA, P/M, PF control
-DMASK    02A0  Pixel location mask
-DMENU    1F0F-2056 DOS menu screen data
-DOS      1540  DUP.SYS init address
-DOSINI   000C  Disk boot init address
-DOSOS    2075  DOS utility monitor
-DOSVEC   000A  Start vector for progs
-DRAW     FCFC  Screen draw routines
-DRETRY   0037  # of device retries
-DRKMSK   004E  Dark attract mask
-DRVBYT   070A  Max # of disk drives
-DSKFMS   0018  Disk file manager ptr
-DSKINV   E453  Disk handler entry
-DSKORG   EDEA-EE77 Disk hand. routines
-DSKTIM   0246  Disk time-out register
-DSKUTL   001A  Disk utilites pointer
-DSPFLG   02FE  Control code display flg
-DSTAT    004C  Display st. & keybd reg.
-DSTATS   0303  SIO return status code
-DTIMLO   0306  SIO time-out value
-DUNIT    0301  SIO Device unit number
-DUNUSE   0307  Unused
-DUPFLG   159D  DUP resident flag
-DVSTAT   02EA-02ED Device status regs
+DCOMND  0302  SIO command
+DDEVIC  0300  SIO device ID
+DDMG    29C2  DOS duplicate disk
+DELFIL  21C9  DOS delete file
+DELTAC  0077  Delta column
+DELTAR  0076  Delta row
+DFFM    2D08  DOS duplicate file
+DFLAGS  0240  Boot file disk flags
+DFMCLS  0B15  DOS/FMS CLOSE routine
+DFMDDC  0BA7  DOS/FMS SPECIAL rout
+DFMGET  0ABF  DOS/FMS GET BYTE
+DFMOPN  08AB  DOS/FMS OPEN routines
+DFMPUT  0900  DOS/FMS PUT BYTE rout
+DFMSDH  07CB  DOS/FMS handler entry
+DFMSTA  0B01  DOS/FMS STATUS routine
+DIGRT   00F1  #digits right of dec
+DINDEX  0057  Disp mode/screen mode
+DINT    07E0  DOS/FMS init routine
+DIRLST  1540  Directory listing
+DISKIV  E450  Disk handler init vect
+DLISTL  D402  Display list pointer LO
+DLISTH  D403  Display list pointer HI
+DMACTL  D400  DMA, P/M, PF control
+DMASK   02A0  Pixel location mask
+DMENU   1F0F-2056 DOS menu scrn data
+DOS     1540  DUP.SYS init address
+DOSINI  000C  Disk boot init address
+DOSOS   2075  DOS utility monitor
+DOSVEC  000A  Start vector for progs
+DRAW    FCFC  Screen draw routines
+DRETRY  0037  # of device retries
+DRKMSK  004E  Dark attract mask
+DRVBYT  070A  Max # of disk drives
+DSKFMS  0018  Disk file manager ptr
+DSKINV  E453  Disk handler entry
+DSKORG  EDEA-EE77 Disk hand. routines
+DSKTIM  0246  Disk time-out register
+DSKUTL  001A  Disk utilites pointer
+DSPFLG  02FE  Control code disp flag
+DSTAT   004C  Display st. & keybd reg
+DSTATS  0303  SIO return status code
+DTIMLO  0306  SIO time-out value
+DUNIT   0301  SIO Device unit number
+DUNUSE  0307  Unused
+DUPFLG  159D  DUP resident flag
+DVSTAT  02EA-02ED Device status regs

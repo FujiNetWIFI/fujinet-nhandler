@@ -7,7 +7,7 @@ Type HELP MAP/<LABEL> or
 Type HELP MAP/<ADDR> for more
 
 LABEL   ADDR  DESCRIPTION
------   ----  -------------------------
+-----   ---- ------------------------
 LBPR1   057E  LBUFF prefix one
 LBPR2   057F  LBUFF prefix two
 LBUFF   0580-05FF BASIC line buffer
@@ -15,16 +15,16 @@ LDFIL   291A  Load binary file
 LDMEM   1939  MEMSAVE load routines
 LINBUF  0247-026E 40-byte line buffer
 LINE    1DA4-1DF3 80-byte line buffer
-LINZBS  0000-0001 LINBUG RAM
+LINZBS  0000  LINBUG RAM
 LISTDIR 0DAD  List directory
 LKFIL   2970  Lock/unlock disk files
 LMARGN  0052  Left margin column
 LMTR    1920  Check to load MEM.SAV
 LOADFLG 159F  Check to load MEM.SAV
 LOG10   DED1  Base 10 logarithm
-LOGCOL  0063  Curs col in logical line
+LOGCOL  0063  Curs column in log line
 LOG     DECD  Natural logarithm
-LOGMAP  02B2-02B5 Logical line bit map
-LOMEM   0080  Ptr to BASIC's low memory
+LOGMAP  02B2-02B5 Logical line bitmap
+LOMEM   0080  Ptr to BASIC's low mem
 LPENH   0234  Light pen horiz value
 LPENV   0235  Light pen vertical value
