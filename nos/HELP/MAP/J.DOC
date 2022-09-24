@@ -7,5 +7,5 @@ Type HELP MAP/<LABEL> or
 Type HELP MAP/<ADDR> for more
 
 LABEL   ADDR  DESCRIPTION
------   ----  -------------------------
-empty
+-----   ----  -----------------------
+  ***** no entries *****

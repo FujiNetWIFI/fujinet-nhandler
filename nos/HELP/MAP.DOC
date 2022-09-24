@@ -29,4 +29,4 @@ TOPIC     DESCRIPTION
 A000      Cartridge A (8K)
 DXXX      GTIA, POKEY, PIA, ANTIC
 EXXX      Character Set in ROM
-FXXX      E: K: ANTIC tables
+FXXX      E:, K:, ANTIC tables

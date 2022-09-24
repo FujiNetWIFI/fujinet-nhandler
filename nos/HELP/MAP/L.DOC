@@ -27,4 +27,4 @@ LOG     DECD  Natural logarithm
 LOGMAP  02B2-02B5 Logical line bitmap
 LOMEM   0080  Ptr to BASIC's low mem
 LPENH   0234  Light pen horiz value
-LPENV   0235  Light pen vertical value
+LPENV   0235  Light pen vert value

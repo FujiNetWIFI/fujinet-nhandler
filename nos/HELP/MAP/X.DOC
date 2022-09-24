@@ -1,8 +1,17 @@
-XDELETE
-XFORMAT
-XITVBV
-XLOCK,XUNLOCK
-XMTDON
-XNOTE
-XPOINT
-XRENAME
+
+Topic MAP/X
+
+Memory Map by Label [X]
+
+Type HELP MAP/<LABEL> for more.
+
+LABEL    ADDR  DESCRIPTION
+-----    ----  ----------------------
+XDELETE  0C32  Delete a file
+XFORMAT  0D18  Format a disk
+XITVBV   E462  Exit from VBLANK
+XLOCK,XUNLOCK 0C7C Lock/Unlock files
+XMTDON   003A  Transmission done flag
+XNOTE    0D03  BASIC NOTE command
+XPOINT   0CBA  BASIC POINT command
+XRENAME  0BD9  Rename a file
