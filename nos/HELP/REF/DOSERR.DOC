@@ -1,0 +1,321 @@
+
+Topic: REF/DOSERR
+
+Table of ATARI DOS Error Codes
+
+-------------------------------------
+28 Break Abort
+-------------------------------------
+You pressed the BREAK key while the
+computer was in the middle of an
+input or output operation.
+
+-------------------------------------
+129 Channel Already Open
+IOCB Already Open
+-------------------------------------
+The program tried to use a channel
+that was already in use. BASIC
+graphics statements automatically use
+channel 6; other statements use
+channel 7. When this error occurs,
+the troublesome channel may be
+automatically closed.
+
+-------------------------------------
+130 Unknown Device
+Nonexistent Device
+-------------------------------------
+The program tried to use an unknown
+device. Table 1 1-10 lists standard
+device names. Note that the serial
+ports (device names R:, Rl:, R2:,
+R3:, and R4:) are recognized only if
+the RS-232 serial device handler is
+present as the result of a successful
+boot when you turned on the computer
+(see Chapter 2).
+
+-------------------------------------
+131 Output Only
+IOCB Write Only
+-------------------------------------
+A GET or INPUT statement used a
+channel opened for output only.
+
+-------------------------------------
+132 XIO Syntax Error
+Invalid Command
+-------------------------------------
+Something is wrong with an XIO
+command.
+
+-------------------------------------
+133 Channel Not Open
+Device or File Not Open
+-------------------------------------
+The program tried to use a channel
+before opening it.
+
+-------------------------------------
+134 Unknown Channel Number
+Bad IOCB Number
+-------------------------------------
+The program can only use channels 1,
+2, 3, 4, 5, 6, and 7.
+
+-------------------------------------
+135 Input Only
+IOCB Read Only
+-------------------------------------
+A PRINT or PUT statement tried to use
+a channel that was open for input
+only.
+
+-------------------------------------
+136 End of File
+EOF
+-------------------------------------
+The program encountered an
+end-of-file record or tried to read a
+disk sector that was not part of the
+open file.
+
+-------------------------------------
+137 Record Truncated
+Truncated Record
+-------------------------------------
+The computer encountered a data
+record longer than 256 bytes and
+truncated it.
+
+-------------------------------------
+138 Device Does Not Respond
+Device Timeout
+-------------------------------------
+The specified external device does
+not respond in a reasonable amount of
+time.  Make sure that all power
+switches are on, all connecting
+cables are properly and securely
+attached, and all ONLINE/LOCAL
+switches are in the "online"
+position.
+
+-------------------------------------
+139 Device Malfunctions or Refuses
+Command
+Device NAK
+-------------------------------------
+The program recorder or disk drive
+malfunctioned or cannot perform a
+command.  The ATARI 850 Interface
+Module cannot perform a command,
+typically five-bit, six-bit, or
+seven-bit input at a too-high baud
+rate, or serial device not ready
+(readiness checking enabled).
+
+-------------------------------------
+140 Framing Error
+Serial Bus
+-------------------------------------
+Serial bus data inconsistency.
+Cassette or diskette may be faulty or
+defective.
+
+-------------------------------------
+141 Cursor Out of Range
+-------------------------------------
+Row and column limits vary with
+different graphics modes (see Table 1
+1-7).
+
+-------------------------------------
+142 Data Frame Overrun
+Serial Bus Data Frame Overrun
+-------------------------------------
+Serial bus data inconsistency.
+Cassette or diskette may be faulty or
+defective.
+
+-------------------------------------
+143 Data Frame Checksum
+Serial Bus Data Frame Checksum
+-------------------------------------
+Serial bus data inconsistency. Bad
+recording on, or readback from,
+cassette or diskette. Cassette or
+diskette may be faulty or defective.
+
+-------------------------------------
+144 Disk Error
+Device Done Error
+-------------------------------------
+The diskette is physically protected
+against writing, or the diskette
+directory is scrambled.
+
+-------------------------------------
+145 Read-After-Write Compare Error,
+or Bad Screen Mode Handler
+-------------------------------------
+The disk drive detected a difference
+between what it wrote and what it was
+supposed to write. Or, there is
+something wrong with the screen
+handler.
+
+-------------------------------------
+146 Function Not Implemented
+-------------------------------------
+The program tried to output to the
+keyboard, input from the printer, or
+some such impossible action.
+
+-------------------------------------
+147 Insufficient RAM for Graphics
+Mode
+Insufficient RAM
+-------------------------------------
+Different graphics modes require
+different amounts of RAM (see Table 1
+1-7).
+
+-------------------------------------
+150 Serial Port Open
+Port Already Open
+-------------------------------------
+Each serial port can be open to only
+one channel at a time.
+
+-------------------------------------
+151 Concurrent Mode Error
+Concurrent Mode I/O Not Enabled
+-------------------------------------
+A serial port must be opened for
+concurrent mode before enabling
+current mode input/ output with the
+XIO 40 statement (see Tables 1 1-8
+and 11-14).
+
+-------------------------------------
+152 Concurrent Mode Buffer Error
+Illegal User-Supplied Buffer
+-------------------------------------
+The program specified an inconsistent
+buffer length and address during the
+startup of concurrent input/ output
+using the optional program-provided
+buffer feature.
+
+-------------------------------------
+153 Concurrent Mode Active
+Active Concurrent Mode I/O Error
+-------------------------------------
+The program tried to conduct input or
+output on a serial port while another
+serial port was open and active in
+concurrent mode.
+
+-------------------------------------
+154 Concurrent Mode Inactive
+Concurrent Mode I/O Not Active
+-------------------------------------
+The input or output just attempted
+via a serial port requires concurrent
+mode.
+
+-------------------------------------
+160 Drive Number Unknown
+Drive Number Error
+-------------------------------------
+The drive number can only be D:, Dl:,
+D2:, D3:, or D4:.
+
+-------------------------------------
+161 Too Many Files Open
+-------------------------------------
+Normally, only three disk files can
+be open at the same time. Chapter 7
+explains a way to extend this limit
+with DOS 2. OS.
+
+-------------------------------------
+162 Disk Full
+-------------------------------------
+There is no room on the diskette; all
+sectors are in use.
+
+-------------------------------------
+163 Unrecoverable System Error
+Unrecoverable System Data I/O Error
+-------------------------------------
+During the input or output of data
+the computer found an error which it
+cannot determine the cause of nor
+recover from.
+
+-------------------------------------
+164 File Number Mismatch
+-------------------------------------
+A POINT statement moved the file
+pointer to a sector not part of the
+open file. Or, a disk file is
+scrambled; the intra-sector links are
+disorganized and inconsistent.
+
+-------------------------------------
+165 Bad File Name
+File Name Error
+-------------------------------------
+A file name started with a lower-case
+letter, contained illegal characters,
+or used wild card characters (* and
+?) improperly.
+
+-------------------------------------
+166 POINT Data Length Error
+-------------------------------------
+A POINT statement tried to move to a
+nonexistent byte number in a sector.
+
+-------------------------------------
+167 File Locked
+-------------------------------------
+Locked disk files cannot be written
+to or erased, or have their names
+changed.
+
+-------------------------------------
+168 Unknown XIO Command
+Command Invalid
+-------------------------------------
+The program tried to use an XIO
+command that does not exist or is not
+defined for the specified device.
+
+-------------------------------------
+169 Directory Full
+-------------------------------------
+A diskette directory has room for 64
+file names. The amount of disk space
+available (number of sectors free)
+has no bearing on this.
+
+-------------------------------------
+170 File Not Found
+-------------------------------------
+The specified file name is not in the
+directory of the diskette now in the
+specified disk drive.
+
+-------------------------------------
+171 POINT Invalid
+-------------------------------------
+The program tried to access a disk
+sector that is not part of the open
+file.
+
+Source:
+  Your ATARI Computer (Poole, et al.)

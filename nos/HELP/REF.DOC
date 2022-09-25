@@ -8,4 +8,5 @@ TOPIC    DESCRIPTION
 -----    -----------
 ATASCII  Character codes
 KEYCODES Hardware keyboard codes
-
+BASERR   ATARI BASIC error codes
+DOSERR   ATARI DOS error codes

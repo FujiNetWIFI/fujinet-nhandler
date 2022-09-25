@@ -1,0 +1,171 @@
+
+Topic: REF/BASERR
+
+A table of ATARI BASIC Error Codes
+
+-------------------------------------
+2 Out of Memory
+Memory Insufficient
+-------------------------------------
+There is not enough RAM available for
+the BASIC program or variables, or
+there are too many levels of FOR-NEXT
+loop nesting or subroutine nesting.
+
+-------------------------------------
+3 Bad Value
+Value Error
+-------------------------------------
+A numeric value is too large, too
+small, or negative when it should be
+positive.
+
+-------------------------------------
+4 Too Many Variables
+-------------------------------------
+A program can have at most 128
+different variable names. Variable
+names once used but now absent may
+still count toward this limit (see
+Figure 1 1-1).
+
+-------------------------------------
+5 String Length Exceeded
+String Length Error
+-------------------------------------
+A substring specifies a character
+past the end of the dimensioned
+string length.
+
+-------------------------------------
+6 DATA List Exhausted
+Out of Data Error
+-------------------------------------
+A READ statement tried to read past
+the end of the DATA statement list of
+values.
+
+-------------------------------------
+7 Number Greater Than 32767
+-------------------------------------
+A numeric value is negative or
+greater than 32767 in a situation
+where such a value is not allowed.
+
+-------------------------------------
+8 INPUT Statement Type Mismatch
+INPUT Statement Error
+-------------------------------------
+An INPUT statement encountered a
+mismatch betweeen variable and value
+type.  Numeric values cannot contain
+letters, puctuation, graphics
+characters, and so forth.
+
+-------------------------------------
+9 Array or String Dimension Error
+-------------------------------------
+A DIM statement includes a string
+variable or array that is already
+dimensioned, or an array larger than
+32,767 bytes. Or, the program tried
+to use an undimensioned string
+variable or array, or a nonexistent
+array element.
+
+-------------------------------------
+10 Expression Too Complex
+Argument Stack Overflow
+-------------------------------------
+An expression has too many levels of
+parentheses or function nesting.
+
+-------------------------------------
+11 Numeric Overflow
+Floating Point Overflow/Underflow
+Error
+-------------------------------------
+The program tried to divide by zero,
+or in some other way tried to
+calculate or use a number larger in
+magnitude than 9.99999999 X 10 97 .
+
+-------------------------------------
+12 Line Not Found
+-------------------------------------
+A GOSUB, GOTO, IF-THEN, ON-GOSUB, or
+ON-GOTO statement tried to branch to
+a nonexistent line number.
+
+-------------------------------------
+13 NEXT Without FOR
+No Matching FOR Statement
+-------------------------------------
+No FOR statement was executed for the
+NEXT statement just executed.
+Possibly nested FOR-NEXT loops are
+crossed. A POP statement (which does
+not follow a GOSUB statement) in the
+middle of a FOR-NEXT loop effectively
+disables the most recently executed
+FOR statement.
+
+-------------------------------------
+14 Line Too Long
+-------------------------------------
+The statement is too complex or
+exceeds one logical line.
+
+-------------------------------------
+15 GOSUB or FOR Line Deleted
+-------------------------------------
+A RETURN or NEXT statement can no
+longer find the line which contained
+its companion GOSUB or FOR statement.
+
+-------------------------------------
+16 RETURN Without GOSUB
+RETURN Error
+-------------------------------------
+A RETURN statement was executed
+before a GOSUB statement.
+
+-------------------------------------
+17 Undecipherable Statement
+Encountered
+Garbage Error
+-------------------------------------
+Faulty RAM, a POKE statement, or a
+machine language subroutine changed a
+program statement to meaningless,
+unexecutable garbage.
+
+-------------------------------------
+18 Invalid String Character
+-------------------------------------
+The program tried to convert a
+non-numeric string to a numeric value
+with the V AL function.
+
+-------------------------------------
+19 Program Too Large
+LOAD Program Too Long
+-------------------------------------
+The program being loaded will not fit
+in the available RAM.
+
+-------------------------------------
+20 Bad Channel Number
+Device Number Larger
+-------------------------------------
+The program tried to use channel or a
+channel number larger than 7.
+
+-------------------------------------
+21 Not LOAD Format
+LOAD File Error
+-------------------------------------
+A LOAD statement tried to load a
+program and found data or a program
+that was recorded by the CSAVE or
+ENTER statement.
