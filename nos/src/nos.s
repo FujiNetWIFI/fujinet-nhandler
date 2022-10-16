@@ -172,6 +172,7 @@ CMD_REM             = $F0
 CMD_RUN             = $F0
 CMD_SCREEN          = $F0
 CMD_WARM            = $F0
+CMD_AUTORUN         = $F0
 
 ;;; Macros ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1095,8 +1096,36 @@ PRINT_ERROR_DONE:
 ; DOS Entry point
 ;---------------------------------------
 
-DOS:    JSR     CP          ; Command Processor
-        JMP     DOS         ; Keep looping
+DOS:
+        ; Autorun injection
+        lda AUTORUN_CMD         ; AUTORUN still enabled?
+        beq CPLOOP              ; no, skip to Command Processor
+
+        ; Copy command to LNBUFF
+        LDX     #$00            ; Index to start of src
+        LDY     #$00            ; Index to start at dest
+
+AUTORUN_LOOP1:
+        LDA     AUTORUN_CMD,X   ; Get source byte
+        STA     LNBUF,Y         ; Write to target location
+        BEQ     AUTORUN_RUN     ; Exit loop on null terminator
+        INX                     ; Advance indices
+        INY
+        BNE     AUTORUN_LOOP1   ; Always true
+
+AUTORUN_CMD:
+        .BYTE 'AUTORUN',$ff
+
+AUTORUN_RUN:
+        ; disable the AUTORUN command
+        lda #0                  ; disable autorun command
+        sta AUTORUN_CMD         ; by overwriting first byte
+
+        JSR AUTORUN_DO          ; call the AUTORUN command
+
+CPLOOP:
+        JSR     CP          ; Command Processor
+        JMP     CPLOOP      ; Keep looping
 
 ;---------------------------------------
 ; Main loop
@@ -1108,6 +1137,7 @@ CP:
 
         JSR     SHOWPROMPT
         JSR     GETCMD
+AUTORUN_DO:
         JSR     PARSECMD
         BMI     CP_DONE     ; Skip DOCMD if CMD == $FF
         JSR     DOCMD
@@ -2561,6 +2591,87 @@ NTRDCB:
 ;---------------------------------------
 
 ;---------------------------------------
+DO_AUTORUN:
+;---------------------------------------
+        ; open app key
+        LDA     #<GETAUTORUNDCB1
+        LDY     #>GETAUTORUNDCB1
+        JSR     DOSIOV
+
+        ; read app key
+        LDA     #<GETAUTORUNDCB2
+        LDY     #>GETAUTORUNDCB2
+        JSR     DOSIOV
+
+        jmp AUTORUN_NTRANS
+
+AUTORUN_APPKEY:
+        .BYTE   $79, $DB        ; creator ID
+        .BYTE   $00             ; app ID
+        .BYTE   $00             ; key ID
+        .BYTE   $00             ; read mode
+        .BYTE   $00             ; unused
+
+GETAUTORUNDCB1:
+        .BYTE   $70             ; DDEVIC
+        .BYTE   $01             ; DUNIT
+        .BYTE   $DC             ; DCOMND
+        .BYTE   $80             ; DSTATS
+        .BYTE   <AUTORUN_APPKEY ; DBUFL
+        .BYTE   >AUTORUN_APPKEY ; DBUFH
+        .BYTE   $0F             ; DTIMLO
+        .BYTE   $00             ; DRESVD
+        .BYTE   $06             ; DBYTL
+        .BYTE   $00             ; DBYTH
+        .BYTE   $00             ; DAUX1
+        .BYTE   $00             ; DAUX2
+
+GETAUTORUNDCB2:
+        .BYTE   $70             ; DDEVIC
+        .BYTE   $01             ; DUNIT
+        .BYTE   $DD             ; DCOMND
+        .BYTE   $40             ; DSTATS
+        .BYTE   <AUTORUN_URL_LEN; DBUFL
+        .BYTE   >AUTORUN_URL_LEN; DBUFH
+        .BYTE   $0F             ; DTIMLO
+        .BYTE   $00             ; DRESVD
+        .BYTE   66              ; DBYTL
+        .BYTE   $00             ; DBYTH
+        .BYTE   $00             ; DAUX1
+        .BYTE   $00             ; DAUX2
+
+AUTORUN_NTRANS:
+        ; Switch NTRANS to 3
+        JSR     GET_DOSDR
+        STX     NTRDCB+1
+        LDA     #$03
+        STA     NTRDCB+11
+        JSR     NTRANS_CALL
+
+        ; Copy URL to LNBUFF
+        LDX     #$00            ; Index to start of AUTORUN URL
+        LDY     #$07            ; Index to start at arg1 for "SOURCE "
+
+AUTORUN_LNBUFF_LOOP:
+        LDA     AUTORUN_URL,X           ; Get source byte
+        STA     LNBUF,Y                 ; Write to target location
+        BEQ     AUTORUN_CALL_SOURCE    ; Exit loop on null terminator
+        INX                             ; Advance indices
+        INY
+        BNE     AUTORUN_LNBUFF_LOOP
+
+AUTORUN_CALL_SOURCE:
+        LDA     #$07            ; Trick SOURCE to look for URL in arg1
+        STA     CMDSEP
+        JMP     DO_SOURCE
+
+AUTORUN_URL_LEN:
+        .WORD   $0000           ; length of entry in apykey (returned by SIO call)
+AUTORUN_URL:
+:64     .BYTE   $00             ; fetched from apikey (stored on SD card in file "/FujiNet/db790000.key")
+
+
+;---------------------------------------
 DO_SOURCE:
 ;---------------------------------------
         LDA     CMDSEP
@@ -3161,6 +3272,7 @@ PRMPT:
                 SCREEN              ; 24
                 WARM                ; 25
                 DRIVE_CHG           ; 26
+                AUTORUN             ; 27
         .ENDE
 
 CMD_DCOMND:
@@ -3191,6 +3303,7 @@ CMD_DCOMND:
         .BYTE   CMD_SCREEN          ; 24 SCREEN
         .BYTE   CMD_WARM            ; 25 WARM
         .BYTE   CMD_DRIVE_CHG       ; 26
+        .BYTE   CMD_AUTORUN         ; 27
 
 COMMAND:
         .CB     "NCD"               ;  0 NCD
@@ -3271,6 +3384,9 @@ COMMAND:
         .CB     "WARM"              ; 25 WARM
         .BYTE   CMD_IDX.WARM
 
+        .CB     "AUTORUN"           ; 27 AUTORUN
+        .BYTE   CMD_IDX.AUTORUN
+
 ; Aliases
         .CB     "CD"                ; CD = NCD
         .BYTE   CMD_IDX.NCD           
@@ -3332,6 +3448,7 @@ CMD_TAB_L:
         .BYTE   <(DO_SCREEN-1)      ; 23 SCREEN
         .BYTE   <(DO_WARM-1)        ; 24 WARM
         .BYTE   <(DO_DRIVE_CHG-1)   ; 25
+        .BYTE   <(DO_AUTORUN-1)     ; 27
 
 CMD_TAB_H:
         .BYTE   >(DO_GENERIC-1)     ;  0 NCD
@@ -3361,6 +3478,7 @@ CMD_TAB_H:
         .BYTE   >(DO_SCREEN-1)      ; 24 SCREEN
         .BYTE   >(DO_WARM-1)        ; 25 WARM
         .BYTE   >(DO_DRIVE_CHG-1)   ; 26
+        .BYTE   >(DO_AUTORUN-1)     ; 27
 
         ; DEVHDL TABLE FOR N:
 
@@ -3373,7 +3491,7 @@ CIOHND  .WORD   OPEN-1
 
        ; BANNERS
 
-BREADY  .BYTE   '#FUJINET NOS v0.3.1-alpha',EOL
+BREADY  .BYTE   '#FUJINET NOS v0.3.2-alpha',EOL
 BERROR  .BYTE   '#FUJINET ERROR',EOL
 
         ; MESSAGES
