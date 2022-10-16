@@ -2622,7 +2622,7 @@ GETAUTORUNDCB1:
         .BYTE   $80             ; DSTATS
         .BYTE   <AUTORUN_APPKEY ; DBUFL
         .BYTE   >AUTORUN_APPKEY ; DBUFH
-        .BYTE   $0F             ; DTIMLO
+        .BYTE   $01             ; DTIMLO
         .BYTE   $00             ; DRESVD
         .BYTE   $06             ; DBYTL
         .BYTE   $00             ; DBYTH
@@ -2636,7 +2636,7 @@ GETAUTORUNDCB2:
         .BYTE   $40             ; DSTATS
         .BYTE   <AUTORUN_URL_LEN; DBUFL
         .BYTE   >AUTORUN_URL_LEN; DBUFH
-        .BYTE   $0F             ; DTIMLO
+        .BYTE   $01             ; DTIMLO
         .BYTE   $00             ; DRESVD
         .BYTE   66              ; DBYTL
         .BYTE   $00             ; DBYTH
