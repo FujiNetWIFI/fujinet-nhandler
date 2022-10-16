@@ -2603,7 +2603,10 @@ DO_AUTORUN:
         LDY     #>GETAUTORUNDCB2
         JSR     DOSIOV
 
-        jmp AUTORUN_NTRANS
+        ; Does the returned URL contain something?
+        lda AUTORUN_URL_LEN
+        bne AUTORUN_NTRANS
+        rts
 
 AUTORUN_APPKEY:
         .BYTE   $79, $DB        ; creator ID
