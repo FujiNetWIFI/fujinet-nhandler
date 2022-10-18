@@ -1,12 +1,18 @@
 
-Topic: REF
-Desc:  Reference tables
+HELP SYSTEM
 
-Type HELP REF/<TOPIC> for more.
+Type HELP <TOPIC> for more details.
 
-TOPIC    DESCRIPTION
------    -----------
-ATASCII  Character codes
-KEYCODES Hardware keyboard codes
-BASERR   ATARI BASIC error codes
-DOSERR   ATARI DOS error codes
+Topic  Description
+-----  -----------
+NOS    FujiNet NOS commands
+MAP    Memory map
+REF    Reference material
+BUGS   List of known bugs
+
+A topic may contain a list of sub-
+topics. To view a subtopic, type:
+
+HELP <TOPIC>/<SUBTOPIC>
+
+Press ESC key to end a text stream.

@@ -158,12 +158,14 @@ CMD_DIR             = $02
 CMD_DEL             = $21
 CMD_LOAD            = $28
 CMD_LOCK            = $23
+CMD_LOGIN           = $FD
 CMD_MKDIR           = $2A
 CMD_NPWD            = $30
 CMD_NTRANS          = 'T'
+CMD_PASSWD          = $FE
 CMD_RENAME          = $20
 CMD_RMDIR           = $2B
-CMD_SOURCE          = $F0
+CMD_SUBMIT          = $F0
 CMD_TYPE            = $F0
 CMD_UNLOCK          = $24
 CMD_CAR             = $F0
@@ -1819,8 +1821,8 @@ DIR_NEXT1:
     ; Pause output if SPACE key code found
     ;---------------------------------------
 DIR_WAIT:
-        LDX     CH
-        CPX     #SPC_KEY
+        LDA     CH
+        CMP     #SPC_KEY
         BEQ     DIR_WAIT
 
     ;---------------------------------------
@@ -2406,6 +2408,54 @@ DO_LOCK:
         RTS
 
 ;---------------------------------------
+DO_LOGIN:
+;---------------------------------------
+        LDX     CMDSEP          ; Check if there's any args
+        BEQ     LOGIN_ERROR    ; No. Show usage and quit
+
+        LDA     DOSDR           ; Go with current drive for now
+        STA     NTRDCB+1        ; it'll be overwritten later if req'd
+
+    ;---------------------------------------
+    ; Check for argc = 3
+    ;---------------------------------------
+        LDY     CMDSEP          ; Stash offset to arg1 in Y
+        LDX     CMDSEP+2        ; Is there an arg3?
+        BEQ     PARSE_LOGIN     ; No. parse arg1 as username
+
+    ;---------------------------------------
+    ; Here if argc = 2 (arg1 = Nn: arg2 = mode)
+    ;---------------------------------------
+        LDX     CMDSEP          ; Get offset to arg1 (Nn:)
+        LDA     LNBUF,X         ; Is arg1's (N[n]:) 1st char = 'N'?
+        CMP     #'N'            ;
+        BNE     LOGIN_ERROR    ; No? Then quit
+        LDA     LNBUF+1,X
+        CMP     #':'            ; Is arg1's (N[n]:) 2nd char = ':'?
+        BEQ     PARSE_LOGIN     ; Yes, stick with default drive
+
+    ;---------------------------------------
+    ; Parse drive number
+    ;---------------------------------------
+        CMP     #'1'            ; Quit if n in Nn not 1..4
+        BCC     LOGIN_ERROR    ; Quit if < '1'
+        CMP     #'9'
+        BCS     LOGIN_ERROR    ; Quit if >= '9'
+        EOR     #%00110000
+        LDY     CMDSEP+1
+
+PARSE_LOGIN:
+
+        RTS
+
+LOGIN_ERROR:
+        LDA     #<LOGIN_ERROR_STR
+        LDY     #>LOGIN_ERROR_STR
+        JMP     PRINT_STRING
+
+LOGIN_ERROR_STR:
+        .BYTE   'LOGIN [N[n]:] <USERNAME> <PASSWORD>',EOL
+;---------------------------------------
 DO_NPWD:
 ;---------------------------------------
         LDA     #EOL        ; Truncate buffer
@@ -2558,17 +2608,17 @@ NTRDCB:
 
 .ifndef SYNCALD
 ;---------------------------------------
-DO_SOURCE:
+DO_SUBMIT:
 ;---------------------------------------
         LDA     CMDSEP
-        BNE     SOURCE_NEXT1
+        BNE     SUBMIT_NEXT1
 
     ; Filename required
         LDA     #<MISSING_FILE_STR
         LDY     #>MISSING_FILE_STR
         JMP     PRINT_STRING
 
-SOURCE_NEXT1:
+SUBMIT_NEXT1:
 
     ; Default to NOSCREEN
         LDA     #$00
@@ -2586,10 +2636,10 @@ SOURCE_NEXT1:
         LDX     #$10            ; File #1
         LDY     #$04            ; Open for input
         JSR     CIOOPEN         ; Open filename @ (INBUFF)
-        BPL     SOURCE_NEXT2
+        BPL     SUBMIT_NEXT2
         JMP     PRINT_ERROR
 
-SOURCE_NEXT2:
+SUBMIT_NEXT2:
         JSR     LDBUFA      ; Reset INBUFF to $0580
         LDA     #$FF        ; Clear command
         STA     CMD
@@ -2603,32 +2653,32 @@ SOURCE_NEXT2:
         LDX     #$10
         LDA     ICSTA,X
         CMP     #EOF
-        BEQ     SOURCE_DONE ; No error, try parsing cmd
+        BEQ     SUBMIT_DONE ; No error, try parsing cmd
 
-SOURCE_NEXT3:
+SUBMIT_NEXT3:
         LDA     CURSCR      ; Skip echo if SCREEN is disabled
-        BEQ     SOURCE_NEXT4
+        BEQ     SUBMIT_NEXT4
         LDA     LNBUF
         CMP     #'@'
-        BEQ     SOURCE_NEXT4
+        BEQ     SUBMIT_NEXT4
 
     ; Echo commands
         LDA     INBUFF
         LDY     INBUFF+1
         JSR     PRINT_STRING
 
-SOURCE_NEXT4:
+SUBMIT_NEXT4:
         JSR     GETCMDTEST
         JSR     PARSECMD
         JSR     DOCMD
         SEC
-        BCS     SOURCE_NEXT2
+        BCS     SUBMIT_NEXT2
 
-SOURCE_DONE
+SUBMIT_DONE
         LDX     #$10
         JMP     CIOCLOSE
 
-; End of DO_SOURCE
+; End of DO_SUBMIT
 ;---------------------------------------
 
 ;---------------------------------------
@@ -3147,33 +3197,34 @@ PRMPT:
                 DEL                 ;  3
                 LOAD                ;  4
                 LOCK                ;  5
-                MKDIR               ;  6
-                NPWD                ;  7
+                LOGIN               ;  6
+                MKDIR               ;  7
+                NPWD                ;  8
 .ifndef SYNCALD
-                NTRANS              ;  8
-                RENAME              ;  9
-                RMDIR               ; 10
-                SOURCE              ; 11
-                TYPE                ; 12
-                UNLOCK              ; 13
-                CAR                 ; 14
-                CLS                 ; 15
-                COLD                ; 16
+                NTRANS              ;  9
+                RENAME              ; 10
+                RMDIR               ; 11
+                SUBMIT              ; 12
+                TYPE                ; 13
+                UNLOCK              ; 14
+                CAR                 ; 15
+                CLS                 ; 16
+                COLD                ; 17
 .endif
 .ifndef SYNCALC
-                HELP                ; 17
+                HELP                ; 18
 .endif
 .ifndef SYNCALD
-                NOBASIC             ; 18
-                NOSCREEN            ; 19
-                PRINT               ; 20
-                REENTER             ; 21
-                REM                 ; 22
-                RUN                 ; 23
-                SCREEN              ; 24
-                WARM                ; 25
+                NOBASIC             ; 19
+                NOSCREEN            ; 20
+                PRINT               ; 21
+                REENTER             ; 22
+                REM                 ; 23
+                RUN                 ; 24
+                SCREEN              ; 25
+                WARM                ; 26
 .endif
-                DRIVE_CHG           ; 26
+                DRIVE_CHG           ; 27
         .ENDE
 
 CMD_DCOMND:
@@ -3182,34 +3233,35 @@ CMD_DCOMND:
         .BYTE   CMD_DIR             ;  2 DIR
         .BYTE   CMD_DEL             ;  3 DEL
         .BYTE   CMD_LOAD            ;  4 LOAD
-        .BYTE   CMD_LOCK            ;  5 LOCK
-        .BYTE   CMD_MKDIR           ;  6 MKDIR
-        .BYTE   CMD_NPWD            ;  7 NPWD
+        .BYTE   CMD_LOGIN           ;  5 LOAD
+        .BYTE   CMD_LOCK            ;  6 LOCK
+        .BYTE   CMD_MKDIR           ;  7 MKDIR
+        .BYTE   CMD_NPWD            ;  8 NPWD
 .ifndef SYNCALD
-        .BYTE   CMD_NTRANS          ;  8 NTRANS
-        .BYTE   CMD_RENAME          ;  9 RENAME
-        .BYTE   CMD_RMDIR           ; 10 RMDIR
-        .BYTE   CMD_SOURCE          ; 11 SOURCE
-        .BYTE   CMD_TYPE            ; 12 TYPE
-        .BYTE   CMD_UNLOCK          ; 13 UNLOCK
-        .BYTE   CMD_CAR             ; 14 CAR
-        .BYTE   CMD_CLS             ; 15 CLS
-        .BYTE   CMD_COLD            ; 16 COLD
+        .BYTE   CMD_NTRANS          ;  9 NTRANS
+        .BYTE   CMD_RENAME          ; 10 RENAME
+        .BYTE   CMD_RMDIR           ; 11 RMDIR
+        .BYTE   CMD_SUBMIT          ; 12 SUBMIT
+        .BYTE   CMD_TYPE            ; 13 TYPE
+        .BYTE   CMD_UNLOCK          ; 14 UNLOCK
+        .BYTE   CMD_CAR             ; 15 CAR
+        .BYTE   CMD_CLS             ; 16 CLS
+        .BYTE   CMD_COLD            ; 17 COLD
 .endif
 .ifndef SYNCALC
-        .BYTE   CMD_HELP            ; 17 HELP
+        .BYTE   CMD_HELP            ; 18 HELP
 .endif
 .ifndef SYNCALD
-        .BYTE   CMD_NOBASIC         ; 18 NOBASIC
-        .BYTE   CMD_NOSCREEN        ; 19 NOSCREEN
-        .BYTE   CMD_PRINT           ; 20 PRINT
-        .BYTE   CMD_REENTER         ; 21 REENTER
-        .BYTE   CMD_REM             ; 22 REM
-        .BYTE   CMD_RUN             ; 23 RUN
-        .BYTE   CMD_SCREEN          ; 24 SCREEN
-        .BYTE   CMD_WARM            ; 25 WARM
+        .BYTE   CMD_NOBASIC         ; 19 NOBASIC
+        .BYTE   CMD_NOSCREEN        ; 20 NOSCREEN
+        .BYTE   CMD_PRINT           ; 21 PRINT
+        .BYTE   CMD_REENTER         ; 22 REENTER
+        .BYTE   CMD_REM             ; 23 REM
+        .BYTE   CMD_RUN             ; 24 RUN
+        .BYTE   CMD_SCREEN          ; 25 SCREEN
+        .BYTE   CMD_WARM            ; 26 WARM
 .endif
-        .BYTE   CMD_DRIVE_CHG       ; 26
+        .BYTE   CMD_DRIVE_CHG       ; 27
 
 COMMAND:
         .CB     "NCD"               ;  0 NCD
@@ -3230,69 +3282,72 @@ COMMAND:
         .CB     "LOCK"              ;  5 LOCK
         .BYTE   CMD_IDX.LOCK             
 
-        .CB     "MKDIR"             ;  6 MKDIR
-        .BYTE   CMD_IDX.MKDIR            
+        .CB     "LOGIN"             ;  6 LOGIN
+        .BYTE   CMD_IDX.LOGIN              
+                                        
+        .CB     "MKDIR"             ;  7 MKDIR
+        .BYTE   CMD_IDX.MKDIR           
 
-        .CB     "NPWD"              ;  7 NPWD
+        .CB     "NPWD"              ;  8 NPWD
         .BYTE   CMD_IDX.NPWD             
 
 .ifndef SYNCALD
-        .CB     "NTRANS"            ;  8 NTRANS
-        .BYTE   CMD_IDX.NTRANS          
-
-        .CB     "RENAME"            ;  9 RENAME
+        .CB     "NTRANS"            ;  9 NTRANS
+        .BYTE   CMD_IDX.NTRANS            
+                                        
+        .CB     "RENAME"            ; 10 RENAME
         .BYTE   CMD_IDX.RENAME          
-
-        .CB     "RMDIR"             ; 10 RMDIR
+                                        
+        .CB     "RMDIR"             ; 11 RMDIR
         .BYTE   CMD_IDX.RMDIR           
-
-        .CB     "SOURCE"            ; 11 SOURCE
-        .BYTE   CMD_IDX.SOURCE             
-
-        .CB     "TYPE"              ; 12 SOURCE
+                                        
+        .CB     "SUBMIT"            ; 12 SUBMIT
+        .BYTE   CMD_IDX.SUBMIT             
+                                        
+        .CB     "TYPE"              ; 13 SUBMIT
         .BYTE   CMD_IDX.TYPE              
-
-        .CB     "UNLOCK"            ; 13 UNLOCK
+                                        
+        .CB     "UNLOCK"            ; 14 UNLOCK
         .BYTE   CMD_IDX.UNLOCK            
-
-        .CB     "CAR"               ; 14 CAR
+                                        
+        .CB     "CAR"               ; 15 CAR
         .BYTE   CMD_IDX.CAR             
+                                        
+        .CB     "CLS"               ; 16 CLS
+        .BYTE   CMD_IDX.CLS           
 
-        .CB     "CLS"               ; 15 CLS
-        .BYTE   CMD_IDX.CLS             
-
-        .CB     "COLD"              ; 16 COLD
+        .CB     "COLD"              ; 17 COLD
         .BYTE   CMD_IDX.COLD              
 
 .endif
 .ifndef SYNCALC
-        .CB     "HELP"              ; 17 HELP
+        .CB     "HELP"              ; 18 HELP
         .BYTE   CMD_IDX.HELP                
 .endif
 .ifndef SYNCALD
                                         
-        .CB     "NOBASIC"           ; 18 NOBASIC
-        .BYTE   CMD_IDX.NOBASIC         
-                                        
-        .CB     "@NOSCREEN"         ; 19 @NOSCREEN
+        .CB     "NOBASIC"           ; 19 NOBASIC
+        .BYTE   CMD_IDX.NOBASIC           
+                                          
+        .CB     "@NOSCREEN"         ; 20 @NOSCREEN
         .BYTE   CMD_IDX.NOSCREEN         
                                         
-        .CB     "PRINT"             ; 20 PRINT
+        .CB     "PRINT"             ; 21 PRINT
         .BYTE   CMD_IDX.PRINT           
                                         
-        .CB     "REENTER"           ; 21 REENTER
+        .CB     "REENTER"           ; 22 REENTER
         .BYTE   CMD_IDX.REENTER         
                                         
-        .CB     "REM"               ; 22 REM
+        .CB     "REM"               ; 23 REM
         .BYTE   CMD_IDX.REM             
                                         
-        .CB     "RUN"               ; 23 RUN
+        .CB     "RUN"               ; 24 RUN
         .BYTE   CMD_IDX.RUN             
                                         
-        .CB     "@SCREEN"           ; 24 @SCREEN
+        .CB     "@SCREEN"           ; 25 @SCREEN
         .BYTE   CMD_IDX.SCREEN
 
-        .CB     "WARM"              ; 25 WARM
+        .CB     "WARM"              ; 26 WARM
         .BYTE   CMD_IDX.WARM
 
 ; Aliases
@@ -3320,8 +3375,8 @@ COMMAND:
         .CB     "REN"               ; REN = RENAME
         .BYTE   CMD_IDX.RENAME
 
-        .CB     "@"                 ; @ = SOURCE
-        .BYTE   CMD_IDX.SOURCE
+        .CB     "@"                 ; @ = SUBMIT
+        .BYTE   CMD_IDX.SUBMIT
 .endif
 ;SYNCALD
 
@@ -3337,32 +3392,33 @@ CMD_TAB_L:
         .BYTE   <(DO_GENERIC-1)     ;  3 DEL
         .BYTE   <(DO_LOAD-1)        ;  4 LOAD
         .BYTE   <(DO_LOCK-1)        ;  5 LOCK
-        .BYTE   <(DO_GENERIC-1)     ;  6 MKDIR
-        .BYTE   <(DO_NPWD-1)        ;  7 NPWD
+        .BYTE   <(DO_LOGIN-1)       ;  6 LOGIN
+        .BYTE   <(DO_GENERIC-1)     ;  7 MKDIR
+        .BYTE   <(DO_NPWD-1)        ;  8 NPWD
 .ifndef SYNCALD
-        .BYTE   <(DO_NTRANS-1)      ;  8 NTRANS
-        .BYTE   <(DO_GENERIC-1)     ;  9 RENAME
-        .BYTE   <(DO_GENERIC-1)     ; 10 RMDIR
-        .BYTE   <(DO_SOURCE-1)      ; 11 SOURCE
-        .BYTE   <(DO_TYPE-1)        ; 12 TYPE
-        .BYTE   <(DO_UNLOCK-1)      ; 13 UNLOCK
-        .BYTE   <(DO_CAR-1)         ; 14 CAR
-        .BYTE   <(DO_CLS-1)         ; 15 CLS
-        .BYTE   <(DO_COLD-1)        ; 16 COLD
+        .BYTE   <(DO_NTRANS-1)      ;  9 NTRANS
+        .BYTE   <(DO_GENERIC-1)     ; 10 RENAME
+        .BYTE   <(DO_GENERIC-1)     ; 11 RMDIR
+        .BYTE   <(DO_SUBMIT-1)      ; 12 SUBMIT
+        .BYTE   <(DO_TYPE-1)        ; 13 TYPE
+        .BYTE   <(DO_UNLOCK-1)      ; 14 UNLOCK
+        .BYTE   <(DO_CAR-1)         ; 15 CAR
+        .BYTE   <(DO_CLS-1)         ; 16 CLS
+        .BYTE   <(DO_COLD-1)        ; 17 COLD
 .endif
 .ifndef SYNCALC
-        .BYTE   <(DO_HELP-1)        ; 17 HELP
+        .BYTE   <(DO_HELP-1)        ; 18 HELP
 .endif
 .ifndef SYNCALD
-        .BYTE   <(DO_NOBASIC-1)     ; 18 NOBASIC
-        .BYTE   <(DO_NOSCREEN-1)    ; 19 NOSCREEN
-        .BYTE   <(DO_PRINT-1)       ; 20 PRINT
-        .BYTE   <(DO_REENTER-1)     ; 21 REENTER
-        .BYTE   <(DO_REM-1)         ; 22 REM
-        .BYTE   <(DO_RUN-1)         ; 22 RUN
-        .BYTE   <(DO_SCREEN-1)      ; 23 SCREEN
-        .BYTE   <(DO_WARM-1)        ; 24 WARM
-        .BYTE   <(DO_DRIVE_CHG-1)   ; 25
+        .BYTE   <(DO_NOBASIC-1)     ; 19 NOBASIC
+        .BYTE   <(DO_NOSCREEN-1)    ; 20 NOSCREEN
+        .BYTE   <(DO_PRINT-1)       ; 21 PRINT
+        .BYTE   <(DO_REENTER-1)     ; 22 REENTER
+        .BYTE   <(DO_REM-1)         ; 23 REM
+        .BYTE   <(DO_RUN-1)         ; 24 RUN
+        .BYTE   <(DO_SCREEN-1)      ; 25 SCREEN
+        .BYTE   <(DO_WARM-1)        ; 26 WARM
+        .BYTE   <(DO_DRIVE_CHG-1)   ; 27
 .endif
 
 CMD_TAB_H:
@@ -3372,32 +3428,33 @@ CMD_TAB_H:
         .BYTE   >(DO_GENERIC-1)     ;  3 DEL
         .BYTE   >(DO_LOAD-1)        ;  4 LOAD
         .BYTE   >(DO_LOCK-1)        ;  5 LOCK
-        .BYTE   >(DO_GENERIC-1)     ;  6 MKDIR
-        .BYTE   >(DO_NPWD-1)        ;  7 NPWD
+        .BYTE   >(DO_LOGIN-1)       ;  6 LOGIN
+        .BYTE   >(DO_GENERIC-1)     ;  7 MKDIR
+        .BYTE   >(DO_NPWD-1)        ;  8 NPWD
 .ifndef SYNCALD
-        .BYTE   >(DO_NTRANS-1)      ;  8 NTRANS
-        .BYTE   >(DO_GENERIC-1)     ;  9 RENAME
-        .BYTE   >(DO_GENERIC-1)     ; 10 RMDIR
-        .BYTE   >(DO_SOURCE-1)      ; 11 SOURCE
-        .BYTE   >(DO_TYPE-1)        ; 12 TYPE
-        .BYTE   >(DO_UNLOCK-1)      ; 13 UNLOCK
-        .BYTE   >(DO_CAR-1)         ; 14 CAR
-        .BYTE   >(DO_CLS-1)         ; 15 CLS
-        .BYTE   >(DO_COLD-1)        ; 16 COLD
+        .BYTE   >(DO_NTRANS-1)      ;  9 NTRANS
+        .BYTE   >(DO_GENERIC-1)     ; 10 RENAME
+        .BYTE   >(DO_GENERIC-1)     ; 11 RMDIR
+        .BYTE   >(DO_SUBMIT-1)      ; 12 SUBMIT
+        .BYTE   >(DO_TYPE-1)        ; 13 TYPE
+        .BYTE   >(DO_UNLOCK-1)      ; 14 UNLOCK
+        .BYTE   >(DO_CAR-1)         ; 15 CAR
+        .BYTE   >(DO_CLS-1)         ; 16 CLS
+        .BYTE   >(DO_COLD-1)        ; 17 COLD
 .endif
 .ifndef SYNCALC
-        .BYTE   >(DO_HELP-1)        ; 17 HELP
+        .BYTE   >(DO_HELP-1)        ; 18 HELP
 .endif
 .ifndef SYNCALD
-        .BYTE   >(DO_NOBASIC-1)     ; 18 NOBASIC
-        .BYTE   >(DO_NOSCREEN-1)    ; 19 NOSCREEN
-        .BYTE   >(DO_PRINT-1)       ; 20 PRINT
-        .BYTE   >(DO_REENTER-1)     ; 21 REENTER
-        .BYTE   >(DO_REM-1)         ; 22 REM
-        .BYTE   >(DO_RUN-1)         ; 23 RUN
-        .BYTE   >(DO_SCREEN-1)      ; 24 SCREEN
-        .BYTE   >(DO_WARM-1)        ; 25 WARM
-        .BYTE   >(DO_DRIVE_CHG-1)   ; 26
+        .BYTE   >(DO_NOBASIC-1)     ; 19 NOBASIC
+        .BYTE   >(DO_NOSCREEN-1)    ; 20 NOSCREEN
+        .BYTE   >(DO_PRINT-1)       ; 21 PRINT
+        .BYTE   >(DO_REENTER-1)     ; 22 REENTER
+        .BYTE   >(DO_REM-1)         ; 23 REM
+        .BYTE   >(DO_RUN-1)         ; 24 RUN
+        .BYTE   >(DO_SCREEN-1)      ; 25 SCREEN
+        .BYTE   >(DO_WARM-1)        ; 26 WARM
+        .BYTE   >(DO_DRIVE_CHG-1)   ; 27
 .endif
 
         ; DEVHDL TABLE FOR N:
