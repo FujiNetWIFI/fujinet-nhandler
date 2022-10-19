@@ -11,10 +11,6 @@
         ;; Optimizations being done by djaybee!
         ;; Thank you so much!
 
-        ;; If SYNCALC is defined, then holes for Syncalc are inserted
-;SYNCALC	=	1
-        ;; If SYNCALD is defined, then CLI commands are removed
-;SYNCALD	=	1
 
 DOSVEC  =   $0A         ; DOSVEC
 DOSINI  =   $0C         ; DOSINI
@@ -217,10 +213,6 @@ HDR:    .BYTE   $00                 ; BLFAG: Boot flag equals zero (unused)
 
 	JMP	START
 ;	ORG	*+$64
-
-.ifdef SYNCALC
-	:($076B-*) DTA $00
-.endif
 
 START:  LDA     DOSINI
         STA     RESET+1
@@ -821,10 +813,6 @@ SPEDCB  .BYTE   DEVIDN      ; DDEVIC
 ; End CIO SPECIAL
 ;---------------------------------------
 
-.ifdef SYNCALC
-	:($0ABD-*) DTA $00
-.endif
-
 ;#######################################
 ;#                                     #
 ;#             CIO Functions           # 
@@ -1270,10 +1258,6 @@ GETCMD_WR_OFFSET:
 
 GETCMD_DONE:
         RTS
-
-.ifdef SYNCALC
-	:($0D15-*) DTA $00
-.endif
 
 CMDSEP: .BYTE $FF,$FF,$FF
 DELIM:  .BYTE ' '
@@ -2515,11 +2499,6 @@ PWDDCB:
 ; End of DO_NPWD
 ;---------------------------------------
 
-.ifdef SYNCALC
-	:($129B-*) DTA $00
-.endif
-
-.ifndef SYNCALD
 ;---------------------------------------
 DO_NTRANS:
 ;---------------------------------------
@@ -2569,8 +2548,6 @@ PARSE_MODE:
         BCS     NTRANS_ERROR
         EOR     #%00110000      ; Here if valid parameter
         STA     NTRDCB+11       ; Assign parameter to DCB
-.endif
-; SYNCALD
 
     ;---------------------------------------
     ; Call SIO
@@ -2606,7 +2583,6 @@ NTRDCB:
 ; End of DO_NTRANS
 ;---------------------------------------
 
-.ifndef SYNCALD
 ;---------------------------------------
 DO_SUBMIT:
 ;---------------------------------------
@@ -2839,10 +2815,6 @@ DO_COLD:
 ;---------------------------------------
         JMP     COLDSV
 
-.endif
-; SYNCALD
-.ifndef SYNCALC
-
 ;---------------------------------------
 DO_HELP:
 ;---------------------------------------
@@ -2901,10 +2873,6 @@ HELP_ARTICLE:
         .BYTE   $00,$00,$00,$00, $00,$00,$00,$00
         .BYTE   $00,$00,$00,$00, $00,$00,$00,$00
         .BYTE   $00,$00,$00,$00, $00,$00,$00,$00
-
-.endif
-;SYNCALC
-.ifndef SYNCALD
 
 ;---------------------------------------
 DO_NOBASIC:
@@ -3067,8 +3035,6 @@ RUN_ERROR_STR:
 DO_WARM:
 ;---------------------------------------
         JMP     WARMSV
-.endif
-; SYNCALD
 
 ;---------------------------------------
 REMOUNT_DRIVE:
@@ -3200,7 +3166,6 @@ PRMPT:
                 LOGIN               ;  6
                 MKDIR               ;  7
                 NPWD                ;  8
-.ifndef SYNCALD
                 NTRANS              ;  9
                 RENAME              ; 10
                 RMDIR               ; 11
@@ -3210,11 +3175,7 @@ PRMPT:
                 CAR                 ; 15
                 CLS                 ; 16
                 COLD                ; 17
-.endif
-.ifndef SYNCALC
                 HELP                ; 18
-.endif
-.ifndef SYNCALD
                 NOBASIC             ; 19
                 NOSCREEN            ; 20
                 PRINT               ; 21
@@ -3223,9 +3184,7 @@ PRMPT:
                 RUN                 ; 24
                 SCREEN              ; 25
                 WARM                ; 26
-.endif
                 DRIVE_CHG           ; 27
-        .ENDE
 
 CMD_DCOMND:
         .BYTE   CMD_CD              ;  0 NCD
@@ -3237,7 +3196,6 @@ CMD_DCOMND:
         .BYTE   CMD_LOCK            ;  6 LOCK
         .BYTE   CMD_MKDIR           ;  7 MKDIR
         .BYTE   CMD_NPWD            ;  8 NPWD
-.ifndef SYNCALD
         .BYTE   CMD_NTRANS          ;  9 NTRANS
         .BYTE   CMD_RENAME          ; 10 RENAME
         .BYTE   CMD_RMDIR           ; 11 RMDIR
@@ -3247,11 +3205,7 @@ CMD_DCOMND:
         .BYTE   CMD_CAR             ; 15 CAR
         .BYTE   CMD_CLS             ; 16 CLS
         .BYTE   CMD_COLD            ; 17 COLD
-.endif
-.ifndef SYNCALC
         .BYTE   CMD_HELP            ; 18 HELP
-.endif
-.ifndef SYNCALD
         .BYTE   CMD_NOBASIC         ; 19 NOBASIC
         .BYTE   CMD_NOSCREEN        ; 20 NOSCREEN
         .BYTE   CMD_PRINT           ; 21 PRINT
@@ -3260,7 +3214,6 @@ CMD_DCOMND:
         .BYTE   CMD_RUN             ; 24 RUN
         .BYTE   CMD_SCREEN          ; 25 SCREEN
         .BYTE   CMD_WARM            ; 26 WARM
-.endif
         .BYTE   CMD_DRIVE_CHG       ; 27
 
 COMMAND:
@@ -3291,7 +3244,6 @@ COMMAND:
         .CB     "NPWD"              ;  8 NPWD
         .BYTE   CMD_IDX.NPWD             
 
-.ifndef SYNCALD
         .CB     "NTRANS"            ;  9 NTRANS
         .BYTE   CMD_IDX.NTRANS            
                                         
@@ -3319,12 +3271,8 @@ COMMAND:
         .CB     "COLD"              ; 17 COLD
         .BYTE   CMD_IDX.COLD              
 
-.endif
-.ifndef SYNCALC
         .CB     "HELP"              ; 18 HELP
         .BYTE   CMD_IDX.HELP                
-.endif
-.ifndef SYNCALD
                                         
         .CB     "NOBASIC"           ; 19 NOBASIC
         .BYTE   CMD_IDX.NOBASIC           
@@ -3377,8 +3325,6 @@ COMMAND:
 
         .CB     "@"                 ; @ = SUBMIT
         .BYTE   CMD_IDX.SUBMIT
-.endif
-;SYNCALD
 
         ; Drive Change intentionally omitted
 
@@ -3395,7 +3341,6 @@ CMD_TAB_L:
         .BYTE   <(DO_LOGIN-1)       ;  6 LOGIN
         .BYTE   <(DO_GENERIC-1)     ;  7 MKDIR
         .BYTE   <(DO_NPWD-1)        ;  8 NPWD
-.ifndef SYNCALD
         .BYTE   <(DO_NTRANS-1)      ;  9 NTRANS
         .BYTE   <(DO_GENERIC-1)     ; 10 RENAME
         .BYTE   <(DO_GENERIC-1)     ; 11 RMDIR
@@ -3405,11 +3350,7 @@ CMD_TAB_L:
         .BYTE   <(DO_CAR-1)         ; 15 CAR
         .BYTE   <(DO_CLS-1)         ; 16 CLS
         .BYTE   <(DO_COLD-1)        ; 17 COLD
-.endif
-.ifndef SYNCALC
         .BYTE   <(DO_HELP-1)        ; 18 HELP
-.endif
-.ifndef SYNCALD
         .BYTE   <(DO_NOBASIC-1)     ; 19 NOBASIC
         .BYTE   <(DO_NOSCREEN-1)    ; 20 NOSCREEN
         .BYTE   <(DO_PRINT-1)       ; 21 PRINT
@@ -3419,7 +3360,6 @@ CMD_TAB_L:
         .BYTE   <(DO_SCREEN-1)      ; 25 SCREEN
         .BYTE   <(DO_WARM-1)        ; 26 WARM
         .BYTE   <(DO_DRIVE_CHG-1)   ; 27
-.endif
 
 CMD_TAB_H:
         .BYTE   >(DO_GENERIC-1)     ;  0 NCD
@@ -3431,7 +3371,6 @@ CMD_TAB_H:
         .BYTE   >(DO_LOGIN-1)       ;  6 LOGIN
         .BYTE   >(DO_GENERIC-1)     ;  7 MKDIR
         .BYTE   >(DO_NPWD-1)        ;  8 NPWD
-.ifndef SYNCALD
         .BYTE   >(DO_NTRANS-1)      ;  9 NTRANS
         .BYTE   >(DO_GENERIC-1)     ; 10 RENAME
         .BYTE   >(DO_GENERIC-1)     ; 11 RMDIR
@@ -3441,11 +3380,7 @@ CMD_TAB_H:
         .BYTE   >(DO_CAR-1)         ; 15 CAR
         .BYTE   >(DO_CLS-1)         ; 16 CLS
         .BYTE   >(DO_COLD-1)        ; 17 COLD
-.endif
-.ifndef SYNCALC
         .BYTE   >(DO_HELP-1)        ; 18 HELP
-.endif
-.ifndef SYNCALD
         .BYTE   >(DO_NOBASIC-1)     ; 19 NOBASIC
         .BYTE   >(DO_NOSCREEN-1)    ; 20 NOSCREEN
         .BYTE   >(DO_PRINT-1)       ; 21 PRINT
@@ -3455,7 +3390,6 @@ CMD_TAB_H:
         .BYTE   >(DO_SCREEN-1)      ; 25 SCREEN
         .BYTE   >(DO_WARM-1)        ; 26 WARM
         .BYTE   >(DO_DRIVE_CHG-1)   ; 27
-.endif
 
         ; DEVHDL TABLE FOR N:
 
@@ -3468,13 +3402,8 @@ CIOHND  .WORD   OPEN-1
 
        ; BANNERS
 
-.ifdef SYNCALC
-BREADY  .BYTE   '#FUJI NOS-SC5a 0.3.2',EOL
-BERROR  .BYTE   '#FUJI ERR',EOL
-.else
 BREADY  .BYTE   '#FUJINET NOS v0.3.2-alpha',EOL
 BERROR  .BYTE   '#FUJINET ERROR',EOL
-.endif
 
         ; MESSAGES
 
@@ -3534,13 +3463,13 @@ PGEND   = *
 
 ; $10 is the added ATR-header
 	:($B390-*+HDR-$10) DTA $00
-VTOCSTA
+VTOCSTA:
 	DTA $02,$BD,$02
-VTOCEND
+VTOCEND:
 ; Fill the remaining bytes of the VTOC sector
 	:($80+VTOCSTA-VTOCEND) DTA $00
 
-DIRSTA
+DIRSTA:
 	DTA $42,$00,$00,$00,$00,c"***********"
 	DTA $42,$00,$00,$00,$00,c"* FujiNet *"
 	DTA $42,$00,$00,$00,$00,c"* Network *"
@@ -3549,7 +3478,7 @@ DIRSTA
 	DTA $42,$00,$00,$00,$00,c"* v0.3.2  *"
 	DTA $42,$00,$00,$00,$00,c"*  alpha  *"
 	DTA $42,$00,$00,$00,$00,c"***********"
-DIREND
+DIREND:
 ; Fill the remaining sectors of the directory
 	:($400+DIRSTA-DIREND) DTA $00
 	
