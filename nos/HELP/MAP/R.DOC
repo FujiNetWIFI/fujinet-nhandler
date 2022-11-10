@@ -26,4 +26,3 @@ ROWINC  0079  Row inc/dec value
 RTCLOK  0012  Internal realtime clock
 RUNAD   02E0  Binary file entry point
 RUNSTK  008E  Pointer to GOSUB stack
-

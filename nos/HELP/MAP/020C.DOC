@@ -1,1 +1,14 @@
-VSEROR.DOC
+
+TOPIC: MAP/VSEROR
+
+524          020C          VSEROR
+
+POKEY serial I/O transmit ready
+interrupt vector, initialized to
+60048 (EA90), which is the OS code
+to provide the next byte in a buffer
+to the serial output port. DOS
+changes this vector to 6630 ($19E6),
+the start of the DOS output needed
+interrupt routine.  IRQ.
+

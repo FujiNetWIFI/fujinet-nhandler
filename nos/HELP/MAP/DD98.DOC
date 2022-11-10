@@ -1,1 +1,8 @@
-FLD1R.DOC
+
+TOPIC: MAP/FLD1R
+
+56728          DD98          FLD1R
+
+Load the FP number into FR1 from the
+6502 X,Y registers.
+

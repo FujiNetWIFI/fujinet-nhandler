@@ -1,1 +1,43 @@
-DAUX1,2.DOC
+
+TOPIC: MAP/DAUX1,2
+
+778          030A          DAUX1,2
+
+Used for device specific information
+such as the disk sector number for
+the read or write operation. Loaded
+down to locations 572, 573 ($23C,
+$23D) by SIO.
+
+There are only five commands
+supported by the disk handler: GET
+sector (82; $52), PUT sector (80;
+$50), PUT sector with VERIFY (87;
+$57), STATUS request (83; $53) and
+FORMAT entire disk (33; $21). There
+is no command to FORMAT a portion of
+the disk; this is done by the INS
+1771-1 formatter/controller chip in
+the drive itself and isn't
+user-accessible. There is a new disk
+drive ROM to replace the current "C"
+version. It is the "E" ROM. Not only
+is it faster than the older ROMs,
+but it also allows for selective
+formatting of disk sectors. Atari
+has not announced yet whether this
+new 810 ROM will be made available.
+For more information, see the OS
+User's Manual.
+
+Locations 780 to 793 ($30C to $319)
+are for miscellaneous use.
+Locations 794 to 831 ($31A to $33F)
+are handler address tables. To use
+these DCBs, the user must provide
+the required parameters to this
+block and then do a machine language
+JSR to $E453 (58451) for disk I/O or
+$E459 (58457; the SIO entry point)
+for other devices.
+

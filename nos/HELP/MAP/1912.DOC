@@ -1,1 +1,10 @@
-CLMJMP.DOC
+
+TOPIC: MAP/CLMJMP
+
+6418          1912          CLMJMP
+
+Test to see if DOS must load MEM.SAV
+from the disk before it does a run
+at cartridge address, then jumps to
+the cartridge address.
+

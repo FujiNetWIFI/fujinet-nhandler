@@ -1,1 +1,10 @@
-ICCOMT.DOC
+
+TOPIC: MAP/ICCOMT
+
+23          0017          ICCOMT
+
+Command for CIO vector. Stores the
+CIO command; used to find the offset
+in the command table for the correct
+vector to the handler routine.
+

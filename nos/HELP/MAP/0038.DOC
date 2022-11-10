@@ -1,1 +1,8 @@
-BUFRFL.DOC
+
+TOPIC: MAP/BUFRFL
+
+56          0038          BUFRFL
+
+Data buffer full flag (255; $FF
+equals full).
+

@@ -1,1 +1,24 @@
-PADDL0.DOC
+
+TOPIC: MAP/PADDL0
+
+624          0270          PADDL0
+
+The value of paddle 0 (paddles are
+also called pots, short for
+potentiometer); PEEK 624 returns a
+number between zero and 228 ($E4),
+increasing as the knob is turned
+counter-clockwise.  When used to
+move a player or cursor (i.e., PLOT
+PADDLE(0),0), test your screen
+first. Many sets will not display
+locations less than 48 ($30) or
+greater than 208 ($D0), and in many
+GRAPHICS modes you will get an ERROR
+141 -- cursor out of range. Paddles
+are paired in the controller jacks,
+so paddle 0 and paddle 1 both use
+jack one. PADDL registers are
+shadows for POKEY locations 53760 to
+53767 ($D200 to $D207).
+

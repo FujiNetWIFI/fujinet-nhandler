@@ -1,1 +1,11 @@
-ROWAC.DOC
+
+TOPIC: MAP/ROWAC
+
+112          0070          ROWAC
+
+ROWAC and COLAC (below) are both
+working accumulators for the control
+of row and column point plotting and
+the increment and decrement
+functions.
+

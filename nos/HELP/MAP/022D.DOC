@@ -1,1 +1,8 @@
-INTEMP.DOC
+
+TOPIC: MAP/INTEMP
+
+557          022D          INTEMP
+
+Temporary register used by the
+SETVBL routine at 58460 ($E45C).
+

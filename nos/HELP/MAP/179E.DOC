@@ -1,1 +1,8 @@
-MEMFLG.DOC
+
+TOPIC: MAP/MEMFLG
+
+6046          179E          MEMFLG
+
+Flag to show if memory has been
+written to disk using a MEM.SAV file.
+

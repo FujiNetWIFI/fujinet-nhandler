@@ -1,1 +1,9 @@
-ERRFLG.DOC
+
+TOPIC: MAP/ERRFLG
+
+575          023F          ERRFLG
+
+SIO error flag; any device error
+except the timeout error (time
+equals zero).
+

@@ -1,1 +1,20 @@
-VPRCED.DOC
+
+TOPIC: MAP/VPRCED
+
+514          0202          VPRCED
+
+Serial (peripheral) proceed line
+vector, initialized to 59314
+($E7B2), which is merely a PLA, RTI
+instruction sequence. It is used
+when an IRQ interrupt occurs due to
+the serial I/O bus proceed line
+which is available for peripheral
+use. According to De Re Atari, this
+interrupt is not used and points to
+a PLA, RTI instruction sequence.
+This interrupt is handled by the PIA
+chip and can be used to provide more
+control over external devices.  See
+the OS Listing, page 33.
+

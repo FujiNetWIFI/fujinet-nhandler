@@ -1,1 +1,7 @@
-FLPTR.DOC
+
+TOPIC: MAP/FLPTR
+
+252          00FC          FLPTR
+
+Points to the user's FP number.
+

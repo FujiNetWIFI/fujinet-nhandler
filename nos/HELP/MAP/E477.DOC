@@ -1,1 +1,10 @@
-COLDSV.DOC
+
+TOPIC: MAP/COLDSV
+
+58487          E477          COLDSV
+
+Coldstart (powerup) entry point.
+Initializes the OS and user RAM
+regions; wipes out any program in
+memory. Initialized to 61733 ($F125).
+

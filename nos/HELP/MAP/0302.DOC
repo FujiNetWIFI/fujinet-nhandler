@@ -1,1 +1,27 @@
-DCOMND.DOC
+
+TOPIC: MAP/DCOMND
+
+770          0302          DCOMND
+
+The number of the disk or device
+operation (command) to be performed,
+set by the user or by the device
+handler prior to calling SIO. Serial
+bus commands are:
+
+Read             82    ($52)
+Write (verily)   87    ($57)
+Status           83    ($53)
+Put (no verify)  80    (0)
+Format           33    ($21)
+Download         32    ($20)
+Read address     84    ($54)
+Read spin        81    ($51)
+Motor on         85    ($55)
+Verify sector    86    ($56)
+
+All of the above are disk device
+commands, except write and status,
+which are also printer commands
+(with no verify).
+

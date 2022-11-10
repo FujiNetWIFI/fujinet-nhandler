@@ -1,1 +1,8 @@
-ZFR0.DOC
+
+TOPIC: MAP/ZFR0
+
+55876          DA44          ZFR0
+
+Clear FR0 at 212 to 217 ($D4-$DB) by
+setting all bytes to zero.
+

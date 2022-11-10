@@ -1,1 +1,10 @@
-PBPNT.DOC
+
+TOPIC: MAP/PBPNT
+
+29          001D          PBPNT
+
+Print buffer pointer; points to the
+current position (byte) in the print
+buffer. Ranges from zero to the
+value in location 30.
+

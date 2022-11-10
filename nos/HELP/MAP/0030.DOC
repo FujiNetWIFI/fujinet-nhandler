@@ -1,1 +1,16 @@
-STATUS.DOC
+
+TOPIC: MAP/STATUS
+
+48          0030          STATUS
+
+Internal status storage. The SIO
+routines in ROM use this byte to
+store the status of the current SIO
+operation. See page 166 of the OS
+User's Manual for status values.
+STATUS uses location 793 ($319) as
+temporary storage. STATUS is also
+used as a storage register for the
+timeout, BREAK abort and error
+values during SIO routines.
+

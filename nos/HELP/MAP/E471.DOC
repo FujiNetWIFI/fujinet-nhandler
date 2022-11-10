@@ -1,1 +1,37 @@
-BLKBDV.DOC
+
+TOPIC: MAP/BLKBDV
+
+58481          E471          BLKBDV
+
+Blackboard mode entry. Blackboard
+mode is the "ATARI MEMO PAD" mode.
+It can be reached from BASIC by
+typing "BYE", "B." or by powering up
+with no peripherals or cartridges.
+Nothing you write to the screen in
+blackboard mode is acted upon by the
+computer. You can enter this mode to
+protect your programs temporarily
+from prying and curious fingers.
+
+All of the screen editing commands
+continue to work in blackboard mode.
+You can enter blackboard mode from
+any graphics mode with a text
+window; the display screen will
+remain intact on the screen while
+the text window will be in
+blackboard mode. Pressing RESET
+will, of course, return the entire
+screen to GR.0. You can also enter
+blackboard mode from a program, but
+cannot get out of it in BASIC once
+you are in it.
+
+If you entered blackboard mode from
+BASIC, you can return to it by
+pressing RESET. Any BASIC program
+will still be there. So will any
+RS-232 or DOS handlers previously
+booted. Initialized to 61987 ($F223).
+

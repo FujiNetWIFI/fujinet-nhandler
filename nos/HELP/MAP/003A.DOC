@@ -1,1 +1,8 @@
-XMTDON.DOC
+
+TOPIC: MAP/XMTDON
+
+58          003A          XMTDON
+
+Transmission done flag (255; $FF
+equals done).
+

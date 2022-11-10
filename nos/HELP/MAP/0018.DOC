@@ -1,1 +1,8 @@
-DSKFMS.DOC
+
+TOPIC: MAP/DSKFMS
+
+24          0018          DSKFMS
+
+Disk file manager pointer. Called
+JMPTBL by DOS; used as vector to FMS.
+

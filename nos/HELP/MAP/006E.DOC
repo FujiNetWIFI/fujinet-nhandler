@@ -1,1 +1,11 @@
-BITMSK.DOC
+
+TOPIC: MAP/BITMSK
+
+110          006E          BITMSK
+
+Bit mask used in bit mapping
+routines by the OS display handler
+at locations 64235 to 64305 ($FAEB
+to $FB31). Also used as a display
+handler temporary storage register.
+

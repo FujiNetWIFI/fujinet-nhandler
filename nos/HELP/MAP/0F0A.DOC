@@ -1,1 +1,9 @@
-FDSCHAR.DOC
+
+TOPIC: MAP/FDSCHAR
+
+3850          0F0A          FDSCHAR
+
+Store the file name characters that
+result from the file name decode
+routines.
+

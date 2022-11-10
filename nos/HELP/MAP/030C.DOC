@@ -1,1 +1,7 @@
-TIMER1.DOC
+
+TOPIC: MAP/TIMER1
+
+780          030C          TIMER1
+
+Initial baud rate timer value.
+

@@ -1,1 +1,8 @@
-FLD0R.DOC
+
+TOPIC: MAP/FLD0R
+
+56713          DD89          FLD0R
+
+Load the FP number into FR0 from the
+6502 X,Y registers.
+

@@ -1,1 +1,16 @@
-CDTMV3.DOC
+
+TOPIC: MAP/CDTMV3
+
+540          021C          CDTMV3
+
+System timer three. Same as 538.
+Timers three, four, and five are
+stopped when the OS sets the CRITIC
+flag to non-zero as well.  The OS
+uses timer three to OPEN the
+cassette recorder and to set the
+length of time to read and write
+tape headers. Any prior value in the
+register during this function will
+be lost.
+

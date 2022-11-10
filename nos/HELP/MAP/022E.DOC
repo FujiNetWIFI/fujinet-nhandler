@@ -1,1 +1,8 @@
-CDTMF5.DOC
+
+TOPIC: MAP/CDTMF5
+
+558          022E          CDTMF5
+
+System timer five flag. Set when
+location 558, 559 ($22E, $22F)
+counts down to zero.

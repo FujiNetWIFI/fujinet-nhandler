@@ -14,12 +14,11 @@ At least two critical features are still being developed:
 
 Other features on the wish-list:
 
-1. A `TYPE` command to view plain text files
-2. A `MOVE` command to relocate files between directories
-3. A `SOURCE` command to execute commands stored within a text file
-4. A `HELP` command
-3. Wildcard support for `DEL`, `COPY`, `MOVE`
-4. Date/time stamps in the listings produced by `DIR`
+1. Support for extrensic commands
+1. A `MOVE` command to relocate files between directories
+1. A `HELP` command
+1. Wildcard support for `DEL`, `COPY`, `MOVE`
+1. Date/time stamps in the listings produced by `DIR`
 
 Command Processor
 ====================
@@ -52,15 +51,17 @@ Command Summary
 |LOAD     |Load/Execute binary file|
 |REENTER  |Attempt to jump to last LOADed program|
 |NTRANS   |Translate the end-of-line character between the ATARI and the remote host's operating system|
-|SOURCE   |Batch execute NOS/DOS commands in text file|
+|SUBMIT   |Batch execute NOS/DOS commands in text file|
 |PRINT    |Display text messages in batch file|
 |REM      |Comment within batch file|
 |@NOSCREEN|Disable echo of commands in batch file|
 |@SCREEN  |Enable echo of commands in batch file|
+|AUTORUN  |Define batch file to execute at boot time|
 |TYPE     |Show contents of text file|
 |CLS      |Clear/Erase the screen|
 |COLD     |Execute coldstart routine COLDSV ($E477)|
 |WARM     |Execute warmstart routine WARMSV ($E474)|
+|XEP      |Toggle 40/80 column display with XEP-80 peripheral|
 |HELP     |Online help system|
 
 Commands in Detail
@@ -110,16 +111,13 @@ results in the path:
 
 	N1:TNFS://192.168.1.100/action/myproj/
 
-There is limited support for supplying a relative path that includes a reference to a parent directory.
+and, from there,
 
-Example:
-
-	NCD N1:TNFS://192.168.1.100/action/myproj01/
-	NCD ../myproj02/
+    NCD ../myproj2
 
 results in the path:
 
-	N1:TNFS://192.168.1.100/action/myproj01/../myproj02/
+    N1:TNFS://192.168.1.100/action/myproj2/
 
 **Unmounting**
 
@@ -301,13 +299,22 @@ Jump to the memory address stored in `RUNAD ($02E0).
 
 Usage:
 
-    REENTER
+    REENTER|REE
 
 Attempt to re-enter a memory-resident program by jumping from the command processor to the address loitering in `RUNAD` ($02E0).
 
 For example, if an application has a `QUIT TO DOS` function, it may be possible to exit, perform a task in the NOS command processor, and then jump back into the application without having to re-load the application from the network.
 
 The success of the `REENTER` command depends on the application. Also, be aware that the entry point for an application may clear any previous work in memory, so save any work before quitting to DOS.
+
+Example:
+
+    LOAD EDIT.COM
+    ... (do some editing and quit to DOS) ...  
+    ... (back in NOS, do some work here) ...
+    REENTER
+    (or)
+    REE
 
 `NTRANS`
 ---
@@ -332,6 +339,96 @@ Best results seem to arrive from using mode 3 and a text editor on the host mach
 
 Having translation enabled when working with binary files may result in corruption.
 
+`SUBMIT`
+---
+Batch execute NOS commands stored in a text file.
+
+Usage:
+
+    SUBMIT|SOURCE|@ filename
+
+The NOS commands found in *filename* will be executed as if typed in at the command processor. 
+
+Example:
+
+    @ MYFILE.BAT
+
+Several NOS commands were created to help batch files be more useful. See `@SCREEN``@NOSCREEN` `REM` `PRINT`.
+
+`PRINT`
+---
+Echo text strings to the screen.
+
+Usage:
+
+    PRINT "string"
+   
+Intended for use within a batch file.
+
+Example:
+
+    PRINT "Mounting devices..."
+
+`REM`
+---
+Denote comment line.
+
+Usage:
+
+    REM|' comment
+
+Intended for use within a batch file. Comment lines are ignored by the command processor.
+
+Examples:
+
+    REM Clear existing mounts
+    ' Clear existing mounts
+
+`@NOSCREEN`
+---
+
+Suppress the display of command lines being executed during batch processing.
+
+Usage:
+
+    @NOSCREEN
+
+Intended for use within a batch file. The default for batch processing is to echo commands as executed.
+
+`@SCREEN`
+---
+
+Enable the display of command lines being executed during batch processing.
+
+Usage:
+
+    @SCREEN
+   
+Intended for use within a batch file. The default for batch processing is to echo commands as executed. Therefore, this command would be used sometime after a call to `@NOSCREEN`.
+
+
+`AUTORUN`
+---
+Assign a batch file to execute automatically after a cold start upon NOS entry.
+
+Usage:
+
+To assign AUTORUN,
+
+    AUTORUN PROTO://HOST[:PORT]/[path/]filename
+
+To clear AUTORUN,
+
+    AUTORUN ""
+
+The AUTORUN entry is stored in the appkey file `/FujiNet/db790000.key` on the FujiNet's SD card. Therefore, AUTORUN requires a FAT32-formatted SD card to be installed in the FujiNet device.
+
+Examples:
+
+    AUTORUN TNFS://192.168.1.101/WORK/STARTUP.BAT
+    AUTORUN ""
+
+
 `CLS`
 ---
 Clear / erase the screen.
@@ -339,7 +436,7 @@ Clear / erase the screen.
 Usage:
 
 	CLS
-
+  
 `TYPE`
 ---
 Displays the contents of a text file to the screen.
@@ -370,6 +467,27 @@ Usage:
     WARM
 
 Performs a warmstart.
+
+`XEP`
+---
+For use with the XEP-80 or XEP-80 II peripheral. Toggles between 40 column and 80 column display. `XEP` should be executed only if an XEP-80 device is connected and only after loading the XEP-80 device handler into memory.
+
+Usage:
+
+    XEP [40]
+  
+`XEP` sends CIO commands to the XEP80's alternate E: device handler as described in the ATARI's Product Specification for the XEP80. (https://archive.org/details/atari-product-specification-for-xep80)
+
+Examples:
+
+    LOAD XEP80HAN.COM  (Load handler and switch to XEP80 screen)
+    XEP 40 (Switch to 40 col screen)
+    XEP    (Switch to XEP80 screen)
+
+The equivalent statements in ATARI BASIC would be:
+
+    XIO #1,24,12,0,"E:" (Exit 40 col screen and enter XEP80 screen)
+    XIO #1,25,12,0,"E:" (Exit XEP80 screen and enter 40 col screen)
 
 `HELP`
 ---

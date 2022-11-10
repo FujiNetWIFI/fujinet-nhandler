@@ -1,1 +1,12 @@
-INBUFF.DOC
+
+TOPIC: MAP/INBUFF
+
+243          00F3          INBUFF
+
+Input ASCII text buffer pointer; the
+user's program line input buffer,
+used in the translation of ATASCII
+code to FP values. The result output
+buffer is at locations 1408 to 1535
+($580 to $5FF).
+

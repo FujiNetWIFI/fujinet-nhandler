@@ -5,10 +5,11 @@ LOAD - Load a binary file into memory
 
 Usage:
 
-LOAD [N[n]:][path/]filename
+LOAD|X [N[n]:][path/]filename
 
 The LOAD command is used to execute a
-binary programs.
+binary programs. X is an alias for
+LOAD.
 
 Machine code vectored from INITAD 
 ($02E2) is executed as encountered.
@@ -21,5 +22,6 @@ Examples:
 
 LOAD JUMPMANJR.XEX
 LOAD N2:ATARIWRITER.COM
-LOAD "N2:Atari Writer.xex"
+LOAD N2:ATARIWRITER.COM
+X "N2:Atari Writer.xex"
 

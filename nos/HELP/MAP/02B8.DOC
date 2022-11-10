@@ -1,1 +1,8 @@
-TMPROW.DOC
+
+TOPIC: MAP/TMPROW
+
+696          02B8          TMPROW
+
+Temporary register for row used by
+ROWCRS (location 84; $54).
+

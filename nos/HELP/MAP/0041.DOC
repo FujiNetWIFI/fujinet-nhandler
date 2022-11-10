@@ -1,1 +1,18 @@
-SOUNDR.DOC
+
+TOPIC: MAP/SOUNDR
+
+65          0041          SOUNDR
+
+Noisy I/O flag used by SIO to signal
+the beeping heard during disk and
+cassette I/O. POKE here with zero
+for blessed silence during these
+operations. Other numbers return the
+beep. In- itialized to three. The
+hardware solution to this problem is
+to turn your speaker volume down.
+This can also be used to silence the
+digital track when playing
+synchronized voice/data tapes. See
+location 54018.
+

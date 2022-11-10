@@ -1,1 +1,46 @@
-COUNTR.DOC
+
+TOPIC: MAP/COUNTR
+
+126          007E          COUNTR
+
+Starts out containing the larger
+value of either DELTAR (location
+118; $76) or DELTAC (location 119;
+$77). This is the number of
+iterations required to draw a line.
+As each point on a line is drawn,
+this value is decremented. When the
+byte equals zero, the line is
+complete (drawn).
+
+-------------------------------------
+
+User and/or BASIC page zero RAM
+begins here. Locations 128 to 145
+($80 to $91) are for BASIC program
+pointers; 146 to 202 ($92 to $CA)
+are for miscellaneous BASIC RAM; 203
+to 209 ($CB to $D1) are unused by
+BASIC, and 210 to 255 ($D2 to $FF)
+are the floating point routine work
+area. The Assembler Editor cartridge
+uses locations 128 to 176 ($80 to
+$B0) for its page zero RAM. Since
+the OS doesn't use this area, you
+are free to use it in any non-BASIC
+or non-cartridge environment. If you
+are using another language such as
+FORTH, check that program's memory
+map to see if any conflict will
+occur.  See COMPUTE!'s First Book of
+Atari, pages 26 to 53, for a
+discussion of Atari BASIC structure,
+especially that using locations 130
+to 137 ($82 to $89). Included in the
+tutorials are a memory analysis, a
+line dump, and a renumber utility.
+See also De Re Atari, BYTE, February
+1982, and the locations for the
+BASIC ROM 40960 to 49151 ($A000 to
+$BFFF).
+

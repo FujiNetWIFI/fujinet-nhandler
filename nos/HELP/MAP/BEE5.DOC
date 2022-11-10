@@ -1,1 +1,120 @@
-SQR.DOC
+
+TOPIC: MAP/SQR
+
+48869          BEE5          SQR
+
+Calculate square root (FR0) with
+carry.  Note that there is some
+conflict of addresses for the above
+routines. The addresses given are
+from the first edition of De Re
+Atari. The Atari OS Source Code
+Listing gives the following
+addresses for these FP routines:
+
+These are entry points, not actual
+start addresses.
+
+SIN     48513   ($BD81)
+COS     48499   ($BD73)
+ATAN    48707   ($BE43)
+SQR     48817   ($BEB1)
+
+However, after disassembling the
+BASIC ROMs, I found that the
+addresses in De Re Atari appear to
+be correct.
+
+49146,7        BFFA,B
+Left cartridge start address.
+
+49148          BFFC
+A non-zero number here tells the OS
+that there is no cartridge in the
+left slot.
+
+49149          BFFD
+Option byte. A cartridge which does
+not specify a disk boot may use all
+of the memory from 1152 ($480) to
+MEMTOP any way it sees fit.
+
+49150,1        BFFE,F
+Cartridge initialization address.
+See the above section on the right
+slot, 32768 to 40959, for more
+information.
+
+-------------------------------------
+When a BASIC program is SAVEd, only
+14 of the more than 50 page zero
+locations BASIC uses are written to
+the disk or cassette with the
+program. The rest are all
+recalculated with a NEW or SAVE
+command, sometimes with RUN or GOTO.
+These 14 locations are:
+
+128,129   80,81    LOMEM
+130,131   82,83    VNTP
+132,133   84,85    VNTD
+134,135   86,87    VVTP
+136,137   88,89    STMTAB
+138,139   8A,8B    STMCUR
+140,141   8C,8D    STARP
+
+The string/array space is not
+loaded; STARP is included only to
+point to the end of the BASIC
+program.
+The two other critical BASIC page
+zero pointers, which are not
+SAVEd with the program, are:
+
+142,143   8E,8F    RUNSTK
+144,145   90,91    MEMTOP
+
+For more information concerning
+Atari BASIC, see the appendix.
+
+For detailed description, refer to
+the Atari BASIC Reference Manual.
+For more technical information, see
+De Re Atari, BYTE, February 1982,
+and COMPUTE!'s First Book of Atari
+and COMPUTE!'s Second Book of Atari.
+
+-------------------------------------
+Locations 49152 to 53247 ($C000 to
+$CFFF) are unused.  Unfortunately,
+this rather large 4K block of memory
+cannot be written to by the user, so
+it is presently useless. Apparently,
+this area of ROM is reserved for
+future expansion. Rumors abound
+about new Atari OS's that allow 3-D
+graphics, 192K of on-board RAM and
+other delights.  Most likely this
+space will be consumed in the next
+OS upgrade.  PEEKing this area will
+show it not to be completely empty;
+it was apparently used for system
+development in Atari's paleozoic
+age.  Although the Atari is
+technically a 64K machine (1K equals
+1024 bytes, so 64K equals 65536
+bytes), you don't really have all
+64K to use. The OS takes up 10K;
+there is the 4K block here that's
+unused, plus a few other unused
+areas in the ROM and, of course,
+there are the hardware chips. BASIC
+(or any cartridge) uses another 8K.
+The bottom 1792 bytes are used by
+the OS, BASIC, and floating point
+package. Then DOS and DUP take up
+their memory space, not to mention
+the 850 handler if booted -- leaving
+you with more or less 38K of RAM to
+use for your BASIC programming.
+

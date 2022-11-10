@@ -1,1 +1,18 @@
-TINDEX.DOC
+
+TOPIC: MAP/TINDEX
+
+659          0293          TINDEX
+
+Contains the current split-screen
+text window GRAPHICS mode.  It is
+the split-screen equivalent to
+DINDEX (location 87; $57) and is
+always equal to zero when location
+128 ($7B) equals zero.  Initialized
+to zero (which represents GR.0). You
+can alter the display list to change
+the text window into any GRAPHICS
+mode desired. If you do so, remember
+to change TINDEX to reflect that
+alteration.
+

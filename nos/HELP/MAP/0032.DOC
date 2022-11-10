@@ -1,1 +1,24 @@
-BUFRLO,HI.DOC
+
+TOPIC: MAP/BUFRLO,HI
+
+50          0032          BUFRLO,HI
+
+Pointer to the data buffer, the
+contents of which are transmitted
+during an I/O operation, used by SIO
+and the Device Control Block (DCB);
+points to the byte to send or
+receive. Bytes are transferred to
+the eight-bit parallel serial output
+holding register or from the input
+holding register at 53773 ($D20D).
+This register is a one-byte location
+used to hold the eight bits which
+will be transmitted one bit at a
+time (serially) to or from the
+device. The computer takes the eight
+bits for processing when the
+register is full or replaces another
+byte in it when empty after a
+transmission.
+

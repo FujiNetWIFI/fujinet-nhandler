@@ -1,1 +1,13 @@
-AUDF3.DOC
+
+TOPIC: MAP/AUDF3
+
+53764          D204          AUDF3
+
+(W) Audio channel three frequency.
+Used with AUDF3 above and with AUDF4
+to store the 600 baud rate for SIO.
+
+              POT4
+
+(R) Pot 4 (628).
+

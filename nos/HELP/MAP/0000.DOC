@@ -1,1 +1,14 @@
-LINZBS.DOC
+
+TOPIC: MAP/LINZBS
+
+0          0000          LINZBS
+
+LINBUG RAM, replaced by the monitor
+RAM See the OS Listing, page 31. It
+seems to be used to store the VBLANK
+timer value. One user application
+I've seen for location zero is in a
+metronome program in De Re Atari.
+Also used in cross- assembling the
+Atari OS.
+

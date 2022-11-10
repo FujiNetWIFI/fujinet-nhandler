@@ -1,1 +1,8 @@
-GETSECTOR.DOC
+
+TOPIC: MAP/GETSECTOR
+
+4358          1106          GETSECTOR
+
+Get sector routine; retrieves a free
+sector for use from the disk.
+

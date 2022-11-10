@@ -1,1 +1,96 @@
-VVTP.DOC
+
+TOPIC: MAP/VVTP
+
+134          0086          VVTP
+
+Address for the variable value
+table. Eight bytes are allocated for
+each variable in the name table as
+follows:
+
+Byte      1    2  3  4  5  6  7     8
+Variable
+-------------------------------------
+Scalar   00 var#  6-byte BCD constant
+Array;
+  DIMed  65 var#  offset  1st   2nd
+unDIMed  64       from    DIM+1 DIM+1
+                  STARP
+String;
+  DIMed 129 var#  offset length DIM
+unDIMed 128       from
+                  STARP
+
+In scalar (undimensioned numeric)
+variables, bytes three to eight are
+the FP number; byte three is the
+exponent; byte four contains the
+least significant two decimal
+digits, and byte eight contains the
+most significant two decimal digits.
+ In array variables, bytes five and
+six contain the size plus one of the
+first dimension of the array (DIM +
+1; LSB/MSB), and bytes seven and
+eight contain the size plus one of
+the second dimension (the second DIM
++ 1; LSB/MSB).  In string variables,
+bytes five and six contain the
+current length of the variable (LSB
+MSB), and bytes seven and eight
+contain the actual dimension (up to
+32767). There is an undocumented
+BASIC statement, "COM," mentioned
+only in the BASIC Reference Manual's
+index, which executes exactly the
+same as the "DIM" statement (see
+Your Atari 400/800, p.346).
+Originally, it was to be used to
+implement "common" variables.
+
+In all cases, the first byte is
+always one of the number listed on
+the chart above (you will seldom, if
+ever, see the undimensioned values
+in a program). This number defines
+what type of variable information
+will follow. The next byte, var #
+(variable number), is in the range
+from zero to 127. Offset is the
+number of bytes from the beginning
+of STARP at locations 140 and 141
+($8C, $8D).  Since each variable is
+assigned eight bytes, you could find
+the values for each variable by:
+
+1000  VVTP = PEEK(134) + PEEK(135) *
+256: INPUT VAR: REM VARIABLE NUMBER
+1010  FOR LOOP = 0 TO 7: PRINT
+PEEK(VVTP + LOOP + 8 * VAR): NEXT
+LOOP
+
+where VAR is the variable number
+from zero to 127.  If you wish to
+assign the same value to every
+element in a DIMed string variable
+use this simple technique:
+
+10  DIM TEST$(100)
+20  TEST$ = "*": REM or use TEST$(1)
+30  TEST$(100) = TEST$
+40  TEST$(2) = TEST$: PRINT TEST$
+
+By assigning the first, last and
+second variables in the array in
+that order, your Atari will then
+assign the same value to the rest of
+the array. Make sure you make the
+second and last elements equal to
+the string, not the character value
+(i.e don't use TEXT$(2) = "*").
+
+See De Re Atari for an example of
+SAVEing the six-byte BCD numbers to
+a disk file -- very useful when
+dealing with fixed record lengths.
+

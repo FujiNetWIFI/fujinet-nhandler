@@ -1,1 +1,11 @@
-COS.DOC
+
+TOPIC: MAP/COS
+
+48561          BDB1          COS
+
+Calculate Cosine (FR0) with carry.
+FR0 is Floating Point register zero,
+locations 212-217; $D4-$D9. See the
+Floating Point package entry points
+from location 55296 on.
+

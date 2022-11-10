@@ -1,1 +1,9 @@
-PADDL1.DOC
+
+TOPIC: MAP/PADDL1
+
+625          0271          PADDL1
+
+This and the next six bytes are the
+same as 624, but for the other
+paddles.
+

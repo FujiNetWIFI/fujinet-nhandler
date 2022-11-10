@@ -1,0 +1,140 @@
+
+Topic MAP/02XX
+
+Memory Map sorted by address
+Page $02
+
+Type HELP MAP/<LABEL> or
+Type HELP MAP/<ADDR> for more detail.
+
+ADDR  LABEL   DESCRIPTION
+----  -----   -----------------------
+0200  VDSLST  Vector to DL interrupts 
+0202  VPRCED  Ser periph proceed vect
+0204  VINTER  Ser periph interr vect
+0206  VBREAK  6502 BRK vector
+0208  VKEYBD  Keyboard interr vector
+020A  VSERIN  SIO receive ready inter
+020C  VSEROR  SIO xmit ready interr
+020E  VSEROC  SIO xmit complete inter
+0210  VTIMR1  Timer 1 interrupt vect
+0212  VTIMR2  Timer 2 interrupt vect
+0214  VTIMR4  Timer 4 interrupt vect
+0216  VIMIRQ  Vector to IRQ immediate
+0218  CDTMV1  System timer 1 value
+021A  CDTMV2  System timer 2 value
+021C  CDTMV3  System timer 3 value
+021E  CDTMV4  System timer 4 value
+0220  CDTMV5  System timer 5 value
+0222  VVBLKI  VBLANK immediate reg.
+0224  VVBLKD  VBLANK deferred reg.
+0226  CDTMA1  System timer 1 jump adr
+0228  CDTMA2  System timer 2 jump adr
+022A  CDTMF3  System timer 3 flag
+022B  SRTIMR  Software repeat timer
+022C  CDTMF4  System timer 4 flag
+022D  INTEMP  SETVBL temporary var
+022E  CDTMF5  System timer 5 flag
+022F  SDMCTL  DMA enable
+0230  SDLSTL  Ptr to display list
+0232  SSKCTL  Serial port control
+0233  SPARE   Unused
+0234  LPENH   Light pen horiz value
+0235  LPENV   Light pen vert value
+0236  BRKKY   BREAK key interrupt
+0238-0239 ... Unused
+023A  CDEVIC  SIO bus ID number
+023B  CCOMND  SIO bus command code
+023C  CAUX1   SIO Command Aux byte 1
+023D  CAUX2   SIO Command Aux byte 2
+023E  TEMP    Temp storage for SIO
+023F  ERRFLG  SIO error flag
+0240  DFLAGS  Boot file disk flags
+0241  DBSECT  #disk boot sectors read
+0242  BOOTAD  Disk boot loader addr
+0245  ...     Unused
+0246  DSKTIM  Disk time-out register
+0247-026E LINBUF  40-byte line buffer
+026F  GPRIOR  Graphics priority
+0270  PADDL0  Paddle 0 value
+0271  PADDL1  Paddle 1 value
+0272  PADDL2  Paddle 2 value
+0273  PADDL3  Paddle 3 value
+0274  PADDL4  Paddle 4 value
+0275  PADDL5  Paddle 5 value
+0276  PADDL6  Paddle 6 value
+0277  PADDL7  Paddle 7 value
+0278  STICK0  Value of joystick 0
+0279  STICK1  Value of joystick 1
+027A  STICK2  Value of joystick 2
+027B  STICK3  Value of joystick 3
+027C  PTRIG0  Paddle trigger 0
+027D  PTRIG1  Paddle trigger 1
+027E  PTRIG2  Paddle trigger 2
+027F  PTRIG3  Paddle trigger 3
+0280  PTRIG4  Paddle trigger 4
+0281  PTRIG5  Paddle trigger 5
+0282  PTRIG6  Paddle trigger 6
+0283  PTRIG7  Paddle trigger 7
+0284  STRIG0  Joystick trigger 0
+0285  STRIG1  Joystick trigger 1
+0286  STRIG2  Joystick trigger 2
+0287  STRIG3  Joystick trigger 3
+0288  CSTAT   Cassette status reg
+0289  WMODE   Read/write mode for C:
+028A  BLIM    Cassette data buf size
+028B-028F ... Unused
+0290  TXTROW  Text window cursor row
+0291  TXTCOL  Text window cursor col
+0293  TINDEX  Mode for split text wnd
+0294  TXTMSC  Split-screen text start
+0296-029B TXTOLD  Split-screen regs
+029D  HOLD3   Temporary register
+029E  SUBTMP  Temporary storage
+029F  HOLD2   Temporary register
+02A0  DMASK   Pixel location mask
+02A1  TMPLBT  Bit mask temp storage
+02A2  ESCFLG  Escape flag
+02A3-02B1 TABMAP Map of TAB stops
+02B2-02B5 LOGMAP Logical line bitmap
+02B6  INVFLG  Inverse character flag
+02B7  FILFLG  Fill flag for DRAW
+02B8  TMPROW  ROWCRS temp register
+02B8  TMPX1   Scroll loop temp reg
+02B9  TMPCOL  COLCRS temp register
+02BB  SCRFLG  Scroll flag
+02BC  HOLD4   Temporary register
+02BC  HOLD5   Temporary register
+02BE  SHFLOK  Shift/control key flag
+02BF  BOTSCR  # text rows available
+02C0  PCOLR0  Player/Missile 0 color
+02C1  PCOLR1  Player/Missile 1 color
+02C2  PCOLR2  Player/Missile 2 color
+02C3  PCOLR3  Player/Missile 3 color
+02C4  COLOR0  Color register 0
+02C5  COLOR1  Color register 1
+02C6  COLOR2  Color register 2
+02C7  COLOR3  Color register 3
+02C8  COLOR4  Color register 4
+02E0-02E3 GLBABS  Global variables
+02E0  RUNAD   Binary file entry point
+02E2  INITAD  Binary load init addr
+02E4  RAMSIZ  RAM size MSB only
+02E5  MEMTOP  Top of free memory
+02E7  MEMLO   Bottom of free memory
+02E9  ....    Unused
+02EA-02ED DVSTAT Device status regs
+02EE CBAUDL,H Cassette baud rate
+02F0  CRSINH  Cursor inhibit flag
+02F1  KEYDEL  Key delay and debounce
+02F2  CH1     Prior keybrd char code
+02F3  CHACT   Character mode Register
+02F4  CHBAS   Character Base Register
+02F5-02F9 ... Unused
+02FA  CHAR    Most recent char code
+02FB  ATACHR  Last ATASCII character
+02FC  CH      Hardware code key press
+02FD  FILDAT  Color for XIO Fill
+02FE  DSPFLG  Control code disp flag
+02FF  COLDST  Coldstart flag
+02FF  SSFLAG  Start/stop screen flag

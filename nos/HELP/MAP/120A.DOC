@@ -1,1 +1,9 @@
-WRTDOS.DOC
+
+TOPIC: MAP/WRTDOS
+
+4618          120A          WRTDOS
+
+Write new DOS.SYS file to disk
+routine, including new FMS file to
+DOS.SYS file.
+

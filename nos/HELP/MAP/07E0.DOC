@@ -1,1 +1,11 @@
-DINT.DOC
+
+TOPIC: MAP/DINT
+
+2016          07E0          DINT
+
+FMS initialization routine. The
+entry point is 1995 ($7CB). DUP
+calls FMS at this point. K-DOS uses
+the same location for its
+initialization routine.
+

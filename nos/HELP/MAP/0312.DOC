@@ -1,1 +1,10 @@
-TEMP1.DOC
+
+TOPIC: MAP/TEMP1
+
+786          0312          TEMP1
+
+Two-byte temporary storage register
+used by SIO for the VCOUNT
+calculation during baud timer
+routines. See location 54283 ($D40B).
+

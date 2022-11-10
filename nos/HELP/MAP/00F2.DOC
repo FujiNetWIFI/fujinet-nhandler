@@ -1,1 +1,9 @@
-CIX.DOC
+
+TOPIC: MAP/CIX
+
+242          00F2          CIX
+
+Character (current input) index.
+Used as an offset to the input text
+buffer pointed to by INBUFF below.
+

@@ -1,1 +1,9 @@
-ICBALZ,HZ.DOC
+
+TOPIC: MAP/ICBALZ,HZ
+
+36          0024          ICBALZ,HZ
+
+Buffer address for data transfer or
+the address of the file name for
+commands such as OPEN, STATUS, etc.
+

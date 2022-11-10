@@ -1,1 +1,9 @@
-DFLAGS.DOC
+
+TOPIC: MAP/DFLAGS
+
+576          0240          DFLAGS
+
+Disk flags read from the first byte
+of the boot file (sector one) of the
+disk.
+

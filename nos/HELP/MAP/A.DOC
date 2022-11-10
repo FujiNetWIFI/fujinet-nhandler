@@ -6,16 +6,16 @@ Memory Map by Label [A]
 Type HELP MAP/<LABEL> for more.
 
 LABEL    ADDR  DESCRIPTION
------    ----  -----------------------
-ADDCOR   030E  Addition correction flg
+-----    ----  ----------------------
+ADDCOR   030E  Addit. correction flg
 ADRESS   0064  Temp storage for DL
 AFP      D800  ASCII to FP Conversion
 ANTIC_TB FE45-FFBD  ANTIC ROM tables
 ANTIC    D400-D5FF  ANTIC addr space
-APPMHI   000E  BASIC high-memory limit
+APPMHI   000E  BASIC high-mem limit
 ATACHR   02FB  Last ATASCII character
 ATAN     BE77  Calculate Atangent
-ATRACT   004D  Attract mode timer/flag
+ATRACT   004D  Attract mode timer/flg
 AUDC1    D201  Audio chan ctl or Pot
 AUDC2    D203  Audio chan ctl or Pot
 AUDC3    D205  Audio chan ctl or Pot
