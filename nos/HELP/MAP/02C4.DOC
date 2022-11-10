@@ -1,1 +1,15 @@
-COLOR0.DOC
+
+TOPIC: MAP/COLOR0
+
+708          02C4          COLOR0
+
+Color register zero, color of
+playfield zero, controlled by the
+BASIC SETCOLOR0 command. In GRAPHICS
+1 and GRAPHICS 2, this color is used
+for the uppercase letters.  Shadow
+for 53270 ($D016). You can change
+the values in all of the COLOR
+registers from BASIC by using either
+the SETCOLOR command or a POKE.
+

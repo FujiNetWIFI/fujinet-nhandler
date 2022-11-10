@@ -1,1 +1,11 @@
-PCOLR3.DOC
+
+TOPIC: MAP/PCOLR3
+
+707          02C3          PCOLR3
+
+Color of player and missile 3. When
+the four missiles are combined to
+make a fifth player, it takes on the
+color in location 711 (COLOR3).
+Shadow for 53269 ($D015).
+

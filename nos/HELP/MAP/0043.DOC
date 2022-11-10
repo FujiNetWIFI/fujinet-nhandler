@@ -1,1 +1,8 @@
-ZBUFP.DOC
+
+TOPIC: MAP/ZBUFP
+
+67          0043          ZBUFP
+
+Page zero buffer pointer to the user
+filename for disk I/O.
+

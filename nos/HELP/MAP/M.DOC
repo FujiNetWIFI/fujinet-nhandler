@@ -7,7 +7,7 @@ Type HELP MAP/<LABEL> or
 Type HELP MAP/<ADDR> for more
 
 LABEL   ADDR  DESCRIPTION
------   ----  -------------------------
+-----   ----  -----------------------
 MEMFLG  179E  MEM.SAV written flag
 MEMLDD  170B  MEM.SAV loaded flag
 MEMLO   02E7  Bottom of free memory

@@ -1,1 +1,21 @@
-STACK.DOC
+
+TOPIC: MAP/STACK
+
+256          0100          STACK
+PAGE ONE: THE STACK
+
+Locations 256 to 511 ($100 to $1FF)
+are the stack area for the OS, DOS
+and BASIC. This area is page one.
+Machine language JSR, PHA and
+interrupts all cause data to be
+written to page one, and RTS, PLA
+and RTI instructions all read data
+from page one. On powerup or RESET,
+the stack pointer is initialized to
+point to location 511 ($1FF). The
+stack then pushes downward with each
+entry to 256 ($100). In case of
+overflow, the stack will wrap around
+from 256 back to 511 again.
+

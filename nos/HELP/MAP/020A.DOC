@@ -1,1 +1,16 @@
-VSERIN.DOC
+
+TOPIC: MAP/VSERIN
+
+522          020A          VSERIN
+
+POKEY serial I/O bus receive data
+ready interrupt vector, initialized
+to 60177 ($EB11), which is the OS
+code to place a byte from the serial
+input port into a buffer. Called
+INTRVEC by DOS, it is used as an
+interrupt vector location for an SIO
+patch. DOS changes this vector to
+6691 ($1A23), the start of the DOS
+interrupt ready service routine. IRQ.
+

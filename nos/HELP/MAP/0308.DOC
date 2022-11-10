@@ -1,1 +1,16 @@
-DBYTLO,HI.DOC
+
+TOPIC: MAP/DBYTLO,HI
+
+776          0308          DBYTLO,HI
+
+The number of bytes transferred to
+or from the data buffer (or the
+disk) as a result of the most recent
+operation, set by the handler.  Also
+used for the count of bad sector
+data. There is a small bug in SIO
+which causes incorrect system
+actions when the last byte in a
+buffer is in a memory location
+ending with $FF, such as $A0FF.
+

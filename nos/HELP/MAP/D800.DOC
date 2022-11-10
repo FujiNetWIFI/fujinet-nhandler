@@ -1,1 +1,61 @@
-AFP.DOC
+
+TOPIC: MAP/AFP
+
+OPERATING SYSTEM ROM
+
+Locations 55296 to 65535 ($D800 to
+$FFFF) are the OS ROM.  These
+locations are contained in the 10K
+ROM cartridge, which sits in the
+front slot of the Atari 800 or
+inside the Atari 400. The OS is
+identical for both computers.
+
+The locations given here are for the
+"A" version of the OS ROMs.  There
+are changes in the new "B" version
+ROMs, which are explained in the
+appendix. Most of the changes affect
+the interrupt handler routines and
+SIO. In making these changes, Atari
+cured some bugs such as the device
+time-out problem. Unfortunately,
+there is a cloud with this silver
+lining: not all of your old software
+will run with the new ROMs.
+Megalegs, one of my favorite games,
+cannot run under the new ROMs. A
+pity that. There are others; I'm
+sure you'll find them. The solution
+is to have both sets of ROMs so you
+can use all of your software.
+
+FLOATING POINT PACKAGE ROM
+
+Locations 55296 to 57343 ($D800 to
+$DFFF) are reserved for the ROM's
+Floating Point Mathematics Package.
+There are other areas used by the FP
+package: page zero (locations 212 to
+254; $D4 to $FE) and page five
+(locations 1406 to 1535; $57E to
+$5FF), which are used only if FP
+routines are called. There are also
+trigonometric functions in the BASIC
+cartridge located between 48549 and
+49145 ($BDA5 to $BFF9) which use the
+FP routines. See De Re Atari for
+more information.
+
+These are the entry points to some
+of the subroutines; unless otherwise
+noted, they use FP register zero
+(FR0 at 212 to 217, $D4 to $DB):
+
+---------------------------------------
+
+55296          D800          AFP
+
+ASCII to Floating Point (FP)
+conversion.
+

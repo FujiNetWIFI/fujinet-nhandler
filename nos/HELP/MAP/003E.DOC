@@ -1,1 +1,13 @@
-FTYPE.DOC
+
+TOPIC: MAP/FTYPE
+
+62          003E          FTYPE
+
+Inter-record gap type between
+cassette records, copied from
+location 43 ($2B; ICAX2Z) in the
+ZIOCB, stored there from DAUX2 (779;
+$30B) by the user. Normal gaps are a
+non-zero positive number; continuous
+gaps are zero (negative number).
+

@@ -3,8 +3,19 @@ Topic: BUGS
 
 Known Bugs
 ----------
-Sourcing a binary file as a batch file causes a crash
-Binary load fails for non-executable files (e.g. FF FF 52 00 52 00 00)
-Binary load does not process all stages correctly (e.g. EQUATION.COM)
-Binary load does not verify leading FF FF
+* Submitting a binary file as a batch
+  file causes a crash.
+
+* Binary load fails for 
+non-executable files (e.g. FF FF 52 
+00 52 00 00)
+
+* Binary load does not verify leading
+FF FF
+
+* RENAME does not work with a
+relative path.
+
+* LOAD does not work with a relative
+path.
 

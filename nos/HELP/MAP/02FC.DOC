@@ -1,1 +1,63 @@
-CH.DOC
+
+TOPIC: MAP/CH
+
+764          02FC          CH
+
+Internal hardware value for the last
+key pressed. POKE CH with 255 ($FF;
+no key pressed) to clear it. The
+keyboard handler gets all of its key
+data from CH. It stores the value
+255 here to indicate the key code
+has been accepted, then passes the
+code to CH1, location 754 ($2F2). If
+the value in CH is the same as in
+CH1, a key code will be accepted
+only if the proper key debounce
+delay time has transpired. If the
+code is the CTRL-1 combination (the
+CTRL and the "1" keys pressed
+simultaneously), then the start/stop
+flag at 767 ($2FF) is complemented,
+but the value is not stored in CH.
+The auto repeat logic will also
+store store key information here as
+a result of the continuous pressing
+of a key.  This is neither the
+ATASCII nor the internal code value;
+it is the "raw" keyboard matrix code
+for the key pressed. The table for
+translation of this code to ATASCII
+is on page 50 of the OS User's
+Manual. In a two-key operation, BIT
+7 is set if the CTRL key is pressed,
+BIT 6 if the SHIFT key is pressed.
+The rest of the bytes are the code
+(ignored if both BITs 7 and 6 are
+set). Only the code for the last key
+pressed is stored here (it is a
+global variable for keyboard).
+
+When a read request is issued to the
+keyboard, CH is set to 255 by the
+handler routine. After a keycode has
+been read from this register, it is
+reset to 255. BREAK doesn't show
+here, and CTRL and SHIFT will not
+show here on their own. However, the
+inverse toggle (Atari logo key),
+CAPS/LOWR, TAB and the ESC keys will
+show by themselves. You can examine
+this register with:
+
+10 LOOK=PEEK(764)
+20 PRINT "KEY PRESSED = ";LOOK
+30 POKE 764,255
+40 FOR LOOP=1 TO 250:NEXT LOOP
+50 GOTO 10
+
+See COMPUTE!'s First Book of Atari
+for an example of using this
+register as a replacement for
+joystick input.
+

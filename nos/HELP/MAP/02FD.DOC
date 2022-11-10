@@ -1,1 +1,8 @@
-FILDAT.DOC
+
+TOPIC: MAP/FILDAT
+
+765          02FD          FILDAT
+
+Color data for the fill region in
+the XIO FILL command.
+

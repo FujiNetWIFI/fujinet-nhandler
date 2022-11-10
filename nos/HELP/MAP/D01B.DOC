@@ -1,1 +1,60 @@
-PRIOR.DOC
+
+TOPIC: MAP/PRIOR
+
+53275          D01B          PRIOR
+
+(W) Priority selection register.
+PRIOR establishes which objects on
+the screen (players, missiles, and
+playfields) will be in front of
+other objects. Values used in this
+register are also described at
+location 623 ($26F), the shadow
+register. If you use conflicting
+priorities, objects whose priorities
+are in conflict will turn black in
+their overlap region.
+
+Priority order (Decimal values in
+brackets):
+
+Bit 0 = 1 (1):            Bit 1 = 1
+(2):
+Player 0                  Player 0
+Player 1                  Player 1
+Player 2                  Playfield 0
+Player 3                  Playfield 1
+Playfield 0               Playfield 2
+Playfield 1               Playfield
+3 and Player 5
+Playfield 2               Player 2
+Playfield 3 and Player 5  Player 3
+Background                Background
+
+Bit 2 = 1 (4):            Bit 3 = 1
+(8):
+Playfield 0               Playfield 0
+Playfield 1               Playfield 1
+Playfield 2               Player 0
+Playfield 3 and Player 5  Player 1
+Player 0                  Player 2
+Player 1                  Player 3
+Player 2                  Playfield 2
+Player 3                  Playfield
+3 and Player 5
+Background                Background
+
+Bit 4 = 1: Enable a fifth player out
+of the four missiles.
+Bit 5 = 1: Overlap of players 0 and
+1, 2 and 3 is third color (else
+overlap is black). The resulting
+color is a logical OR of the two
+player colors.
+Bits 6 and 7 are used to select GTIA
+modes:
+0     0 = no GTIA modes
+0     1 = GTIA GR.9
+1     0 = GTIA GR.10
+1     1 = GTIA GR.11
+

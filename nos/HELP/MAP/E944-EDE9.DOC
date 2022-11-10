@@ -1,1 +1,55 @@
-SIOORG.DOC
+
+TOPIC: MAP/SIOORG
+
+59716-60905    E944-EDE9    SIOORG
+
+Routines for the Serial Input/Output
+(SIO) routines:
+
+60011 ($EA6B) SEND;
+
+is the SIO send buffer routine entry.
+
+60048 ($EA90) ISRODN,
+
+is the serial output ready IRQ
+vector.
+
+60113 ($EAD1) ISRTD;
+
+is the serial output complete IRQ
+vector.  This is at 60111 ($EACF) in
+the new OS ROMs.
+
+60177 ($EB11) ISRSIR;
+
+is the serial input ready IRQ
+vector. This is 60175 ($EB0F) in the
+new OS ROMs.
+
+60292 ($EB84) CASENT;
+
+is the start of the cassette
+handling code SIO subroutine to set
+baud rate, tone values, inter-record
+gap, to load the buffer from the
+cassette and to turn on the recorder
+motor. Write routines are located in
+61249 to 61666 ($EFF5 to $F0E2).
+
+60515 ($EC63)
+
+is the start of the disable POKEY
+interrupts routine entry, which also
+disables the send and receive
+functions.
+
+60583 ($ECA7) COMPUT;
+
+is the subroutine to calculate baud
+rate using the POKEY frequency
+registers and the VCOUNT timer.  The
+tables for the AUDF and VCOUNT
+values are between 60882 and 60905
+($EDD2 and $EDE9).
+

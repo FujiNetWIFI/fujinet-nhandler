@@ -1,1 +1,12 @@
-DSTAT.DOC
+
+TOPIC: MAP/DSTAT
+
+76          004C          DSTAT
+
+Display status and keyboard register
+used by the display handler.  Also
+used to indicate memory is too small
+for the screen mode, cursor out of
+range error, and the BREAK abort
+status.
+

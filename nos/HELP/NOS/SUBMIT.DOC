@@ -1,0 +1,41 @@
+
+Topic: NOS/SUBMIT
+
+SUBMIT - Batch execute NOS commands
+stored in a text file.
+
+Usage:
+
+SUBMIT|@ [N[n]:][path/]filename
+
+A batch file is a plain text file
+containing a sequence of FujiNet
+NOS commands. Use SUBMIT to execute
+the batch file.
+
+Examples:
+
+SUBMIT TNFS://192.168.1.20/START.BAT
+SUBMIT N:START.BAT
+SUBMIT N1:START.BAT
+@ TNFS://192.168.1.20/PROJ/MOUNT.BAT
+@ N3:PROJ/MOUNT.BAT
+
+Example batch file:
+
+@NOSCREEN
+REM *** Clear mounts ***
+NCD N1:
+NCD N2:
+REM *** New mounts ***
+NCD N1:TNFS://192.168.1.20/
+NCD N2:FTP://ftp.pigwa.net/stuff/
+
+See also:
+@SCREEN
+@NOSCREEN
+REM
+PRINT
+AUTORUN
+
+

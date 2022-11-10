@@ -1,1 +1,8 @@
-NEWROW.DOC
+
+TOPIC: MAP/NEWROW
+
+96          0060          NEWROW
+
+Point (row) to which DRAWTO and XIO
+18 (FILL) will go.
+

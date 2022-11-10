@@ -1,1 +1,10 @@
-ICCOMZ.DOC
+
+TOPIC: MAP/ICCOMZ
+
+34          0022          ICCOMZ
+
+Command code byte set by the user to
+define how the rest of the IOCB is
+formatted, and what I/O action is to
+be performed.
+

@@ -1,1 +1,26 @@
-INVFLG.DOC
+
+TOPIC: MAP/INVFLG
+
+694          02B6          INVFLG
+
+Inverse character flag; zero is
+normal and the initialization value
+(i.e., normal ATASCII video codes
+have BIT 7 equals zero). You POKE
+INVFLG with 128 ($80) to get inverse
+characters (BIT 7 equals one). This
+register is normally set by toggling
+the Atari logo key; however, it can
+be user-altered. The display handler
+XOR's the ATASCII codes with the
+value in INVFLG at all times.  See
+location 702 ($2BE) below.
+
+INVFLG works to change the input,
+not the output. For example, if you
+have A$ = "HELLO", POKE 694, 128
+will not change A$ when you PRINT it
+to the screen. However, if you POKE
+694, 128 before an INPUT A$, the
+string will be entered as inverse.
+

@@ -1,1 +1,7 @@
-ERRNO.DOC
+
+TOPIC: MAP/ERRNO
+
+4789          12B5          ERRNO
+
+Start of the FMS error number table.
+

@@ -1,1 +1,11 @@
-CRETRY.DOC
+
+TOPIC: MAP/CRETRY
+
+54          0036          CRETRY
+
+Number of command frame retries.
+Default is 13 ($0D). This is the
+number of times a device will
+attempt to carry out a command such
+as read a sector or format a disk.
+

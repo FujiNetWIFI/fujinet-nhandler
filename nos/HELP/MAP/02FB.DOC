@@ -1,1 +1,34 @@
-ATACHR.DOC
+
+TOPIC: MAP/ATACHR
+
+763          02FB          ATACHR
+
+Returns the last ATASCII character
+read or written or the value of a
+graphics point. ATACHR is used in
+converting the ATASCII code to the
+internal character code passed to or
+from CIO. It also returns the value
+of the graphics point. The FILL and
+DRAW commands use this location for
+the color of the line drawn, ATACHR
+being temporarily loaded with the
+value in FILDAT, location 765; $2FD.
+To force a color change in the line,
+POKE the desired color number here
+(color * sixteen + luminance). To
+see this register in use as
+character storage, try:
+
+10 OPEN#2,4,0,"K:"
+20 GET#2,A
+30 PRINT PEEK(763);" "; CHR$(A)
+40 GOTO 20
+
+Make sure the PEEK statement comes
+before the PRINT CHR$ statement, or
+you will not get the proper value
+returned. When the RETURN key is the
+last key pressed, ATACHR will show a
+value of 155.
+

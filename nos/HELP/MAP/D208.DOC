@@ -1,1 +1,107 @@
-AUDCTL.DOC
+
+TOPIC: MAP/AUDCTL
+
+53768          D208          AUDCTL
+
+(W) Audio control. To properly
+initialize the POKEY sound
+capabilities, POKE AUDCTL with zero
+and POKE 53775,3 ($D20F). These two
+are the equivalent of the BASIC
+statement SOUND 0,0,0,0. AUDCTL is
+the option byte which affects all
+sound channels. This bit assignment
+is:
+
+Bit Description:
+7   Makes the 17 bit poly counter
+    into nine bit poly (see below)
+6   Clock channel one with 1.79 MHz
+5   Clock channel three with 1.79 MHz
+4   Join channels two and one 
+    (16 bit)
+3   Join channels four and three
+    (16 bit)
+2   Insert high pass filter into
+    channel one, clocked by channel
+    two
+1   Insert high pass filter into
+    channel two, clocked by channel
+    four
+0   Switch main clock base from
+    64 KHz to 15 KHz
+
+Poly (polynomial) counters are used
+as a source of random pulses for
+noise generation. There are three
+polys: four, five and 17 bits long.
+The shorter polys create repeatable
+sound patterns, while the longer
+poly has no apparent repetition.
+Therefore, setting BIT 7 above,
+making the 17-bit into a nine-bit
+poly will make the pattern in the
+distortion more evident. You chose
+which poly(s) to use by setting the
+high three bits in the AUDC
+registers. The 17-bit poly is also
+used in the generation of random
+numbers; see 53770 ($D20A).
+
+The clock bits allow the user to
+speed up or slow down the clock
+timers, respectively, making higher
+or lower frequency ranges possible.
+Setting the channels to the 1.79 MHz
+will produce a much higher sound,
+the 64 KHz clock will be lower, and
+the 15 KHz clock the lowest. The
+clock is also used when setting the
+frequency for the AUDF timers.
+
+Two bits (three and four) allow the
+user to combine channels one and two
+or three and four for what amounts
+to a nine octave range instead of
+the usual five. Here's an example
+from De Re Atari of this increased
+range, which uses two paddles to
+change the frequency: the right
+paddle makes coarse adjustments, the
+left paddle makes fine adjustments:
+
+10 SOUND 0,0,0,0:POKE 53768,80:REM SET CLOCK AND JOIN CHANNELS 1 AND 2
+20 POKE 53761,160:POKE 53763,168:REM TURN OFF CHANNEL 1 AND SET 2 TO PURE TONE GENERATION
+50 POKE 53760,PADDLE(0):POKE 53762,PADDLE(1):GOTO 30
+
+High pass filters allow only
+frequencies higher than the clock
+value to pass through. These are
+mostly used for special effects.
+
+Try:
+
+10 SOUND 0,0,0,0:POKE 53768,4:REM HIGH PASS FILTER ON CHANNEL 1
+20 POKE 53761,168:POKE 53765,168:REM PURE TONES
+30 POKE 53760,254:POKE 53764,127
+40 GOTO 40
+
+See the excellent chapter on sound
+in De Re Atari: it is the best
+explanation of sound functions in
+the Atari available. See also the
+Hardware Manual for complete details.
+
+              ALLPOT
+
+(R) Eight line pot port state; reads
+all of the eight POTs together.
+Each bit represents a pot (paddle)
+of the same number. If a bit is set
+to zero, then the register value for
+that pot is valid (it's in use); if
+it is one, then the value is not
+valid. ALLPOT is used with the POTGO
+command at 53771 ($D20B).
+
+-------------------------------------

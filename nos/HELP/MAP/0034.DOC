@@ -1,1 +1,8 @@
-BFENLO,HI.DOC
+
+TOPIC: MAP/BFENLO,HI
+
+52          0034          BFENLO,HI
+
+Next byte past the end of the SIO
+and DCB data buffer described above.
+

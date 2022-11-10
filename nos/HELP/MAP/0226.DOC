@@ -1,1 +1,39 @@
-CDTMA1.DOC
+
+TOPIC: MAP/CDTMA1
+
+550          0226          CDTMA1
+
+System timer one jump address,
+initialized to 60400 ($EBF0).  When
+locations 536, 537 ($218, $219)
+reach (count down to) zero, the OS
+vectors through here (jumps to the
+location specified by these two
+addresses). You can set your machine
+code routine address here for
+execution when timer one reaches
+(counts down to) zero. Your code
+should end with the RTS instruction.
+ Problems may occur when timer
+values are set greater than 255,
+since the 6502 cannot manipulate
+16-bit values directly (a number in
+the range of zero to 255 is an
+eight-bit value; if a value requires
+two bytes to store, such as a memory
+location, it is a 16-bit value).
+Technically, a VBLANK interrupt
+could occur when one timer byte is
+being initialized and the other not
+yet set.  To avoid this, keep timer
+values less than 255. See the Atari
+OS User's Manual, page 106, for
+details.
+
+Since the OS uses timer one, it is
+recommended that you use timer two
+instead, to avoid conflicts with the
+operation of the Atari. Initialized
+to 60396 ($EBEA) in the old ROMs,
+60400 ($EBF0) in the new ROMs. NMI
+

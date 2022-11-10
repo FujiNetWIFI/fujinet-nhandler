@@ -5,40 +5,40 @@ Memory Map by Label [F]
 
 Type HELP MAP/<LABEL> for more.
 
-LABEL    HEX   DESCRIPTION
------    ----  -----------------------
-FADD     DA66  FP addition routine
-FASC     D8E6  FP value to ASCII conv.
-FCB      1381-1400 File Control Blocks
-FCHRFLG  00F0  First character flag
-FDIV     DB28  FP division routine
-FDSCHAR  0F0A  Decoded file name
-FEOF     003F  Cass end-of-file flag
-FILDAT   02FD  Color for XIO Fill
-FILDIR   1401  Disk directory entries
-FILFLG   02B7  Fill flag for DRAW
-FLD0P    DD8D  Load FP from user to FR0
-FLD0R    DD89  Load FP from XY to FR0
-FLD1P    DD9C  Load FP from user to FR1
-FLD1R    DD98  Load FP from XY to FR1
-FLPTR    00FC  Pointer to user FP value
-FMOVE    DDB6  Load FP from FR0 to FR1
-FMTDSK   2680  Format disk
-FMUL     DADB  FP multiply routine
-FMZSPG   0043-0049 FMS ZP registers
-FNDCODE  0E9E  File name decode
-FPI      D9D2  FP to integer conversion
-FPSCR1   05EC-05FF FP scratch pad
-FPSCR    05E6-05EB FP scratch pad
-FPTR2    00FE  Pointer to user's 2nd FP 
-FR0      00D4-00D9 FP register 0
-FR1      00E0-00E5 FP register 1
-FR2      00E6-00EB FP register 2
-FRE      00DA-00DF FP register
-FREQ     0040  Cassette beep count 
-FRESECT  10C5  Free sectors routine
-FRX      00EC  FP spare register
-FST0P    DDAB  FP from FR0 using ptr
-FST0R    DDA7  FP from FR0 to XY
-FSUB     DA60  FP subtract routine
-FTYPE    003E  Cassette gap type
+LABEL   HEX   DESCRIPTION
+-----   ----  -----------------------
+FADD    DA66  FP addition routine
+FASC    D8E6  FP value to ASCII conv.
+FCB     1381-1400 File Control Blocks
+FCHRFLG 00F0  First character flag
+FDIV    DB28  FP division routine
+FDSCHAR 0F0A  Decoded file name
+FEOF    003F  Cass end-of-file flag
+FILDAT  02FD  Color for XIO Fill
+FILDIR  1401  Disk directory entries
+FILFLG  02B7  Fill flag for DRAW
+FLD0P   DD8D  Load FP from user->FR0
+FLD0R   DD89  Load FP from XY->FR0
+FLD1P   DD9C  Load FP from user->FR1
+FLD1R   DD98  Load FP from XY->FR1
+FLPTR   00FC  Pointer to user FP val
+FMOVE   DDB6  Load FP from FR0 to FR1
+FMTDSK  2680  Format disk
+FMUL    DADB  FP multiply routine
+FMZSPG  0043-0049 FMS ZP registers
+FNDCODE 0E9E  File name decode
+FPI     D9D2  FP to int conversion
+FPSCR1  05EC-05FF FP scratch pad
+FPSCR   05E6-05EB FP scratch pad
+FPTR2   00FE  Ptr to user's 2nd FP 
+FR0     00D4-00D9 FP register 0
+FR1     00E0-00E5 FP register 1
+FR2     00E6-00EB FP register 2
+FRE     00DA-00DF FP register
+FREQ    0040  Cassette beep count 
+FRESECT 10C5  Free sectors routine
+FRX     00EC  FP spare register
+FST0P   DDAB  FP from FR0 using ptr
+FST0R   DDA7  FP from FR0 to XY
+FSUB    DA60  FP subtract routine
+FTYPE   003E  Cassette gap type

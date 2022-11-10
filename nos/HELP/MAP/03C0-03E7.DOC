@@ -1,1 +1,53 @@
-PRNBUF.DOC
+
+TOPIC: MAP/PRNBUF
+
+960-999       03C0-03E7     PRNBUF
+
+Printer buffer. The printer handler
+collects output from LPRINT
+statements here, sending them to the
+printer when an End of Line (EOL;
+carriage return) occurs or when the
+buffer is full. Normally this is 40
+characters. However, if an LPRINT
+statement generates fewer than 40
+characters and ends with a semicolon
+or 38 characters and ends with a
+comma, Atari sends the entire buffer
+on each FOR-NEXT loop, the extra
+bytes filled with zeros. The output
+of the next LPRINT statement will
+appear in column 41 of the same
+line. According to the Operating
+System User's Manual, the Atari
+supports an 80-column printer device
+called P2:. Using OPEN and PUT
+statements to P2: may solve this
+problem. Here is a small routine for
+a GR.0 BASIC screen dump:
+
+10  DIM TEXT$(1000): OPEN#2,4,0,"S:":TRAP 1050
+.
+.
+.
+1000  FOR LINE = 1 TO 24: POSITION PEEK(82),LINE
+1010  FOR COL = 1 TO 38: GET#2,CHAR:TEXT$(COL,COL)=CHR$(CHAR)
+1020  NEXT COL: GET#2,COL
+1030  LPRINT TEXT$
+1040  NEXT LINE
+1050  RETURN
+
+You can use the PTABW register at
+location 201 ($C9) to set the number
+of spaces between print elements
+separated by a comma.  The minimum
+number of spaces accepted is two.
+LPRINT automatically uses channel
+seven for output. No OPEN statement
+is necessary and CLOSE is automatic.
+
+-----------------------------
+Locations 1000 to 1020 ($3E8 to
+$3FC) are a reserved spare buffer
+area.
+

@@ -1,1 +1,29 @@
-HITCLR.DOC
+
+TOPIC: MAP/HITCLR
+
+53278          D01E          HITCLR
+
+(W) POKE with any number to clear
+all player/missile collision
+registers. It is important to clear
+this register often in a program --
+such as a game -- which frequently
+tests for collisions.  Otherwise,
+old collision values may remain and
+confuse the program. A good way to
+do this is to POKE HITCLR just
+before an event which may lead to a
+collision; for example, right before
+a joystick or paddle is "read" to
+move a player or fire a missile.
+Then test for a collision
+immediately after the action has
+taken place. Remember that multiple
+collisions cause sums of the
+collision values to be written to
+the collision registers; if you do
+not clear HITCLR often enough, a
+program checking for individual
+collisions will be thrown off by
+these sums.
+

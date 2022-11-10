@@ -1,1 +1,11 @@
-STICK1.DOC
+
+TOPIC: MAP/STICK1
+
+633          0279          STICK1
+
+This and the next two locations are
+the same as 632, but for the other
+joysticks. These four locations are
+also used to determine if a lightpen
+(PEN 0 - 3) switch is pressed.
+

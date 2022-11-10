@@ -6,15 +6,15 @@ Memory Map by Label [G]
 Type HELP MAP/<LABEL> or
 Type HELP MAP/<ADDR> for more
 
-LABEL     ADDR   DESCRIPTION
------     ----  -----------------------
-GETSECTOR 1106  GET SECTOR routine
-GLBABS    02E0-02E3 Global variables
-GPRIOR    026F  Graphics priority
-GRACTL    D01D  P/M control/latch trigs
-GRAFM     D011  Non-DMA Missile, TRIG1
-GRAFP0    D00D  Non-DMA P0 bits, P1PL
-GRAFP1    D00E  Non-DMA P1 bits, P2PL
-GRAFP2    D00F  Non-DMA P2 bits, P3PL
-GRAFP3    D010  Non-DMA P3 bits, TRIG0
-GTIA      D000-D0FF GTIA chip
+LABEL   ADDR  DESCRIPTION
+-----   ----  -----------------------
+GETSECTOR 1106 GET SECTOR routine
+GLBABS  02E0-02E3 Global variables
+GPRIOR  026F  Graphics priority
+GRACTL  D01D  P/M control/latch trigs
+GRAFM   D011  Non-DMA Missile, TRIG1
+GRAFP0  D00D  Non-DMA P0 bits, P1PL
+GRAFP1  D00E  Non-DMA P1 bits, P2PL
+GRAFP2  D00F  Non-DMA P2 bits, P3PL
+GRAFP3  D010  Non-DMA P3 bits, TRIG0
+GTIA    D000-D0FF GTIA chip

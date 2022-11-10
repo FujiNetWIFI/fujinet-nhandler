@@ -1,1 +1,111 @@
-HATABS.DOC
+
+TOPIC: MAP/HATABS
+
+794-831    031A-033F      HATABS
+
+Handler Address Table. Thirty-eight
+bytes are reserved for up to 12
+entries of three bytes per handler,
+the last two bytes being set to
+zero. On powerup, the HATABS table
+is copied from ROM.  Devices to be
+booted, such as the disk drive, add
+their handler information to the end
+of the table. Each entry has the
+character device name
+(C,D,E,K,P,S,R) in ATASCII code and
+the handler address (LSB/MSB).
+Unused bytes are all set to zero.
+FMS searches HATABS from the top for
+a device "D:" entry, and when it
+doesn't find it, it then sets the
+device vector at the end of the
+table to point to the FMS vector at
+1995 ($7CB). CIO searches for a
+handler character from the bottom
+up. This allows new handlers to take
+precedence over the old. Pressing
+RESET clears HATABS of all but the
+resident handler entries!
+
+794   31A   (P:) Printer device ID
+            init'd to 58416 ($E430).
+797   31D   (C:) Cassette device ID
+            init'd to 58432 ($E440).
+800   320   (E:) Display editor ID
+            init'd to 58368 ($E400).
+803   323   (S:) Screen handler ID,
+            init'd to 58384 ($E410).
+806   326   (K:) Keyboard handler ID
+            init'd to 58400 ($E420).
+
+HATABS unused entry points:
+809 ($329), 812 ($32C), 815 ($32F),
+818 ($332), 821 ($335), 824 ($338),
+827 ($33B), and 830 ($33E). These
+are numbered sequentially from one
+to eight. There are only two bytes
+in the last entry (unused), both of
+which are set to zero. When DOS is
+present, it adds an entry to the
+table with the ATASCII code for the
+letter "D" and a vector to address
+1995 ($7CB).
+
+The format for the HATABS table is:
+
+Device name
+Handler vector table address
+More entries
+Zero fill to the end of the table
+
+The device handler address table
+entry above for the specific handler
+points to the first byte (low
+byte/high byte) of the vector table
+which starts at 58368 ($E400). Each
+handler is designed with the
+following format:
+
+OPEN vector
+CLOSE vector
+GET BYTE vector
+PUT BYTE vector
+GET STATUS vector
+SPECIAL vector
+Jump to initialization code (JMP
+LSB/MSB)
+
+CIO uses the ZIOCB (see location 32;
+$20) to pass parameters to the
+originating IOCB, the A, Y and X
+registers and CIO. It is possible to
+add your own device driver(s) to OS
+by following these rules:
+
+1) Load your routine, with necessary
+   buffers at the address pointed to
+   by MEMLO: location 743 ($2E7).
+2) Add the size of your routine to
+   the MEMLO value and POKE the
+   result back into MEMLO.
+3) Store the name and address of your
+   driver in the handler address
+   table; HATABS.
+4) Change the vectors so that the OS
+   will re-execute the above steps if
+   RESET has been pressed. This is
+   usually done by adjusting
+   locations 12 ($C: DOSINIT) and 10
+   ($A; DOSVEC).
+
+See the "Insight: Atari" columns in
+COMPUTE!, January and April 1982,
+for details. The APX program "T: A
+Text Display Device" is a good
+example of a device handler
+application.  See De Re Atari for
+more information on the DCB and
+HATABS, including the use of a null
+handler.
+

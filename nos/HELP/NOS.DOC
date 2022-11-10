@@ -20,14 +20,16 @@ LOAD      Load & execute binary file
 REENTER   Jump to last LOADed program
 RUN       Execute machine code @ addr
 TYPE      Show contents of text file
-SOURCE    Execute batch file
+SUBMIT    Execute batch file
 REM       Comment in batch file
 @NOSCREEN Disable echo in batch file
 @SCREEN   Enable echo in batch file
+AUTORUN   Set boot time batch file
 NTRANS    Translate end-of-line chars
 CLS       Clear/erase screen
 NOBASIC   Disable BASIC in ROM (XLXE)
 COLD      Execute coldstart
 WARM      Execute warmstart
+XEP       Toggle 40/80 col with XEP80
 HELP      Online help system
 

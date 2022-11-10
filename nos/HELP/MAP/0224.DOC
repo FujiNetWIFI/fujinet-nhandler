@@ -1,1 +1,84 @@
-VVBLKD.DOC
+
+TOPIC: MAP/VVBLKD
+
+548          0224          VVBLKD
+
+VBLANK deferred register; system
+return from interrupt, initialized
+to 59710 ($E93E, in the new OS "B"
+ROMs; 59653; $E905), the exit for
+the VBLANK routine. NMI.
+
+These two VBLANK vectors point to
+interrupt routines that occur at the
+beginning of the VBLANK time
+interval. The stage one VBLANK
+routine is executed; then location
+66 ($42) is tested for the
+time-critical nature of the
+interrupt and, if a critical code
+section has been interrupted, the
+stage two VBLANK routine is not
+executed with a JMP made through the
+immediate vector VVBLKI. If not
+critical, the deferred interrupt
+VVBLKD is used.  Normally the VBLANK
+interrupt bits are enabled (BIT 6 at
+location 54286; $D40E is set to
+one). To disable them, clear BIT 6
+(set to zero).
+
+The normal seguence for VBLANK
+interrupt events is: after the OS
+test, JMP to the user immediate
+VBLANK interrupt routine through the
+vector at 546, 547 (above), then
+through SYSVBV at 58463 ($E45F).
+This is directed by the OS through
+the VBLANK interrupt service routine
+at 59345 ($E7D1) and then on to the
+user-deferred VBLANK interrupt
+routine vectored at 548, 549. it
+then exits the VBLANK interrupt
+routine through 58466 ($E462) and an
+RTI instruction.
+
+If you are changing the VBLANK
+vectors during the interrupt
+routine, use the SETVBV routine at
+58460 ($E45C). An immediate VBI has
+about 3800 machine cycles of time to
+use a deferred VBI has about 20,000
+cycles. Since many of these cycles
+are executed while the electron beam
+is being drawn, it is suggested that
+you do not execute graphics routines
+in deferred VBI's. See the table of
+VBLANK processes at the end of the
+map area.
+
+If you create your own VBI's,
+terminate an immediate VBI with a
+JMP to 58463 ($E45F) and a deferred
+VBI with a JMP to 58466 ($E462). To
+bypass the OS VBI routine at 59345
+($E7D1) entirely, terminate your
+immediate VBI with a JMP to 58466
+($E462).
+
+Here's an example of using a VBI to
+create a flashing cursor. It will
+also blink any text you display in
+inverse mode.
+
+10  FOR BLINK = 1664 TO 1680: READ BYTE: POKE BLINK, BYTE: NEXT BLINK
+20  POKE 548,128: POKE 549,6
+30  DATA 8,72,165,20,41,16,74,74,74,141
+40  DATA 243,2,104,40,76,62,233
+
+DOWNLOAD VVBLKD.BAS
+
+To restore the normal cursor and
+display, POKE 548,62 and POKE
+549,233.
+

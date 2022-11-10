@@ -1,1 +1,9 @@
-DELTAR.DOC
+
+TOPIC: MAP/DELTAR
+
+118          0076          DELTAR
+
+Delta row; contains the absolute
+value of NEWBOW (location 96; $60)
+minus ROWCRS (location 84; $54).
+

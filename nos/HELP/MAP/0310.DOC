@@ -1,1 +1,20 @@
-TIMER2.DOC
+
+TOPIC: MAP/TIMER2
+
+784          0310          TIMER2
+
+Final timer value. Timer one and
+timer two contain reference times
+for the start and end of the fixed
+bit pattern receive period.  The
+first byte of each timer contains
+the VCOUNT value (54283; $D40B), and
+the second byte contains the current
+realtime clock value from location
+20 ($14). The difference between the
+timer values is used in a lookup
+table to compute the interval for
+the new values for the baud rate
+passed on to location 750, 751
+($2EE, $2EF).
+

@@ -1,1 +1,24 @@
-TSTDAT.DOC
+
+TOPIC: MAP/TSTDAT
+
+7          0007          TSTDAT
+
+RAM test data register. Reads one
+when the B or the right cartridge is
+inserted.
+
+RAMLO, TRAMSZ and TSTDAT are all
+used in testing the RAM size on
+powerup. On DOS boot, RAMLO and
+TRAMSZ also act as temporary storage
+for the boot continuation address.
+TRAMSZ and TSTDAT are used later to
+flag whether or not the A (left)
+and/or B (right) cartridges,
+respectively, are plugged in (non-
+zero equals cartridge plugged in)
+and whether the disk is to be hooted.
+
+Locations eight through 15 ($8-$F)
+are cleared on coldstart only.
+

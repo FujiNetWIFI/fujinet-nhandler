@@ -1,0 +1,127 @@
+
+Topic MAP/DXXX
+
+Memory Map sorted by address
+Pages $D0..$DF
+
+Type HELP MAP/<LABEL> or
+Type HELP MAP/<ADDR> for more detail.
+
+ADDR  LABEL   DESCRIPTION
+----  -----   -----------------------
+D000-D0FF GTIA  GTIA chip
+D000  HPOSP0  Horiz pos P0, M0PF
+D001  HPOSP1  Horiz pos P1, M0PF
+D001  M1PF    Missile 1/PF collision
+D002  HPOSP2  Horiz pos P2, M2PF
+D002  M2PF    Missile 2/PF collision
+D003  HPOSP3  Horiz pos P3, M3PF
+D004  HPOSM0  Horiz pos M0, P0PF
+D004  P0PF    Player 0/PF collision
+D005  HPOSM1  Horiz pos M1, P1PF
+D005  P1PF    Player 1/PF collision
+D006  HPOSM2  Horiz pos M2, P2PF
+D006  P2PF    Player 2/PF collision
+D007  HPOSM3  Horiz pos M3, P3PF
+D007  P3PF    Player 3/PF collision
+D008  M0PL    Missile 0/Player coll.
+D008  SIZEP0  Size for player 0
+D009  M1PL    Missile 1/Player coll.
+D009  SIZEP1  Size for player 1
+D00A  M2PL    Missile 2/Player coll.
+D00A  SIZEP2  Size for player 2 
+D00B  M3PL    Missile 3/Player coll.
+D00B  SIZEP3  Size for player 3 
+D00C  P0PL    Player 0/Player coll.
+D00C  SIZEM   Size for all missiles
+D00D  GRAFP0  Non-DMA P0 bits, P1PL
+D00D  P1PL    Player 1/Player coll.
+D00E  GRAFP1  Non-DMA P1 bits, P2PL
+D00E  P2PL    Player 2/Player coll.
+D00F  GRAFP2  Non-DMA P2 bits, P3PL
+D00F  P3PL    Player 3/PF collision
+D010  TRIG0   Joystick trigger 0
+D010  GRAFP3  Non-DMA P3 bits, TRIG0
+D011  TRIG1   Joystick trigger 1
+D011  GRAFM   Non-DMA Missile, TRIG1
+D012  COLPM0  Color P/M 0, TRIG2
+D012  TRIG2   Joystick trigger 2
+D013  COLPM1  Color P/M 1, TRIG3
+D013  TRIG3   Joystick trigger 3
+D014  COLPM2  Color P/M 2, PAL/NTSC?
+D015  COLPM3  Color P/M 3
+D016  COLPF0  Color/lumin playfield 0
+D017  COLPF1  Color/lumin playfield 1
+D018  COLPF2  Color/lumin playfield 2
+D019  COLPF3  Color/lumin playfield 3
+D01A  COLBK   Color/lumin background
+D01B  PRIOR   Graphics priorities
+D01C  VDELAY  Vertical delay register
+D01D  GRACTL  P/M control/latch trigs
+D01E  HITCLR  Clear P/M collisions
+D01F  CONSOL  Console switches
+D200  AUDF1   Audio chan freq or pot
+D200-D2FF POKEY   POKEY chip
+D201  AUDC1   Audio chan ctl or Pot
+D202  AUDF2   Audio chan freq or pot
+D203  AUDC2   Audio chan ctl or Pot
+D204  AUDF3   Audio chan freq or pot
+D205  AUDC3   Audio chan ctl or Pot
+D206  AUDF4   Audio chan freq or pot
+D207  AUDC4   Audio chan ctl or Pot  
+D208  AUDCTL  Audio control or Pots
+D209  STIMER  Start POKEY timers
+D20A  RANDOM  Random number generator
+D20A  SKREST  Reset ser port status
+D20B  POTGO   Start of POS scan sequ.
+D20C  ....    Unused
+D20D  SERIN   Serial port input
+D20D  SEROUT  Serial port output
+D20E  IRQEN   Interrupt Request Enable
+D20F  SKSTAT  Read serial port status
+D20F  SKCTL   Serial port control
+D300-D3FF PIA PIA 6520 chip
+D300  PORTA   R/W controller jack 1,2
+D301  PORTB   R/W controller jack 3,4
+D302  PACTL   Port A controller
+D303  PBCTL   Port B controller
+D400-D5FF ANTIC  ANTIC addr space
+D400  DMACTL  DMA, P/M, PF control
+D401  CHACTL  Character mode control
+D402  DLISTL  Display list pointer LO
+D403  DLISTH  Display list pointer HI
+D404  HSCROL  Horiz scroll enable
+D405  VSCROL  Vertical scroll enable
+D406  ....    Unused
+D407  PMBASE  MSB of P/M base address
+D408  ....    Unused
+D409  CHBASE  Character base address
+D40A  WSYNC   Wait for horiz sync
+D40B  VCOUNT  Vertical line counter
+D40C  PENH    Light pen horiz pos
+D40D  PENV    Light pen vertical pos
+D40E  NMIEN   NMI enable
+D40F  NMIST   NMI status
+D40F  NMIRES  Reset for NMIST
+D800  AFP     ASCII to FP Conversion
+D8E6  FASC    FP value to ASCII conv.
+D9AA  IFP     Integer to FP conversion
+D9D2  FPI     FP to integer conversion
+DA44  ZFR0    Clear FP0
+DA46  ZF1     Clear FP1
+DA60  FSUB    FP subtract routine
+DA66  FADD    FP addition routine
+DADB  FMUL    FP multiply routine
+DB28  FDIV    FP division routine
+DD40  PLYEVL  Polynomial eval routine
+DD89  FLD0R   Load FP from XY to FR0
+DD8D  FLD0P   Load FP from user to FR0
+DD98  FLD1R   Load FP from XY to FR1
+DD9C  FLD1P   Load FP from user to FR1
+DDA7  FST0R   FP from FR0 to XY
+DDAB  FST0P   FP from FR0 using ptr
+DDB6  FMOVE   Load FP from FR0 to FR1
+DDC0  EXP     Base E exponentiation
+DDCC  EXP10   Base 10 exponentiation
+DECD  LOG     Natural logarithm
+DED1  LOG10   Base 10 logarithm

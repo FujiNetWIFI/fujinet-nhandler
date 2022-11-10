@@ -1,1 +1,13 @@
-WARMSV.DOC
+
+TOPIC: MAP/WARMSV
+
+58484          E474          WARMSV
+
+Warmstart entry point (RESET button
+vector). Initializes the OS RAM
+region. The RESET key produces an
+NMI interrupt and a chip reset (see
+below). Jump to here on an NMI
+caused by pressing the RESET key.
+Initialized to 61723 ($F11B).
+

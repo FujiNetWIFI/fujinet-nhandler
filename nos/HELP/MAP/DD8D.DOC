@@ -1,1 +1,9 @@
-FLD0P.DOC
+
+TOPIC: MAP/FLD0P
+
+56717          DD8D          FLD0P
+
+Load the FP number into FR0 from
+user routine, using FLPTR at 252
+($FC).
+

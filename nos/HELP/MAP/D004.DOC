@@ -1,1 +1,36 @@
-HPOSM0.DOC
+
+TOPIC: MAP/HPOSM0
+
+53252          D004          HPOSM0
+
+(W) Horizontal position of missile
+0. Missiles move horizontally like
+players. See the note in 53248
+($D000) concerning the use of
+horizontal registers.
+
+              P0PF
+
+(R) Player 0 to playfield
+collisions. There are some problems
+using collision detection in
+graphics modes nine to eleven. There
+are no obviously recognized
+collisions in GR.9 and GR.11. In
+GR.10 collisions work only for the
+playfield colors that correspond to
+the usual playfield registers. Also,
+the background (BAK) color is set by
+PCOLR0 (location 704; $2C0) rather
+than the usual COLOR4 (location 712;
+$2C8), which will affect the
+priority detection. In GR.10,
+playfield colors set by PCOLR0 to
+PCOLR3 (704 to 707; $2C0 to $2C3)
+behave like players where priority
+is concerned. Bit use is:
+
+      Bit    7  6  5   4  3  2  1  0
+Playfield    ...unused..  3  2  1  0
+  Decimal    ...........  8  4  2  1
+

@@ -1,1 +1,18 @@
-SWPFLG.DOC
+
+TOPIC: MAP/SWPFLG
+
+123          007B          SWPFLG
+
+Split-screen cursor control. Equal
+to 255 ($FF) if the text window RAM
+and regular RAM are swapped;
+otherwise, it is equal to zero. In
+split-screen modes, the graphics
+cursor data and the text window data
+are frequently swapped in order to
+get the values associated with the
+area being accessed into the OS data
+base locations 84 to 95 ($54 to
+$5F). SWPFLG helps to keep track of
+which data set is in these locations.
+

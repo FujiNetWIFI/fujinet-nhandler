@@ -1,1 +1,13 @@
-DELTAC.DOC
+
+TOPIC: MAP/DELTAC
+
+119          0077          DELTAC
+
+Delta column; contains the absolute
+value of NEWCOL (location 97; $61)
+minus the value in COLCRS (location
+85; $55). These delta register
+values, along with locations 121 and
+122 below, are used to define the
+slope of the line to be drawn.
+

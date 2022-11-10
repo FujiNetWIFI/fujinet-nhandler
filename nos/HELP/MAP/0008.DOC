@@ -1,1 +1,25 @@
-WARMST.DOC
+
+TOPIC: MAP/WARMST
+
+8          0008          WARMST
+
+Warmstart flag. If the location
+reads zero, then it is in the middle
+of powerup; 255 is the normal RESET
+status. Warmstart is similar to
+pressing RESET, so should not wipe
+out memory, variables, or programs.
+WARMST is initialized to zero and
+will not change values unless POKEd
+or until the first time the RESET
+button is pressed. It will then read
+255 ($FF).
+
+Warmstart normally vectors to
+location 58484 ($E474). WARMST is
+checked by the NMI status register
+at 54287 ($D40F) when RESET is
+pressed to see whether or not to
+re-initialize the software or to
+re-boot the disk.
+

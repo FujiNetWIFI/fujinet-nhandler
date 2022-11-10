@@ -1,0 +1,138 @@
+
+Topic MAP/00XX
+
+Memory Map sorted by address
+Zero Page
+
+Type HELP MAP/<LABEL> or
+Type HELP MAP/<ADDR> for more detail.
+
+ADDR  LABEL   DESCRIPTION
+----  -----   -----------------------
+0000  LINZBS  LINBUG RAM
+0002  CASINI  Cassette init vector
+0004  RAMLO   RAM test/Disk boot addr
+0006  TRAMSZ  RAM size temp register
+0007  TSTDAT  RAM test data register
+0008  WARMST  Warmstart flag
+0009  BOOT?   Boot flag indicator
+000A  DOSVEC  Start vector for progs
+000C  DOSINI  Disk boot init address
+000E  APPMHI  BASIC high-memory limit
+0010  POKMSK  POKEY interrupt masks
+0011  BRKKEY  BREAK key status
+0012  RTCLOK  Internal realtime clock
+0015  BUFADR  Pointer to disk buffer
+0017  ICCOMT  Command for CIO vector
+0018  DSKFMS  Disk file manager ptr
+001A  DSKUTL  Disk utilites pointer
+001C  PTIMOT  Printer timeout
+001D  PBPNT   Print buffer pointer
+001E  PBUFSZ  Print buffer size
+001F  PTEMP   Temp register for P:
+0020  ICHIDZ  ZIOCB handler index
+0021  ICDNOZ  ZIOCB device number
+0022  ICCOMZ  ZIOCB command code
+0023  ICSTAZ  ZIOCB return status
+0024  ICBALZ  ZIOCB Buffer address LO
+0025  ICBAHZ  ZIOCB Buffer address HI
+0026  ICPTLZ  ZIOCB vect to PUT BYTE
+0027  ICPTHZ  ZIOCB vect to PUT BYTE
+0028  ICBLLZ  ZIOCB Buffer length LO
+0029  ICBLHZ  ZIOCB Buffer length HI
+002A  ICAX1Z  ZIOCB Aux byte 1
+002B  ICAX2Z  ZIOCB Aux byte 2
+002C  ICAX3Z  ZIOCB Used NOTE,POINT
+002D  ICAX4Z   ""
+002E  ICAX5Z  Byte used  NOTE, POINT
+002F  ICAX6Z  Byte accessed by PUT
+0030  STATUS  Internal SIO status
+0031  CHKSUM  SIO data frame checksum
+0032 BUFRLO,HI Pointer to data buffer
+0034 BFENLO,HI Next byt after DCB buf
+0036  CRETRY  SIO #cmd frame retries
+0037  DRETRY  # of device retries
+0038  BUFRFL  Data buffer full flag
+0039  RECVDN  Receive done flag
+003B  CHKSNT  Checksum sent flag
+003C  NOCKSM  "No Checksum" flag
+003D  BPTR    Cassette buffer pointer
+003E  FTYPE   Cassette gap type
+003F  FEOF    Cass end-of-file flag
+0040  FREQ    Cassette beep count 
+0041  SOUNDR  SIO noise flag
+0042  CRITIC  Critical I/O region flg
+0043-0049 FMZSPG  FMS ZP registers
+0043  ZBUFP   Zero page filename buf
+0045  ZDRVA   Zero page drive pointer
+0047  ZSBA    Zero page sect buff ptr
+004A  CKEY    Cass boot request flag
+004B  CASSBT  Cassette boot flag
+004C  DSTAT   Display st. & keybd reg
+004D  ATRACT  Attract mode timer/flag
+004E  DRKMSK  Dark attract mask
+004F  COLRSH  Color shift mask
+0051  HOLD1   Temporary register
+0052  LMARGN  Left margin column
+0053  RMARGN  Right margin
+0054  ROWCRS  Current cursor row
+0055  COLCRS  Current cursor column
+0057  DINDEX  Disp mode/screen mode
+0058  SAVMSC  Lowest addr of screen
+005A  OLDROW  Previous cursor row
+005B  OLDCOL  Previous cursor column
+005D  OLDCHR  Character under cursor
+005E  OLDADR  Ptr to cursor location
+0060  NEWROW  Row for DRAWTO, FILL
+0061  NEWCOL  Column for DRAWTO, FILL
+0063  LOGCOL  Curs column in log line
+0064  ADRESS  Temp storage for DL
+0066  MLTTMP  Temp storage
+0068  SAVADR  Temp reg for screen
+006A  RAMTOP  RAM size
+006B  BUFCNT  Screen line sz counter
+006C  BUFSTR  Editor low byte
+006E  BITMSK  Bit mask for OS display
+006F  SHFAMT  Pixel justification
+0070  ROWAC   Temp accum for plotting
+0072  COLAC   Column point plotting
+0074  ENDPT   End point of drawn line
+0076  DELTAR  Delta row
+0077  DELTAC  Delta column
+0079  ROWINC  Row inc/dec value
+007A  COLINC  Column inc/dec value
+007B  SWPFLG  Split screen cursor ctl
+007C  HOLDCH  Char value no CTRL/SHFT
+007D  INSDAT  Disp handler temp var
+007E  COUNTR  Line drawing counter
+0080  LOMEM   Ptr to BASIC's low mem
+0082  VNTP    Start Variab Name Table
+0084  VNTD    End Variable Name Table
+0086  VVTP    Variable Value Table
+0088  STMTAB  Ptr to BASIC stmt table
+008A  STMCUR  Ptr to curr BASIC stmt
+008C  STARP   Addr to str/array table
+008E  RUNSTK  Pointer to GOSUB stack
+00BA  STOPLN  Line where BASIC stop'd
+00C3  ERRSAVE Error code trapped
+00C9  PTABW   Tab width
+00CB-00CF  .... Unused
+00D0-00D1  .... Unused
+00D4-00D9  FR0  FP register 0
+00DA-00DF  FRE  FP register
+00E0-00E5  FR1  FP register 1
+00E6-00EB  FR2  FP register 2
+00EC  FRX     FP spare register
+00ED  EEXP    Val of E, the exponent
+00EE  NSIGN   Sign for FP number
+00EF  ESIGN   Sign of exponent
+00F0  FCHRFLG First character flag
+00F1  DIGRT   #digits right of dec
+00F2  CIX     Character input index
+00F3  INBUFF  Pointer to input buffer
+00F5  ZTEMP1  Temporary register
+00F7  ZTEMP4  Temporary register
+00F9  ZTEMP3  Temporary register
+00FB  RADFLG  Radian flag for trig.
+00FC  FLPTR   Ptr to user FP value
+00FE  FPTR2   Ptr to user's 2nd FP 

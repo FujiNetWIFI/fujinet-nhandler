@@ -1,0 +1,43 @@
+
+Topic MAP/03XX
+
+Memory Map sorted by address
+Page $03
+
+Type HELP MAP/<LABEL> or
+Type HELP MAP/<ADDR> for more detail.
+
+ADDR  LABEL   DESCRIPTION
+----  -----   -----------------------
+0300  DDEVIC  SIO device ID
+0301  DUNIT   SIO Device unit number
+0302  DCOMND  SIO command
+0303  DSTATS  SIO return status code
+0304 DBUFLO,H SIO data buffer addr
+0306  DTIMLO  SIO time-out value
+0307  DUNUSE  Unused
+0308 DBYTLO,H SIO data length
+030A  DAUX1   Disk handler AUX1
+030B  DAUX2   Disk handler AUX2
+030C  TIMER1  Initial baud rate value
+030E  ADDCOR  Addition correction flg
+030F  CASFLG  Cassette mode
+0310  TIMER2  Final baud rate value
+0312  TEMP1   Temp storage for SIO
+0314  TEMP2   Temp storage
+0315  TEMP3   Temp storage
+0316  SAVIO   Save serial data
+0317  TIMFLG  Baud rate time-out flag
+0318  STACKP  SIO stack pointer
+0319  TSTAT   Temp status holder
+031A-033F HATABS  Handler Addr Table
+0340-034F IOCB0   I/O Control Block 0
+0350-035F IOCB1   I/O Control Block 1
+0360-036F IOCB2   I/O Control Block 2
+0370-037F IOCB3   I/O Control Block 3
+0380-038F IOCB4   I/O Control Block 4
+0390-039F IOCB5   I/O Control Block 5
+03A0-03AF IOCB6   I/O Control Block 6
+03B0-03BF IOCB7   I/O Control Block 7
+03C0-03E7 PRNBUF  Printer buffer
+03FD-047F CASBUF  Cassette buffer

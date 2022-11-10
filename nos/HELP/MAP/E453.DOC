@@ -1,1 +1,9 @@
-DSKINV.DOC
+
+TOPIC: MAP/DSKINV
+
+58451          E453          DSKINV
+
+Disk handler (interface) entry;
+checks the disk status. Initialized
+to 60912 ($EDF0).
+

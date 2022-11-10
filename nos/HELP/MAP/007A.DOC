@@ -1,1 +1,17 @@
-COLINC.DOC
+
+TOPIC: MAP/COLINC
+
+122          007A          COLINC
+
+The column increment or decrement
+value (plus or minus one).  ROWINC
+and COLINC control the direction of
+the line drawing routine. The values
+represent the signs derived from the
+value in NEWROW (location 96; $60)
+minus the value in ROWCRS (location
+84; $54) and the value in NEWCOL
+(locations 97, 98; $61, $62) minus
+the value in COLCRS (locations 85,
+86; $55, $56).
+

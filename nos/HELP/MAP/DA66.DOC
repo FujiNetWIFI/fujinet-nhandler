@@ -1,1 +1,7 @@
-FADD.DOC
+
+TOPIC: MAP/FADD
+
+55910          DA66          FADD
+
+FP addition routine; FR0 plus FR1.
+

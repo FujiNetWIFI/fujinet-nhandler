@@ -1,1 +1,11 @@
-ICPTLZ,HZ.DOC
+
+TOPIC: MAP/ICPTLZ,HZ
+
+38          0026          ICPTLZ,HZ
+
+Put byte routine address set by the
+OS. It is the address minus one byte
+of the device's "put one byte"
+routine. It points to CIO's "IOCB
+not OPEN" on a CLOSE statement.
+

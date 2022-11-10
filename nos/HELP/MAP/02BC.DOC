@@ -1,1 +1,11 @@
-HOLD4.DOC
+
+TOPIC: MAP/HOLD4
+
+700          02BC          HOLD4
+
+Temporary register used in the DRAW
+command only; used to save and
+restore the value in ATACHR
+(location 763; $2FB) during the FILL
+process.
+
