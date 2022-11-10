@@ -1,0 +1,26 @@
+
+Topic: NOS/AUTORUN
+
+AUTORUN - Assign a batch file to 
+execute automatically after a cold 
+start upon NOS entry.
+
+Usage:
+
+AUTORUN path/filename
+
+Example:
+
+AUTORUN TNFS://192.168.1.20/GO.BAT
+
+to clear the AUTORUN entry, use:
+
+AUTORUN ""
+
+Note: The AUTORUN entry is stored in
+the appkey file "/FujiNet/
+db790000.key" on the FujiNet's SD 
+card. Therefore, AUTORUN requires a 
+FAT32-formatted SD card to be
+installed in the FujiNet device.
+

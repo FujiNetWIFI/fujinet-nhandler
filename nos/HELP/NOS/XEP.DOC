@@ -1,0 +1,18 @@
+
+Topic: NOS/XEP
+
+XEP - For use with XEP80 peripheral.
+Toggles between 40/80 column screens.
+
+Usage:
+
+XEP [40]
+
+Executing the XEP command without
+any arguments will switch to the 
+XEP80 screen.
+
+From the XEP80 screen, execute
+"XEP 40" to return to the 40 column
+screen.
+

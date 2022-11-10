@@ -38,6 +38,7 @@ LMARGN  =   $52         ; Left margin
 FR0     =   $D4         ; Floating Point register 0 (used during Hex->ASCII conversion)
 CIX     =   $F2         ; Inbuff cursor
 INBUFF  =   $F3         ; Ptr to input buffer ($0580)
+MAX_APPKEY_LEN = $40    ; Used with appkey files
 
 ;---------------------------------------
 ; INTERRUPT VECTORS
@@ -176,6 +177,8 @@ CMD_REM             = $F0
 CMD_RUN             = $F0
 CMD_SCREEN          = $F0
 CMD_WARM            = $F0
+CMD_XEP             = $F0
+CMD_AUTORUN         = $F0
 
 ;;; Macros ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -190,11 +193,11 @@ CMD_WARM            = $F0
         .ENDM
 
 ; ATR Header
-	ORG	$6f0
-        OPT     h-
 ;        ORG     $0700
-	DTA	$96,$02,$80,$16,$80
-	:11 DTA	$00
+	    ORG	    $06f0
+        OPT     h-
+	    DTA	    $96,$02,$80,$16,$80
+:11     DTA	    $00
 
 ;;; Initialization ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1114,9 +1117,18 @@ PRINT_ERROR_DONE:
 ;---------------------------------------
 ; DOS Entry point
 ;---------------------------------------
+DOS:
+        ; Autorun injection
+        LDA     #CMD_IDX.AUTORUN    ; Check for AUTORUN
+        CMP     AUTORUN_FLG         ; True only on 1st entry
+        BEQ     CPLOOP              ; Skip to Command Processor
+        STA     AUTORUN_FLG         ; Change flag
+        JSR     SUBMIT_AUTORUN      ; Attempt to execute autorun file
+       
+CPLOOP:
+        JSR     CP          ; Command Processor
+        JMP     CPLOOP      ; Keep looping
 
-DOS:    JSR     CP          ; Command Processor
-        JMP     DOS         ; Keep looping
 
 ;---------------------------------------
 ; Main loop
@@ -1128,6 +1140,7 @@ CP:
 
         JSR     SHOWPROMPT
         JSR     GETCMD
+AUTORUN_DO:
         JSR     PARSECMD
         BMI     CP_DONE     ; Skip DOCMD if CMD == $FF
         JSR     DOCMD
@@ -1464,7 +1477,8 @@ DO_GENERIC_NEXT:
     ; Populate the DCB
     ;---------------------------------------
         LDA     DOSDR
-        STA     STADCB+1
+        STA     STADCB+1        ; Yes. Status (not typo)
+;        STA     GENDCB+1   ; 20221105 - commented-out. checking for bug...
         LDA     INBUFF
         STA     GENDCB+4
         LDA     INBUFF+1
@@ -1974,7 +1988,10 @@ LOAD_NEXT2:
         JSR     LOAD_OPEN       ; Open the file
         CPY     #$01            ; Quit if unable to open
         BNE     R
+
+    ; Process each payload
 GETFIL: JSR     LOAD_READ2      ; Get two bytes (binary header)
+        BMI     R               ; Exit if EOF hit
         JSR     LOAD_INIT       ; Set init default
         JSR     LOAD_CHKFF      ; Check if header (and start addr, too)
         JSR     LOAD_STRAD      ; Put start address in
@@ -1982,14 +1999,13 @@ GETFIL: JSR     LOAD_READ2      ; Get two bytes (binary header)
         JSR     LOAD_ENDAD      ; Put end address in
         JSR     LOAD_BUFLEN     ; Calculate buffer length
         JSR     LOAD_GETDAT     ; Get the data record
-        BPL     @+
-        JSR     JSTART
+        BPL     @+              ; Was EOF detected?
+        JSR     JSTART          ; Yes. Go to RUNAD
 @:      JSR     JINIT           ; Attempt initialization
-        JMP     GETFIL
-JINIT:  JMP     (INITAD)        ; Will either RTS or perform INIT
-JSTART: ;JSR     JINIT           ; Some binfiles launch from INITAD
-        JMP     (RUNAD)         ; Godspeed.
+        JMP     GETFIL          ; Process next payload
 
+JINIT:  JMP     (INITAD)        ; Will either RTS or perform INIT
+JSTART: JMP     (RUNAD)         ; Godspeed.
 R:      RTS                     ; Stunt-double for (INITAD),(RUNAD)
 
 ;---------------------------------------
@@ -2009,7 +2025,6 @@ LOAD_INIT:
         LDA     #>R
         STA     INITAD+1
         RTS
-
 
 ;---------------------------------------
 LOAD_OPEN:
@@ -2058,24 +2073,19 @@ LOAD_READ2:
 ;---------------------------------------
 
         LDA     #$02
-        STA     GETDCB+8
-        STA     GETDCB+10
+        STA     GETDCB+8        ; DBYTL
+        STA     GETDCB+10       ; DAUX1
 
         LDA     #$00
-        STA     GETDCB+9
-        STA     GETDCB+11
+        STA     GETDCB+9        ; DBYTH
+        STA     GETDCB+11       ; DAUX2
 
         LDA     #<GETDCB
         LDY     #>GETDCB
-
         JSR     DOSIOV
-        JSR     PRINT_ERROR
 
-        LDA     GETDCB+1
-        STA     STADCB+1
-        LDA     #<STADCB
-        LDY     #>STADCB
-        JMP     DOSIOV
+    ; Return -1 if EOF is found
+        JMP     GETDAT_CHECK_EOF
 
 ;---------------------------------------
 LOAD_CHKFF:
@@ -2156,6 +2166,12 @@ LOAD_GETDAT:
 
         JSR     GET_DOSDR
         STX     BINDCB+1
+
+    ; Get current status
+        STX     STADCB+1
+        LDA     #<STADCB
+        LDY     #>STADCB
+        JSR     DOSIOV
 
     ; Check if bytes requested BL < DVSTAT (bytes waiting in cache)
         LDA     DVSTAT
@@ -2283,7 +2299,6 @@ GETDAT_TAIL:
         STA     BLL
         LDA     TAILH
         STA     BLH
-        JMP     GETDAT_DOSIOV
 
 ;---------------------------------------
 GETDAT_DOSIOV:
@@ -2292,7 +2307,7 @@ GETDAT_DOSIOV:
         LDA     BLL
         BNE     @+
         LDA     BLH
-        BEQ     GETDAT_DONE
+        BEQ     CHECK_EOF_DONE
 
 @:
     ; SIO READ
@@ -2315,13 +2330,6 @@ GETDAT_DOSIOV:
         JSR     DOSIOV
         JSR     PRINT_ERROR
 
-        ; Note: STADCB+1 SET DURING READ2
-        LDA     #<STADCB
-        LDY     #>STADCB
-        JSR     DOSIOV
-
-    ; Advance Starting Address
-    ; ST = ST + PAYLOAD
         CLC
         LDA     STL
         ADC     BLL
@@ -2331,26 +2339,29 @@ GETDAT_DOSIOV:
         ADC     BLH
         STA     STH
 
-GETDAT_DOSIOV_DONE:
-    ; Skip if no bytes left to read
-        LDA     DVSTAT
-        BNE     GETDAT_DONE
-        LDA     DVSTAT+1
-        BEQ     @+
+GETDAT_CHECK_EOF:
+    ; Get status (updates DVSTAT, DSTATS)
+        LDA     GETDCB+1
+        STA     STADCB+1
+        LDA     #<STADCB
+        LDY     #>STADCB
+        JSR     DOSIOV
 
-    ; If at the start of a new case (Bytes waiting = 0200)
-        CMP     #$02
-        BEQ     @+
-        BNE     GETDAT_DONE
-@:      LDA     #EOF        ; 
-        CMP     DVSTAT+3    ; Is status EOF?
-        BNE     GETDAT_DONE ; No?  Return 1
-        LDY     #$FF        ; Yes? Return -1
-GETDAT_RTS:
+    ; Return -1 if DVSTAT == $0000 and DVSTAT+3 == EOF
+        LDA     DVSTAT
+        BNE     CHECK_EOF_DONE
+
+        LDA     DVSTAT+1
+        BNE     CHECK_EOF_DONE
+
+        LDA     #EOF
+        CMP     DVSTAT+3        ; Is it EOF
+        BNE     CHECK_EOF_DONE  ; No? Go to success
+        LDY     #$FF            ; Yes? Return -1
         RTS
 
-GETDAT_DONE:        
-        LDY     #$01        ; Return 0
+CHECK_EOF_DONE:
+        LDY     #$01            ; Return success
         RTS
 
 BINDCB:
@@ -2369,7 +2380,7 @@ BINDCB:
 
 
 ;---------------------------------------
-LOAD_CLOSE
+LOAD_CLOSE:
 ;---------------------------------------
         LDA     BINDCB+1
         STA     CLODCB+1
@@ -2394,42 +2405,8 @@ DO_LOCK:
 ;---------------------------------------
 DO_LOGIN:
 ;---------------------------------------
-        LDX     CMDSEP          ; Check if there's any args
-        BEQ     LOGIN_ERROR    ; No. Show usage and quit
-
-        LDA     DOSDR           ; Go with current drive for now
-        STA     NTRDCB+1        ; it'll be overwritten later if req'd
-
-    ;---------------------------------------
-    ; Check for argc = 3
-    ;---------------------------------------
-        LDY     CMDSEP          ; Stash offset to arg1 in Y
-        LDX     CMDSEP+2        ; Is there an arg3?
-        BEQ     PARSE_LOGIN     ; No. parse arg1 as username
-
-    ;---------------------------------------
-    ; Here if argc = 2 (arg1 = Nn: arg2 = mode)
-    ;---------------------------------------
-        LDX     CMDSEP          ; Get offset to arg1 (Nn:)
-        LDA     LNBUF,X         ; Is arg1's (N[n]:) 1st char = 'N'?
-        CMP     #'N'            ;
-        BNE     LOGIN_ERROR    ; No? Then quit
-        LDA     LNBUF+1,X
-        CMP     #':'            ; Is arg1's (N[n]:) 2nd char = ':'?
-        BEQ     PARSE_LOGIN     ; Yes, stick with default drive
-
-    ;---------------------------------------
-    ; Parse drive number
-    ;---------------------------------------
-        CMP     #'1'            ; Quit if n in Nn not 1..4
-        BCC     LOGIN_ERROR    ; Quit if < '1'
-        CMP     #'9'
-        BCS     LOGIN_ERROR    ; Quit if >= '9'
-        EOR     #%00110000
-        LDY     CMDSEP+1
-
-PARSE_LOGIN:
-
+        LDA     #$A0
+        STA     COLOR2
         RTS
 
 LOGIN_ERROR:
@@ -2439,6 +2416,7 @@ LOGIN_ERROR:
 
 LOGIN_ERROR_STR:
         .BYTE   'LOGIN [N[n]:] <USERNAME> <PASSWORD>',EOL
+
 ;---------------------------------------
 DO_NPWD:
 ;---------------------------------------
@@ -2567,21 +2545,187 @@ NTRANS_ERROR_STR:
         .BYTE   'MODE? 0=NONE, 1=CR, 2=LF, 3=CR/LF',EOL
 
 NTRDCB:
-        .BYTE      DEVIDN  ; DDEVIC
-        .BYTE      $FF     ; DUNIT
-        .BYTE      'T'     ; DCOMND
-        .BYTE      $00     ; DSTATS
-        .BYTE      $00     ; DBUFL
-        .BYTE      $00     ; DBUFH
-        .BYTE      $1F     ; DTIMLO
-        .BYTE      $00     ; DRESVD
-        .BYTE      $00     ; DBYTL
-        .BYTE      $00     ; DBYTH
-        .BYTE      $00     ; DAUX1
-        .BYTE      $00     ; DAUX2
+        .BYTE   DEVIDN  ; DDEVIC
+        .BYTE   $FF     ; DUNIT
+        .BYTE   'T'     ; DCOMND
+        .BYTE   $00     ; DSTATS
+        .BYTE   $00     ; DBUFL
+        .BYTE   $00     ; DBUFH
+        .BYTE   $1F     ; DTIMLO
+        .BYTE   $00     ; DRESVD
+        .BYTE   $00     ; DBYTL
+        .BYTE   $00     ; DBYTH
+        .BYTE   $00     ; DAUX1
+        .BYTE   $00     ; DAUX2
 
 ; End of DO_NTRANS
 ;---------------------------------------
+
+;---------------------------------------
+DO_AUTORUN:
+;---------------------------------------
+    ; Change URL stored in AUTORUN app key
+    ;-----------------------------------
+        LDA     CMDSEP          ; Check if there's any arg
+        BNE     AUTORUN_NEXT1   ; If arg found, skip ahead
+
+    ; Here if no command line arg found
+    ; Print error message and exit
+        LDA     #<AUTORUN_ERROR_STR
+        LDY     #>AUTORUN_ERROR_STR
+        JMP     PRINT_STRING
+
+AUTORUN_NEXT1:
+    ; Point to start of arg on command line
+        CLC
+        ADC     INBUFF          ; INBUFF += CMDSEP
+        STA     INBUFF
+        STA     APPKEYWRITEDCB+4
+
+    ; Open app key
+        LDA     #$01            ; Open for write (1)
+        STA     AUTORUN_APPKEY+4
+        LDA     #<APPKEYOPENDCB
+        LDY     #>APPKEYOPENDCB
+        JSR     DOSIOV
+
+    ; Find length of URL (arg1)
+        LDY     #$FF            ; Init strlen
+AUTORUN_LOOP1
+        INY                     ; Incr strlen
+        LDA     (INBUFF),Y
+        CMP     #EOL            ; At end of string?
+        BNE     AUTORUN_LOOP1   ; No. Keep counting
+
+        LDA     #LF             ; Convert EOL to LF
+        STA     (INBUFF),Y
+        INY                     ; One more for strlen
+
+AUTORUN_NEXT2: 
+    ; Write app key
+        STY     APPKEYWRITEDCB+10   ; Y = strlen
+        LDA     #<APPKEYWRITEDCB
+        LDY     #>APPKEYWRITEDCB
+        JSR     DOSIOV
+
+    ; Close app key
+        LDA     #<APPKEYCLOSEDCB
+        LDY     #>APPKEYCLOSEDCB
+        JMP     DOSIOV
+
+AUTORUN_ERROR_STR:
+        .BYTE   'PATH?',EOL
+
+AUTORUN_APPKEY:
+        .WORD   $DB79           ; creator ID
+        .BYTE   $00             ; app ID
+        .BYTE   $00             ; key ID
+        .BYTE   $00             ; read or write mode
+        .BYTE   $00             ; unused
+
+APPKEYCLOSEDCB:
+        .BYTE   $70             ; DDEVIC
+        .BYTE   $01             ; DUNIT
+        .BYTE   $DB             ; DCOMND
+        .BYTE   $00             ; DSTATS
+        .BYTE   $00             ; DBUFL
+        .BYTE   $00             ; DBUFH
+        .BYTE   $0F             ; DTIMLO
+        .BYTE   $00             ; DRESVD
+        .BYTE   $00             ; DBYTL
+        .BYTE   $00             ; DBYTH
+        .BYTE   $00             ; DAUX1
+        .BYTE   $00             ; DAUX2
+
+APPKEYOPENDCB:
+        .BYTE   $70             ; DDEVIC
+        .BYTE   $01             ; DUNIT
+        .BYTE   $DC             ; DCOMND
+        .BYTE   $80             ; DSTATS
+        .BYTE   <AUTORUN_APPKEY ; DBUFL
+        .BYTE   >AUTORUN_APPKEY ; DBUFH
+        .BYTE   $0F             ; DTIMLO
+        .BYTE   $00             ; DRESVD
+        .BYTE   $06             ; DBYTL
+        .BYTE   $00             ; DBYTH
+        .BYTE   $00             ; DAUX1
+        .BYTE   $00             ; DAUX2
+
+APPKEYREADDCB:
+        .BYTE   $70             ; DDEVIC
+        .BYTE   $01             ; DUNIT
+        .BYTE   $DD             ; DCOMND
+        .BYTE   $40             ; DSTATS
+        .BYTE   <LNBUF          ; DBUFL
+        .BYTE   >LNBUF          ; DBUFH
+        .BYTE   $01             ; DTIMLO - minimize timeout
+        .BYTE   $00             ; DRESVD
+        .BYTE   MAX_APPKEY_LEN  ; DBYTL
+        .BYTE   $00             ; DBYTH
+        .BYTE   $00             ; DAUX1
+        .BYTE   $00             ; DAUX2
+
+APPKEYWRITEDCB:
+        .BYTE   $70             ; DDEVIC
+        .BYTE   $01             ; DUNIT
+        .BYTE   $DE             ; DCOMND
+        .BYTE   $80             ; DSTATS
+        .BYTE   $FF             ; DBUFL
+        .BYTE   $05             ; DBUFH (expect page 5)
+        .BYTE   $0F             ; DTIMLO
+        .BYTE   $00             ; DRESVD
+        .BYTE   MAX_APPKEY_LEN  ; DBYTL
+        .BYTE   $00             ; DBYTH
+        .BYTE   $FF             ; DAUX1 (# actual bytes)
+        .BYTE   $00             ; DAUX2
+
+;---------------------------------------
+SUBMIT_AUTORUN:
+;---------------------------------------
+    ; At initial DOS boot, read URL for 
+    ; app key file from SD card's
+    ; FujiNet folder.
+    ;
+    ; filename: db790000.key
+    ; contents: url to a batch file
+    ;---------------------------------------
+        JSR     LDBUFA
+
+    ; Open app key
+        LDA     #$00            ; Open for read
+        STA     AUTORUN_APPKEY+4
+        LDA     #<APPKEYOPENDCB
+        LDY     #>APPKEYOPENDCB
+        JSR     DOSIOV
+
+        CPY     #$01            ; Was open successful?
+        BEQ     AUTOSUB_NEXT    ; Yes. Continue.
+        RTS                     ; No. Exit
+
+AUTOSUB_NEXT:
+    ; Read app key
+        LDA     #<APPKEYREADDCB
+        LDY     #>APPKEYREADDCB
+        JSR     DOSIOV
+
+    ; Close app key
+        LDA     #<APPKEYCLOSEDCB
+        LDY     #>APPKEYCLOSEDCB
+        JSR     DOSIOV
+
+    ; Does the returned URL contain something?
+        LDX     LNBUF
+        BNE     AUTORUN_CALL_SUBMIT
+        RTS
+
+AUTORUN_CALL_SUBMIT:
+    ; Replace end-of-line in buffer with null terminator
+        DEX                     ; Move index back 1 position
+        LDA     #$00            ;
+        STA     LNBUF+2,X       ; Write null-terminator 
+        LDA     #$02            ; Change arg1 location...
+        STA     CMDSEP          ;  to point to filename
+        BNE     SUBMIT_NEXT1    ; Fall through
 
 ;---------------------------------------
 DO_SUBMIT:
@@ -2598,7 +2742,7 @@ SUBMIT_NEXT1:
 
     ; Default to NOSCREEN
         LDA     #$00
-        STA     CURSCR
+        STA     ECHO_FLG
 
     ; Prep file path
         JSR     GET_DOSDR       ; Get DUNIT
@@ -2615,30 +2759,57 @@ SUBMIT_NEXT1:
         BPL     SUBMIT_NEXT2
         JMP     PRINT_ERROR
 
+    ; Read batch file character by character
+    ; This allows it be end-of-line agnostic
+    ; Branch forward when an end-of-line is interpretted.
+
 SUBMIT_NEXT2:
         JSR     LDBUFA      ; Reset INBUFF to $0580
+        DEC     INBUFF      ; Init 1 byte before buffer
         LDA     #$FF        ; Clear command
         STA     CMD
 
-    ; INPUT #1, INBUFF
-        LDX     #$10
-        LDY     #$04
-        JSR     CIOGETREC
-
-    ; Check for error
-        LDX     #$10
-        LDA     ICSTA,X
-        CMP     #EOF
-        BEQ     SUBMIT_DONE ; No error, try parsing cmd
+SUBMIT_GETCH:
+        INC     INBUFF          ; Advance pointer
+        BNE     SUBMIT_NEXT3
+        INC     INBUFF+1
 
 SUBMIT_NEXT3:
-        LDA     CURSCR      ; Skip echo if SCREEN is disabled
+        LDX     #$10            ; OPEN #1
+        LDA     #$01            ; Get 1 byte
+        LDY     #$00            ; ditto
+
+        JSR     CIOGET          ; Get byte from file
+        LDY     #$00            ;
+        LDA     (INBUFF),Y      ; byte will be here
+        
+        CMP     #CR             ; Just skip if Windows CR
+        BEQ     SUBMIT_GETCH
+
+        CMP     #LF             ; Convert LF to EOL
+        BNE     SUBMIT_EOL
+        LDA     #EOL
+        STA     (INBUFF),Y
+
+SUBMIT_EOL:
+        CMP     #EOL            ; At end of command line?
+        BNE     SUBMIT_GETCH    ; No. Get next byte.
+
+    ; Here if we've reached the end of a command line.
+    ; At end of file?
+        LDX     #$10            ; Channel #1
+        LDA     ICSTA,X         ; Inspect return code
+        CMP     #EOF
+        BEQ     SUBMIT_DONE     ; No error, try parsing cmd
+
+        LDA     ECHO_FLG        ; Skip echo if SCREEN is disabled
         BEQ     SUBMIT_NEXT4
         LDA     LNBUF
-        CMP     #'@'
+        CMP     #'@'            ; Skip lines beginning with @
         BEQ     SUBMIT_NEXT4
 
     ; Echo commands
+        JSR     LDBUFA
         LDA     INBUFF
         LDY     INBUFF+1
         JSR     PRINT_STRING
@@ -2792,7 +2963,7 @@ DO_CAR:
         LDY     #>DO_CAR_ERR
         JMP     PRINT_STRING
 
-DO_CAR_NEXT
+DO_CAR_NEXT:
         LDA     #$FF
         STA     $08         ; Warmstart
         JMP     ($BFFA)
@@ -2849,7 +3020,7 @@ HELP_LOOP2:
         BNE     HELP_LOOP2  ; Always true
 
 HELP_NEXT2:
-    ; Copy URL to LNBUFF
+    ; Copy URL to LNBUF
         LDX     #$00    ; Index to start of HELP_URL
         LDY     #$05    ; Index to start at arg1 for "TYPE "
     
@@ -2867,12 +3038,10 @@ HELP_DONE:
         JMP     DO_TYPE
 
 HELP_URL:
-;        .BYTE   'N8:HTTP://localhost:6502/'
         .BYTE   'N8:HTTPS://raw.githubusercontent.com/michaelsternberg/fujinet-nhandler/nos/nos/HELP/'
+
 HELP_ARTICLE:
-        .BYTE   $00,$00,$00,$00, $00,$00,$00,$00
-        .BYTE   $00,$00,$00,$00, $00,$00,$00,$00
-        .BYTE   $00,$00,$00,$00, $00,$00,$00,$00
+    :24 .BYTE   $00
 
 ;---------------------------------------
 DO_NOBASIC:
@@ -2914,14 +3083,14 @@ NOBASIC_ERROR_STR:
 DO_NOSCREEN:
 ;---------------------------------------
         LDA     #$00
-        STA     CURSCR
+        STA     ECHO_FLG    ; Disable echo in batch processing
         RTS
 
 ;---------------------------------------
 DO_SCREEN:
 ;---------------------------------------
         LDA     #$01
-        STA     CURSCR
+        STA     ECHO_FLG    ; Enable echo in batch processing
         RTS
 
 ;---------------------------------------
@@ -3036,6 +3205,32 @@ DO_WARM:
 ;---------------------------------------
         JMP     WARMSV
 
+;---------------------------------------
+DO_XEP:
+;---------------------------------------
+        LDY     #$19        ; CMD = $19 (enter 40 col)
+        LDX     CMDSEP
+        LDA     LNBUF,X
+        CMP     #'4'
+        BEQ     @+
+        DEY                 ; CMD = $18 (enter 80 col)
+@:      
+        LDX     #$00
+        TYA
+        STA     ICCOM,X
+        LDA     #<EDEV
+        STA     ICBAL,X
+        LDA     #>EDEV
+        STA     ICBAH,X
+        LDA     #$2C
+        STA     ICAX1,X
+        LDA     #$00
+        STA     ICAX2,X
+        JSR     CIOV
+        JMP     DO_CLS
+
+EDEV:   .BYTE   "E:",EOL
+        
 ;---------------------------------------
 REMOUNT_DRIVE:
 ;---------------------------------------
@@ -3172,19 +3367,22 @@ PRMPT:
                 SUBMIT              ; 12
                 TYPE                ; 13
                 UNLOCK              ; 14
-                CAR                 ; 15
-                CLS                 ; 16
-                COLD                ; 17
-                HELP                ; 18
-                NOBASIC             ; 19
-                NOSCREEN            ; 20
-                PRINT               ; 21
-                REENTER             ; 22
-                REM                 ; 23
-                RUN                 ; 24
-                SCREEN              ; 25
-                WARM                ; 26
-                DRIVE_CHG           ; 27
+                AUTORUN             ; 15
+                CAR                 ; 16
+                CLS                 ; 17
+                COLD                ; 18
+                HELP                ; 19
+                NOBASIC             ; 20
+                NOSCREEN            ; 21
+                PRINT               ; 22
+                REENTER             ; 23
+                REM                 ; 24
+                RUN                 ; 25
+                SCREEN              ; 26
+                WARM                ; 27
+                XEP                 ; 28
+                DRIVE_CHG           ; 
+        .ENDE
 
 CMD_DCOMND:
         .BYTE   CMD_CD              ;  0 NCD
@@ -3202,19 +3400,21 @@ CMD_DCOMND:
         .BYTE   CMD_SUBMIT          ; 12 SUBMIT
         .BYTE   CMD_TYPE            ; 13 TYPE
         .BYTE   CMD_UNLOCK          ; 14 UNLOCK
-        .BYTE   CMD_CAR             ; 15 CAR
-        .BYTE   CMD_CLS             ; 16 CLS
-        .BYTE   CMD_COLD            ; 17 COLD
-        .BYTE   CMD_HELP            ; 18 HELP
-        .BYTE   CMD_NOBASIC         ; 19 NOBASIC
-        .BYTE   CMD_NOSCREEN        ; 20 NOSCREEN
-        .BYTE   CMD_PRINT           ; 21 PRINT
-        .BYTE   CMD_REENTER         ; 22 REENTER
-        .BYTE   CMD_REM             ; 23 REM
-        .BYTE   CMD_RUN             ; 24 RUN
-        .BYTE   CMD_SCREEN          ; 25 SCREEN
-        .BYTE   CMD_WARM            ; 26 WARM
-        .BYTE   CMD_DRIVE_CHG       ; 27
+        .BYTE   CMD_AUTORUN         ; 15 AUTORUN
+        .BYTE   CMD_CAR             ; 16 CAR
+        .BYTE   CMD_CLS             ; 17 CLS
+        .BYTE   CMD_COLD            ; 18 COLD
+        .BYTE   CMD_HELP            ; 19 HELP
+        .BYTE   CMD_NOBASIC         ; 20 NOBASIC
+        .BYTE   CMD_NOSCREEN        ; 21 NOSCREEN
+        .BYTE   CMD_PRINT           ; 22 PRINT
+        .BYTE   CMD_REENTER         ; 23 REENTER
+        .BYTE   CMD_REM             ; 24 REM
+        .BYTE   CMD_RUN             ; 25 RUN
+        .BYTE   CMD_SCREEN          ; 26 SCREEN
+        .BYTE   CMD_WARM            ; 27 WARM
+        .BYTE   CMD_XEP             ; 28 XEP
+        .BYTE   CMD_DRIVE_CHG       ; 29
 
 COMMAND:
         .CB     "NCD"               ;  0 NCD
@@ -3262,6 +3462,9 @@ COMMAND:
         .CB     "UNLOCK"            ; 14 UNLOCK
         .BYTE   CMD_IDX.UNLOCK            
                                         
+        .CB     "AUTORUN"           ; 28 AUTORUN
+        .BYTE   CMD_IDX.AUTORUN
+
         .CB     "CAR"               ; 15 CAR
         .BYTE   CMD_IDX.CAR             
                                         
@@ -3272,8 +3475,8 @@ COMMAND:
         .BYTE   CMD_IDX.COLD              
 
         .CB     "HELP"              ; 18 HELP
-        .BYTE   CMD_IDX.HELP                
-                                        
+        .BYTE   CMD_IDX.HELP               
+                                       
         .CB     "NOBASIC"           ; 19 NOBASIC
         .BYTE   CMD_IDX.NOBASIC           
                                           
@@ -3293,11 +3496,14 @@ COMMAND:
         .BYTE   CMD_IDX.RUN             
                                         
         .CB     "@SCREEN"           ; 25 @SCREEN
-        .BYTE   CMD_IDX.SCREEN
-
+        .BYTE   CMD_IDX.SCREEN          
+                                        
         .CB     "WARM"              ; 26 WARM
-        .BYTE   CMD_IDX.WARM
-
+        .BYTE   CMD_IDX.WARM            
+                                        
+        .CB     "XEP"               ; 27 XEP
+        .BYTE   CMD_IDX.XEP            
+                                        
 ; Aliases
         .CB     "CD"                ; CD = NCD
         .BYTE   CMD_IDX.NCD           
@@ -3323,8 +3529,17 @@ COMMAND:
         .CB     "REN"               ; REN = RENAME
         .BYTE   CMD_IDX.RENAME
 
+        .CB     "SOURCE"            ; SOURCE = SUBMIT
+        .BYTE   CMD_IDX.SUBMIT
+
         .CB     "@"                 ; @ = SUBMIT
         .BYTE   CMD_IDX.SUBMIT
+
+        .CB     "#"                 ; # = REM
+        .BYTE   CMD_IDX.REM
+
+        .CB     "'"                 ; ' = REM
+        .BYTE   CMD_IDX.REM
 
         ; Drive Change intentionally omitted
 
@@ -3347,19 +3562,21 @@ CMD_TAB_L:
         .BYTE   <(DO_SUBMIT-1)      ; 12 SUBMIT
         .BYTE   <(DO_TYPE-1)        ; 13 TYPE
         .BYTE   <(DO_UNLOCK-1)      ; 14 UNLOCK
-        .BYTE   <(DO_CAR-1)         ; 15 CAR
-        .BYTE   <(DO_CLS-1)         ; 16 CLS
-        .BYTE   <(DO_COLD-1)        ; 17 COLD
-        .BYTE   <(DO_HELP-1)        ; 18 HELP
-        .BYTE   <(DO_NOBASIC-1)     ; 19 NOBASIC
-        .BYTE   <(DO_NOSCREEN-1)    ; 20 NOSCREEN
-        .BYTE   <(DO_PRINT-1)       ; 21 PRINT
-        .BYTE   <(DO_REENTER-1)     ; 22 REENTER
-        .BYTE   <(DO_REM-1)         ; 23 REM
-        .BYTE   <(DO_RUN-1)         ; 24 RUN
-        .BYTE   <(DO_SCREEN-1)      ; 25 SCREEN
-        .BYTE   <(DO_WARM-1)        ; 26 WARM
-        .BYTE   <(DO_DRIVE_CHG-1)   ; 27
+        .BYTE   <(DO_AUTORUN-1)     ; 15 AUTORUN
+        .BYTE   <(DO_CAR-1)         ; 16 CAR
+        .BYTE   <(DO_CLS-1)         ; 17 CLS
+        .BYTE   <(DO_COLD-1)        ; 18 COLD
+        .BYTE   <(DO_HELP-1)        ; 19 HELP
+        .BYTE   <(DO_NOBASIC-1)     ; 20 NOBASIC
+        .BYTE   <(DO_NOSCREEN-1)    ; 21 NOSCREEN
+        .BYTE   <(DO_PRINT-1)       ; 22 PRINT
+        .BYTE   <(DO_REENTER-1)     ; 23 REENTER
+        .BYTE   <(DO_REM-1)         ; 24 REM
+        .BYTE   <(DO_RUN-1)         ; 25 RUN
+        .BYTE   <(DO_SCREEN-1)      ; 26 SCREEN
+        .BYTE   <(DO_WARM-1)        ; 27 WARM
+        .BYTE   <(DO_XEP-1)         ; 28 WARM
+        .BYTE   <(DO_DRIVE_CHG-1)   ; 29
 
 CMD_TAB_H:
         .BYTE   >(DO_GENERIC-1)     ;  0 NCD
@@ -3377,19 +3594,21 @@ CMD_TAB_H:
         .BYTE   >(DO_SUBMIT-1)      ; 12 SUBMIT
         .BYTE   >(DO_TYPE-1)        ; 13 TYPE
         .BYTE   >(DO_UNLOCK-1)      ; 14 UNLOCK
-        .BYTE   >(DO_CAR-1)         ; 15 CAR
-        .BYTE   >(DO_CLS-1)         ; 16 CLS
-        .BYTE   >(DO_COLD-1)        ; 17 COLD
-        .BYTE   >(DO_HELP-1)        ; 18 HELP
-        .BYTE   >(DO_NOBASIC-1)     ; 19 NOBASIC
-        .BYTE   >(DO_NOSCREEN-1)    ; 20 NOSCREEN
-        .BYTE   >(DO_PRINT-1)       ; 21 PRINT
-        .BYTE   >(DO_REENTER-1)     ; 22 REENTER
-        .BYTE   >(DO_REM-1)         ; 23 REM
-        .BYTE   >(DO_RUN-1)         ; 24 RUN
-        .BYTE   >(DO_SCREEN-1)      ; 25 SCREEN
-        .BYTE   >(DO_WARM-1)        ; 26 WARM
-        .BYTE   >(DO_DRIVE_CHG-1)   ; 27
+        .BYTE   >(DO_AUTORUN-1)     ; 15 AUTORUN
+        .BYTE   >(DO_CAR-1)         ; 16 CAR
+        .BYTE   >(DO_CLS-1)         ; 17 CLS
+        .BYTE   >(DO_COLD-1)        ; 18 COLD
+        .BYTE   >(DO_HELP-1)        ; 19 HELP
+        .BYTE   >(DO_NOBASIC-1)     ; 20 NOBASIC
+        .BYTE   >(DO_NOSCREEN-1)    ; 21 NOSCREEN
+        .BYTE   >(DO_PRINT-1)       ; 22 PRINT
+        .BYTE   >(DO_REENTER-1)     ; 23 REENTER
+        .BYTE   >(DO_REM-1)         ; 24 REM
+        .BYTE   >(DO_RUN-1)         ; 25 RUN
+        .BYTE   >(DO_SCREEN-1)      ; 26 SCREEN
+        .BYTE   >(DO_WARM-1)        ; 27 WARM
+        .BYTE   >(DO_XEP-1)         ; 28 WARM
+        .BYTE   >(DO_DRIVE_CHG-1)   ; 29
 
         ; DEVHDL TABLE FOR N:
 
@@ -3402,7 +3621,7 @@ CIOHND  .WORD   OPEN-1
 
        ; BANNERS
 
-BREADY  .BYTE   '#FUJINET NOS v0.3.2-alpha',EOL
+BREADY  .BYTE   '#FUJINET NOS v0.4.0-alpha',EOL
 BERROR  .BYTE   '#FUJINET ERROR',EOL
 
         ; MESSAGES
@@ -3416,10 +3635,11 @@ MISSING_FILE_STR:
 
         ; VARIABLES
 
-DOSDR   .BYTE   $01         ; DOS DRIVE
-CMD     .BYTE   $01
-CMDPRV  .BYTE   $01
-CURSCR  .BYTE   $01         ; echo batch cmds (1=enabled,0=disabled)
+DOSDR       .BYTE   $01     ; DOS DRIVE
+CMD         .BYTE   $01
+CMDPRV      .BYTE   $01
+ECHO_FLG    .BYTE   $01     ; Echo batch cmds (1=enabled,0=disabled)
+AUTORUN_FLG .BYTE   $00     ; Checked at DOS entry. Runs only on first pass
 
 TRIP    .BYTE   $01         ; INTR FLAG
 RLEN    :MAXDEV .BYTE $00   ; RCV LEN
@@ -3434,8 +3654,8 @@ DVS3    :MAXDEV .BYTE $00   ; DVSTAT+3 SAVE
         .ALIGN  $100, $00
 BOOTEND:
 
-RBUF    :$80 .BYTE $00      ; 128 bytes
-TBUF    :$80 .BYTE $00      ; 128 bytes
+RBUF:   :$80 .BYTE $00      ; 128 bytes
+TBUF:   :$80 .BYTE $00      ; 128 bytes
 
 ; Binary loader working variables
 BAL     = RBUF
@@ -3462,27 +3682,30 @@ PGEND   = *
 ;
 
 ; $10 is the added ATR-header
-	:($B390-*+HDR-$10) DTA $00
+:($B390-*+HDR-$10) DTA $00
 VTOCSTA:
-	DTA $02,$BD,$02
+    DTA $02,$BD,$02
 VTOCEND:
+
 ; Fill the remaining bytes of the VTOC sector
-	:($80+VTOCSTA-VTOCEND) DTA $00
+    :($80+VTOCSTA-VTOCEND) DTA $00
 
 DIRSTA:
-	DTA $42,$00,$00,$00,$00,c"***********"
-	DTA $42,$00,$00,$00,$00,c"* FujiNet *"
-	DTA $42,$00,$00,$00,$00,c"* Network *"
-	DTA $42,$00,$00,$00,$00,c"*   OS    *"
-	DTA $42,$00,$00,$00,$00,c"*         *"
-	DTA $42,$00,$00,$00,$00,c"* v0.3.2  *"
-	DTA $42,$00,$00,$00,$00,c"*  alpha  *"
-	DTA $42,$00,$00,$00,$00,c"***********"
+    DTA $60,$C3,$02,$04,$00,C"0**********"
+    DTA $60,$C3,$02,$04,$00,C"1 FujiNet  "
+    DTA $60,$C3,$02,$04,$00,C"2 Network  "
+    DTA $60,$C3,$02,$04,$00,C"3   OS     "
+    DTA $60,$C3,$02,$04,$00,C"4          "
+    DTA $60,$C3,$02,$04,$00,C"5 v0.4.0   "
+    DTA $60,$C3,$02,$04,$00,C"6  alpha   "
+    DTA $60,$C3,$02,$04,$00,C"7**********"
+    DTA $C0
 DIREND:
+
 ; Fill the remaining sectors of the directory
-	:($400+DIRSTA-DIREND) DTA $00
-	
+    :($400+DIRSTA-DIREND) DTA $00
+
 ; Sectors behind directory
-	:($80*352) DTA $00
+    :($80*352) DTA $00
 
        END
