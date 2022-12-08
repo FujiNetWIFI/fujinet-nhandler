@@ -1,13 +1,15 @@
 
 Topic: NOS/AUTORUN
 
-AUTORUN - Assign a batch file to 
-execute automatically after a cold 
-start upon NOS entry.
+AUTORUN - Assign or query a batch
+file to execute automatically
+after a cold start upon NOS entry.
 
 Usage:
 
 AUTORUN path/filename
+or
+AUTORUN ?
 
 Example:
 
@@ -16,6 +18,10 @@ AUTORUN TNFS://192.168.1.20/GO.BAT
 to clear the AUTORUN entry, use:
 
 AUTORUN ""
+
+to query the current entry, use:
+
+AUTORUN ?
 
 Note: The AUTORUN entry is stored in
 the appkey file "/FujiNet/
