@@ -214,7 +214,7 @@ HDR:    .BYTE   $00                 ; BLFAG: Boot flag equals zero (unused)
 ;        .WORD   $0700               ; BLDADR: Boot sector load address ($700).
 ;        .WORD   $E4C0               ; BIWTARR: Init addr (addr of RTS in ROM)
 
-	JMP	START
+	    JMP	    START
 ;	ORG	*+$64
 
 START:  LDA     DOSINI
@@ -1989,10 +1989,19 @@ LOAD_NEXT2:
         CPY     #$01            ; Quit if unable to open
         BNE     R
 
+        LDA     #$FF
+        STA     BIN_1ST
+        JSR     LOAD_READ2
+        JSR     LOAD_CHKFF
+        CPY     #$01
+        BNE     R
+
+        INC     BIN_1ST
     ; Process each payload
 GETFIL: JSR     LOAD_READ2      ; Get two bytes (binary header)
         BMI     R               ; Exit if EOF hit
         JSR     LOAD_INIT       ; Set init default
+        LDX     #$01
         JSR     LOAD_CHKFF      ; Check if header (and start addr, too)
         JSR     LOAD_STRAD      ; Put start address in
         JSR     LOAD_READ2      ; Get to more butes (end addr)
@@ -2071,39 +2080,72 @@ LOAD_NTRANS:
 ;---------------------------------------
 LOAD_READ2:
 ;---------------------------------------
+    ; Load 2 bytes into Buffer (BAL/H).
+    ;---------------------------------------
+    ; This is accomplished by abusing the LOAD_GETDAT
+    ; routine by stuffing the buffer addr (BAL/H)
+    ; into the payload Start/End addrs. We're doing
+    ; this in case a payload  header straddles a
+    ; cache boundary. LOAD_GETDAT has the logic for
+    ; dealing with that.
+    ;---------------------------------------
+        LDA     #<BAL
+        STA     STL             ; Payload start address
+        LDA     #>BAL
+        STA     STH
 
-        LDA     #$02
-        STA     GETDCB+8        ; DBYTL
-        STA     GETDCB+10       ; DAUX1
+        LDA     #<BAH
+        STA     ENL             ; Payload end address
+        LDA     #>BAH
+        STA     ENH
 
+        LDX     #$02
+        STX     BLL             ; Payload size (2)
         LDA     #$00
-        STA     GETDCB+9        ; DBYTH
-        STA     GETDCB+11       ; DAUX2
+        STA     BLH
 
-        LDA     #<GETDCB
-        LDY     #>GETDCB
-        JSR     DOSIOV
-
-    ; Return -1 if EOF is found
-        JMP     GETDAT_CHECK_EOF
+        JMP     LOAD_GETDAT     ; Read 2 bytes
 
 ;---------------------------------------
 LOAD_CHKFF:
 ;---------------------------------------
-    ; Check for binary file signature ($FF $FF)
-        LDX     BAL
-        INX
-        BEQ     TEST2
-        RTS
-TEST2:  LDX     BAH
-        INX
-        BEQ     ITSFF
-        RTS
-ITSFF:  JMP     LOAD_READ2  ; Get start address and return
+    ; On 1st pass, check for binary signature (FF FF)
+    ; On 2..n passes, Skip FF FF (if found) 
+    ; and read next 2 bytes
+    ;---------------------------------------
+        
+        LDA     #$FF
+        CMP     BAL         ; Is 1st byte FF?
+        BNE     NOTFF       ; If no, skip down.
+        CMP     BAH         ; Is 2nd byte FF?
+        BNE     NOTFF       ; If no, skip down.
 
-;        LDA     #<LOAD_ERROR_STR2
-;        LDY     #>LOAD_ERROR_STR2
-;        JMP     PRINT_STRING
+    ;---------------------------------------
+    ; Here if FF FF tags found. 
+    ; On 1st pass, we're done.
+    ; On 2..n passes, read next 2 bytes and leave.
+    ;---------------------------------------
+        CMP     BIN_1ST     ; Is this 1st pass?
+        BEQ     NOTFF_DONE  ; If yes, then we're done here.
+        JMP     LOAD_READ2  ; 
+
+    ;---------------------------------------
+    ; Here if FF FF tags NOT found. 
+    ; On 1st pass, print error.
+    ; On 2..n passes, the 2 bytes = payload start addr.
+    ;---------------------------------------
+NOTFF:  LDY     #$01        ; Preload success return code
+        CMP     BIN_1ST     ; A still has FF. BIN_1ST = FF on first pass
+        BNE     NOTFF_DONE  ; Not 1st pass, exit with success.
+
+NOTFF_ERR:
+        LDA     #<LOAD_ERROR_STR2
+        LDY     #>LOAD_ERROR_STR2
+        JSR     PRINT_STRING
+
+        LDY     #$FF        ; Return failure
+NOTFF_DONE:
+        RTS
 
 LOAD_ERROR_STR2:
         .BYTE   'NOT A BINARY FILE',EOL
@@ -2111,17 +2153,24 @@ LOAD_ERROR_STR2:
 ;---------------------------------------
 LOAD_STRAD:
 ;---------------------------------------
-    ; Save payload start address
+    ; Save payload start address into STL2/STLH2.
+    ; Otherwise it will get clobbered
+    ; when reading payload end address.
         LDA     RBUF
-        STA     STL
+        STA     STL2
         LDA     RBUF+1
-        STA     STH
+        STA     STH2
         RTS
 
 ;---------------------------------------
 LOAD_ENDAD:
 ;---------------------------------------
     ; Save payload end address
+        LDA     STL2
+        STA     STL
+        LDA     STH2
+        STA     STH
+    
         LDA     RBUF
         STA     ENL
         LDA     RBUF+1
@@ -2167,13 +2216,12 @@ LOAD_GETDAT:
         JSR     GET_DOSDR
         STX     BINDCB+1
 
-    ; Get current status
-        STX     STADCB+1
-        LDA     #<STADCB
-        LDY     #>STADCB
-        JSR     DOSIOV
+        JSR     GETDAT_CHECK_EOF    ; Check EOF before proceeding
+        BPL     GETDAT_NEXT1        ; If true, then EOF found. Exit
+        RTS
 
     ; Check if bytes requested BL < DVSTAT (bytes waiting in cache)
+GETDAT_NEXT1:
         LDA     DVSTAT
         CMP     BLL
         LDA     DVSTAT+1
@@ -2184,7 +2232,7 @@ GETDAT_OPT1:
     ;--------------------------------
     ; Here if bytes requested > bytes 
     ; remaining in cache
-    ;--------------------------------
+    ;------------------------P--------
 
     ;-------------------------------
     ; Head = BW (bytes waiting)
@@ -2330,6 +2378,9 @@ GETDAT_DOSIOV:
         JSR     DOSIOV
         JSR     PRINT_ERROR
 
+    ;---------------------------------------
+    ; Advance start address by buffer length
+    ;---------------------------------------
         CLC
         LDA     STL
         ADC     BLL
@@ -2341,7 +2392,7 @@ GETDAT_DOSIOV:
 
 GETDAT_CHECK_EOF:
     ; Get status (updates DVSTAT, DSTATS)
-        LDA     GETDCB+1
+        LDA     BINDCB+1
         STA     STADCB+1
         LDA     #<STADCB
         LDY     #>STADCB
@@ -2461,18 +2512,18 @@ NPWD_DONE:
         RTS
 
 PWDDCB:
-        .BYTE      DEVIDN  ; DDEVIC
-        .BYTE      $FF     ; DUNIT
-        .BYTE      $30     ; DCOMND
-        .BYTE      $40     ; DSTATS
-        .BYTE      <RBUF   ; DBUFL
-        .BYTE      >RBUF   ; DBUFH
-        .BYTE      $1F     ; DTIMLO
-        .BYTE      $00     ; DRESVD
-        .BYTE      $00     ; DBYTL
-        .BYTE      $01     ; DBYTH
-        .BYTE      $00     ; DAUX1
-        .BYTE      $00     ; DAUX2
+        .BYTE   DEVIDN      ; DDEVIC
+        .BYTE   $FF         ; DUNIT
+        .BYTE   $30         ; DCOMND
+        .BYTE   $40         ; DSTATS
+        .BYTE   <RBUF       ; DBUFL
+        .BYTE   >RBUF       ; DBUFH
+        .BYTE   $1F         ; DTIMLO
+        .BYTE   $00         ; DRESVD
+        .BYTE   $00         ; DBYTL
+        .BYTE   $01         ; DBYTH
+        .BYTE   $00         ; DAUX1
+        .BYTE   $00         ; DAUX2
 
 ; End of DO_NPWD
 ;---------------------------------------
@@ -2582,8 +2633,16 @@ AUTORUN_NEXT1:
         STA     INBUFF
         STA     APPKEYWRITEDCB+4
 
+    ; If "AUTORUN ?" Then abuse AUTORUN_SUBMIT to print appkey
+        LDY     #$00
+        LDA     #'?'
+        STA     AUTORUN_QUERY_FLG
+        CMP     (INBUFF),Y
+        BEQ     SUBMIT_AUTORUN
+
     ; Open app key
         LDA     #$01            ; Open for write (1)
+        STA     AUTORUN_QUERY_FLG
         STA     AUTORUN_APPKEY+4
         LDA     #<APPKEYOPENDCB
         LDY     #>APPKEYOPENDCB
@@ -2714,8 +2773,11 @@ AUTOSUB_NEXT:
         JSR     DOSIOV
 
     ; Does the returned URL contain something?
-        LDX     LNBUF
+        LDX     LNBUF           ; X contains strlen of AUTORUN path
         BNE     AUTORUN_CALL_SUBMIT
+
+
+AUTOSUB_DONE:
         RTS
 
 AUTORUN_CALL_SUBMIT:
@@ -2725,7 +2787,21 @@ AUTORUN_CALL_SUBMIT:
         STA     LNBUF+2,X       ; Write null-terminator 
         LDA     #$02            ; Change arg1 location...
         STA     CMDSEP          ;  to point to filename
-        BNE     SUBMIT_NEXT1    ; Fall through
+
+    ;---------------------------------------
+    ; If here because of "AUTORUN ?", then
+    ; print contents of appkey file. But first
+    ; we have to terminate appkey string with EOL
+    ;---------------------------------------
+        LDA     AUTORUN_QUERY_FLG
+        CMP     #'?'
+        BNE     SUBMIT_NEXT1
+
+        LDA     #EOL            ; Inject EOL to terminate string
+        STA     LNBUF+2,X
+        LDA     #<(LNBUF+2)
+        LDY     #>(LNBUF+2)
+        JMP     PRINT_STRING    ; Print AUTORUN path and sneak out
 
 ;---------------------------------------
 DO_SUBMIT:
@@ -2873,20 +2949,20 @@ TYPE_LOOP:
 
     ; Check if page is full
         LDA     SCRFLG
-        CMP     #22         ; if SCRFLG < 21
-        BCC     TYPE_READ   ; then skip to read
+        CMP     #22             ; if SCRFLG < 21
+        BCC     TYPE_READ       ; then skip to read
 
     ; Here if page is full
     ; Wait for keypress
-        LDA     #$FF    ; Clear keypress
+        LDA     #$FF            ; Clear keypress
         STA     CH
 
 TYPE_WAIT:
-        LDX     CH
-        INX
-        BEQ     TYPE_WAIT
+        LDX     CH              ; Will be $FF if no keypress
+        INX                     ; $FF --> $00
+        BEQ     TYPE_WAIT       ; Keep waiting if $00
 
-        CPX     #ESC_KEY
+        CPX     #ESC_KEY        ; Leave if ESC key pressed
         BEQ     TYPE_DONE
 
     ; Reset pagination
@@ -3621,7 +3697,7 @@ CIOHND  .WORD   OPEN-1
 
        ; BANNERS
 
-BREADY  .BYTE   '#FUJINET NOS v0.4.0-alpha',EOL
+BREADY  .BYTE   '#FUJINET NOS v0.4.1-alpha',EOL
 BERROR  .BYTE   '#FUJINET ERROR',EOL
 
         ; MESSAGES
@@ -3674,6 +3750,10 @@ TAILL   = TBUF+10   ; Bytes read from last cache
 TAILH   = TBUF+11
 BODYSZL = TBUF+12   ; # Bytes to read at a time in Body
 BODYSZH = TBUF+13
+STL2    = TBUF+14   ; Payload Start address (working var)
+STH2    = TBUF+15
+BIN_1ST = TBUF+16   ; Flag for binary loader signature (FF -> 1st pass)
+AUTORUN_QUERY_FLG = TBUF+17   ; Flag for printing contents of autorun appkey
 
 PGEND   = *
 
@@ -3696,7 +3776,7 @@ DIRSTA:
     DTA $60,$C3,$02,$04,$00,C"2 Network  "
     DTA $60,$C3,$02,$04,$00,C"3   OS     "
     DTA $60,$C3,$02,$04,$00,C"4          "
-    DTA $60,$C3,$02,$04,$00,C"5 v0.4.0   "
+    DTA $60,$C3,$02,$04,$00,C"5 v0.4.1   "
     DTA $60,$C3,$02,$04,$00,C"6  alpha   "
     DTA $60,$C3,$02,$04,$00,C"7**********"
     DTA $C0

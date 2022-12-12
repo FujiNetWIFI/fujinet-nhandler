@@ -421,11 +421,16 @@ To clear AUTORUN,
 
     AUTORUN ""
 
+To query the currently defined batch file,
+
+    AUTORUN ?
+
 The AUTORUN entry is stored in the appkey file `/FujiNet/db790000.key` on the FujiNet's SD card. Therefore, AUTORUN requires a FAT32-formatted SD card to be installed in the FujiNet device.
 
 Examples:
 
     AUTORUN TNFS://192.168.1.101/WORK/STARTUP.BAT
+    AUTORUN ?
     AUTORUN ""
 
 

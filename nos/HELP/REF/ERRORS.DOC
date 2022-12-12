@@ -1,0 +1,84 @@
+
+Topic: REF/ERRORS
+
+ATARI BASIC / OSS BASIC XL
+--------------------------
+1 OSS: BREAK key pressed
+2 Insufficient memory for a statement
+3 Value outside expected range
+4 Too many variables: 128 max
+5 String exceeded dimensioned length
+6 Out of DATA: READ with no DATA
+7 Value not a positive int or > 32767
+8 INPUT or READ type mismatch
+9 DIM error
+10 Too many nested GOSUBS
+10 OSS: Expression too complex
+11 FP overflow/underflow error
+12 Line not found
+13 NEXT without FOR
+14 Statement too long or too complex
+15 NEXT or RETURN refers to deleted 
+   FOR or GOSUB
+16 RETURN with no corresponding GOSUB
+17 Bad line -- Invalid instruction or
+   address encountered
+18 String begins with invalid value,
+   or VAL string not numeric
+19 LOAD program exceeds memory
+20 Invalid device number
+21 Attempted to LOAD a non-LOAD file
+22 OSS: USING string too big
+23 OSS: USING value too big
+24 OSS: USING type mismatch
+25 OSS: RGET DIM mismatch
+26 OSS: RGET type mismatch
+28 OSS: Invalid structure
+29 OSS: P/M # out of range
+30 OSS: P/M Graphics not active
+32 OSS: End of ENTER
+34 OSS: Can't NUM/RENUM: parm is 0
+35 OSS: Can't NUM/RENUM: exceeded 
+   maximum line # (32767)
+40 OSS: String type mismatch
+
+ATARI OS
+--------
+128 BREAK occurred during I/O
+129 IOCB already open
+130 Specified device does not exist
+131 Read from write-only device
+132 Invalid I/O command
+133 File or device is not open
+134 Invalid IOCB number
+135 Write to a read-only device
+136 End of file
+137 Record-length exceeded
+138 Device Timeout
+139 Device NAK
+140 Serial bus input framing error
+141 Cursor outside graphics mode
+142 Serial bus data frame overrun
+143 Serial bus data frame checksum
+144 Device done error, bad sector, 
+    or write-protected disk
+145 Read after write compare error
+146 Function not found in handler
+147 No memory for graphics mode
+160 Invalid unit/drive number
+161 Too many files are open
+162 Disk full
+163 Unrecoverable data I/O error
+164 File number mismatch
+165 Invalid filename
+166 Invalid POINT request
+167 File locked/protected
+167 Sparta: Cannot delete directory
+168 Invalid or privileged device cmd
+169 Directory full
+170 File not found
+171 POINT invalid or IOCB not open
+173 Bad disk or drive, cannot format
+
+Source: http://atari8.com/node/284
+        SteveB 2005-11-23

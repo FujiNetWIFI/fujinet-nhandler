@@ -216,7 +216,7 @@ Source: nos.s
    214 				;        .WORD   $0700               ; BLDADR: Boot sector load address ($700).
    215 				;        .WORD   $E4C0               ; BIWTARR: Init addr (addr of RTS in ROM)
    216
-   217 0706 4C 09 07			JMP	START
+   217 0706 4C 09 07			    JMP	    START
    218 				;	ORG	*+$64
    219
    220 0709 A5 0C		START:  LDA     DOSINI
@@ -284,7 +284,7 @@ Source: nos.s
    282 075A AA			        TAX
    283 				;--
    284 075B 99 1A 03		        STA     HATABS,Y
-   285 075E A9 A7		        LDA     #<CIOHND
+   285 075E A9 FD		        LDA     #<CIOHND
    286 0760 99 1B 03		        STA     HATABS+1,Y
    287 0763 A9 16		        LDA     #>CIOHND
    288 0765 99 1C 03		        STA     HATABS+2,Y
@@ -316,15 +316,15 @@ Source: nos.s
    314 				        ;; Status returned error.
    315
    316 0785			OBERR:
-   317 0785 A9 CD		        LDA     #<BERROR
-   318 0787 A0 16		        LDY     #>BERROR
+   317 0785 A9 23		        LDA     #<BERROR
+   318 0787 A0 17		        LDY     #>BERROR
    319 0789 50 04		        BVC     OBCIO
    320
    321 				        ;; Status returned ready.
    322
    323 078B			OBRDY:
-   324 078B A9 B3		        LDA     #<BREADY
-   325 078D A0 16		        LDY     #>BREADY
+   324 078B A9 09		        LDA     #<BREADY
+   325 078D A0 17		        LDY     #>BREADY
    326
    327 078F			OBCIO:
    328 078F 9D 44 03		        STA     ICBAL,X
@@ -407,12 +407,12 @@ Source: nos.s
    405
    406 07EB			OPDONE:
    407 07EB A9 01		        LDA     #$01
-   408 07ED 8D EB 16		        STA     TRIP
+   408 07ED 8D 41 17		        STA     TRIP
    409 07F0 20 59 0A		        JSR     GDIDX
    410 07F3 A9 00		        LDA     #$00
-   411 07F5 9D EC 16		        STA     RLEN,X
-   412 07F8 9D F4 16		        STA     TOFF,X
-   413 07FB 9D F0 16		        STA     ROFF,X
+   411 07F5 9D 42 17		        STA     RLEN,X
+   412 07F8 9D 4A 17		        STA     TOFF,X
+   413 07FB 9D 46 17		        STA     ROFF,X
    414 07FE 98			        TYA
    415 07FF 60			        RTS                ; AY = ERROR
    416
@@ -471,7 +471,7 @@ Source: nos.s
    469 				;---------------------------------------
    470
    471 082D 20 59 0A		GET:    JSR     GDIDX       ; IOCB UNIT #-1 into X
-   472 0830 BD EC 16		        LDA     RLEN,X      ; Get # of RX chars waiting
+   472 0830 BD 42 17		        LDA     RLEN,X      ; Get # of RX chars waiting
    473 0833 D0 2B		        BNE     GETDISC     ; LEN > 0?
    474
    475 				        ;; If RX buffer is empty, get # of chars waiting...
@@ -479,7 +479,7 @@ Source: nos.s
    477 0835 20 24 09		        JSR     STPOLL      ; Status Poll
    478 0838 20 59 0A		        JSR     GDIDX       ; IOCB UNIT -1 into X (because Poll trashes X)
    479 083B AD EA 02		        LDA     DVSTAT      ; # of bytes waiting (0-127)
-   480 083E 9D EC 16		        STA     RLEN,X      ; Store in RX Len
+   480 083E 9D 42 17		        STA     RLEN,X      ; Store in RX Len
    481 0841 F0 22		        BEQ     RETEOF
    482
    483 0843 A5 21		GETDO:  LDA     ZICDNO      ; Get IOCB UNIT #
@@ -497,7 +497,7 @@ Source: nos.s
    495
    496 0858 20 59 0A		        JSR     GDIDX       ; IOCB UNIT #-1 into X
    497 085B A9 00		        LDA     #$00
-   498 085D 9D F0 16		        STA     ROFF,X
+   498 085D 9D 46 17		        STA     ROFF,X
    499
    500 0860			GETDISC:
    501 				        ;LDA     DVSTAT+2    ; Did we disconnect?
@@ -512,8 +512,8 @@ Source: nos.s
    510 0868 60			        RTS                 ; buh-bye.
    511
    512 0869			GETUPDP:
-   513 0869 DE EC 16		        DEC     RLEN,X      ; Decrement RX length.
-   514 086C BC F0 16		        LDY     ROFF,X      ; Get RX offset cursor.
+   513 0869 DE 42 17		        DEC     RLEN,X      ; Decrement RX length.
+   514 086C BC 46 17		        LDY     ROFF,X      ; Get RX offset cursor.
    515
    516 				        ;; Return Next char from appropriate RX buffer.
    517
@@ -521,14 +521,14 @@ Source: nos.s
    519
    520 				        ;; Increment RX offset
    521
-   522 0872 FE F0 16		GX:     INC     ROFF,X      ; Increment RX offset.
+   522 0872 FE 46 17		GX:     INC     ROFF,X      ; Increment RX offset.
    523 0875 A8			        TAY                 ; stuff returned val into Y temporarily.
    524
    525 				        ;; If requested RX buffer is empty, reset TRIP.
    526
-   527 0876 BD EC 16		        LDA     RLEN,X
+   527 0876 BD 42 17		        LDA     RLEN,X
    528 0879 D0 03		        BNE     GETDONE
-   529 087B 8D EB 16		        STA     TRIP
+   529 087B 8D 41 17		        STA     TRIP
    530
    531 				        ;; Return byte back to CIO.
    532
@@ -562,10 +562,10 @@ Source: nos.s
    560 088E			PUT:    ;; Add to TX buffer.
    561
    562 088E 20 59 0A		        JSR     GDIDX
-   563 0891 BC F4 16		        LDY     TOFF,X      ; GET TX cursor.
+   563 0891 BC 4A 17		        LDY     TOFF,X      ; GET TX cursor.
    564 0894 99 80 18		        STA     TBUF,Y      ; TX Buffer
    565
-   566 0897 FE F4 16		POFF:   INC     TOFF,X      ; Increment TX cursor
+   566 0897 FE 4A 17		POFF:   INC     TOFF,X      ; Increment TX cursor
    567 089A A0 01		        LDY     #$01        ; SUCCESSFUL
    568
    569 				        ;; Do a PUT FLUSH if EOL or buffer full.
@@ -573,7 +573,7 @@ Source: nos.s
    571 089C C9 9B		        CMP     #EOL        ; EOL?
    572 089E F0 0B		        BEQ     FLUSH       ; FLUSH BUFFER
    573 08A0 20 59 0A		        JSR     GDIDX       ; GET OFFSET
-   574 08A3 BD F4 16		        LDA     TOFF,X
+   574 08A3 BD 4A 17		        LDA     TOFF,X
    575 08A6 C9 7F		        CMP     #$7F        ; LEN = $FF?
    576 08A8 F0 01		        BEQ     FLUSH       ; FLUSH BUFFER
    577 08AA 60			        RTS
@@ -593,7 +593,7 @@ Source: nos.s
    591 08B5 F0 AE		        BEQ     RETEOF
    592
    593 08B7 20 59 0A		PF1:    JSR     GDIDX       ; GET DEV X
-   594 08BA BD F4 16		        LDA     TOFF,X
+   594 08BA BD 4A 17		        LDA     TOFF,X
    595 08BD D0 03		        BNE     PF2
    596 08BF 4C DF 08		        JMP     PDONE
    597
@@ -604,7 +604,7 @@ Source: nos.s
    602
    603 				       ; FINISH DCB AND DO SIOV
    604
-   605 08C7 BD F4 16		TBX:    LDA     TOFF,X
+   605 08C7 BD 4A 17		TBX:    LDA     TOFF,X
    606 08CA 8D EA 08		        STA     PUTDCB+8
    607 08CD 8D EC 08		        STA     PUTDCB+10
    608
@@ -617,7 +617,7 @@ Source: nos.s
    615
    616 08D7 20 59 0A		        JSR     GDIDX
    617 08DA A9 00		        LDA     #$00
-   618 08DC 9D F4 16		        STA     TOFF,X
+   618 08DC 9D 4A 17		        STA     TOFF,X
    619
    620 08DF A0 01		PDONE:  LDY     #$01
    621 08E1 60			        RTS
@@ -644,14 +644,14 @@ Source: nos.s
    642
    643 08EE 20 47 0A		STATUS: JSR     ENPRCD      ; ENABLE PRCD
    644 08F1 20 59 0A		        JSR     GDIDX       ; GET DEVICE#
-   645 08F4 BD EC 16		        LDA     RLEN,X      ; GET RLEN
+   645 08F4 BD 42 17		        LDA     RLEN,X      ; GET RLEN
    646 08F7 D0 05		        BNE     STSLEN      ; RLEN > 0?
-   647 08F9 AD EB 16		        LDA     TRIP
+   647 08F9 AD 41 17		        LDA     TRIP
    648 08FC D0 15		        BNE     STTRI1      ; TRIP = 1?
    649
    650 				        ; NO TRIP, RETURN SAVED LEN
    651
-   652 08FE BD EC 16		STSLEN: LDA     RLEN,X      ; GET RLEN
+   652 08FE BD 42 17		STSLEN: LDA     RLEN,X      ; GET RLEN
    653 0901 8D EA 02		        STA     DVSTAT      ; RET IN DVSTAT
    654
    655 				        ; If you don't need to preserve Y then use it instead of A
@@ -668,12 +668,12 @@ Source: nos.s
    666 				        ; DO POLL AND UPDATE RCV LEN
    667
    668 0913 20 24 09		STTRI1: JSR     STPOLL      ; POLL FOR ST
-   669 0916 9D EC 16		        STA     RLEN,X
+   669 0916 9D 42 17		        STA     RLEN,X
    670
    671 				        ; UPDATE TRIP FLAG
    672
    673 0919 D0 03		STTRIU: BNE     STDONE
-   674 091B 8D EB 16		        STA     TRIP        ; RLEN = 0
+   674 091B 8D 41 17		        STA     TRIP        ; RLEN = 0
    675
    676 				        ; RETURN CONNECTED? FLAG.
    677
@@ -762,7 +762,7 @@ Source: nos.s
    760 				       ; IF $FF, THE COMMAND IS
    761 				       ; INVALID
    762
-   763 097B AD F8 16		DSOK:   LDA     INQDS
+   763 097B AD 4E 17		DSOK:   LDA     INQDS
    764 097E C9 FF		        CMP     #$FF        ; INVALID?
    765 0980 D0 04		        BNE     DSGO        ; DO THE CMD
    766 0982 A0 92		        LDY     #$92        ; UNIMP CMD
@@ -777,7 +777,7 @@ Source: nos.s
    775 0988 48			        PHA
    776 0989 A9 00		        LDA     #$00
    777 098B 48			        PHA
-   778 098C AD F8 16		        LDA     INQDS
+   778 098C AD 4E 17		        LDA     INQDS
    779 098F 48			        PHA
    780 0990 A9 01		        LDA     #$01
    781 0992 48			        PHA
@@ -806,8 +806,8 @@ Source: nos.s
    804 09B0 FF			        .BYTE   $FF         ; DUNIT
    805 09B1 FF			        .BYTE   $FF         ; DCOMND ; inq
    806 09B2 40			        .BYTE   $40         ; DSTATS
-   807 09B3 F8			        .BYTE   <INQDS      ; DBUFL
-   808 09B4 16			        .BYTE   >INQDS      ; DBUFH
+   807 09B3 4E			        .BYTE   <INQDS      ; DBUFL
+   808 09B4 17			        .BYTE   >INQDS      ; DBUFH
    809 09B5 0F			        .BYTE   $0F         ; DTIMLO
    810 09B6 00			        .BYTE   $00         ; DRESVD
    811 09B7 01			        .BYTE   $01         ; DBYTL
@@ -977,7 +977,7 @@ Source: nos.s
    975 				;---------------------------------------
    976
    977 0A5D A9 01		PRCVEC: LDA     #$01
-   978 0A5F 8D EB 16		        STA     TRIP
+   978 0A5F 8D 41 17		        STA     TRIP
    979 0A62 68			        PLA
    980 0A63 40			        RTI
    981
@@ -1122,10 +1122,10 @@ Source: nos.s
   1120 0ACE			DOS:
   1121 				        ; Autorun injection
   1122 0ACE A9 0F		        LDA     #CMD_IDX.AUTORUN    ; Check for AUTORUN
-  1123 0AD0 CD EA 16		        CMP     AUTORUN_FLG         ; True only on 1st entry
+  1123 0AD0 CD 40 17		        CMP     AUTORUN_FLG         ; True only on 1st entry
   1124 0AD3 F0 06		        BEQ     CPLOOP              ; Skip to Command Processor
-  1125 0AD5 8D EA 16		        STA     AUTORUN_FLG         ; Change flag
-  1126 0AD8 20 87 11		        JSR     SUBMIT_AUTORUN      ; Attempt to execute autorun file
+  1125 0AD5 8D 40 17		        STA     AUTORUN_FLG         ; Change flag
+  1126 0AD8 20 CC 11		        JSR     SUBMIT_AUTORUN      ; Attempt to execute autorun file
   1127 				       
   1128 0ADB			CPLOOP:
   1129 0ADB 20 E1 0A		        JSR     CP          ; Command Processor
@@ -1138,7 +1138,7 @@ Source: nos.s
   1136
   1137 0AE1			CP:
   1138 0AE1 A9 FF		        LDA     #$FF        ; Clear command
-  1139 0AE3 8D E7 16		        STA     CMD
+  1139 0AE3 8D 3D 17		        STA     CMD
   1140
   1141 0AE6 20 F5 0A		        JSR     SHOWPROMPT
   1142 0AE9 20 1A 0B		        JSR     GETCMD
@@ -1158,15 +1158,15 @@ Source: nos.s
   1156 0AF5			SHOWPROMPT:
   1157 				;---------------------------------------
   1158
-  1159 0AF5 AD E6 16		        LDA     DOSDR       ; Get the 1,2,... for N1,N2,...
+  1159 0AF5 AD 3C 17		        LDA     DOSDR       ; Get the 1,2,... for N1,N2,...
   1160 0AF8 09 30		        ORA     #'0'        ; Convert, say, 1 to '1'
-  1161 0AFA 8D 78 15		        STA     PRMPT+2     ; Store in after EOL and N
+  1161 0AFA 8D CE 15		        STA     PRMPT+2     ; Store in after EOL and N
   1162
   1163 0AFD A2 00		        LDX     #$00
   1164 0AFF A9 0B		        LDA     #PUTCHR
   1165 0B01 9D 42 03		        STA     ICCOM,X
   1166
-  1167 0B04 A9 76		        LDA     #<PRMPT
+  1167 0B04 A9 CC		        LDA     #<PRMPT
   1168 0B06 9D 44 03		        STA     ICBAL,X
   1169 0B09 A9 15		        LDA     #>PRMPT
   1170
@@ -1291,7 +1291,7 @@ Source: nos.s
   1289 0B99 60			        RTS
   1290
   1291 0B9A			PRINT_UNK_CMD:
-  1292 0B9A AD E7 16		        LDA     CMD
+  1292 0B9A AD 3D 17		        LDA     CMD
   1293 0B9D C9 FF		        CMP     #$FF
   1294 0B9F D0 07		        BNE     PRINT_UNK_CMD_DONE
   1295 0BA1 A9 A9		        LDA     #<UNK_CMD_ERR
@@ -1315,7 +1315,7 @@ Source: nos.s
   1313 0BBA			PARSE_INTRINSIC_NEXT_CHAR:
   1314 0BBA B1 F3		        LDA     (INBUFF),Y
   1315 0BBC 29 7F		        AND     #$7F
-  1316 0BBE 5D 98 15		        EOR     COMMAND,X   ; X initialized to 0 in caller
+  1316 0BBE 5D EE 15		        EOR     COMMAND,X   ; X initialized to 0 in caller
   1317 0BC1 C8			        INY
   1318 0BC2 0A			        ASL
   1319 0BC3 F0 0B		        BEQ     PARSE_INTRINSIC_CHAR_OK
@@ -1323,7 +1323,7 @@ Source: nos.s
   1321 				        ; Skip to next command
   1322
   1323 0BC5			PARSE_INTRINSIC_NEXT_COMMAND:
-  1324 0BC5 BD 98 15		        LDA     COMMAND,X
+  1324 0BC5 BD EE 15		        LDA     COMMAND,X
   1325 0BC8 0A			        ASL
   1326 0BC9 E8			        INX
   1327 0BCA 90 F9		        BCC     PARSE_INTRINSIC_NEXT_COMMAND
@@ -1342,9 +1342,9 @@ Source: nos.s
   1340 0BDC			PARSE_INTRINSIC_RET_ERROR:
   1341 0BDC A2 D2		        LDX     #COMMAND_SIZE+1
   1342 0BDE			PARSE_INTRINSIC_RET:
-  1343 0BDE BD 98 15		        LDA     COMMAND,X
-  1344 0BE1 8D E7 16		        STA     CMD
-  1345 0BE4 8D E8 16		        STA     CMDPRV
+  1343 0BDE BD EE 15		        LDA     COMMAND,X
+  1344 0BE1 8D 3D 17		        STA     CMD
+  1345 0BE4 8D 3E 17		        STA     CMDPRV
   1346 0BE7			PARSE_INTRINSIC_DONE:
   1347 0BE7 60			        RTS
   1348
@@ -1363,18 +1363,18 @@ Source: nos.s
   1361 0BF5 C9 3A		        CMP     #':'        ; Check for colon.
   1362 0BF7 D0 05		        BNE     PARSE_DRIVE_CHANGE_DONE
   1363 0BF9 A9 1D		        LDA     #CMD_IDX.DRIVE_CHG
-  1364 0BFB 8D E7 16		        STA     CMD
+  1364 0BFB 8D 3D 17		        STA     CMD
   1365 0BFE			PARSE_DRIVE_CHANGE_DONE:
   1366 0BFE 60			        RTS
   1367
   1368 				;---------------------------------------
   1369 0BFF			DOCMD:
   1370 				;---------------------------------------
-  1371 0BFF AE E7 16		        LDX     CMD
+  1371 0BFF AE 3D 17		        LDX     CMD
   1372 0C02 30 08		        BMI     DOCMD_DONE      ; Unassigned command = $FF
-  1373 0C04 BD 89 16		        LDA     CMD_TAB_H,X     ; Get hi-byte of subroutine's addr
+  1373 0C04 BD DF 16		        LDA     CMD_TAB_H,X     ; Get hi-byte of subroutine's addr
   1374 0C07 48			        PHA                     ; Push it to the stack
-  1375 0C08 BD 6B 16		        LDA     CMD_TAB_L,X     ; Get lo-byte of subroutine's addr
+  1375 0C08 BD C1 16		        LDA     CMD_TAB_L,X     ; Get lo-byte of subroutine's addr
   1376 0C0B 48			        PHA                     ; Push it to the stack
   1377 0C0C			DOCMD_DONE:
   1378 0C0C 60			        RTS                     ; Use stack & RTS to jump to subroutine
@@ -1386,18 +1386,18 @@ Source: nos.s
   1384 0C0D			DO_DRIVE_CHG:
   1385 				;---------------------------------------
   1386 0C0D AD 82 05		        LDA     LNBUF
-  1387 0C10 8D 77 15		        STA     PRMPT+1
+  1387 0C10 8D CD 15		        STA     PRMPT+1
   1388 0C13 AD 83 05		        LDA     LNBUF+1
   1389 0C16 C9 31		        CMP     #'1'        ; Skip if '0' or less
   1390 0C18 90 0A		        BCC     DO_DRIVE_CHG_ERROR
   1391 0C1A C9 39		        CMP     #'9'        ; Skip if '9' or more
   1392 0C1C B0 06		        BCS     DO_DRIVE_CHG_ERROR
   1393 0C1E 29 0F		        AND     #$0F        ; Convert, say, to 1-8
-  1394 0C20 8D E6 16		        STA     DOSDR
+  1394 0C20 8D 3C 17		        STA     DOSDR
   1395 0C23 60			        RTS
   1396 0C24			DO_DRIVE_CHG_ERROR:
-  1397 0C24 A9 DC		        LDA     #<CDERR
-  1398 0C26 A0 16		        LDY     #>CDERR
+  1397 0C24 A9 32		        LDA     #<CDERR
+  1398 0C26 A0 17		        LDY     #>CDERR
   1399 0C28 4C 7B 0A		        JMP     PRINT_STRING
   1400
   1401 				; End of DOCMD
@@ -1411,7 +1411,7 @@ Source: nos.s
   1409 				;---------------------------------------
   1410
   1411 0C2B 20 64 0A		        JSR     LDBUFA      ; Reset INBUFF to LNBUF
-  1412 0C2E AE E6 16		        LDX     DOSDR       ; Set DUNIT(X) to curr drive
+  1412 0C2E AE 3C 17		        LDX     DOSDR       ; Set DUNIT(X) to curr drive
   1413
   1414 				    ;---------------------------------------
   1415 				    ; Consider arg1 = N2:TNFS://localhost/
@@ -1453,7 +1453,7 @@ Source: nos.s
   1451 				    ; Get Fujinet SIO command (~ $21 for DEL)
   1452 				    ; X = table index from caller
   1453 				    ;---------------------------------------
-  1454 0C4E BD 7A 15		        LDA     CMD_DCOMND,X
+  1454 0C4E BD D0 15		        LDA     CMD_DCOMND,X
   1455 0C51 8D B1 0C		        STA     GENDCB+2
   1456
   1457 				    ;---------------------------------------
@@ -1461,7 +1461,7 @@ Source: nos.s
   1459 				    ;---------------------------------------
   1460 0C54 20 2B 0C		        JSR     GET_DOSDR    ; X will contain int of n in Nn:
   1461 0C57 8E B0 0C		        STX     GENDCB+1
-  1462 0C5A 20 22 15		        JSR     PREPEND_DRIVE
+  1462 0C5A 20 78 15		        JSR     PREPEND_DRIVE
   1463
   1464 				    ;---------------------------------------
   1465 				    ; If this is NCD ensure a '/' char is the last char
@@ -1472,13 +1472,13 @@ Source: nos.s
   1470
   1471 0C64 AD 85 0B		        LDA     CMDSEP
   1472 0C67 F0 2C		        BEQ     NCD_ERROR
-  1473 0C69 20 4F 15		        JSR     APPEND_SLASH    ; Append '/' to path if missing
+  1473 0C69 20 A5 15		        JSR     APPEND_SLASH    ; Append '/' to path if missing
   1474
   1475 0C6C			DO_GENERIC_NEXT:
   1476 				    ;---------------------------------------
   1477 				    ; Populate the DCB
   1478 				    ;---------------------------------------
-  1479 0C6C AD E6 16		        LDA     DOSDR
+  1479 0C6C AD 3C 17		        LDA     DOSDR
   1480 0C6F 8D 49 09		        STA     STADCB+1        ; Yes. Status (not typo)
   1481 				;        STA     GENDCB+1   ; 20221105 - commented-out. checking for bug...
   1482 0C72 A5 F3		        LDA     INBUFF
@@ -1498,13 +1498,13 @@ Source: nos.s
   1496 				    ;---------------------------------------
   1497 				    ; if DEL or RENAME, then remount drive
   1498 				    ;---------------------------------------
-  1499 0C86 AD E8 16		        LDA     CMDPRV
+  1499 0C86 AD 3E 17		        LDA     CMDPRV
   1500 0C89 C9 03		        CMP     #CMD_IDX.DEL
   1501 0C8B F0 04		        BEQ     GEN_REMOUNT
   1502 0C8D C9 0A		        CMP     #CMD_IDX.RENAME
   1503 0C8F D0 03		        BNE     GENDONE
   1504 0C91			GEN_REMOUNT:
-  1505 0C91 4C EF 14		        JMP     REMOUNT_DRIVE
+  1505 0C91 4C 45 15		        JMP     REMOUNT_DRIVE
   1506
   1507 0C94			GENDONE:
   1508 0C94 60			        RTS
@@ -1872,7 +1872,7 @@ Source: nos.s
   1870 				;---------------------------------------
   1871 0D31			DIR_OPEN:
   1872 				;---------------------------------------
-  1873 0D31 20 22 15		        JSR     PREPEND_DRIVE
+  1873 0D31 20 78 15		        JSR     PREPEND_DRIVE
   1874
   1875 				    ;-----------------------------------
   1876 				    ; Default to arg1
@@ -1892,7 +1892,7 @@ Source: nos.s
   1890 0D3D A2 73		        LDX     #<DIR_OPEN_STR
   1891 0D3F A0 0D		        LDY     #>DIR_OPEN_STR
   1892
-  1893 0D41 AD E6 16		        LDA     DOSDR
+  1893 0D41 AD 3C 17		        LDA     DOSDR
   1894 0D44 09 30		        ORA     #'0'            ; Convert, say, 1 to '1'
   1895 0D46 8D 74 0D		        STA     DIR_OPEN_STR+1  ; Inject DOSDR into string
   1896
@@ -1973,7 +1973,7 @@ Source: nos.s
   1971 				    ; Open file
   1972 0DAB AD 85 0B		        LDA     CMDSEP          ; Quit if no arg1
   1973 0DAE D0 03		        BNE     LOAD_NEXT1
-  1974 0DB0 4C 08 10		        JMP     LOAD_ERROR
+  1974 0DB0 4C 3F 10		        JMP     LOAD_ERROR
   1975
   1976 0DB3			LOAD_NEXT1:
   1977 				    ; Point INBUFF to start of filename
@@ -1984,1730 +1984,1810 @@ Source: nos.s
   1982 0DBA E6 F4		        INC     INBUFF+1
   1983
   1984 0DBC			LOAD_NEXT2:
-  1985 0DBC 20 3B 0E		        JSR     LOAD_NTRANS     ; Disable any EOL transation
-  1986 0DBF 20 F7 0D		        JSR     LOAD_SETUP      ; Set up run and init to RTS
+  1985 0DBC 20 4F 0E		        JSR     LOAD_NTRANS     ; Disable any EOL transation
+  1986 0DBF 20 0B 0E		        JSR     LOAD_SETUP      ; Set up run and init to RTS
   1987 0DC2 A9 04		        LDA     #OINPUT         ; A arg needed in LOAD_OPEN
-  1988 0DC4 20 0D 0E		        JSR     LOAD_OPEN       ; Open the file
+  1988 0DC4 20 21 0E		        JSR     LOAD_OPEN       ; Open the file
   1989 0DC7 C0 01		        CPY     #$01            ; Quit if unable to open
-  1990 0DC9 D0 2B		        BNE     R
+  1990 0DC9 D0 3F		        BNE     R
   1991
-  1992 				    ; Process each payload
-  1993 0DCB 20 49 0E		GETFIL: JSR     LOAD_READ2      ; Get two bytes (binary header)
-  1994 0DCE 30 26		        BMI     R               ; Exit if EOF hit
-  1995 0DD0 20 02 0E		        JSR     LOAD_INIT       ; Set init default
-  1996 0DD3 20 63 0E		        JSR     LOAD_CHKFF      ; Check if header (and start addr, too)
-  1997 0DD6 20 86 0E		        JSR     LOAD_STRAD      ; Put start address in
-  1998 0DD9 20 49 0E		        JSR     LOAD_READ2      ; Get to more butes (end addr)
-  1999 0DDC 20 93 0E		        JSR     LOAD_ENDAD      ; Put end address in
-  2000 0DDF 20 A0 0E		        JSR     LOAD_BUFLEN     ; Calculate buffer length
-  2001 0DE2 20 C5 0E		        JSR     LOAD_GETDAT     ; Get the data record
-  2002 0DE5 10 03		        BPL     @+              ; Was EOF detected?
-  2003 0DE7 20 F3 0D		        JSR     JSTART          ; Yes. Go to RUNAD
-  2004 0DEA 20 F0 0D		@:      JSR     JINIT           ; Attempt initialization
-  2005 0DED 4C CB 0D		        JMP     GETFIL          ; Process next payload
-  2006
-  2007 0DF0 6C E2 02		JINIT:  JMP     (INITAD)        ; Will either RTS or perform INIT
-  2008 0DF3 6C E0 02		JSTART: JMP     (RUNAD)         ; Godspeed.
-  2009 0DF6 60			R:      RTS                     ; Stunt-double for (INITAD),(RUNAD)
-  2010
-  2011 				;---------------------------------------
-  2012 0DF7			LOAD_SETUP:
-  2013 				;---------------------------------------
-  2014 0DF7 A9 F6		        LDA     #<R
-  2015 0DF9 8D E0 02		        STA     RUNAD
-  2016 0DFC A9 0D		        LDA     #>R
-  2017 0DFE 8D E1 02		        STA     RUNAD+1
-  2018 0E01 60			        RTS
+  1992 0DCB A9 FF		        LDA     #$FF
+  1993 0DCD 8D 90 18		        STA     BIN_1ST
+  1994 0DD0 20 5D 0E		        JSR     LOAD_READ2
+  1995 0DD3 20 7E 0E		        JSR     LOAD_CHKFF
+  1996 0DD6 C0 01		        CPY     #$01
+  1997 0DD8 D0 30		        BNE     R
+  1998
+  1999 0DDA EE 90 18		        INC     BIN_1ST
+  2000 				    ; Process each payload
+  2001 0DDD 20 5D 0E		GETFIL: JSR     LOAD_READ2      ; Get two bytes (binary header)
+  2002 0DE0 30 28		        BMI     R               ; Exit if EOF hit
+  2003 0DE2 20 16 0E		        JSR     LOAD_INIT       ; Set init default
+  2004 0DE5 A2 01		        LDX     #$01
+  2005 0DE7 20 7E 0E		        JSR     LOAD_CHKFF      ; Check if header (and start addr, too)
+  2006 0DEA 20 B5 0E		        JSR     LOAD_STRAD      ; Put start address in
+  2007 0DED 20 5D 0E		        JSR     LOAD_READ2      ; Get to more butes (end addr)
+  2008 0DF0 20 C2 0E		        JSR     LOAD_ENDAD      ; Put end address in
+  2009 0DF3 20 DB 0E		        JSR     LOAD_BUFLEN     ; Calculate buffer length
+  2010 0DF6 20 00 0F		        JSR     LOAD_GETDAT     ; Get the data record
+  2011 0DF9 10 03		        BPL     @+              ; Was EOF detected?
+  2012 0DFB 20 07 0E		        JSR     JSTART          ; Yes. Go to RUNAD
+  2013 0DFE 20 04 0E		@:      JSR     JINIT           ; Attempt initialization
+  2014 0E01 4C DD 0D		        JMP     GETFIL          ; Process next payload
+  2015
+  2016 0E04 6C E2 02		JINIT:  JMP     (INITAD)        ; Will either RTS or perform INIT
+  2017 0E07 6C E0 02		JSTART: JMP     (RUNAD)         ; Godspeed.
+  2018 0E0A 60			R:      RTS                     ; Stunt-double for (INITAD),(RUNAD)
   2019
   2020 				;---------------------------------------
-  2021 0E02			LOAD_INIT:
+  2021 0E0B			LOAD_SETUP:
   2022 				;---------------------------------------
-  2023 0E02 A9 F6		        LDA     #<R
-  2024 0E04 8D E2 02		        STA     INITAD
-  2025 0E07 A9 0D		        LDA     #>R
-  2026 0E09 8D E3 02		        STA     INITAD+1
-  2027 0E0C 60			        RTS
+  2023 0E0B A9 0A		        LDA     #<R
+  2024 0E0D 8D E0 02		        STA     RUNAD
+  2025 0E10 A9 0E		        LDA     #>R
+  2026 0E12 8D E1 02		        STA     RUNAD+1
+  2027 0E15 60			        RTS
   2028
   2029 				;---------------------------------------
-  2030 0E0D			LOAD_OPEN:
+  2030 0E16			LOAD_INIT:
   2031 				;---------------------------------------
-  2032 0E0D 48			        PHA                     ; A = data direction (4=in, 8=out)
-  2033 0E0E 20 2B 0C		        JSR     GET_DOSDR       ; Get DUNIT
-  2034 0E11 8E 01 08		        STX     OPNDCB+1        ; Set DUNIT
-  2035 0E14 8E 83 08		        STX     GETDCB+1        ; Set DUNIT FOR READ
-  2036 0E17 20 22 15		        JSR     PREPEND_DRIVE
+  2032 0E16 A9 0A		        LDA     #<R
+  2033 0E18 8D E2 02		        STA     INITAD
+  2034 0E1B A9 0E		        LDA     #>R
+  2035 0E1D 8D E3 02		        STA     INITAD+1
+  2036 0E20 60			        RTS
   2037
-  2038 0E1A A5 F3		        LDA     INBUFF          ; Register location of filename
-  2039 0E1C 8D 04 08		        STA     OPNDCB+4
-  2040 0E1F A5 F4		        LDA     INBUFF+1
-  2041 0E21 8D 05 08		        STA     OPNDCB+5
-  2042
-  2043 0E24 68			        PLA                     ; A = data direction (4=in, 8=out)
-  2044 0E25 8D 0A 08		        STA     OPNDCB+10
-  2045 0E28 A9 00		        LDA     #$00            ; AUX2: No translation
-  2046 0E2A 8D 0B 08		        STA     OPNDCB+11
-  2047
-  2048 0E2D A9 00		        LDA     #<OPNDCB
-  2049 0E2F A0 08		        LDY     #>OPNDCB
-  2050
-  2051 0E31 20 A5 07		        JSR     DOSIOV
-  2052 0E34 48			        PHA
-  2053 0E35 20 96 0A		        JSR     PRINT_ERROR
-  2054 0E38 68			        PLA
-  2055 0E39 A8			        TAY
+  2038 				;---------------------------------------
+  2039 0E21			LOAD_OPEN:
+  2040 				;---------------------------------------
+  2041 0E21 48			        PHA                     ; A = data direction (4=in, 8=out)
+  2042 0E22 20 2B 0C		        JSR     GET_DOSDR       ; Get DUNIT
+  2043 0E25 8E 01 08		        STX     OPNDCB+1        ; Set DUNIT
+  2044 0E28 8E 83 08		        STX     GETDCB+1        ; Set DUNIT FOR READ
+  2045 0E2B 20 78 15		        JSR     PREPEND_DRIVE
+  2046
+  2047 0E2E A5 F3		        LDA     INBUFF          ; Register location of filename
+  2048 0E30 8D 04 08		        STA     OPNDCB+4
+  2049 0E33 A5 F4		        LDA     INBUFF+1
+  2050 0E35 8D 05 08		        STA     OPNDCB+5
+  2051
+  2052 0E38 68			        PLA                     ; A = data direction (4=in, 8=out)
+  2053 0E39 8D 0A 08		        STA     OPNDCB+10
+  2054 0E3C A9 00		        LDA     #$00            ; AUX2: No translation
+  2055 0E3E 8D 0B 08		        STA     OPNDCB+11
   2056
-  2057 0E3A 60			        RTS
-  2058
-  2059 				;---------------------------------------
-  2060 0E3B			LOAD_NTRANS:
-  2061 				;---------------------------------------
-  2062 				    ; Disable any EOL transation otherwise
-  2063 				    ; binary data will be corrupted during load
-  2064 				    ;---------------------------------------
-  2065 0E3B 20 2B 0C		        JSR     GET_DOSDR       ; Get DUNIT
-  2066 0E3E 8E 01 11		        STX     NTRDCB+1        ; Set DUNIT
-  2067 0E41 A9 00		        LDA     #$00
-  2068 0E43 8D 0B 11		        STA     NTRDCB+11       ; Translation mode (0 = NONE)
-  2069 0E46 4C CD 10		        JMP     NTRANS_CALL     ; Reuse code in DO_NTRANS
-  2070
-  2071 				;---------------------------------------
-  2072 0E49			LOAD_READ2:
-  2073 				;---------------------------------------
-  2074
-  2075 0E49 A9 02		        LDA     #$02
-  2076 0E4B 8D 8A 08		        STA     GETDCB+8        ; DBYTL
-  2077 0E4E 8D 8C 08		        STA     GETDCB+10       ; DAUX1
-  2078
-  2079 0E51 A9 00		        LDA     #$00
-  2080 0E53 8D 8B 08		        STA     GETDCB+9        ; DBYTH
-  2081 0E56 8D 8D 08		        STA     GETDCB+11       ; DAUX2
-  2082
-  2083 0E59 A9 82		        LDA     #<GETDCB
-  2084 0E5B A0 08		        LDY     #>GETDCB
-  2085 0E5D 20 A5 07		        JSR     DOSIOV
-  2086
-  2087 				    ; Return -1 if EOF is found
-  2088 0E60 4C CB 0F		        JMP     GETDAT_CHECK_EOF
-  2089
-  2090 				;---------------------------------------
-  2091 0E63			LOAD_CHKFF:
-  2092 				;---------------------------------------
-  2093 				    ; Check for binary file signature ($FF $FF)
-  2094 0E63 AE 00 18		        LDX     BAL
-  2095 0E66 E8			        INX
-  2096 0E67 F0 01		        BEQ     TEST2
-  2097 0E69 60			        RTS
-  2098 0E6A AE 01 18		TEST2:  LDX     BAH
-  2099 0E6D E8			        INX
-  2100 0E6E F0 01		        BEQ     ITSFF
-  2101 0E70 60			        RTS
-  2102 0E71 4C 49 0E		ITSFF:  JMP     LOAD_READ2  ; Get start address and return
-  2103
-  2104 				;        LDA     #<LOAD_ERROR_STR2
-  2105 				;        LDY     #>LOAD_ERROR_STR2
-  2106 				;        JMP     PRINT_STRING
-  2107
-  2108 0E74			LOAD_ERROR_STR2:
-  2109 0E74 4E 4F 54 20 41 20 +         .BYTE   'NOT A BINARY FILE',EOL
-  2110
+  2057 0E41 A9 00		        LDA     #<OPNDCB
+  2058 0E43 A0 08		        LDY     #>OPNDCB
+  2059
+  2060 0E45 20 A5 07		        JSR     DOSIOV
+  2061 0E48 48			        PHA
+  2062 0E49 20 96 0A		        JSR     PRINT_ERROR
+  2063 0E4C 68			        PLA
+  2064 0E4D A8			        TAY
+  2065
+  2066 0E4E 60			        RTS
+  2067
+  2068 				;---------------------------------------
+  2069 0E4F			LOAD_NTRANS:
+  2070 				;---------------------------------------
+  2071 				    ; Disable any EOL transation otherwise
+  2072 				    ; binary data will be corrupted during load
+  2073 				    ;---------------------------------------
+  2074 0E4F 20 2B 0C		        JSR     GET_DOSDR       ; Get DUNIT
+  2075 0E52 8E 38 11		        STX     NTRDCB+1        ; Set DUNIT
+  2076 0E55 A9 00		        LDA     #$00
+  2077 0E57 8D 42 11		        STA     NTRDCB+11       ; Translation mode (0 = NONE)
+  2078 0E5A 4C 04 11		        JMP     NTRANS_CALL     ; Reuse code in DO_NTRANS
+  2079
+  2080 				;---------------------------------------
+  2081 0E5D			LOAD_READ2:
+  2082 				;---------------------------------------
+  2083 				    ; Load 2 bytes into Buffer (BAL/H).
+  2084 				    ;---------------------------------------
+  2085 				    ; This is accomplished by abusing the LOAD_GETDAT
+  2086 				    ; routine by stuffing the buffer addr (BAL/H)
+  2087 				    ; into the payload Start/End addrs. We're doing
+  2088 				    ; this in case a payload  header straddles a
+  2089 				    ; cache boundary. LOAD_GETDAT has the logic for
+  2090 				    ; dealing with that.
+  2091 				    ;---------------------------------------
+  2092 0E5D A9 00		        LDA     #<BAL
+  2093 0E5F 8D 80 18		        STA     STL             ; Payload start address
+  2094 0E62 A9 18		        LDA     #>BAL
+  2095 0E64 8D 81 18		        STA     STH
+  2096
+  2097 0E67 A9 01		        LDA     #<BAH
+  2098 0E69 8D 82 18		        STA     ENL             ; Payload end address
+  2099 0E6C A9 18		        LDA     #>BAH
+  2100 0E6E 8D 83 18		        STA     ENH
+  2101
+  2102 0E71 A2 02		        LDX     #$02
+  2103 0E73 8E 84 18		        STX     BLL             ; Payload size (2)
+  2104 0E76 A9 00		        LDA     #$00
+  2105 0E78 8D 85 18		        STA     BLH
+  2106
+  2107 0E7B 4C 00 0F		        JMP     LOAD_GETDAT     ; Read 2 bytes
+  2108
+  2109 				;---------------------------------------
+  2110 0E7E			LOAD_CHKFF:
   2111 				;---------------------------------------
-  2112 0E86			LOAD_STRAD:
-  2113 				;---------------------------------------
-  2114 				    ; Save payload start address
-  2115 0E86 AD 00 18		        LDA     RBUF
-  2116 0E89 8D 80 18		        STA     STL
-  2117 0E8C AD 01 18		        LDA     RBUF+1
-  2118 0E8F 8D 81 18		        STA     STH
-  2119 0E92 60			        RTS
-  2120
-  2121 				;---------------------------------------
-  2122 0E93			LOAD_ENDAD:
-  2123 				;---------------------------------------
-  2124 				    ; Save payload end address
-  2125 0E93 AD 00 18		        LDA     RBUF
-  2126 0E96 8D 82 18		        STA     ENL
-  2127 0E99 AD 01 18		        LDA     RBUF+1
-  2128 0E9C 8D 83 18		        STA     ENH
-  2129 0E9F 60			        RTS
-  2130
-  2131 				;---------------------------------------
-  2132 0EA0			LOAD_BUFLEN:
-  2133 				;---------------------------------------
-  2134 				    ; Calculate buffer length (end-start+1)
-  2135
-  2136 				    ; Calc buffer size Lo
-  2137 0EA0 AD 82 18		        LDA     ENL
-  2138 0EA3 38			        SEC
-  2139 0EA4 ED 80 18		        SBC     STL
-  2140 0EA7 8D 84 18		        STA     BLL     ; Buffer Length Lo
-  2141
-  2142 				    ; Calc buffer size Hi
-  2143 0EAA AD 83 18		        LDA     ENH     ; Calc buffer size Hi
-  2144 0EAD ED 81 18		        SBC     STH
-  2145 0EB0 8D 85 18		        STA     BLH     ; Buffer Length Hi
-  2146
-  2147 				    ; Add 1
-  2148 0EB3 18			        CLC
-  2149 0EB4 AD 84 18		        LDA     BLL
-  2150 0EB7 69 01		        ADC     #$01
-  2151 0EB9 8D 84 18		        STA     BLL
+  2112 				    ; On 1st pass, check for binary signature (FF FF)
+  2113 				    ; On 2..n passes, Skip FF FF (if found) 
+  2114 				    ; and read next 2 bytes
+  2115 				    ;---------------------------------------
+  2116 				        
+  2117 0E7E A9 FF		        LDA     #$FF
+  2118 0E80 CD 00 18		        CMP     BAL         ; Is 1st byte FF?
+  2119 0E83 D0 0D		        BNE     NOTFF       ; If no, skip down.
+  2120 0E85 CD 01 18		        CMP     BAH         ; Is 2nd byte FF?
+  2121 0E88 D0 08		        BNE     NOTFF       ; If no, skip down.
+  2122
+  2123 				    ;---------------------------------------
+  2124 				    ; Here if FF FF tags found. 
+  2125 				    ; On 1st pass, we're done.
+  2126 				    ; On 2..n passes, read next 2 bytes and leave.
+  2127 				    ;---------------------------------------
+  2128 0E8A CD 90 18		        CMP     BIN_1ST     ; Is this 1st pass?
+  2129 0E8D F0 13		        BEQ     NOTFF_DONE  ; If yes, then we're done here.
+  2130 0E8F 4C 5D 0E		        JMP     LOAD_READ2  ; 
+  2131
+  2132 				    ;---------------------------------------
+  2133 				    ; Here if FF FF tags NOT found. 
+  2134 				    ; On 1st pass, print error.
+  2135 				    ; On 2..n passes, the 2 bytes = payload start addr.
+  2136 				    ;---------------------------------------
+  2137 0E92 A0 01		NOTFF:  LDY     #$01        ; Preload success return code
+  2138 0E94 CD 90 18		        CMP     BIN_1ST     ; A still has FF. BIN_1ST = FF on first pass
+  2139 0E97 D0 09		        BNE     NOTFF_DONE  ; Not 1st pass, exit with success.
+  2140
+  2141 0E99			NOTFF_ERR:
+  2142 0E99 A9 A3		        LDA     #<LOAD_ERROR_STR2
+  2143 0E9B A0 0E		        LDY     #>LOAD_ERROR_STR2
+  2144 0E9D 20 7B 0A		        JSR     PRINT_STRING
+  2145
+  2146 0EA0 A0 FF		        LDY     #$FF        ; Return failure
+  2147 0EA2			NOTFF_DONE:
+  2148 0EA2 60			        RTS
+  2149
+  2150 0EA3			LOAD_ERROR_STR2:
+  2151 0EA3 4E 4F 54 20 41 20 +         .BYTE   'NOT A BINARY FILE',EOL
   2152
-  2153 0EBC AD 85 18		        LDA     BLH
-  2154 0EBF 69 00		        ADC     #$00    ; Take care of any carry
-  2155 0EC1 8D 85 18		        STA     BLH
-  2156
-  2157 0EC4 60			        RTS
-  2158
-  2159 				;---------------------------------------
-  2160 0EC5			LOAD_GETDAT:
-  2161 				;---------------------------------------
-  2162 				    ; Definitions:
-  2163 				    ; HEAD = requested bytes that will be found in current cache (< 512 bytes)
-  2164 				    ; BODY = contiguous 512 byte sections. BODY = n * 512 bytes)
-  2165 				    ; TAIL = any bytes remaining after BODY (< 512 bytes)
-  2166
-  2167 0EC5 20 2B 0C		        JSR     GET_DOSDR
-  2168 0EC8 8E F0 0F		        STX     BINDCB+1
-  2169
-  2170 				    ; Get current status
-  2171 0ECB 8E 49 09		        STX     STADCB+1
-  2172 0ECE A9 48		        LDA     #<STADCB
-  2173 0ED0 A0 09		        LDY     #>STADCB
-  2174 0ED2 20 A5 07		        JSR     DOSIOV
-  2175
-  2176 				    ; Check if bytes requested BL < DVSTAT (bytes waiting in cache)
-  2177 0ED5 AD EA 02		        LDA     DVSTAT
-  2178 0ED8 CD 84 18		        CMP     BLL
-  2179 0EDB AD EB 02		        LDA     DVSTAT+1
-  2180 0EDE ED 85 18		        SBC     BLH
-  2181 0EE1 B0 4C		        BCS     GETDAT_OPT2     ; BL <= BW (bytes waiting)
-  2182
-  2183 0EE3			GETDAT_OPT1:
-  2184 				    ;--------------------------------
-  2185 				    ; Here if bytes requested > bytes 
-  2186 				    ; remaining in cache
-  2187 				    ;--------------------------------
-  2188
-  2189 				    ;-------------------------------
-  2190 				    ; Head = BW (bytes waiting)
-  2191 				    ;-------------------------------
-  2192 0EE3 AD EA 02		        LDA     DVSTAT
-  2193 0EE6 8D 86 18		        STA     HEADL
-  2194 0EE9 AD EB 02		        LDA     DVSTAT+1
-  2195 0EEC 8D 87 18		        STA     HEADH
-  2196
-  2197 				    ;-------------------------------
-  2198 				    ; Tail = (BL - HEAD) mod 512
-  2199 				    ;-------------------------------
-  2200 0EEF 38			        SEC
-  2201 0EF0 AD 84 18		        LDA     BLL
-  2202 0EF3 ED 86 18		        SBC     HEADL
-  2203 0EF6 29 FF		        AND     #$FF
-  2204 0EF8 8D 8A 18		        STA     TAILL
-  2205 0EFB AD 85 18		        LDA     BLH
-  2206 0EFE ED 87 18		        SBC     HEADH
-  2207 0F01 29 01		        AND     #$01
-  2208 0F03 8D 8B 18		        STA     TAILH
-  2209
-  2210 				    ;-----------------------------------
-  2211 				    ; Body = BL - HEAD - TAIL
-  2212 				    ;-----------------------------------
-  2213 				        ; 1. Body = BL - HEAD
-  2214 				        ;-------------------------------
-  2215 0F06 38			        SEC
-  2216 0F07 AD 84 18		        LDA     BLL
-  2217 0F0A ED 86 18		        SBC     HEADL
-  2218 0F0D 8D 88 18		        STA     BODYL
-  2219 0F10 AD 85 18		        LDA     BLH
-  2220 0F13 ED 87 18		        SBC     HEADH
-  2221 0F16 8D 89 18		        STA     BODYH
+  2153 				;---------------------------------------
+  2154 0EB5			LOAD_STRAD:
+  2155 				;---------------------------------------
+  2156 				    ; Save payload start address into STL2/STLH2.
+  2157 				    ; Otherwise it will get clobbered
+  2158 				    ; when reading payload end address.
+  2159 0EB5 AD 00 18		        LDA     RBUF
+  2160 0EB8 8D 8E 18		        STA     STL2
+  2161 0EBB AD 01 18		        LDA     RBUF+1
+  2162 0EBE 8D 8F 18		        STA     STH2
+  2163 0EC1 60			        RTS
+  2164
+  2165 				;---------------------------------------
+  2166 0EC2			LOAD_ENDAD:
+  2167 				;---------------------------------------
+  2168 				    ; Save payload end address
+  2169 0EC2 AD 8E 18		        LDA     STL2
+  2170 0EC5 8D 80 18		        STA     STL
+  2171 0EC8 AD 8F 18		        LDA     STH2
+  2172 0ECB 8D 81 18		        STA     STH
+  2173 				    
+  2174 0ECE AD 00 18		        LDA     RBUF
+  2175 0ED1 8D 82 18		        STA     ENL
+  2176 0ED4 AD 01 18		        LDA     RBUF+1
+  2177 0ED7 8D 83 18		        STA     ENH
+  2178 0EDA 60			        RTS
+  2179
+  2180 				;---------------------------------------
+  2181 0EDB			LOAD_BUFLEN:
+  2182 				;---------------------------------------
+  2183 				    ; Calculate buffer length (end-start+1)
+  2184
+  2185 				    ; Calc buffer size Lo
+  2186 0EDB AD 82 18		        LDA     ENL
+  2187 0EDE 38			        SEC
+  2188 0EDF ED 80 18		        SBC     STL
+  2189 0EE2 8D 84 18		        STA     BLL     ; Buffer Length Lo
+  2190
+  2191 				    ; Calc buffer size Hi
+  2192 0EE5 AD 83 18		        LDA     ENH     ; Calc buffer size Hi
+  2193 0EE8 ED 81 18		        SBC     STH
+  2194 0EEB 8D 85 18		        STA     BLH     ; Buffer Length Hi
+  2195
+  2196 				    ; Add 1
+  2197 0EEE 18			        CLC
+  2198 0EEF AD 84 18		        LDA     BLL
+  2199 0EF2 69 01		        ADC     #$01
+  2200 0EF4 8D 84 18		        STA     BLL
+  2201
+  2202 0EF7 AD 85 18		        LDA     BLH
+  2203 0EFA 69 00		        ADC     #$00    ; Take care of any carry
+  2204 0EFC 8D 85 18		        STA     BLH
+  2205
+  2206 0EFF 60			        RTS
+  2207
+  2208 				;---------------------------------------
+  2209 0F00			LOAD_GETDAT:
+  2210 				;---------------------------------------
+  2211 				    ; Definitions:
+  2212 				    ; HEAD = requested bytes that will be found in current cache (< 512 bytes)
+  2213 				    ; BODY = contiguous 512 byte sections. BODY = n * 512 bytes)
+  2214 				    ; TAIL = any bytes remaining after BODY (< 512 bytes)
+  2215
+  2216 0F00 20 2B 0C		        JSR     GET_DOSDR
+  2217 0F03 8E 27 10		        STX     BINDCB+1
+  2218
+  2219 0F06 20 02 10		        JSR     GETDAT_CHECK_EOF    ; Check EOF before proceeding
+  2220 0F09 10 01		        BPL     GETDAT_NEXT1        ; If true, then EOF found. Exit
+  2221 0F0B 60			        RTS
   2222
-  2223 				        ;-------------------------------
-  2224 				        ; 2. Body = Body - HEAD
-  2225 				        ;-------------------------------
-  2226 0F19 38			        SEC
-  2227 0F1A AD 88 18		        LDA     BODYL
-  2228 0F1D ED 8A 18		        SBC     TAILL
-  2229 0F20 8D 88 18		        STA     BODYL
-  2230 0F23 AD 89 18		        LDA     BODYH
-  2231 0F26 ED 8B 18		        SBC     TAILH
-  2232 0F29 8D 89 18		        STA     BODYH
-  2233
-  2234 0F2C 4C 49 0F		        JMP     GETDAT_READ
-  2235
-  2236 0F2F			GETDAT_OPT2:
-  2237 				    ;--------------------------------
-  2238 				    ; Here if bytes requested <= bytes 
-  2239 				    ; remaining in cache
-  2240 				    ;--------------------------------
-  2241 				    ; Head = BL, TAIL = BODY = 0
-  2242 				    ;--------------------------------
-  2243 0F2F AD 84 18		        LDA     BLL
-  2244 0F32 8D 86 18		        STA     HEADL
-  2245 0F35 AD 85 18		        LDA     BLH
-  2246 0F38 8D 87 18		        STA     HEADH
-  2247 0F3B A9 00		        LDA     #$00
-  2248 0F3D 8D 8A 18		        STA     TAILL
-  2249 0F40 8D 8B 18		        STA     TAILH
-  2250 0F43 8D 88 18		        STA     BODYL
-  2251 0F46 8D 89 18		        STA     BODYH
-  2252
-  2253 				;---------------------------------------
-  2254 0F49			GETDAT_READ:
-  2255 				;---------------------------------------
-  2256 				    ;---------------------------------------
-  2257 				    ; Read HEAD bytes
-  2258 				    ;---------------------------------------
-  2259 0F49 AD 86 18		        LDA     HEADL
-  2260 0F4C 8D 84 18		        STA     BLL
-  2261 0F4F AD 87 18		        LDA     HEADH
-  2262 0F52 8D 85 18		        STA     BLH
-  2263 0F55 20 86 0F		        JSR     GETDAT_DOSIOV
-  2264 0F58 10 01		        BPL     GETDAT_BODY ; Skip ahead if no problems
-  2265 0F5A 60			        RTS                 ; Bail if error
-  2266
-  2267 				    ;---------------------------------------
-  2268 				    ; Read BODY bytes
-  2269 				    ;---------------------------------------
-  2270 0F5B			GETDAT_BODY:
-  2271 0F5B AE 89 18		        LDX     BODYH
-  2272 0F5E			GETDAT_BODY_LOOP:
-  2273 0F5E F0 1A		        BEQ     GETDAT_TAIL ; Skip if less than a page to read
-  2274
-  2275 0F60 A9 00		        LDA     #$00
-  2276 0F62 8D 84 18		        STA     BLL         ; Buffer length
-  2277 0F65 A9 02		        LDA     #$02        ; 512 bytes at a time
-  2278 0F67 8D 85 18		        STA     BLH
-  2279
-  2280 0F6A 8A			        TXA                 ; Stash our loop index (X)
-  2281 0F6B 48			        PHA                 ; onto the stack
-  2282 0F6C 20 86 0F		        JSR     GETDAT_DOSIOV   
-  2283 0F6F 10 03		        BPL     @+          ; Skip ahead if no problems
-  2284 0F71 68			        PLA                 ; Here if problem. Clean up stack
-  2285 0F72 98			        TYA                 ; Reset N status flag before returning
-  2286 0F73 60			        RTS                 ; Bail if error
-  2287
-  2288 0F74 68			@:      PLA                 ; Retrieve our loop index
-  2289 0F75 AA			        TAX                 ; and xfer it back into X
-  2290 0F76 CA			        DEX                 ; -2 (we pull 0200 bytes at a time)
-  2291 0F77 CA			        DEX                 ; 
-  2292 0F78 D0 E4		        BNE     GETDAT_BODY_LOOP
-  2293
-  2294 0F7A			GETDAT_TAIL:
-  2295 				    ;---------------------------------------
-  2296 				    ; Read TAIL bytes
-  2297 				    ;---------------------------------------
-  2298 0F7A AD 8A 18		        LDA     TAILL
-  2299 0F7D 8D 84 18		        STA     BLL
-  2300 0F80 AD 8B 18		        LDA     TAILH
-  2301 0F83 8D 85 18		        STA     BLH
-  2302
+  2223 				    ; Check if bytes requested BL < DVSTAT (bytes waiting in cache)
+  2224 0F0C			GETDAT_NEXT1:
+  2225 0F0C AD EA 02		        LDA     DVSTAT
+  2226 0F0F CD 84 18		        CMP     BLL
+  2227 0F12 AD EB 02		        LDA     DVSTAT+1
+  2228 0F15 ED 85 18		        SBC     BLH
+  2229 0F18 B0 4C		        BCS     GETDAT_OPT2     ; BL <= BW (bytes waiting)
+  2230
+  2231 0F1A			GETDAT_OPT1:
+  2232 				    ;--------------------------------
+  2233 				    ; Here if bytes requested > bytes 
+  2234 				    ; remaining in cache
+  2235 				    ;------------------------P--------
+  2236
+  2237 				    ;-------------------------------
+  2238 				    ; Head = BW (bytes waiting)
+  2239 				    ;-------------------------------
+  2240 0F1A AD EA 02		        LDA     DVSTAT
+  2241 0F1D 8D 86 18		        STA     HEADL
+  2242 0F20 AD EB 02		        LDA     DVSTAT+1
+  2243 0F23 8D 87 18		        STA     HEADH
+  2244
+  2245 				    ;-------------------------------
+  2246 				    ; Tail = (BL - HEAD) mod 512
+  2247 				    ;-------------------------------
+  2248 0F26 38			        SEC
+  2249 0F27 AD 84 18		        LDA     BLL
+  2250 0F2A ED 86 18		        SBC     HEADL
+  2251 0F2D 29 FF		        AND     #$FF
+  2252 0F2F 8D 8A 18		        STA     TAILL
+  2253 0F32 AD 85 18		        LDA     BLH
+  2254 0F35 ED 87 18		        SBC     HEADH
+  2255 0F38 29 01		        AND     #$01
+  2256 0F3A 8D 8B 18		        STA     TAILH
+  2257
+  2258 				    ;-----------------------------------
+  2259 				    ; Body = BL - HEAD - TAIL
+  2260 				    ;-----------------------------------
+  2261 				        ; 1. Body = BL - HEAD
+  2262 				        ;-------------------------------
+  2263 0F3D 38			        SEC
+  2264 0F3E AD 84 18		        LDA     BLL
+  2265 0F41 ED 86 18		        SBC     HEADL
+  2266 0F44 8D 88 18		        STA     BODYL
+  2267 0F47 AD 85 18		        LDA     BLH
+  2268 0F4A ED 87 18		        SBC     HEADH
+  2269 0F4D 8D 89 18		        STA     BODYH
+  2270
+  2271 				        ;-------------------------------
+  2272 				        ; 2. Body = Body - HEAD
+  2273 				        ;-------------------------------
+  2274 0F50 38			        SEC
+  2275 0F51 AD 88 18		        LDA     BODYL
+  2276 0F54 ED 8A 18		        SBC     TAILL
+  2277 0F57 8D 88 18		        STA     BODYL
+  2278 0F5A AD 89 18		        LDA     BODYH
+  2279 0F5D ED 8B 18		        SBC     TAILH
+  2280 0F60 8D 89 18		        STA     BODYH
+  2281
+  2282 0F63 4C 80 0F		        JMP     GETDAT_READ
+  2283
+  2284 0F66			GETDAT_OPT2:
+  2285 				    ;--------------------------------
+  2286 				    ; Here if bytes requested <= bytes 
+  2287 				    ; remaining in cache
+  2288 				    ;--------------------------------
+  2289 				    ; Head = BL, TAIL = BODY = 0
+  2290 				    ;--------------------------------
+  2291 0F66 AD 84 18		        LDA     BLL
+  2292 0F69 8D 86 18		        STA     HEADL
+  2293 0F6C AD 85 18		        LDA     BLH
+  2294 0F6F 8D 87 18		        STA     HEADH
+  2295 0F72 A9 00		        LDA     #$00
+  2296 0F74 8D 8A 18		        STA     TAILL
+  2297 0F77 8D 8B 18		        STA     TAILH
+  2298 0F7A 8D 88 18		        STA     BODYL
+  2299 0F7D 8D 89 18		        STA     BODYH
+  2300
+  2301 				;---------------------------------------
+  2302 0F80			GETDAT_READ:
   2303 				;---------------------------------------
-  2304 0F86			GETDAT_DOSIOV:
-  2305 				;---------------------------------------
-  2306 				    ; Bail if BL = 0
-  2307 0F86 AD 84 18		        LDA     BLL
-  2308 0F89 D0 05		        BNE     @+
-  2309 0F8B AD 85 18		        LDA     BLH
-  2310 0F8E F0 5C		        BEQ     CHECK_EOF_DONE
-  2311
-  2312 0F90			@:
-  2313 				    ; SIO READ
-  2314 0F90 AD 80 18		        LDA     STL
-  2315 0F93 8D F3 0F		        STA     BINDCB+4    ; Start Address Lo
-  2316 0F96 AD 81 18		        LDA     STH
-  2317 0F99 8D F4 0F		        STA     BINDCB+5    ; Start Address Hi
-  2318 0F9C AD 84 18		        LDA     BLL
-  2319 0F9F 8D F7 0F		        STA     BINDCB+8    ; Buffer Size Lo
-  2320 0FA2 8D F9 0F		        STA     BINDCB+10
-  2321 0FA5 AD 85 18		        LDA     BLH
-  2322 0FA8 8D F8 0F		        STA     BINDCB+9    ; Buffer Size Hi
-  2323 0FAB 8D FA 0F		        STA     BINDCB+11
-  2324
-  2325 				    ;---------------------------------------
-  2326 				    ; Send Read request to SIO
-  2327 				    ;---------------------------------------
-  2328 0FAE A9 EF		        LDA     #<BINDCB
-  2329 0FB0 A0 0F		        LDY     #>BINDCB
-  2330 0FB2 20 A5 07		        JSR     DOSIOV
-  2331 0FB5 20 96 0A		        JSR     PRINT_ERROR
-  2332
-  2333 0FB8 18			        CLC
-  2334 0FB9 AD 80 18		        LDA     STL
-  2335 0FBC 6D 84 18		        ADC     BLL
-  2336 0FBF 8D 80 18		        STA     STL
-  2337
-  2338 0FC2 AD 81 18		        LDA     STH
-  2339 0FC5 6D 85 18		        ADC     BLH
-  2340 0FC8 8D 81 18		        STA     STH
+  2304 				    ;---------------------------------------
+  2305 				    ; Read HEAD bytes
+  2306 				    ;---------------------------------------
+  2307 0F80 AD 86 18		        LDA     HEADL
+  2308 0F83 8D 84 18		        STA     BLL
+  2309 0F86 AD 87 18		        LDA     HEADH
+  2310 0F89 8D 85 18		        STA     BLH
+  2311 0F8C 20 BD 0F		        JSR     GETDAT_DOSIOV
+  2312 0F8F 10 01		        BPL     GETDAT_BODY ; Skip ahead if no problems
+  2313 0F91 60			        RTS                 ; Bail if error
+  2314
+  2315 				    ;---------------------------------------
+  2316 				    ; Read BODY bytes
+  2317 				    ;---------------------------------------
+  2318 0F92			GETDAT_BODY:
+  2319 0F92 AE 89 18		        LDX     BODYH
+  2320 0F95			GETDAT_BODY_LOOP:
+  2321 0F95 F0 1A		        BEQ     GETDAT_TAIL ; Skip if less than a page to read
+  2322
+  2323 0F97 A9 00		        LDA     #$00
+  2324 0F99 8D 84 18		        STA     BLL         ; Buffer length
+  2325 0F9C A9 02		        LDA     #$02        ; 512 bytes at a time
+  2326 0F9E 8D 85 18		        STA     BLH
+  2327
+  2328 0FA1 8A			        TXA                 ; Stash our loop index (X)
+  2329 0FA2 48			        PHA                 ; onto the stack
+  2330 0FA3 20 BD 0F		        JSR     GETDAT_DOSIOV   
+  2331 0FA6 10 03		        BPL     @+          ; Skip ahead if no problems
+  2332 0FA8 68			        PLA                 ; Here if problem. Clean up stack
+  2333 0FA9 98			        TYA                 ; Reset N status flag before returning
+  2334 0FAA 60			        RTS                 ; Bail if error
+  2335
+  2336 0FAB 68			@:      PLA                 ; Retrieve our loop index
+  2337 0FAC AA			        TAX                 ; and xfer it back into X
+  2338 0FAD CA			        DEX                 ; -2 (we pull 0200 bytes at a time)
+  2339 0FAE CA			        DEX                 ; 
+  2340 0FAF D0 E4		        BNE     GETDAT_BODY_LOOP
   2341
-  2342 0FCB			GETDAT_CHECK_EOF:
-  2343 				    ; Get status (updates DVSTAT, DSTATS)
-  2344 0FCB AD 83 08		        LDA     GETDCB+1
-  2345 0FCE 8D 49 09		        STA     STADCB+1
-  2346 0FD1 A9 48		        LDA     #<STADCB
-  2347 0FD3 A0 09		        LDY     #>STADCB
-  2348 0FD5 20 A5 07		        JSR     DOSIOV
-  2349
-  2350 				    ; Return -1 if DVSTAT == $0000 and DVSTAT+3 == EOF
-  2351 0FD8 AD EA 02		        LDA     DVSTAT
-  2352 0FDB D0 0F		        BNE     CHECK_EOF_DONE
-  2353
-  2354 0FDD AD EB 02		        LDA     DVSTAT+1
-  2355 0FE0 D0 0A		        BNE     CHECK_EOF_DONE
-  2356
-  2357 0FE2 A9 88		        LDA     #EOF
-  2358 0FE4 CD ED 02		        CMP     DVSTAT+3        ; Is it EOF
-  2359 0FE7 D0 03		        BNE     CHECK_EOF_DONE  ; No? Go to success
-  2360 0FE9 A0 FF		        LDY     #$FF            ; Yes? Return -1
-  2361 0FEB 60			        RTS
-  2362
-  2363 0FEC			CHECK_EOF_DONE:
-  2364 0FEC A0 01		        LDY     #$01            ; Return success
-  2365 0FEE 60			        RTS
-  2366
-  2367 0FEF			BINDCB:
-  2368 0FEF 71			       .BYTE    DEVIDN      ; DDEVIC
-  2369 0FF0 FF			       .BYTE    $FF         ; DUNIT
-  2370 0FF1 52			       .BYTE    'R'         ; DCOMND
-  2371 0FF2 40			       .BYTE    $40         ; DSTATS
-  2372 0FF3 FF			       .BYTE    $FF         ; DBUFL
-  2373 0FF4 FF			       .BYTE    $FF         ; DBUFH
-  2374 0FF5 0F			       .BYTE    $0F         ; DTIMLO
-  2375 0FF6 00			       .BYTE    $00         ; DRESVD
-  2376 0FF7 FF			       .BYTE    $FF         ; DBYTL
-  2377 0FF8 FF			       .BYTE    $FF         ; DBYTH
-  2378 0FF9 FF			       .BYTE    $FF         ; DAUX1
-  2379 0FFA FF			       .BYTE    $FF         ; DAUX2
+  2342 0FB1			GETDAT_TAIL:
+  2343 				    ;---------------------------------------
+  2344 				    ; Read TAIL bytes
+  2345 				    ;---------------------------------------
+  2346 0FB1 AD 8A 18		        LDA     TAILL
+  2347 0FB4 8D 84 18		        STA     BLL
+  2348 0FB7 AD 8B 18		        LDA     TAILH
+  2349 0FBA 8D 85 18		        STA     BLH
+  2350
+  2351 				;---------------------------------------
+  2352 0FBD			GETDAT_DOSIOV:
+  2353 				;---------------------------------------
+  2354 				    ; Bail if BL = 0
+  2355 0FBD AD 84 18		        LDA     BLL
+  2356 0FC0 D0 05		        BNE     @+
+  2357 0FC2 AD 85 18		        LDA     BLH
+  2358 0FC5 F0 5C		        BEQ     CHECK_EOF_DONE
+  2359
+  2360 0FC7			@:
+  2361 				    ; SIO READ
+  2362 0FC7 AD 80 18		        LDA     STL
+  2363 0FCA 8D 2A 10		        STA     BINDCB+4    ; Start Address Lo
+  2364 0FCD AD 81 18		        LDA     STH
+  2365 0FD0 8D 2B 10		        STA     BINDCB+5    ; Start Address Hi
+  2366 0FD3 AD 84 18		        LDA     BLL
+  2367 0FD6 8D 2E 10		        STA     BINDCB+8    ; Buffer Size Lo
+  2368 0FD9 8D 30 10		        STA     BINDCB+10
+  2369 0FDC AD 85 18		        LDA     BLH
+  2370 0FDF 8D 2F 10		        STA     BINDCB+9    ; Buffer Size Hi
+  2371 0FE2 8D 31 10		        STA     BINDCB+11
+  2372
+  2373 				    ;---------------------------------------
+  2374 				    ; Send Read request to SIO
+  2375 				    ;---------------------------------------
+  2376 0FE5 A9 26		        LDA     #<BINDCB
+  2377 0FE7 A0 10		        LDY     #>BINDCB
+  2378 0FE9 20 A5 07		        JSR     DOSIOV
+  2379 0FEC 20 96 0A		        JSR     PRINT_ERROR
   2380
-  2381
-  2382 				;---------------------------------------
-  2383 0FFB			LOAD_CLOSE:
-  2384 				;---------------------------------------
-  2385 0FFB AD F0 0F		        LDA     BINDCB+1
-  2386 0FFE 8D 22 08		        STA     CLODCB+1
-  2387 1001 A9 21		        LDA     #<CLODCB
-  2388 1003 A0 08		        LDY     #>CLODCB
-  2389 1005 4C A5 07		        JMP     DOSIOV
-  2390
-  2391 				;---------------------------------------
-  2392 1008			LOAD_ERROR:
-  2393 				;---------------------------------------
-  2394 1008 A9 E0		        LDA     #<MISSING_FILE_STR
-  2395 100A A0 16		        LDY     #>MISSING_FILE_STR
-  2396 100C 4C 7B 0A		        JMP     PRINT_STRING
-  2397
-  2398 				;---------------------------------------
-  2399 100F			DO_LOCK:
-  2400 				;---------------------------------------
-  2401 100F A9 60		        LDA     #$60
-  2402 1011 8D C6 02		        STA     COLOR2
-  2403 1014 60			        RTS
+  2381 				    ;---------------------------------------
+  2382 				    ; Advance start address by buffer length
+  2383 				    ;---------------------------------------
+  2384 0FEF 18			        CLC
+  2385 0FF0 AD 80 18		        LDA     STL
+  2386 0FF3 6D 84 18		        ADC     BLL
+  2387 0FF6 8D 80 18		        STA     STL
+  2388
+  2389 0FF9 AD 81 18		        LDA     STH
+  2390 0FFC 6D 85 18		        ADC     BLH
+  2391 0FFF 8D 81 18		        STA     STH
+  2392
+  2393 1002			GETDAT_CHECK_EOF:
+  2394 				    ; Get status (updates DVSTAT, DSTATS)
+  2395 1002 AD 27 10		        LDA     BINDCB+1
+  2396 1005 8D 49 09		        STA     STADCB+1
+  2397 1008 A9 48		        LDA     #<STADCB
+  2398 100A A0 09		        LDY     #>STADCB
+  2399 100C 20 A5 07		        JSR     DOSIOV
+  2400
+  2401 				    ; Return -1 if DVSTAT == $0000 and DVSTAT+3 == EOF
+  2402 100F AD EA 02		        LDA     DVSTAT
+  2403 1012 D0 0F		        BNE     CHECK_EOF_DONE
   2404
-  2405 				;---------------------------------------
-  2406 1015			DO_LOGIN:
-  2407 				;---------------------------------------
-  2408 1015 A9 A0		        LDA     #$A0
-  2409 1017 8D C6 02		        STA     COLOR2
-  2410 101A 60			        RTS
-  2411
-  2412 101B			LOGIN_ERROR:
-  2413 101B A9 22		        LDA     #<LOGIN_ERROR_STR
-  2414 101D A0 10		        LDY     #>LOGIN_ERROR_STR
-  2415 101F 4C 7B 0A		        JMP     PRINT_STRING
-  2416
-  2417 1022			LOGIN_ERROR_STR:
-  2418 1022 4C 4F 47 49 4E 20 +         .BYTE   'LOGIN [N[n]:] <USERNAME> <PASSWORD>',EOL
-  2419
-  2420 				;---------------------------------------
-  2421 1046			DO_NPWD:
-  2422 				;---------------------------------------
-  2423 1046 A9 9B		        LDA     #EOL        ; Truncate buffer
-  2424 1048 8D 00 18		        STA     RBUF
-  2425
-  2426 104B 20 2B 0C		        JSR     GET_DOSDR   ; X will contain n in Nn:
-  2427 104E 8E 7E 10		        STX     PWDDCB+1
-  2428
-  2429 1051 A9 7D		        LDA     #<PWDDCB
-  2430 1053 A0 10		        LDY     #>PWDDCB
-  2431 1055 20 A5 07		        JSR     DOSIOV
-  2432 1058 20 96 0A		        JSR     PRINT_ERROR
-  2433
-  2434 				    ;---------------------------------------
-  2435 				    ; If we entered DO_NPWD from REMOUNT_DRIVE
-  2436 				    ; then scipt printing output
-  2437 				    ;---------------------------------------
-  2438 105B AD E8 16		        LDA     CMDPRV
-  2439 105E C9 03		        CMP     #CMD_IDX.DEL
-  2440 1060 F0 1A		        BEQ     NPWD_DONE
-  2441 1062 C9 0A		        CMP     #CMD_IDX.RENAME
-  2442 1064 F0 16		        BEQ     NPWD_DONE
-  2443
-  2444 1066			NPWD_LOOP:
-  2445 1066 A9 00		        LDA     #<RBUF
-  2446 1068 A0 18		        LDY     #>RBUF
-  2447 106A 20 7B 0A		        JSR     PRINT_STRING
+  2405 1014 AD EB 02		        LDA     DVSTAT+1
+  2406 1017 D0 0A		        BNE     CHECK_EOF_DONE
+  2407
+  2408 1019 A9 88		        LDA     #EOF
+  2409 101B CD ED 02		        CMP     DVSTAT+3        ; Is it EOF
+  2410 101E D0 03		        BNE     CHECK_EOF_DONE  ; No? Go to success
+  2411 1020 A0 FF		        LDY     #$FF            ; Yes? Return -1
+  2412 1022 60			        RTS
+  2413
+  2414 1023			CHECK_EOF_DONE:
+  2415 1023 A0 01		        LDY     #$01            ; Return success
+  2416 1025 60			        RTS
+  2417
+  2418 1026			BINDCB:
+  2419 1026 71			       .BYTE    DEVIDN      ; DDEVIC
+  2420 1027 FF			       .BYTE    $FF         ; DUNIT
+  2421 1028 52			       .BYTE    'R'         ; DCOMND
+  2422 1029 40			       .BYTE    $40         ; DSTATS
+  2423 102A FF			       .BYTE    $FF         ; DBUFL
+  2424 102B FF			       .BYTE    $FF         ; DBUFH
+  2425 102C 0F			       .BYTE    $0F         ; DTIMLO
+  2426 102D 00			       .BYTE    $00         ; DRESVD
+  2427 102E FF			       .BYTE    $FF         ; DBYTL
+  2428 102F FF			       .BYTE    $FF         ; DBYTH
+  2429 1030 FF			       .BYTE    $FF         ; DAUX1
+  2430 1031 FF			       .BYTE    $FF         ; DAUX2
+  2431
+  2432
+  2433 				;---------------------------------------
+  2434 1032			LOAD_CLOSE:
+  2435 				;---------------------------------------
+  2436 1032 AD 27 10		        LDA     BINDCB+1
+  2437 1035 8D 22 08		        STA     CLODCB+1
+  2438 1038 A9 21		        LDA     #<CLODCB
+  2439 103A A0 08		        LDY     #>CLODCB
+  2440 103C 4C A5 07		        JMP     DOSIOV
+  2441
+  2442 				;---------------------------------------
+  2443 103F			LOAD_ERROR:
+  2444 				;---------------------------------------
+  2445 103F A9 36		        LDA     #<MISSING_FILE_STR
+  2446 1041 A0 17		        LDY     #>MISSING_FILE_STR
+  2447 1043 4C 7B 0A		        JMP     PRINT_STRING
   2448
-  2449 106D A9 48		        LDA     #<STADCB
-  2450 106F A0 09		        LDY     #>STADCB
-  2451 1071 20 A5 07		        JSR     DOSIOV
-  2452 1074 20 96 0A		        JSR     PRINT_ERROR
-  2453
-  2454 				    ;---------------------------------------
-  2455 				    ; Loop if more data to read
-  2456 				    ;---------------------------------------
-  2457 1077 AD EB 02		        LDA     DVSTAT+1    ; Was there more to read (that is, was hi>0)?
-  2458 107A D0 EA		        BNE     NPWD_LOOP   ; If yes, then do it again
-  2459
-  2460 107C			NPWD_DONE:
-  2461 107C 60			        RTS
+  2449 				;---------------------------------------
+  2450 1046			DO_LOCK:
+  2451 				;---------------------------------------
+  2452 1046 A9 60		        LDA     #$60
+  2453 1048 8D C6 02		        STA     COLOR2
+  2454 104B 60			        RTS
+  2455
+  2456 				;---------------------------------------
+  2457 104C			DO_LOGIN:
+  2458 				;---------------------------------------
+  2459 104C A9 A0		        LDA     #$A0
+  2460 104E 8D C6 02		        STA     COLOR2
+  2461 1051 60			        RTS
   2462
-  2463 107D			PWDDCB:
-  2464 107D 71			        .BYTE      DEVIDN  ; DDEVIC
-  2465 107E FF			        .BYTE      $FF     ; DUNIT
-  2466 107F 30			        .BYTE      $30     ; DCOMND
-  2467 1080 40			        .BYTE      $40     ; DSTATS
-  2468 1081 00			        .BYTE      <RBUF   ; DBUFL
-  2469 1082 18			        .BYTE      >RBUF   ; DBUFH
-  2470 1083 1F			        .BYTE      $1F     ; DTIMLO
-  2471 1084 00			        .BYTE      $00     ; DRESVD
-  2472 1085 00			        .BYTE      $00     ; DBYTL
-  2473 1086 01			        .BYTE      $01     ; DBYTH
-  2474 1087 00			        .BYTE      $00     ; DAUX1
-  2475 1088 00			        .BYTE      $00     ; DAUX2
+  2463 1052			LOGIN_ERROR:
+  2464 1052 A9 59		        LDA     #<LOGIN_ERROR_STR
+  2465 1054 A0 10		        LDY     #>LOGIN_ERROR_STR
+  2466 1056 4C 7B 0A		        JMP     PRINT_STRING
+  2467
+  2468 1059			LOGIN_ERROR_STR:
+  2469 1059 4C 4F 47 49 4E 20 +         .BYTE   'LOGIN [N[n]:] <USERNAME> <PASSWORD>',EOL
+  2470
+  2471 				;---------------------------------------
+  2472 107D			DO_NPWD:
+  2473 				;---------------------------------------
+  2474 107D A9 9B		        LDA     #EOL        ; Truncate buffer
+  2475 107F 8D 00 18		        STA     RBUF
   2476
-  2477 				; End of DO_NPWD
-  2478 				;---------------------------------------
+  2477 1082 20 2B 0C		        JSR     GET_DOSDR   ; X will contain n in Nn:
+  2478 1085 8E B5 10		        STX     PWDDCB+1
   2479
-  2480 				;---------------------------------------
-  2481 1089			DO_NTRANS:
-  2482 				;---------------------------------------
-  2483 1089 AE 85 0B		        LDX     CMDSEP          ; Check if there's any args
-  2484 108C F0 49		        BEQ     NTRANS_ERROR    ; No. Show usage and quit
-  2485
-  2486 108E AD E6 16		        LDA     DOSDR           ; Go with current drive for now
-  2487 1091 8D 01 11		        STA     NTRDCB+1        ; it'll be overwritten later if req'd
-  2488
-  2489 				    ;---------------------------------------
-  2490 				    ; Check for argc = 2
-  2491 				    ;---------------------------------------
-  2492 1094 AC 85 0B		        LDY     CMDSEP          ; Stash offset to arg1 in Y
-  2493 1097 AE 86 0B		        LDX     CMDSEP+1        ; Is there an arg2?
-  2494 109A F0 21		        BEQ     PARSE_MODE      ; No. parse arg1 as mode (0-3)
-  2495
-  2496 				    ;---------------------------------------
-  2497 				    ; Here if argc = 2 (arg1 = Nn: arg2 = mode)
-  2498 				    ;---------------------------------------
-  2499 109C AE 85 0B		        LDX     CMDSEP          ; Get offset to arg1 (Nn:)
-  2500 109F BD 82 05		        LDA     LNBUF,X         ; Is arg1's (N[n]:) 1st char = 'N'?
-  2501 10A2 C9 4E		        CMP     #'N'            ;
-  2502 10A4 D0 31		        BNE     NTRANS_ERROR    ; No? Then quit
-  2503 10A6 BD 83 05		        LDA     LNBUF+1,X
-  2504 10A9 C9 3A		        CMP     #':'            ; Is arg1's (N[n]:) 2nd char = ':'?
-  2505 10AB F0 10		        BEQ     PARSE_MODE      ; Yes, stick with default drive
-  2506
+  2480 1088 A9 B4		        LDA     #<PWDDCB
+  2481 108A A0 10		        LDY     #>PWDDCB
+  2482 108C 20 A5 07		        JSR     DOSIOV
+  2483 108F 20 96 0A		        JSR     PRINT_ERROR
+  2484
+  2485 				    ;---------------------------------------
+  2486 				    ; If we entered DO_NPWD from REMOUNT_DRIVE
+  2487 				    ; then scipt printing output
+  2488 				    ;---------------------------------------
+  2489 1092 AD 3E 17		        LDA     CMDPRV
+  2490 1095 C9 03		        CMP     #CMD_IDX.DEL
+  2491 1097 F0 1A		        BEQ     NPWD_DONE
+  2492 1099 C9 0A		        CMP     #CMD_IDX.RENAME
+  2493 109B F0 16		        BEQ     NPWD_DONE
+  2494
+  2495 109D			NPWD_LOOP:
+  2496 109D A9 00		        LDA     #<RBUF
+  2497 109F A0 18		        LDY     #>RBUF
+  2498 10A1 20 7B 0A		        JSR     PRINT_STRING
+  2499
+  2500 10A4 A9 48		        LDA     #<STADCB
+  2501 10A6 A0 09		        LDY     #>STADCB
+  2502 10A8 20 A5 07		        JSR     DOSIOV
+  2503 10AB 20 96 0A		        JSR     PRINT_ERROR
+  2504
+  2505 				    ;---------------------------------------
+  2506 				    ; Loop if more data to read
   2507 				    ;---------------------------------------
-  2508 				    ; Parse drive number
-  2509 				    ;---------------------------------------
-  2510 10AD C9 31		        CMP     #'1'            ; Quit if n in Nn not 1..4
-  2511 10AF 90 26		        BCC     NTRANS_ERROR    ; Quit if < '1'
-  2512 10B1 C9 39		        CMP     #'9'
-  2513 10B3 B0 22		        BCS     NTRANS_ERROR    ; Quit if >= '9'
-  2514 10B5 49 30		        EOR     #%00110000
-  2515 10B7 8D 01 11		        STA     NTRDCB+1
-  2516 10BA AC 86 0B		        LDY     CMDSEP+1
-  2517
-  2518 				    ;---------------------------------------
-  2519 				    ; Confirm valid parameter
-  2520 				    ;---------------------------------------
-  2521 10BD			PARSE_MODE:
-  2522 10BD B9 82 05		        LDA     LNBUF,Y         ; Quit if mode not 0..3
-  2523 10C0 C9 30		        CMP     #'0'
-  2524 10C2 90 13		        BCC     NTRANS_ERROR
-  2525 10C4 C9 34		        CMP     #'4'
-  2526 10C6 B0 0F		        BCS     NTRANS_ERROR
-  2527 10C8 49 30		        EOR     #%00110000      ; Here if valid parameter
-  2528 10CA 8D 0B 11		        STA     NTRDCB+11       ; Assign parameter to DCB
-  2529
-  2530 				    ;---------------------------------------
-  2531 				    ; Call SIO
-  2532 				    ;---------------------------------------
-  2533 10CD			NTRANS_CALL:
-  2534 10CD A9 00		        LDA     #<NTRDCB
-  2535 10CF A0 11		        LDY     #>NTRDCB
-  2536 10D1 20 A5 07		        JSR     DOSIOV
-  2537 10D4 4C 96 0A		        JMP     PRINT_ERROR
-  2538
-  2539 10D7			NTRANS_ERROR:
-  2540 10D7 A9 DE		        LDA     #<NTRANS_ERROR_STR
-  2541 10D9 A0 10		        LDY     #>NTRANS_ERROR_STR
-  2542 10DB 4C 7B 0A		        JMP     PRINT_STRING
-  2543
-  2544 10DE			NTRANS_ERROR_STR:
-  2545 10DE 4D 4F 44 45 3F 20 +         .BYTE   'MODE? 0=NONE, 1=CR, 2=LF, 3=CR/LF',EOL
+  2508 10AE AD EB 02		        LDA     DVSTAT+1    ; Was there more to read (that is, was hi>0)?
+  2509 10B1 D0 EA		        BNE     NPWD_LOOP   ; If yes, then do it again
+  2510
+  2511 10B3			NPWD_DONE:
+  2512 10B3 60			        RTS
+  2513
+  2514 10B4			PWDDCB:
+  2515 10B4 71			        .BYTE   DEVIDN      ; DDEVIC
+  2516 10B5 FF			        .BYTE   $FF         ; DUNIT
+  2517 10B6 30			        .BYTE   $30         ; DCOMND
+  2518 10B7 40			        .BYTE   $40         ; DSTATS
+  2519 10B8 00			        .BYTE   <RBUF       ; DBUFL
+  2520 10B9 18			        .BYTE   >RBUF       ; DBUFH
+  2521 10BA 1F			        .BYTE   $1F         ; DTIMLO
+  2522 10BB 00			        .BYTE   $00         ; DRESVD
+  2523 10BC 00			        .BYTE   $00         ; DBYTL
+  2524 10BD 01			        .BYTE   $01         ; DBYTH
+  2525 10BE 00			        .BYTE   $00         ; DAUX1
+  2526 10BF 00			        .BYTE   $00         ; DAUX2
+  2527
+  2528 				; End of DO_NPWD
+  2529 				;---------------------------------------
+  2530
+  2531 				;---------------------------------------
+  2532 10C0			DO_NTRANS:
+  2533 				;---------------------------------------
+  2534 10C0 AE 85 0B		        LDX     CMDSEP          ; Check if there's any args
+  2535 10C3 F0 49		        BEQ     NTRANS_ERROR    ; No. Show usage and quit
+  2536
+  2537 10C5 AD 3C 17		        LDA     DOSDR           ; Go with current drive for now
+  2538 10C8 8D 38 11		        STA     NTRDCB+1        ; it'll be overwritten later if req'd
+  2539
+  2540 				    ;---------------------------------------
+  2541 				    ; Check for argc = 2
+  2542 				    ;---------------------------------------
+  2543 10CB AC 85 0B		        LDY     CMDSEP          ; Stash offset to arg1 in Y
+  2544 10CE AE 86 0B		        LDX     CMDSEP+1        ; Is there an arg2?
+  2545 10D1 F0 21		        BEQ     PARSE_MODE      ; No. parse arg1 as mode (0-3)
   2546
-  2547 1100			NTRDCB:
-  2548 1100 71			        .BYTE   DEVIDN  ; DDEVIC
-  2549 1101 FF			        .BYTE   $FF     ; DUNIT
-  2550 1102 54			        .BYTE   'T'     ; DCOMND
-  2551 1103 00			        .BYTE   $00     ; DSTATS
-  2552 1104 00			        .BYTE   $00     ; DBUFL
-  2553 1105 00			        .BYTE   $00     ; DBUFH
-  2554 1106 1F			        .BYTE   $1F     ; DTIMLO
-  2555 1107 00			        .BYTE   $00     ; DRESVD
-  2556 1108 00			        .BYTE   $00     ; DBYTL
-  2557 1109 00			        .BYTE   $00     ; DBYTH
-  2558 110A 00			        .BYTE   $00     ; DAUX1
-  2559 110B 00			        .BYTE   $00     ; DAUX2
-  2560
-  2561 				; End of DO_NTRANS
-  2562 				;---------------------------------------
-  2563
-  2564 				;---------------------------------------
-  2565 110C			DO_AUTORUN:
-  2566 				;---------------------------------------
-  2567 				    ; Change URL stored in AUTORUN app key
-  2568 				    ;-----------------------------------
-  2569 110C AD 85 0B		        LDA     CMDSEP          ; Check if there's any arg
-  2570 110F D0 07		        BNE     AUTORUN_NEXT1   ; If arg found, skip ahead
-  2571
-  2572 				    ; Here if no command line arg found
-  2573 				    ; Print error message and exit
-  2574 1111 A9 4B		        LDA     #<AUTORUN_ERROR_STR
-  2575 1113 A0 11		        LDY     #>AUTORUN_ERROR_STR
-  2576 1115 4C 7B 0A		        JMP     PRINT_STRING
-  2577
-  2578 1118			AUTORUN_NEXT1:
-  2579 				    ; Point to start of arg on command line
-  2580 1118 18			        CLC
-  2581 1119 65 F3		        ADC     INBUFF          ; INBUFF += CMDSEP
-  2582 111B 85 F3		        STA     INBUFF
-  2583 111D 8D 7F 11		        STA     APPKEYWRITEDCB+4
-  2584
-  2585 				    ; Open app key
-  2586 1120 A9 01		        LDA     #$01            ; Open for write (1)
-  2587 1122 8D 55 11		        STA     AUTORUN_APPKEY+4
-  2588 1125 A9 63		        LDA     #<APPKEYOPENDCB
-  2589 1127 A0 11		        LDY     #>APPKEYOPENDCB
-  2590 1129 20 A5 07		        JSR     DOSIOV
-  2591
-  2592 				    ; Find length of URL (arg1)
-  2593 112C A0 FF		        LDY     #$FF            ; Init strlen
-  2594 112E			AUTORUN_LOOP1
-  2595 112E C8			        INY                     ; Incr strlen
-  2596 112F B1 F3		        LDA     (INBUFF),Y
-  2597 1131 C9 9B		        CMP     #EOL            ; At end of string?
-  2598 1133 D0 F9		        BNE     AUTORUN_LOOP1   ; No. Keep counting
-  2599
-  2600 1135 A9 0A		        LDA     #LF             ; Convert EOL to LF
-  2601 1137 91 F3		        STA     (INBUFF),Y
-  2602 1139 C8			        INY                     ; One more for strlen
-  2603
-  2604 113A			AUTORUN_NEXT2: 
-  2605 				    ; Write app key
-  2606 113A 8C 85 11		        STY     APPKEYWRITEDCB+10   ; Y = strlen
-  2607 113D A9 7B		        LDA     #<APPKEYWRITEDCB
-  2608 113F A0 11		        LDY     #>APPKEYWRITEDCB
-  2609 1141 20 A5 07		        JSR     DOSIOV
-  2610
-  2611 				    ; Close app key
-  2612 1144 A9 57		        LDA     #<APPKEYCLOSEDCB
-  2613 1146 A0 11		        LDY     #>APPKEYCLOSEDCB
-  2614 1148 4C A5 07		        JMP     DOSIOV
-  2615
-  2616 114B			AUTORUN_ERROR_STR:
-  2617 114B 50 41 54 48 3F 9B	        .BYTE   'PATH?',EOL
-  2618
-  2619 1151			AUTORUN_APPKEY:
-  2620 1151 79 DB		        .WORD   $DB79           ; creator ID
-  2621 1153 00			        .BYTE   $00             ; app ID
-  2622 1154 00			        .BYTE   $00             ; key ID
-  2623 1155 00			        .BYTE   $00             ; read or write mode
-  2624 1156 00			        .BYTE   $00             ; unused
-  2625
-  2626 1157			APPKEYCLOSEDCB:
-  2627 1157 70			        .BYTE   $70             ; DDEVIC
-  2628 1158 01			        .BYTE   $01             ; DUNIT
-  2629 1159 DB			        .BYTE   $DB             ; DCOMND
-  2630 115A 00			        .BYTE   $00             ; DSTATS
-  2631 115B 00			        .BYTE   $00             ; DBUFL
-  2632 115C 00			        .BYTE   $00             ; DBUFH
-  2633 115D 0F			        .BYTE   $0F             ; DTIMLO
-  2634 115E 00			        .BYTE   $00             ; DRESVD
-  2635 115F 00			        .BYTE   $00             ; DBYTL
-  2636 1160 00			        .BYTE   $00             ; DBYTH
-  2637 1161 00			        .BYTE   $00             ; DAUX1
-  2638 1162 00			        .BYTE   $00             ; DAUX2
-  2639
-  2640 1163			APPKEYOPENDCB:
-  2641 1163 70			        .BYTE   $70             ; DDEVIC
-  2642 1164 01			        .BYTE   $01             ; DUNIT
-  2643 1165 DC			        .BYTE   $DC             ; DCOMND
-  2644 1166 80			        .BYTE   $80             ; DSTATS
-  2645 1167 51			        .BYTE   <AUTORUN_APPKEY ; DBUFL
-  2646 1168 11			        .BYTE   >AUTORUN_APPKEY ; DBUFH
-  2647 1169 0F			        .BYTE   $0F             ; DTIMLO
-  2648 116A 00			        .BYTE   $00             ; DRESVD
-  2649 116B 06			        .BYTE   $06             ; DBYTL
-  2650 116C 00			        .BYTE   $00             ; DBYTH
-  2651 116D 00			        .BYTE   $00             ; DAUX1
-  2652 116E 00			        .BYTE   $00             ; DAUX2
-  2653
-  2654 116F			APPKEYREADDCB:
-  2655 116F 70			        .BYTE   $70             ; DDEVIC
-  2656 1170 01			        .BYTE   $01             ; DUNIT
-  2657 1171 DD			        .BYTE   $DD             ; DCOMND
-  2658 1172 40			        .BYTE   $40             ; DSTATS
-  2659 1173 82			        .BYTE   <LNBUF          ; DBUFL
-  2660 1174 05			        .BYTE   >LNBUF          ; DBUFH
-  2661 1175 01			        .BYTE   $01             ; DTIMLO - minimize timeout
-  2662 1176 00			        .BYTE   $00             ; DRESVD
-  2663 1177 40			        .BYTE   MAX_APPKEY_LEN  ; DBYTL
-  2664 1178 00			        .BYTE   $00             ; DBYTH
-  2665 1179 00			        .BYTE   $00             ; DAUX1
-  2666 117A 00			        .BYTE   $00             ; DAUX2
-  2667
-  2668 117B			APPKEYWRITEDCB:
-  2669 117B 70			        .BYTE   $70             ; DDEVIC
-  2670 117C 01			        .BYTE   $01             ; DUNIT
-  2671 117D DE			        .BYTE   $DE             ; DCOMND
-  2672 117E 80			        .BYTE   $80             ; DSTATS
-  2673 117F FF			        .BYTE   $FF             ; DBUFL
-  2674 1180 05			        .BYTE   $05             ; DBUFH (expect page 5)
-  2675 1181 0F			        .BYTE   $0F             ; DTIMLO
-  2676 1182 00			        .BYTE   $00             ; DRESVD
-  2677 1183 40			        .BYTE   MAX_APPKEY_LEN  ; DBYTL
-  2678 1184 00			        .BYTE   $00             ; DBYTH
-  2679 1185 FF			        .BYTE   $FF             ; DAUX1 (# actual bytes)
-  2680 1186 00			        .BYTE   $00             ; DAUX2
-  2681
-  2682 				;---------------------------------------
-  2683 1187			SUBMIT_AUTORUN:
-  2684 				;---------------------------------------
-  2685 				    ; At initial DOS boot, read URL for 
-  2686 				    ; app key file from SD card's
-  2687 				    ; FujiNet folder.
-  2688 				    ;
-  2689 				    ; filename: db790000.key
-  2690 				    ; contents: url to a batch file
-  2691 				    ;---------------------------------------
-  2692 1187 20 64 0A		        JSR     LDBUFA
-  2693
-  2694 				    ; Open app key
-  2695 118A A9 00		        LDA     #$00            ; Open for read
-  2696 118C 8D 55 11		        STA     AUTORUN_APPKEY+4
-  2697 118F A9 63		        LDA     #<APPKEYOPENDCB
-  2698 1191 A0 11		        LDY     #>APPKEYOPENDCB
-  2699 1193 20 A5 07		        JSR     DOSIOV
-  2700
-  2701 1196 C0 01		        CPY     #$01            ; Was open successful?
-  2702 1198 F0 01		        BEQ     AUTOSUB_NEXT    ; Yes. Continue.
-  2703 119A 60			        RTS                     ; No. Exit
-  2704
-  2705 119B			AUTOSUB_NEXT:
-  2706 				    ; Read app key
-  2707 119B A9 6F		        LDA     #<APPKEYREADDCB
-  2708 119D A0 11		        LDY     #>APPKEYREADDCB
-  2709 119F 20 A5 07		        JSR     DOSIOV
-  2710
-  2711 				    ; Close app key
-  2712 11A2 A9 57		        LDA     #<APPKEYCLOSEDCB
-  2713 11A4 A0 11		        LDY     #>APPKEYCLOSEDCB
-  2714 11A6 20 A5 07		        JSR     DOSIOV
-  2715
-  2716 				    ; Does the returned URL contain something?
-  2717 11A9 AE 82 05		        LDX     LNBUF
-  2718 11AC D0 01		        BNE     AUTORUN_CALL_SUBMIT
-  2719 11AE 60			        RTS
-  2720
-  2721 11AF			AUTORUN_CALL_SUBMIT:
-  2722 				    ; Replace end-of-line in buffer with null terminator
-  2723 11AF CA			        DEX                     ; Move index back 1 position
-  2724 11B0 A9 00		        LDA     #$00            ;
-  2725 11B2 9D 84 05		        STA     LNBUF+2,X       ; Write null-terminator 
-  2726 11B5 A9 02		        LDA     #$02            ; Change arg1 location...
-  2727 11B7 8D 85 0B		        STA     CMDSEP          ;  to point to filename
-  2728 11BA D0 0C		        BNE     SUBMIT_NEXT1    ; Fall through
-  2729
-  2730 				;---------------------------------------
-  2731 11BC			DO_SUBMIT:
-  2732 				;---------------------------------------
-  2733 11BC AD 85 0B		        LDA     CMDSEP
-  2734 11BF D0 07		        BNE     SUBMIT_NEXT1
-  2735
-  2736 				    ; Filename required
-  2737 11C1 A9 E0		        LDA     #<MISSING_FILE_STR
-  2738 11C3 A0 16		        LDY     #>MISSING_FILE_STR
-  2739 11C5 4C 7B 0A		        JMP     PRINT_STRING
+  2547 				    ;---------------------------------------
+  2548 				    ; Here if argc = 2 (arg1 = Nn: arg2 = mode)
+  2549 				    ;---------------------------------------
+  2550 10D3 AE 85 0B		        LDX     CMDSEP          ; Get offset to arg1 (Nn:)
+  2551 10D6 BD 82 05		        LDA     LNBUF,X         ; Is arg1's (N[n]:) 1st char = 'N'?
+  2552 10D9 C9 4E		        CMP     #'N'            ;
+  2553 10DB D0 31		        BNE     NTRANS_ERROR    ; No? Then quit
+  2554 10DD BD 83 05		        LDA     LNBUF+1,X
+  2555 10E0 C9 3A		        CMP     #':'            ; Is arg1's (N[n]:) 2nd char = ':'?
+  2556 10E2 F0 10		        BEQ     PARSE_MODE      ; Yes, stick with default drive
+  2557
+  2558 				    ;---------------------------------------
+  2559 				    ; Parse drive number
+  2560 				    ;---------------------------------------
+  2561 10E4 C9 31		        CMP     #'1'            ; Quit if n in Nn not 1..4
+  2562 10E6 90 26		        BCC     NTRANS_ERROR    ; Quit if < '1'
+  2563 10E8 C9 39		        CMP     #'9'
+  2564 10EA B0 22		        BCS     NTRANS_ERROR    ; Quit if >= '9'
+  2565 10EC 49 30		        EOR     #%00110000
+  2566 10EE 8D 38 11		        STA     NTRDCB+1
+  2567 10F1 AC 86 0B		        LDY     CMDSEP+1
+  2568
+  2569 				    ;---------------------------------------
+  2570 				    ; Confirm valid parameter
+  2571 				    ;---------------------------------------
+  2572 10F4			PARSE_MODE:
+  2573 10F4 B9 82 05		        LDA     LNBUF,Y         ; Quit if mode not 0..3
+  2574 10F7 C9 30		        CMP     #'0'
+  2575 10F9 90 13		        BCC     NTRANS_ERROR
+  2576 10FB C9 34		        CMP     #'4'
+  2577 10FD B0 0F		        BCS     NTRANS_ERROR
+  2578 10FF 49 30		        EOR     #%00110000      ; Here if valid parameter
+  2579 1101 8D 42 11		        STA     NTRDCB+11       ; Assign parameter to DCB
+  2580
+  2581 				    ;---------------------------------------
+  2582 				    ; Call SIO
+  2583 				    ;---------------------------------------
+  2584 1104			NTRANS_CALL:
+  2585 1104 A9 37		        LDA     #<NTRDCB
+  2586 1106 A0 11		        LDY     #>NTRDCB
+  2587 1108 20 A5 07		        JSR     DOSIOV
+  2588 110B 4C 96 0A		        JMP     PRINT_ERROR
+  2589
+  2590 110E			NTRANS_ERROR:
+  2591 110E A9 15		        LDA     #<NTRANS_ERROR_STR
+  2592 1110 A0 11		        LDY     #>NTRANS_ERROR_STR
+  2593 1112 4C 7B 0A		        JMP     PRINT_STRING
+  2594
+  2595 1115			NTRANS_ERROR_STR:
+  2596 1115 4D 4F 44 45 3F 20 +         .BYTE   'MODE? 0=NONE, 1=CR, 2=LF, 3=CR/LF',EOL
+  2597
+  2598 1137			NTRDCB:
+  2599 1137 71			        .BYTE   DEVIDN  ; DDEVIC
+  2600 1138 FF			        .BYTE   $FF     ; DUNIT
+  2601 1139 54			        .BYTE   'T'     ; DCOMND
+  2602 113A 00			        .BYTE   $00     ; DSTATS
+  2603 113B 00			        .BYTE   $00     ; DBUFL
+  2604 113C 00			        .BYTE   $00     ; DBUFH
+  2605 113D 1F			        .BYTE   $1F     ; DTIMLO
+  2606 113E 00			        .BYTE   $00     ; DRESVD
+  2607 113F 00			        .BYTE   $00     ; DBYTL
+  2608 1140 00			        .BYTE   $00     ; DBYTH
+  2609 1141 00			        .BYTE   $00     ; DAUX1
+  2610 1142 00			        .BYTE   $00     ; DAUX2
+  2611
+  2612 				; End of DO_NTRANS
+  2613 				;---------------------------------------
+  2614
+  2615 				;---------------------------------------
+  2616 1143			DO_AUTORUN:
+  2617 				;---------------------------------------
+  2618 				    ; Change URL stored in AUTORUN app key
+  2619 				    ;-----------------------------------
+  2620 1143 AD 85 0B		        LDA     CMDSEP          ; Check if there's any arg
+  2621 1146 D0 07		        BNE     AUTORUN_NEXT1   ; If arg found, skip ahead
+  2622
+  2623 				    ; Here if no command line arg found
+  2624 				    ; Print error message and exit
+  2625 1148 A9 90		        LDA     #<AUTORUN_ERROR_STR
+  2626 114A A0 11		        LDY     #>AUTORUN_ERROR_STR
+  2627 114C 4C 7B 0A		        JMP     PRINT_STRING
+  2628
+  2629 114F			AUTORUN_NEXT1:
+  2630 				    ; Point to start of arg on command line
+  2631 114F 18			        CLC
+  2632 1150 65 F3		        ADC     INBUFF          ; INBUFF += CMDSEP
+  2633 1152 85 F3		        STA     INBUFF
+  2634 1154 8D C4 11		        STA     APPKEYWRITEDCB+4
+  2635
+  2636 				    ; If "AUTORUN ?" Then abuse AUTORUN_SUBMIT to print appkey
+  2637 1157 A0 00		        LDY     #$00
+  2638 1159 A9 3F		        LDA     #'?'
+  2639 115B 8D 91 18		        STA     AUTORUN_QUERY_FLG
+  2640 115E D1 F3		        CMP     (INBUFF),Y
+  2641 1160 F0 6A		        BEQ     SUBMIT_AUTORUN
+  2642
+  2643 				    ; Open app key
+  2644 1162 A9 01		        LDA     #$01            ; Open for write (1)
+  2645 1164 8D 91 18		        STA     AUTORUN_QUERY_FLG
+  2646 1167 8D 9A 11		        STA     AUTORUN_APPKEY+4
+  2647 116A A9 A8		        LDA     #<APPKEYOPENDCB
+  2648 116C A0 11		        LDY     #>APPKEYOPENDCB
+  2649 116E 20 A5 07		        JSR     DOSIOV
+  2650
+  2651 				    ; Find length of URL (arg1)
+  2652 1171 A0 FF		        LDY     #$FF            ; Init strlen
+  2653 1173			AUTORUN_LOOP1
+  2654 1173 C8			        INY                     ; Incr strlen
+  2655 1174 B1 F3		        LDA     (INBUFF),Y
+  2656 1176 C9 9B		        CMP     #EOL            ; At end of string?
+  2657 1178 D0 F9		        BNE     AUTORUN_LOOP1   ; No. Keep counting
+  2658
+  2659 117A A9 0A		        LDA     #LF             ; Convert EOL to LF
+  2660 117C 91 F3		        STA     (INBUFF),Y
+  2661 117E C8			        INY                     ; One more for strlen
+  2662
+  2663 117F			AUTORUN_NEXT2: 
+  2664 				    ; Write app key
+  2665 117F 8C CA 11		        STY     APPKEYWRITEDCB+10   ; Y = strlen
+  2666 1182 A9 C0		        LDA     #<APPKEYWRITEDCB
+  2667 1184 A0 11		        LDY     #>APPKEYWRITEDCB
+  2668 1186 20 A5 07		        JSR     DOSIOV
+  2669
+  2670 				    ; Close app key
+  2671 1189 A9 9C		        LDA     #<APPKEYCLOSEDCB
+  2672 118B A0 11		        LDY     #>APPKEYCLOSEDCB
+  2673 118D 4C A5 07		        JMP     DOSIOV
+  2674
+  2675 1190			AUTORUN_ERROR_STR:
+  2676 1190 50 41 54 48 3F 9B	        .BYTE   'PATH?',EOL
+  2677
+  2678 1196			AUTORUN_APPKEY:
+  2679 1196 79 DB		        .WORD   $DB79           ; creator ID
+  2680 1198 00			        .BYTE   $00             ; app ID
+  2681 1199 00			        .BYTE   $00             ; key ID
+  2682 119A 00			        .BYTE   $00             ; read or write mode
+  2683 119B 00			        .BYTE   $00             ; unused
+  2684
+  2685 119C			APPKEYCLOSEDCB:
+  2686 119C 70			        .BYTE   $70             ; DDEVIC
+  2687 119D 01			        .BYTE   $01             ; DUNIT
+  2688 119E DB			        .BYTE   $DB             ; DCOMND
+  2689 119F 00			        .BYTE   $00             ; DSTATS
+  2690 11A0 00			        .BYTE   $00             ; DBUFL
+  2691 11A1 00			        .BYTE   $00             ; DBUFH
+  2692 11A2 0F			        .BYTE   $0F             ; DTIMLO
+  2693 11A3 00			        .BYTE   $00             ; DRESVD
+  2694 11A4 00			        .BYTE   $00             ; DBYTL
+  2695 11A5 00			        .BYTE   $00             ; DBYTH
+  2696 11A6 00			        .BYTE   $00             ; DAUX1
+  2697 11A7 00			        .BYTE   $00             ; DAUX2
+  2698
+  2699 11A8			APPKEYOPENDCB:
+  2700 11A8 70			        .BYTE   $70             ; DDEVIC
+  2701 11A9 01			        .BYTE   $01             ; DUNIT
+  2702 11AA DC			        .BYTE   $DC             ; DCOMND
+  2703 11AB 80			        .BYTE   $80             ; DSTATS
+  2704 11AC 96			        .BYTE   <AUTORUN_APPKEY ; DBUFL
+  2705 11AD 11			        .BYTE   >AUTORUN_APPKEY ; DBUFH
+  2706 11AE 0F			        .BYTE   $0F             ; DTIMLO
+  2707 11AF 00			        .BYTE   $00             ; DRESVD
+  2708 11B0 06			        .BYTE   $06             ; DBYTL
+  2709 11B1 00			        .BYTE   $00             ; DBYTH
+  2710 11B2 00			        .BYTE   $00             ; DAUX1
+  2711 11B3 00			        .BYTE   $00             ; DAUX2
+  2712
+  2713 11B4			APPKEYREADDCB:
+  2714 11B4 70			        .BYTE   $70             ; DDEVIC
+  2715 11B5 01			        .BYTE   $01             ; DUNIT
+  2716 11B6 DD			        .BYTE   $DD             ; DCOMND
+  2717 11B7 40			        .BYTE   $40             ; DSTATS
+  2718 11B8 82			        .BYTE   <LNBUF          ; DBUFL
+  2719 11B9 05			        .BYTE   >LNBUF          ; DBUFH
+  2720 11BA 01			        .BYTE   $01             ; DTIMLO - minimize timeout
+  2721 11BB 00			        .BYTE   $00             ; DRESVD
+  2722 11BC 40			        .BYTE   MAX_APPKEY_LEN  ; DBYTL
+  2723 11BD 00			        .BYTE   $00             ; DBYTH
+  2724 11BE 00			        .BYTE   $00             ; DAUX1
+  2725 11BF 00			        .BYTE   $00             ; DAUX2
+  2726
+  2727 11C0			APPKEYWRITEDCB:
+  2728 11C0 70			        .BYTE   $70             ; DDEVIC
+  2729 11C1 01			        .BYTE   $01             ; DUNIT
+  2730 11C2 DE			        .BYTE   $DE             ; DCOMND
+  2731 11C3 80			        .BYTE   $80             ; DSTATS
+  2732 11C4 FF			        .BYTE   $FF             ; DBUFL
+  2733 11C5 05			        .BYTE   $05             ; DBUFH (expect page 5)
+  2734 11C6 0F			        .BYTE   $0F             ; DTIMLO
+  2735 11C7 00			        .BYTE   $00             ; DRESVD
+  2736 11C8 40			        .BYTE   MAX_APPKEY_LEN  ; DBYTL
+  2737 11C9 00			        .BYTE   $00             ; DBYTH
+  2738 11CA FF			        .BYTE   $FF             ; DAUX1 (# actual bytes)
+  2739 11CB 00			        .BYTE   $00             ; DAUX2
   2740
-  2741 11C8			SUBMIT_NEXT1:
-  2742
-  2743 				    ; Default to NOSCREEN
-  2744 11C8 A9 00		        LDA     #$00
-  2745 11CA 8D E9 16		        STA     ECHO_FLG
-  2746
-  2747 				    ; Prep file path
-  2748 11CD 20 2B 0C		        JSR     GET_DOSDR       ; Get DUNIT
-  2749 11D0 20 22 15		        JSR     PREPEND_DRIVE
-  2750
-  2751 				    ; Assert FILE #1 is closed
-  2752 11D3 A2 10		        LDX     #$10
-  2753 11D5 20 BB 09		        JSR     CIOCLOSE
-  2754 				        
-  2755 				    ; OPEN #1, 4, 0, file path
-  2756 11D8 A2 10		        LDX     #$10            ; File #1
-  2757 11DA A0 04		        LDY     #$04            ; Open for input
-  2758 11DC 20 C3 09		        JSR     CIOOPEN         ; Open filename @ (INBUFF)
-  2759 11DF 10 03		        BPL     SUBMIT_NEXT2
-  2760 11E1 4C 96 0A		        JMP     PRINT_ERROR
-  2761
-  2762 				    ; Read batch file character by character
-  2763 				    ; This allows it be end-of-line agnostic
-  2764 				    ; Branch forward when an end-of-line is interpretted.
-  2765
-  2766 11E4			SUBMIT_NEXT2:
-  2767 11E4 20 64 0A		        JSR     LDBUFA      ; Reset INBUFF to $0580
-  2768 11E7 C6 F3		        DEC     INBUFF      ; Init 1 byte before buffer
-  2769 11E9 A9 FF		        LDA     #$FF        ; Clear command
-  2770 11EB 8D E7 16		        STA     CMD
-  2771
-  2772 11EE			SUBMIT_GETCH:
-  2773 11EE E6 F3		        INC     INBUFF          ; Advance pointer
-  2774 11F0 D0 02		        BNE     SUBMIT_NEXT3
-  2775 11F2 E6 F4		        INC     INBUFF+1
-  2776
-  2777 11F4			SUBMIT_NEXT3:
-  2778 11F4 A2 10		        LDX     #$10            ; OPEN #1
-  2779 11F6 A9 01		        LDA     #$01            ; Get 1 byte
-  2780 11F8 A0 00		        LDY     #$00            ; ditto
-  2781
-  2782 11FA 20 ED 09		        JSR     CIOGET          ; Get byte from file
-  2783 11FD A0 00		        LDY     #$00            ;
-  2784 11FF B1 F3		        LDA     (INBUFF),Y      ; byte will be here
-  2785 				        
-  2786 1201 C9 0D		        CMP     #CR             ; Just skip if Windows CR
-  2787 1203 F0 E9		        BEQ     SUBMIT_GETCH
-  2788
-  2789 1205 C9 0A		        CMP     #LF             ; Convert LF to EOL
-  2790 1207 D0 04		        BNE     SUBMIT_EOL
-  2791 1209 A9 9B		        LDA     #EOL
-  2792 120B 91 F3		        STA     (INBUFF),Y
-  2793
-  2794 120D			SUBMIT_EOL:
-  2795 120D C9 9B		        CMP     #EOL            ; At end of command line?
-  2796 120F D0 DD		        BNE     SUBMIT_GETCH    ; No. Get next byte.
-  2797
-  2798 				    ; Here if we've reached the end of a command line.
-  2799 				    ; At end of file?
-  2800 1211 A2 10		        LDX     #$10            ; Channel #1
-  2801 1213 BD 43 03		        LDA     ICSTA,X         ; Inspect return code
-  2802 1216 C9 88		        CMP     #EOF
-  2803 1218 F0 22		        BEQ     SUBMIT_DONE     ; No error, try parsing cmd
-  2804
-  2805 121A AD E9 16		        LDA     ECHO_FLG        ; Skip echo if SCREEN is disabled
-  2806 121D F0 11		        BEQ     SUBMIT_NEXT4
-  2807 121F AD 82 05		        LDA     LNBUF
-  2808 1222 C9 40		        CMP     #'@'            ; Skip lines beginning with @
-  2809 1224 F0 0A		        BEQ     SUBMIT_NEXT4
-  2810
-  2811 				    ; Echo commands
-  2812 1226 20 64 0A		        JSR     LDBUFA
-  2813 1229 A5 F3		        LDA     INBUFF
-  2814 122B A4 F4		        LDY     INBUFF+1
-  2815 122D 20 7B 0A		        JSR     PRINT_STRING
+  2741 				;---------------------------------------
+  2742 11CC			SUBMIT_AUTORUN:
+  2743 				;---------------------------------------
+  2744 				    ; At initial DOS boot, read URL for 
+  2745 				    ; app key file from SD card's
+  2746 				    ; FujiNet folder.
+  2747 				    ;
+  2748 				    ; filename: db790000.key
+  2749 				    ; contents: url to a batch file
+  2750 				    ;---------------------------------------
+  2751 11CC 20 64 0A		        JSR     LDBUFA
+  2752
+  2753 				    ; Open app key
+  2754 11CF A9 00		        LDA     #$00            ; Open for read
+  2755 11D1 8D 9A 11		        STA     AUTORUN_APPKEY+4
+  2756 11D4 A9 A8		        LDA     #<APPKEYOPENDCB
+  2757 11D6 A0 11		        LDY     #>APPKEYOPENDCB
+  2758 11D8 20 A5 07		        JSR     DOSIOV
+  2759
+  2760 11DB C0 01		        CPY     #$01            ; Was open successful?
+  2761 11DD F0 01		        BEQ     AUTOSUB_NEXT    ; Yes. Continue.
+  2762 11DF 60			        RTS                     ; No. Exit
+  2763
+  2764 11E0			AUTOSUB_NEXT:
+  2765 				    ; Read app key
+  2766 11E0 A9 B4		        LDA     #<APPKEYREADDCB
+  2767 11E2 A0 11		        LDY     #>APPKEYREADDCB
+  2768 11E4 20 A5 07		        JSR     DOSIOV
+  2769
+  2770 				    ; Close app key
+  2771 11E7 A9 9C		        LDA     #<APPKEYCLOSEDCB
+  2772 11E9 A0 11		        LDY     #>APPKEYCLOSEDCB
+  2773 11EB 20 A5 07		        JSR     DOSIOV
+  2774
+  2775 				    ; Does the returned URL contain something?
+  2776 11EE AE 82 05		        LDX     LNBUF           ; X contains strlen of AUTORUN path
+  2777 11F1 D0 01		        BNE     AUTORUN_CALL_SUBMIT
+  2778
+  2779 				;        LDX     LNBUF
+  2780 				;        BEQ     AUTOSUB_DONE
+  2781 				;
+  2782 				        
+  2783
+  2784 11F3			AUTOSUB_DONE:
+  2785 11F3 60			        RTS
+  2786
+  2787 11F4			AUTORUN_CALL_SUBMIT:
+  2788 				    ; Replace end-of-line in buffer with null terminator
+  2789 11F4 CA			        DEX                     ; Move index back 1 position
+  2790 11F5 A9 00		        LDA     #$00            ;
+  2791 11F7 9D 84 05		        STA     LNBUF+2,X       ; Write null-terminator 
+  2792 11FA A9 02		        LDA     #$02            ; Change arg1 location...
+  2793 11FC 8D 85 0B		        STA     CMDSEP          ;  to point to filename
+  2794 				;        BNE     SUBMIT_NEXT1    ; Fall through
+  2795
+  2796 11FF AD 91 18		        LDA     AUTORUN_QUERY_FLG
+  2797 1202 C9 3F		        CMP     #'?'
+  2798 1204 D0 18		        BNE     SUBMIT_NEXT1
+  2799
+  2800 1206 A9 9B		        LDA     #EOL            ; Shove EOL to terminate string
+  2801 1208 9D 84 05		        STA     LNBUF+2,X
+  2802 120B A9 84		        LDA     #<(LNBUF+2)
+  2803 120D A0 05		        LDY     #>(LNBUF+2)
+  2804 120F 4C 7B 0A		        JMP     PRINT_STRING    ; Print AUTORUN path and exit
+  2805
+  2806 				;---------------------------------------
+  2807 1212			DO_SUBMIT:
+  2808 				;---------------------------------------
+  2809 1212 AD 85 0B		        LDA     CMDSEP
+  2810 1215 D0 07		        BNE     SUBMIT_NEXT1
+  2811
+  2812 				    ; Filename required
+  2813 1217 A9 36		        LDA     #<MISSING_FILE_STR
+  2814 1219 A0 17		        LDY     #>MISSING_FILE_STR
+  2815 121B 4C 7B 0A		        JMP     PRINT_STRING
   2816
-  2817 1230			SUBMIT_NEXT4:
-  2818 1230 20 33 0B		        JSR     GETCMDTEST
-  2819 1233 20 89 0B		        JSR     PARSECMD
-  2820 1236 20 FF 0B		        JSR     DOCMD
-  2821 1239 38			        SEC
-  2822 123A B0 A8		        BCS     SUBMIT_NEXT2
-  2823
-  2824 123C			SUBMIT_DONE
-  2825 123C A2 10		        LDX     #$10
-  2826 123E 4C BB 09		        JMP     CIOCLOSE
-  2827
-  2828 				; End of DO_SUBMIT
-  2829 				;---------------------------------------
-  2830
-  2831 				;---------------------------------------
-  2832 1241			DO_TYPE:
-  2833 				;---------------------------------------
-  2834 1241 AD 85 0B		        LDA     CMDSEP
-  2835 1244 D0 07		        BNE     TYPE_SKIP
-  2836
-  2837 1246			TYPE_USAGE:
-  2838 1246 A9 E0		        LDA     #<MISSING_FILE_STR
-  2839 1248 A0 16		        LDY     #>MISSING_FILE_STR
-  2840 124A 4C 7B 0A		        JMP     PRINT_STRING
+  2817 121E			SUBMIT_NEXT1:
+  2818
+  2819 				    ; Default to NOSCREEN
+  2820 121E A9 00		        LDA     #$00
+  2821 1220 8D 3F 17		        STA     ECHO_FLG
+  2822
+  2823 				    ; Prep file path
+  2824 1223 20 2B 0C		        JSR     GET_DOSDR       ; Get DUNIT
+  2825 1226 20 78 15		        JSR     PREPEND_DRIVE
+  2826
+  2827 				    ; Assert FILE #1 is closed
+  2828 1229 A2 10		        LDX     #$10
+  2829 122B 20 BB 09		        JSR     CIOCLOSE
+  2830 				        
+  2831 				    ; OPEN #1, 4, 0, file path
+  2832 122E A2 10		        LDX     #$10            ; File #1
+  2833 1230 A0 04		        LDY     #$04            ; Open for input
+  2834 1232 20 C3 09		        JSR     CIOOPEN         ; Open filename @ (INBUFF)
+  2835 1235 10 03		        BPL     SUBMIT_NEXT2
+  2836 1237 4C 96 0A		        JMP     PRINT_ERROR
+  2837
+  2838 				    ; Read batch file character by character
+  2839 				    ; This allows it be end-of-line agnostic
+  2840 				    ; Branch forward when an end-of-line is interpretted.
   2841
-  2842 124D			TYPE_SKIP:
-  2843 124D 20 2B 0C		        JSR     GET_DOSDR       ; Get DUNIT
-  2844 1250 20 22 15		        JSR     PREPEND_DRIVE
-  2845
-  2846 				    ; Assert input file closed
-  2847 1253 A2 10		        LDX     #$10            ; File #1
-  2848 1255 20 BB 09		        JSR     CIOCLOSE        ; Assert file #1 is closed
-  2849
-  2850 				    ; Open input file
-  2851 1258 A2 10		        LDX     #$10            ; File #1
-  2852 125A A0 04		        LDY     #$04            ; Open for input
-  2853 125C 20 C3 09		        JSR     CIOOPEN         ; Open filename @ (INBUFF)
-  2854 125F 10 08		        BPL     TYPE_NEXT
-  2855
-  2856 				    ; If open failed, Print error
-  2857 1261 A2 10		        LDX     #$10            ; File #1
-  2858 1263 BC 43 03		        LDY     ICSTA,X
-  2859 1266 4C 96 0A		        JMP     PRINT_ERROR
-  2860
-  2861 1269			TYPE_NEXT:
-  2862
-  2863 				    ; Initialize pagination
-  2864 1269 20 0E 13		        JSR     DO_CLS
-  2865 126C A9 15		        LDA     #21
-  2866 126E 8D BB 02		        STA     SCRFLG
-  2867
-  2868 1271			TYPE_LOOP:
-  2869 				    ; Bail if ESC key is pressed
-  2870 1271 AD FC 02		        LDA     CH
-  2871 1274 C9 1C		        CMP     #ESC_KEY
-  2872 1276 F0 49		        BEQ     TYPE_DONE
+  2842 123A			SUBMIT_NEXT2:
+  2843 123A 20 64 0A		        JSR     LDBUFA      ; Reset INBUFF to $0580
+  2844 123D C6 F3		        DEC     INBUFF      ; Init 1 byte before buffer
+  2845 123F A9 FF		        LDA     #$FF        ; Clear command
+  2846 1241 8D 3D 17		        STA     CMD
+  2847
+  2848 1244			SUBMIT_GETCH:
+  2849 1244 E6 F3		        INC     INBUFF          ; Advance pointer
+  2850 1246 D0 02		        BNE     SUBMIT_NEXT3
+  2851 1248 E6 F4		        INC     INBUFF+1
+  2852
+  2853 124A			SUBMIT_NEXT3:
+  2854 124A A2 10		        LDX     #$10            ; OPEN #1
+  2855 124C A9 01		        LDA     #$01            ; Get 1 byte
+  2856 124E A0 00		        LDY     #$00            ; ditto
+  2857
+  2858 1250 20 ED 09		        JSR     CIOGET          ; Get byte from file
+  2859 1253 A0 00		        LDY     #$00            ;
+  2860 1255 B1 F3		        LDA     (INBUFF),Y      ; byte will be here
+  2861 				        
+  2862 1257 C9 0D		        CMP     #CR             ; Just skip if Windows CR
+  2863 1259 F0 E9		        BEQ     SUBMIT_GETCH
+  2864
+  2865 125B C9 0A		        CMP     #LF             ; Convert LF to EOL
+  2866 125D D0 04		        BNE     SUBMIT_EOL
+  2867 125F A9 9B		        LDA     #EOL
+  2868 1261 91 F3		        STA     (INBUFF),Y
+  2869
+  2870 1263			SUBMIT_EOL:
+  2871 1263 C9 9B		        CMP     #EOL            ; At end of command line?
+  2872 1265 D0 DD		        BNE     SUBMIT_GETCH    ; No. Get next byte.
   2873
-  2874 				    ; Check if page is full
-  2875 1278 AD BB 02		        LDA     SCRFLG
-  2876 127B C9 16		        CMP     #22         ; if SCRFLG < 21
-  2877 127D 90 14		        BCC     TYPE_READ   ; then skip to read
-  2878
-  2879 				    ; Here if page is full
-  2880 				    ; Wait for keypress
-  2881 127F A9 FF		        LDA     #$FF    ; Clear keypress
-  2882 1281 8D FC 02		        STA     CH
-  2883
-  2884 1284			TYPE_WAIT:
-  2885 1284 AE FC 02		        LDX     CH
-  2886 1287 E8			        INX
-  2887 1288 F0 FA		        BEQ     TYPE_WAIT
-  2888
-  2889 128A E0 1C		        CPX     #ESC_KEY
-  2890 128C F0 33		        BEQ     TYPE_DONE
-  2891
-  2892 				    ; Reset pagination
-  2893 128E A9 00		        LDA     #$00
-  2894 1290 8D BB 02		        STA     SCRFLG
-  2895
-  2896 1293			TYPE_READ:
-  2897 				    ; Read from file
-  2898 1293 A2 10		        LDX     #$10
-  2899 1295 A9 01		        LDA     #$01
-  2900 1297 A0 00		        LDY     #$00
-  2901 1299 20 ED 09		        JSR     CIOGET
-  2902
-  2903 				    ; Quit if EOF
-  2904 129C A2 10		        LDX     #$10
-  2905 129E BD 43 03		        LDA     ICSTA,X
-  2906 12A1 C9 88		        CMP     #EOF
-  2907 12A3 F0 1C		        BEQ     TYPE_DONE
-  2908
-  2909 				    ; Convert CRLF or LF --> EOL
-  2910 12A5 A0 00		        LDY     #$00
-  2911 12A7 B1 F3		        LDA     (INBUFF),Y
-  2912 12A9 C9 0D		        CMP     #CR     ; Skip CR
-  2913 12AB F0 11		        BEQ     TYPE_NEXT3
-  2914 12AD C9 0A		        CMP     #LF     ; Convert LF --> EOL
-  2915 12AF D0 04		        BNE     TYPE_NEXT2
-  2916 12B1 A9 9B		        LDA     #EOL
-  2917 12B3 91 F3		        STA     (INBUFF),Y
-  2918
-  2919 12B5			TYPE_NEXT2:
-  2920 				    ; Write to screen
-  2921 12B5 A2 00		        LDX     #$00
-  2922 12B7 A9 01		        LDA     #$01
-  2923 12B9 A0 00		        LDY     #$00
-  2924 12BB 20 0B 0A		        JSR     CIOPUT
+  2874 				    ; Here if we've reached the end of a command line.
+  2875 				    ; At end of file?
+  2876 1267 A2 10		        LDX     #$10            ; Channel #1
+  2877 1269 BD 43 03		        LDA     ICSTA,X         ; Inspect return code
+  2878 126C C9 88		        CMP     #EOF
+  2879 126E F0 22		        BEQ     SUBMIT_DONE     ; No error, try parsing cmd
+  2880
+  2881 1270 AD 3F 17		        LDA     ECHO_FLG        ; Skip echo if SCREEN is disabled
+  2882 1273 F0 11		        BEQ     SUBMIT_NEXT4
+  2883 1275 AD 82 05		        LDA     LNBUF
+  2884 1278 C9 40		        CMP     #'@'            ; Skip lines beginning with @
+  2885 127A F0 0A		        BEQ     SUBMIT_NEXT4
+  2886
+  2887 				    ; Echo commands
+  2888 127C 20 64 0A		        JSR     LDBUFA
+  2889 127F A5 F3		        LDA     INBUFF
+  2890 1281 A4 F4		        LDY     INBUFF+1
+  2891 1283 20 7B 0A		        JSR     PRINT_STRING
+  2892
+  2893 1286			SUBMIT_NEXT4:
+  2894 1286 20 33 0B		        JSR     GETCMDTEST
+  2895 1289 20 89 0B		        JSR     PARSECMD
+  2896 128C 20 FF 0B		        JSR     DOCMD
+  2897 128F 38			        SEC
+  2898 1290 B0 A8		        BCS     SUBMIT_NEXT2
+  2899
+  2900 1292			SUBMIT_DONE
+  2901 1292 A2 10		        LDX     #$10
+  2902 1294 4C BB 09		        JMP     CIOCLOSE
+  2903
+  2904 				; End of DO_SUBMIT
+  2905 				;---------------------------------------
+  2906
+  2907 				;---------------------------------------
+  2908 1297			DO_TYPE:
+  2909 				;---------------------------------------
+  2910 1297 AD 85 0B		        LDA     CMDSEP
+  2911 129A D0 07		        BNE     TYPE_SKIP
+  2912
+  2913 129C			TYPE_USAGE:
+  2914 129C A9 36		        LDA     #<MISSING_FILE_STR
+  2915 129E A0 17		        LDY     #>MISSING_FILE_STR
+  2916 12A0 4C 7B 0A		        JMP     PRINT_STRING
+  2917
+  2918 12A3			TYPE_SKIP:
+  2919 12A3 20 2B 0C		        JSR     GET_DOSDR       ; Get DUNIT
+  2920 12A6 20 78 15		        JSR     PREPEND_DRIVE
+  2921
+  2922 				    ; Assert input file closed
+  2923 12A9 A2 10		        LDX     #$10            ; File #1
+  2924 12AB 20 BB 09		        JSR     CIOCLOSE        ; Assert file #1 is closed
   2925
-  2926 12BE			TYPE_NEXT3:
-  2927 				    ; Do next
-  2928 12BE 4C 71 12		        JMP     TYPE_LOOP
-  2929 				        
-  2930 12C1			TYPE_DONE:
-  2931 12C1 A9 FF		        LDA     #$FF
-  2932 12C3 8D FC 02		        STA     CH
-  2933 12C6 A2 10		        LDX     #$10            ; Close File #1
-  2934 12C8 4C BB 09		        JMP     CIOCLOSE        ; 
-  2935
-  2936 12CB			TYPE_OPEN_ERR_STR:
-  2937 12CB 55 4E 41 42 4C 45 +         .BYTE   'UNABLE TO OPEN FILE',EOL
+  2926 				    ; Open input file
+  2927 12AE A2 10		        LDX     #$10            ; File #1
+  2928 12B0 A0 04		        LDY     #$04            ; Open for input
+  2929 12B2 20 C3 09		        JSR     CIOOPEN         ; Open filename @ (INBUFF)
+  2930 12B5 10 08		        BPL     TYPE_NEXT
+  2931
+  2932 				    ; If open failed, Print error
+  2933 12B7 A2 10		        LDX     #$10            ; File #1
+  2934 12B9 BC 43 03		        LDY     ICSTA,X
+  2935 12BC 4C 96 0A		        JMP     PRINT_ERROR
+  2936
+  2937 12BF			TYPE_NEXT:
   2938
-  2939 				;---------------------------------------
-  2940 12DF			DO_UNLOCK:
-  2941 				;---------------------------------------
-  2942 12DF A9 90		        LDA     #$90
-  2943 12E1 8D C6 02		        STA     COLOR2
-  2944 12E4 60			        RTS
-  2945
-  2946 				;---------------------------------------
-  2947 12E5			DO_CAR:
-  2948 				;---------------------------------------
+  2939 				    ; Initialize pagination
+  2940 12BF 20 64 13		        JSR     DO_CLS
+  2941 12C2 A9 15		        LDA     #21
+  2942 12C4 8D BB 02		        STA     SCRFLG
+  2943
+  2944 12C7			TYPE_LOOP:
+  2945 				    ; Bail if ESC key is pressed
+  2946 12C7 AD FC 02		        LDA     CH
+  2947 12CA C9 1C		        CMP     #ESC_KEY
+  2948 12CC F0 49		        BEQ     TYPE_DONE
   2949
-  2950 				    ;---------------------------------------
-  2951 				    ; Is cart address space RAM or ROM?
-  2952 				    ;---------------------------------------
-  2953 12E5 AD 00 A0		        LDA     $A000
-  2954 12E8 EE 00 A0		        INC     $A000
-  2955 12EB CD 00 A0		        CMP     $A000
-  2956 12EE F0 0A		        BEQ     DO_CAR_NEXT
-  2957
-  2958 				    ;---------------------------------------
-  2959 				    ; RAM found
-  2960 				    ;---------------------------------------
-  2961 12F0 8D 00 A0		        STA     $A000
-  2962 12F3 A9 01		        LDA     #<DO_CAR_ERR
-  2963 12F5 A0 13		        LDY     #>DO_CAR_ERR
-  2964 12F7 4C 7B 0A		        JMP     PRINT_STRING
-  2965
-  2966 12FA			DO_CAR_NEXT:
-  2967 12FA A9 FF		        LDA     #$FF
-  2968 12FC 85 08		        STA     $08         ; Warmstart
-  2969 12FE 6C FA BF		        JMP     ($BFFA)
-  2970
-  2971 1301			DO_CAR_ERR:
-  2972 1301 4E 4F 20 43 41 52 +         .BYTE   'NO CARTRIDGE',EOL
-  2973
-  2974 				;---------------------------------------
-  2975 130E			DO_CLS:
-  2976 				;---------------------------------------
-  2977 130E A9 15		        LDA     #<CLS_STR
-  2978 1310 A0 13		        LDY     #>CLS_STR
-  2979 1312 4C 7B 0A		        JMP     PRINT_STRING
-  2980
-  2981 1315			CLS_STR:
-  2982 1315 7D 9B		        .BYTE   125,EOL
-  2983
-  2984 				;---------------------------------------
-  2985 1317			DO_COLD:
-  2986 				;---------------------------------------
-  2987 1317 4C 77 E4		        JMP     COLDSV
-  2988
-  2989 				;---------------------------------------
-  2990 131A			DO_HELP:
-  2991 				;---------------------------------------
-  2992 				    ; Append either "HELP" or arg1 to URL
-  2993 131A A2 00		        LDX     #$00        ; index to start of article buf
-  2994 131C AC 85 0B		        LDY     CMDSEP      ; index to cmd line arg
-  2995 				        
-  2996 131F			HELP_LOOP1:
-  2997 131F B1 F3		        LDA     (INBUFF),Y
-  2998 1321 C9 9B		        CMP     #EOL
-  2999 1323 F0 11		        BEQ     HELP_NEXT1  ; Exit loop at end of arg
-  3000 1325 E0 16		        CPX     #22
-  3001 1327 10 2B		        BPL     HELP_DONE   ; Exit if arg is too long
-  3002 1329 9D B0 13		        STA     HELP_ARTICLE,X
-  3003 132C E8			        INX
-  3004 132D C8			        INY
-  3005 132E D0 EF		        BNE     HELP_LOOP1  ; Always true
-  3006
-  3007 				    ; Append .DOC extension to article name
-  3008 1330			HELP_EXT:
-  3009 1330 2E 44 4F 43 9B 00	        .BYTE   '.DOC',EOL,$00
-  3010
-  3011 1336			HELP_NEXT1:
-  3012 1336 A0 00		        LDY     #$00
-  3013
-  3014 1338			HELP_LOOP2:
-  3015 1338 B9 30 13		        LDA     HELP_EXT,Y
-  3016 133B 9D B0 13		        STA     HELP_ARTICLE,X  ; Store null term too
-  3017 133E F0 04		        BEQ     HELP_NEXT2      ; Skip ahead if terminator
-  3018 1340 E8			        INX
-  3019 1341 C8			        INY
-  3020 1342 D0 F4		        BNE     HELP_LOOP2  ; Always true
+  2950 				    ; Check if page is full
+  2951 12CE AD BB 02		        LDA     SCRFLG
+  2952 12D1 C9 16		        CMP     #22             ; if SCRFLG < 21
+  2953 12D3 90 14		        BCC     TYPE_READ       ; then skip to read
+  2954
+  2955 				    ; Here if page is full
+  2956 				    ; Wait for keypress
+  2957 12D5 A9 FF		        LDA     #$FF            ; Clear keypress
+  2958 12D7 8D FC 02		        STA     CH
+  2959
+  2960 12DA			TYPE_WAIT:
+  2961 12DA AE FC 02		        LDX     CH              ; Will be $FF if no keypress
+  2962 12DD E8			        INX                     ; $FF --> $00
+  2963 12DE F0 FA		        BEQ     TYPE_WAIT       ; Keep waiting if $00
+  2964
+  2965 12E0 E0 1C		        CPX     #ESC_KEY        ; Leave if ESC key pressed
+  2966 12E2 F0 33		        BEQ     TYPE_DONE
+  2967
+  2968 				    ; Reset pagination
+  2969 12E4 A9 00		        LDA     #$00
+  2970 12E6 8D BB 02		        STA     SCRFLG
+  2971
+  2972 12E9			TYPE_READ:
+  2973 				    ; Read from file
+  2974 12E9 A2 10		        LDX     #$10
+  2975 12EB A9 01		        LDA     #$01
+  2976 12ED A0 00		        LDY     #$00
+  2977 12EF 20 ED 09		        JSR     CIOGET
+  2978
+  2979 				    ; Quit if EOF
+  2980 12F2 A2 10		        LDX     #$10
+  2981 12F4 BD 43 03		        LDA     ICSTA,X
+  2982 12F7 C9 88		        CMP     #EOF
+  2983 12F9 F0 1C		        BEQ     TYPE_DONE
+  2984
+  2985 				    ; Convert CRLF or LF --> EOL
+  2986 12FB A0 00		        LDY     #$00
+  2987 12FD B1 F3		        LDA     (INBUFF),Y
+  2988 12FF C9 0D		        CMP     #CR     ; Skip CR
+  2989 1301 F0 11		        BEQ     TYPE_NEXT3
+  2990 1303 C9 0A		        CMP     #LF     ; Convert LF --> EOL
+  2991 1305 D0 04		        BNE     TYPE_NEXT2
+  2992 1307 A9 9B		        LDA     #EOL
+  2993 1309 91 F3		        STA     (INBUFF),Y
+  2994
+  2995 130B			TYPE_NEXT2:
+  2996 				    ; Write to screen
+  2997 130B A2 00		        LDX     #$00
+  2998 130D A9 01		        LDA     #$01
+  2999 130F A0 00		        LDY     #$00
+  3000 1311 20 0B 0A		        JSR     CIOPUT
+  3001
+  3002 1314			TYPE_NEXT3:
+  3003 				    ; Do next
+  3004 1314 4C C7 12		        JMP     TYPE_LOOP
+  3005 				        
+  3006 1317			TYPE_DONE:
+  3007 1317 A9 FF		        LDA     #$FF
+  3008 1319 8D FC 02		        STA     CH
+  3009 131C A2 10		        LDX     #$10            ; Close File #1
+  3010 131E 4C BB 09		        JMP     CIOCLOSE        ; 
+  3011
+  3012 1321			TYPE_OPEN_ERR_STR:
+  3013 1321 55 4E 41 42 4C 45 +         .BYTE   'UNABLE TO OPEN FILE',EOL
+  3014
+  3015 				;---------------------------------------
+  3016 1335			DO_UNLOCK:
+  3017 				;---------------------------------------
+  3018 1335 A9 90		        LDA     #$90
+  3019 1337 8D C6 02		        STA     COLOR2
+  3020 133A 60			        RTS
   3021
-  3022 1344			HELP_NEXT2:
-  3023 				    ; Copy URL to LNBUF
-  3024 1344 A2 00		        LDX     #$00    ; Index to start of HELP_URL
-  3025 1346 A0 05		        LDY     #$05    ; Index to start at arg1 for "TYPE "
-  3026 				    
-  3027 1348			HELP_LOOP3:
-  3028 1348 BD 5C 13		        LDA     HELP_URL,X  ; Get source byte
-  3029 134B 99 82 05		        STA     LNBUF,Y     ; Write to target location
-  3030 134E F0 04		        BEQ     HELP_DONE   ; Exit loop on null terminator
-  3031 1350 E8			        INX                 ; Advance indices
-  3032 1351 C8			        INY
-  3033 1352 D0 F4		        BNE     HELP_LOOP3  ; Always true
-  3034 				        
-  3035 1354			HELP_DONE:        
-  3036 1354 A9 05		        LDA     #$05        ; Trick TYPE to look for URL in arg1
-  3037 1356 8D 85 0B		        STA     CMDSEP
-  3038 1359 4C 41 12		        JMP     DO_TYPE
-  3039
-  3040 135C			HELP_URL:
-  3041 135C 4E 38 3A 48 54 54 +         .BYTE   'N8:HTTPS://raw.githubusercontent.com/michaelsternberg/fujinet-nhandler/nos/nos/HELP/'
-  3042
-  3043 13B0			HELP_ARTICLE:
-  3044 13B0 00 00 00 00 00 00 +     :24 .BYTE   $00
-  3045
-  3046 				;---------------------------------------
-  3047 13C8			DO_NOBASIC:
-  3048 				;---------------------------------------
-  3049 				    ; Quit if 400/800
-  3050 13C8 AD F7 FF		        LDA     $FFF7
-  3051 13CB C9 FF		        CMP     #$FF        ; ????
-  3052 13CD F0 21		        BEQ     NOBASIC_ERROR
-  3053 13CF C9 DD		        CMP     #$DD        ; OSA NTSC
-  3054 13D1 F0 1D		        BEQ     NOBASIC_ERROR
-  3055 13D3 C9 F3		        CMP     #$F3        ; OSB NTSC
-  3056 13D5 F0 19		        BEQ     NOBASIC_ERROR
-  3057 13D7 C9 D6		        CMP     #$D6        ; OSA PAL
-  3058 13D9 F0 15		        BEQ     NOBASIC_ERROR
-  3059 13DB C9 22		        CMP     #$22        ; OSB PAL
-  3060 13DD F0 11		        BEQ     NOBASIC_ERROR
-  3061 13DF C9 0A		        CMP     #$0A        ; OSA 1200XL
-  3062 13E1 F0 0D		        BEQ     NOBASIC_ERROR
-  3063 13E3 C9 0B		        CMP     #$0B        ; OSB 1200XL
-  3064 13E5 F0 09		        BEQ     NOBASIC_ERROR
-  3065 				        
-  3066 				    ; Disable BASIC
-  3067 13E7 AD 01 D3		        LDA     PORTB
-  3068 13EA 09 02		        ORA     #%00000010  ; if Bit 1 = 1 then BASIC is disabled
-  3069 13EC 8D 01 D3		        STA     PORTB
-  3070 13EF 60			        RTS
-  3071
-  3072 				;---------------------------------------
-  3073 13F0			NOBASIC_ERROR:
-  3074 				;---------------------------------------
-  3075 13F0 A9 F7		        LDA     #<NOBASIC_ERROR_STR
-  3076 13F2 A0 13		        LDY     #>NOBASIC_ERROR_STR
-  3077 13F4 4C 7B 0A		        JMP     PRINT_STRING
-  3078
-  3079 13F7			NOBASIC_ERROR_STR:
-  3080 13F7 4E 4F 20 42 55 49 +         .BYTE   'NO BUILT-IN BASIC',EOL
-  3081
-  3082 				;---------------------------------------
-  3083 1409			DO_NOSCREEN:
-  3084 				;---------------------------------------
-  3085 1409 A9 00		        LDA     #$00
-  3086 140B 8D E9 16		        STA     ECHO_FLG    ; Disable echo in batch processing
-  3087 140E 60			        RTS
-  3088
-  3089 				;---------------------------------------
-  3090 140F			DO_SCREEN:
-  3091 				;---------------------------------------
-  3092 140F A9 01		        LDA     #$01
-  3093 1411 8D E9 16		        STA     ECHO_FLG    ; Enable echo in batch processing
-  3094 1414 60			        RTS
-  3095
-  3096 				;---------------------------------------
-  3097 1415			DO_PRINT:
-  3098 				;---------------------------------------
-  3099 1415 AD 85 0B		        LDA     CMDSEP
-  3100 1418 F0 08		        BEQ     PRINT_DONE
-  3101
-  3102 141A 18			        CLC
-  3103 141B 65 F3		        ADC     INBUFF
-  3104 141D A4 F4		        LDY     INBUFF+1
-  3105 141F 4C 7B 0A		        JMP     PRINT_STRING
-  3106
-  3107 1422			PRINT_DONE:
-  3108 1422 60			        RTS
-  3109
-  3110 				;---------------------------------------
-  3111 1423			DO_REENTER:
-  3112 				;---------------------------------------
-  3113 				    ; Jump to the address stored in RUNAD or INITAD
-  3114 				    ; Do the one that isn't pointing to R (RUNAD first)
+  3022 				;---------------------------------------
+  3023 133B			DO_CAR:
+  3024 				;---------------------------------------
+  3025
+  3026 				    ;---------------------------------------
+  3027 				    ; Is cart address space RAM or ROM?
+  3028 				    ;---------------------------------------
+  3029 133B AD 00 A0		        LDA     $A000
+  3030 133E EE 00 A0		        INC     $A000
+  3031 1341 CD 00 A0		        CMP     $A000
+  3032 1344 F0 0A		        BEQ     DO_CAR_NEXT
+  3033
+  3034 				    ;---------------------------------------
+  3035 				    ; RAM found
+  3036 				    ;---------------------------------------
+  3037 1346 8D 00 A0		        STA     $A000
+  3038 1349 A9 57		        LDA     #<DO_CAR_ERR
+  3039 134B A0 13		        LDY     #>DO_CAR_ERR
+  3040 134D 4C 7B 0A		        JMP     PRINT_STRING
+  3041
+  3042 1350			DO_CAR_NEXT:
+  3043 1350 A9 FF		        LDA     #$FF
+  3044 1352 85 08		        STA     $08         ; Warmstart
+  3045 1354 6C FA BF		        JMP     ($BFFA)
+  3046
+  3047 1357			DO_CAR_ERR:
+  3048 1357 4E 4F 20 43 41 52 +         .BYTE   'NO CARTRIDGE',EOL
+  3049
+  3050 				;---------------------------------------
+  3051 1364			DO_CLS:
+  3052 				;---------------------------------------
+  3053 1364 A9 6B		        LDA     #<CLS_STR
+  3054 1366 A0 13		        LDY     #>CLS_STR
+  3055 1368 4C 7B 0A		        JMP     PRINT_STRING
+  3056
+  3057 136B			CLS_STR:
+  3058 136B 7D 9B		        .BYTE   125,EOL
+  3059
+  3060 				;---------------------------------------
+  3061 136D			DO_COLD:
+  3062 				;---------------------------------------
+  3063 136D 4C 77 E4		        JMP     COLDSV
+  3064
+  3065 				;---------------------------------------
+  3066 1370			DO_HELP:
+  3067 				;---------------------------------------
+  3068 				    ; Append either "HELP" or arg1 to URL
+  3069 1370 A2 00		        LDX     #$00        ; index to start of article buf
+  3070 1372 AC 85 0B		        LDY     CMDSEP      ; index to cmd line arg
+  3071 				        
+  3072 1375			HELP_LOOP1:
+  3073 1375 B1 F3		        LDA     (INBUFF),Y
+  3074 1377 C9 9B		        CMP     #EOL
+  3075 1379 F0 11		        BEQ     HELP_NEXT1  ; Exit loop at end of arg
+  3076 137B E0 16		        CPX     #22
+  3077 137D 10 2B		        BPL     HELP_DONE   ; Exit if arg is too long
+  3078 137F 9D 06 14		        STA     HELP_ARTICLE,X
+  3079 1382 E8			        INX
+  3080 1383 C8			        INY
+  3081 1384 D0 EF		        BNE     HELP_LOOP1  ; Always true
+  3082
+  3083 				    ; Append .DOC extension to article name
+  3084 1386			HELP_EXT:
+  3085 1386 2E 44 4F 43 9B 00	        .BYTE   '.DOC',EOL,$00
+  3086
+  3087 138C			HELP_NEXT1:
+  3088 138C A0 00		        LDY     #$00
+  3089
+  3090 138E			HELP_LOOP2:
+  3091 138E B9 86 13		        LDA     HELP_EXT,Y
+  3092 1391 9D 06 14		        STA     HELP_ARTICLE,X  ; Store null term too
+  3093 1394 F0 04		        BEQ     HELP_NEXT2      ; Skip ahead if terminator
+  3094 1396 E8			        INX
+  3095 1397 C8			        INY
+  3096 1398 D0 F4		        BNE     HELP_LOOP2  ; Always true
+  3097
+  3098 139A			HELP_NEXT2:
+  3099 				    ; Copy URL to LNBUF
+  3100 139A A2 00		        LDX     #$00    ; Index to start of HELP_URL
+  3101 139C A0 05		        LDY     #$05    ; Index to start at arg1 for "TYPE "
+  3102 				    
+  3103 139E			HELP_LOOP3:
+  3104 139E BD B2 13		        LDA     HELP_URL,X  ; Get source byte
+  3105 13A1 99 82 05		        STA     LNBUF,Y     ; Write to target location
+  3106 13A4 F0 04		        BEQ     HELP_DONE   ; Exit loop on null terminator
+  3107 13A6 E8			        INX                 ; Advance indices
+  3108 13A7 C8			        INY
+  3109 13A8 D0 F4		        BNE     HELP_LOOP3  ; Always true
+  3110 				        
+  3111 13AA			HELP_DONE:        
+  3112 13AA A9 05		        LDA     #$05        ; Trick TYPE to look for URL in arg1
+  3113 13AC 8D 85 0B		        STA     CMDSEP
+  3114 13AF 4C 97 12		        JMP     DO_TYPE
   3115
-  3116 				    ; Skip it all if both contain $0000
-  3117 1423 AD E2 02		        LDA     INITAD
-  3118 1426 D0 16		        BNE     DO_REENTER_CONT
-  3119 1428 AD E3 02		        LDA     INITAD+1
-  3120 142B D0 11		        BNE     DO_REENTER_CONT
-  3121 142D AD E0 02		        LDA     RUNAD
-  3122 1430 D0 0C		        BNE     DO_REENTER_CONT
-  3123 1432 AD E1 02		        LDA     RUNAD+1
-  3124 1435 D0 07		        BNE     DO_REENTER_CONT
-  3125
-  3126 1437 A9 52		        LDA     #<DO_REENTER_ERR
-  3127 1439 A0 14		        LDY     #>DO_REENTER_ERR
-  3128 143B 4C 7B 0A		        JMP     PRINT_STRING
-  3129
-  3130 143E			DO_REENTER_CONT:
-  3131 143E AD E0 02		        LDA     RUNAD
-  3132 1441 C9 0D		        CMP     #>R
-  3133 1443 D0 07		        BNE     DO_REENTER_RUNAD
-  3134 1445 AD E1 02		        LDA     RUNAD+1
-  3135 1448 C9 0D		        CMP     #>R
-  3136 144A F0 03		        BEQ     DO_REENTER_INITAD
-  3137
-  3138 144C			DO_REENTER_RUNAD:
-  3139 144C 6C E0 02		        JMP     (RUNAD)     ; Godspeed
-  3140
-  3141 144F			DO_REENTER_INITAD:
-  3142 144F 6C E2 02		        JMP     (INITAD)    ; Godspeed
-  3143
-  3144 1452			DO_REENTER_ERR:
-  3145 1452 4E 4F 20 41 44 44 +         .BYTE   'NO ADDR IN INITAD OR RUNAD',EOL
-  3146
-  3147 				;---------------------------------------
-  3148 146D			DO_REM:
-  3149 				;---------------------------------------
-  3150 146D 60			        RTS
-  3151
-  3152 				;---------------------------------------
-  3153 146E			DO_RUN:
-  3154 				;---------------------------------------
-  3155 146E AD 85 0B		        LDA     CMDSEP      ; Get position for address arg
-  3156 1471 A8			        TAY                 ; Offset to arg used later
-  3157 1472 18			        CLC
-  3158 1473 69 04		        ADC     #$04
-  3159 1475 8D 00 18		        STA     RBUF
-  3160
-  3161 				    ;---------------------------------------
-  3162 				    ; ASCII hex char to integer conversion
-  3163 				    ; algorithm borrowed from Apple II Monitor
-  3164 				    ;---------------------------------------
-  3165 1478 A9 00		        LDA     #$00
-  3166 147A 85 F3		        STA     INBUFF      ; L
-  3167 147C 85 F4		        STA     INBUFF+1    ; H
-  3168 147E			NEXTHEX:
-  3169 147E B9 82 05		        LDA     LNBUF,Y     ; Get character for hex test.
-  3170 1481 49 30		        EOR     #%00110000  ; Maps digits to $0-$9
-  3171 1483 C9 0A		        CMP     #$0A        ; Digit?
-  3172 1485 90 06		        BCC     DIG         ; Yes.
-  3173 1487 69 88		        ADC     #$88        ; Map letter "A"-"F" to $FA-FF.
-  3174 1489 C9 FA		        CMP     #$FA        ; Hex letter?
-  3175 148B 90 17		        BCC     NOTHEX      ; No, character not hex.
-  3176
-  3177 148D 0A			DIG:    ASL
-  3178 148E 0A			        ASL
-  3179 148F 0A			        ASL
-  3180 1490 0A			        ASL
-  3181 1491 A2 04		        LDX     #$04        ; Shift count.
+  3116 13B2			HELP_URL:
+  3117 13B2 4E 38 3A 48 54 54 +         .BYTE   'N8:HTTPS://raw.githubusercontent.com/michaelsternberg/fujinet-nhandler/nos/nos/HELP/'
+  3118
+  3119 1406			HELP_ARTICLE:
+  3120 1406 00 00 00 00 00 00 +     :24 .BYTE   $00
+  3121
+  3122 				;---------------------------------------
+  3123 141E			DO_NOBASIC:
+  3124 				;---------------------------------------
+  3125 				    ; Quit if 400/800
+  3126 141E AD F7 FF		        LDA     $FFF7
+  3127 1421 C9 FF		        CMP     #$FF        ; ????
+  3128 1423 F0 21		        BEQ     NOBASIC_ERROR
+  3129 1425 C9 DD		        CMP     #$DD        ; OSA NTSC
+  3130 1427 F0 1D		        BEQ     NOBASIC_ERROR
+  3131 1429 C9 F3		        CMP     #$F3        ; OSB NTSC
+  3132 142B F0 19		        BEQ     NOBASIC_ERROR
+  3133 142D C9 D6		        CMP     #$D6        ; OSA PAL
+  3134 142F F0 15		        BEQ     NOBASIC_ERROR
+  3135 1431 C9 22		        CMP     #$22        ; OSB PAL
+  3136 1433 F0 11		        BEQ     NOBASIC_ERROR
+  3137 1435 C9 0A		        CMP     #$0A        ; OSA 1200XL
+  3138 1437 F0 0D		        BEQ     NOBASIC_ERROR
+  3139 1439 C9 0B		        CMP     #$0B        ; OSB 1200XL
+  3140 143B F0 09		        BEQ     NOBASIC_ERROR
+  3141 				        
+  3142 				    ; Disable BASIC
+  3143 143D AD 01 D3		        LDA     PORTB
+  3144 1440 09 02		        ORA     #%00000010  ; if Bit 1 = 1 then BASIC is disabled
+  3145 1442 8D 01 D3		        STA     PORTB
+  3146 1445 60			        RTS
+  3147
+  3148 				;---------------------------------------
+  3149 1446			NOBASIC_ERROR:
+  3150 				;---------------------------------------
+  3151 1446 A9 4D		        LDA     #<NOBASIC_ERROR_STR
+  3152 1448 A0 14		        LDY     #>NOBASIC_ERROR_STR
+  3153 144A 4C 7B 0A		        JMP     PRINT_STRING
+  3154
+  3155 144D			NOBASIC_ERROR_STR:
+  3156 144D 4E 4F 20 42 55 49 +         .BYTE   'NO BUILT-IN BASIC',EOL
+  3157
+  3158 				;---------------------------------------
+  3159 145F			DO_NOSCREEN:
+  3160 				;---------------------------------------
+  3161 145F A9 00		        LDA     #$00
+  3162 1461 8D 3F 17		        STA     ECHO_FLG    ; Disable echo in batch processing
+  3163 1464 60			        RTS
+  3164
+  3165 				;---------------------------------------
+  3166 1465			DO_SCREEN:
+  3167 				;---------------------------------------
+  3168 1465 A9 01		        LDA     #$01
+  3169 1467 8D 3F 17		        STA     ECHO_FLG    ; Enable echo in batch processing
+  3170 146A 60			        RTS
+  3171
+  3172 				;---------------------------------------
+  3173 146B			DO_PRINT:
+  3174 				;---------------------------------------
+  3175 146B AD 85 0B		        LDA     CMDSEP
+  3176 146E F0 08		        BEQ     PRINT_DONE
+  3177
+  3178 1470 18			        CLC
+  3179 1471 65 F3		        ADC     INBUFF
+  3180 1473 A4 F4		        LDY     INBUFF+1
+  3181 1475 4C 7B 0A		        JMP     PRINT_STRING
   3182
-  3183 1493			HEXSHIFT:
-  3184 1493 0A			        ASL
-  3185 1494 26 F3		        ROL     INBUFF      ; Rotate into LSD.
-  3186 1496 26 F4		        ROL     INBUFF+1    ; Rotate into MSD's.
-  3187 1498 CA			        DEX                 ; Done 4 shifts?
-  3188 1499 D0 F8		        BNE     HEXSHIFT    ; No, loop.
-  3189 149B C8			        INY                 ; Advance text index
-  3190 149C CC 00 18		        CPY     RBUF        ; Processed 4 characters?
-  3191 149F D0 DD		        BNE     NEXTHEX     ; No, get next character.
-  3192
-  3193 14A1 6C F3 00		        JMP     (INBUFF)    ; Goto requested address. Godspeed.
-  3194
-  3195 14A4			NOTHEX:
-  3196 14A4 A9 AB		        LDA     #<RUN_ERROR_STR
-  3197 14A6 A0 14		        LDY     #>RUN_ERROR_STR
-  3198 14A8 4C 7B 0A		        JMP     PRINT_STRING
-  3199
-  3200 14AB			RUN_ERROR_STR:
-  3201 14AB 41 44 44 52 3F 20 +         .BYTE   'ADDR? 0000..FFFF',EOL
-  3202
-  3203 				;---------------------------------------
-  3204 14BC			DO_WARM:
-  3205 				;---------------------------------------
-  3206 14BC 4C 74 E4		        JMP     WARMSV
-  3207
-  3208 				;---------------------------------------
-  3209 14BF			DO_XEP:
-  3210 				;---------------------------------------
-  3211 14BF A0 19		        LDY     #$19        ; CMD = $19 (enter 40 col)
-  3212 14C1 AE 85 0B		        LDX     CMDSEP
-  3213 14C4 BD 82 05		        LDA     LNBUF,X
-  3214 14C7 C9 34		        CMP     #'4'
-  3215 14C9 F0 01		        BEQ     @+
-  3216 14CB 88			        DEY                 ; CMD = $18 (enter 80 col)
-  3217 14CC			@:      
-  3218 14CC A2 00		        LDX     #$00
-  3219 14CE 98			        TYA
-  3220 14CF 9D 42 03		        STA     ICCOM,X
-  3221 14D2 A9 EC		        LDA     #<EDEV
-  3222 14D4 9D 44 03		        STA     ICBAL,X
-  3223 14D7 A9 14		        LDA     #>EDEV
-  3224 14D9 9D 45 03		        STA     ICBAH,X
-  3225 14DC A9 2C		        LDA     #$2C
-  3226 14DE 9D 4A 03		        STA     ICAX1,X
-  3227 14E1 A9 00		        LDA     #$00
-  3228 14E3 9D 4B 03		        STA     ICAX2,X
-  3229 14E6 20 56 E4		        JSR     CIOV
-  3230 14E9 4C 0E 13		        JMP     DO_CLS
-  3231
-  3232 14EC 25 1A 9B		EDEV:   .BYTE   "E:",EOL
-  3233 				        
-  3234 				;---------------------------------------
-  3235 14EF			REMOUNT_DRIVE:
-  3236 				;---------------------------------------
-  3237
-  3238 				    ;---------------------------------------
-  3239 				    ; Workaround for timeout issue regarding idempotent commands that
-  3240 				    ; unmount the server.  So far, these are DEL and RENAME. This
-  3241 				    ; routine, remounts the TNFS URL by calling NPWD and attempts
-  3242 				    ; a MKDIR on the returned mount point. Hopefully this is an
-  3243 				    ; non-consequential operation since the directory already exists.
-  3244 				    ;---------------------------------------
-  3245
-  3246 14EF 20 46 10		        JSR     DO_NPWD         ; Curr dir for drive now in RBUF
-  3247
-  3248 14F2 AD 00 18		        LDA     RBUF            ; Quit if not TNFS. Only TNFS is affected.
-  3249 14F5 C9 54		        CMP     #'T'            ; TODO More letters needed if...
-  3250 14F7 D0 28		        BNE     REMOUNT_DONE    ; ...another Txxx protocol exists
-  3251
-  3252 14F9 A9 4E		        LDA     #'N'
-  3253 14FB 8D 00 18		        STA     RBUF+0
-  3254 14FE AD E6 16		        LDA     DOSDR           ; Get drive number
-  3255 1501 09 30		        ORA     #'0'            ; Convert, say, 1 to '1'
-  3256 1503 8D 01 18		        STA     RBUF+1
-  3257 1506 A9 3A		        LDA     #':'
-  3258 1508 8D 02 18		        STA     RBUF+2
-  3259
-  3260 150B A9 2A		        LDA     #CMD_MKDIR
-  3261 150D 8D B1 0C		        STA     GENDCB+2
-  3262 1510 A9 00		        LDA     #<RBUF          ; TODO Is this needed
-  3263 1512 8D B3 0C		        STA     GENDCB+4        ; TODO or is it hardcoded in DO_GENERIC?
-  3264 1515 A9 18		        LDA     #>RBUF
-  3265 1517 8D B4 0C		        STA     GENDCB+5
-  3266
-  3267 151A A9 AF		        LDA     #<GENDCB
-  3268 151C A0 0C		        LDY     #>GENDCB
-  3269 151E 4C A5 07		        JMP     DOSIOV
+  3183 1478			PRINT_DONE:
+  3184 1478 60			        RTS
+  3185
+  3186 				;---------------------------------------
+  3187 1479			DO_REENTER:
+  3188 				;---------------------------------------
+  3189 				    ; Jump to the address stored in RUNAD or INITAD
+  3190 				    ; Do the one that isn't pointing to R (RUNAD first)
+  3191
+  3192 				    ; Skip it all if both contain $0000
+  3193 1479 AD E2 02		        LDA     INITAD
+  3194 147C D0 16		        BNE     DO_REENTER_CONT
+  3195 147E AD E3 02		        LDA     INITAD+1
+  3196 1481 D0 11		        BNE     DO_REENTER_CONT
+  3197 1483 AD E0 02		        LDA     RUNAD
+  3198 1486 D0 0C		        BNE     DO_REENTER_CONT
+  3199 1488 AD E1 02		        LDA     RUNAD+1
+  3200 148B D0 07		        BNE     DO_REENTER_CONT
+  3201
+  3202 148D A9 A8		        LDA     #<DO_REENTER_ERR
+  3203 148F A0 14		        LDY     #>DO_REENTER_ERR
+  3204 1491 4C 7B 0A		        JMP     PRINT_STRING
+  3205
+  3206 1494			DO_REENTER_CONT:
+  3207 1494 AD E0 02		        LDA     RUNAD
+  3208 1497 C9 0E		        CMP     #>R
+  3209 1499 D0 07		        BNE     DO_REENTER_RUNAD
+  3210 149B AD E1 02		        LDA     RUNAD+1
+  3211 149E C9 0E		        CMP     #>R
+  3212 14A0 F0 03		        BEQ     DO_REENTER_INITAD
+  3213
+  3214 14A2			DO_REENTER_RUNAD:
+  3215 14A2 6C E0 02		        JMP     (RUNAD)     ; Godspeed
+  3216
+  3217 14A5			DO_REENTER_INITAD:
+  3218 14A5 6C E2 02		        JMP     (INITAD)    ; Godspeed
+  3219
+  3220 14A8			DO_REENTER_ERR:
+  3221 14A8 4E 4F 20 41 44 44 +         .BYTE   'NO ADDR IN INITAD OR RUNAD',EOL
+  3222
+  3223 				;---------------------------------------
+  3224 14C3			DO_REM:
+  3225 				;---------------------------------------
+  3226 14C3 60			        RTS
+  3227
+  3228 				;---------------------------------------
+  3229 14C4			DO_RUN:
+  3230 				;---------------------------------------
+  3231 14C4 AD 85 0B		        LDA     CMDSEP      ; Get position for address arg
+  3232 14C7 A8			        TAY                 ; Offset to arg used later
+  3233 14C8 18			        CLC
+  3234 14C9 69 04		        ADC     #$04
+  3235 14CB 8D 00 18		        STA     RBUF
+  3236
+  3237 				    ;---------------------------------------
+  3238 				    ; ASCII hex char to integer conversion
+  3239 				    ; algorithm borrowed from Apple II Monitor
+  3240 				    ;---------------------------------------
+  3241 14CE A9 00		        LDA     #$00
+  3242 14D0 85 F3		        STA     INBUFF      ; L
+  3243 14D2 85 F4		        STA     INBUFF+1    ; H
+  3244 14D4			NEXTHEX:
+  3245 14D4 B9 82 05		        LDA     LNBUF,Y     ; Get character for hex test.
+  3246 14D7 49 30		        EOR     #%00110000  ; Maps digits to $0-$9
+  3247 14D9 C9 0A		        CMP     #$0A        ; Digit?
+  3248 14DB 90 06		        BCC     DIG         ; Yes.
+  3249 14DD 69 88		        ADC     #$88        ; Map letter "A"-"F" to $FA-FF.
+  3250 14DF C9 FA		        CMP     #$FA        ; Hex letter?
+  3251 14E1 90 17		        BCC     NOTHEX      ; No, character not hex.
+  3252
+  3253 14E3 0A			DIG:    ASL
+  3254 14E4 0A			        ASL
+  3255 14E5 0A			        ASL
+  3256 14E6 0A			        ASL
+  3257 14E7 A2 04		        LDX     #$04        ; Shift count.
+  3258
+  3259 14E9			HEXSHIFT:
+  3260 14E9 0A			        ASL
+  3261 14EA 26 F3		        ROL     INBUFF      ; Rotate into LSD.
+  3262 14EC 26 F4		        ROL     INBUFF+1    ; Rotate into MSD's.
+  3263 14EE CA			        DEX                 ; Done 4 shifts?
+  3264 14EF D0 F8		        BNE     HEXSHIFT    ; No, loop.
+  3265 14F1 C8			        INY                 ; Advance text index
+  3266 14F2 CC 00 18		        CPY     RBUF        ; Processed 4 characters?
+  3267 14F5 D0 DD		        BNE     NEXTHEX     ; No, get next character.
+  3268
+  3269 14F7 6C F3 00		        JMP     (INBUFF)    ; Goto requested address. Godspeed.
   3270
-  3271 1521			REMOUNT_DONE:
-  3272 1521 60			        RTS
-  3273
-  3274 				;---------------------------------------
-  3275 1522			PREPEND_DRIVE:
-  3276 				;---------------------------------------
-  3277 				        ; Inject "Nn:" in front of a plain filename
-  3278 				        ; before passing it to the FujiNet
-  3279 1522 A0 00		        LDY     #$00
-  3280 1524 A9 4E		        LDA     #'N'
-  3281 1526 D1 F3		        CMP     (INBUFF),Y  ; Does arg1 already begin with N?
-  3282
-  3283 1528 A0 02		        LDY     #$02
-  3284 152A A9 3A		        LDA     #':'
-  3285 152C D1 F3		        CMP     (INBUFF),Y
-  3286 152E F0 1C		        BEQ     PREPEND_DRIVE_DONE
-  3287 1530 88			        DEY
-  3288 1531 D1 F3		        CMP     (INBUFF),Y
-  3289 1533 F0 17		        BEQ     PREPEND_DRIVE_DONE
-  3290
-  3291 				        ; Move input buffer pointer back 3 bytes
-  3292 1535 38			        SEC
-  3293 1536 A5 F3		        LDA     INBUFF
-  3294 1538 E9 03		        SBC     #$03
-  3295 153A 85 F3		        STA     INBUFF
-  3296 153C A5 F4		        LDA     INBUFF+1
-  3297 153E E9 00		        SBC     #$00
-  3298 1540 85 F4		        STA     INBUFF+1
-  3299
-  3300 				        ; Inject PRMPT to front of arg1
-  3301 1542 A0 03		        LDY     #$03
-  3302 1544			PREPEND_DRIVE_LOOP:
-  3303 1544 B9 76 15		        LDA     PRMPT,Y
-  3304 1547 88			        DEY
-  3305 1548 91 F3		        STA     (INBUFF),Y
-  3306 154A D0 F8		        BNE     PREPEND_DRIVE_LOOP
+  3271 14FA			NOTHEX:
+  3272 14FA A9 01		        LDA     #<RUN_ERROR_STR
+  3273 14FC A0 15		        LDY     #>RUN_ERROR_STR
+  3274 14FE 4C 7B 0A		        JMP     PRINT_STRING
+  3275
+  3276 1501			RUN_ERROR_STR:
+  3277 1501 41 44 44 52 3F 20 +         .BYTE   'ADDR? 0000..FFFF',EOL
+  3278
+  3279 				;---------------------------------------
+  3280 1512			DO_WARM:
+  3281 				;---------------------------------------
+  3282 1512 4C 74 E4		        JMP     WARMSV
+  3283
+  3284 				;---------------------------------------
+  3285 1515			DO_XEP:
+  3286 				;---------------------------------------
+  3287 1515 A0 19		        LDY     #$19        ; CMD = $19 (enter 40 col)
+  3288 1517 AE 85 0B		        LDX     CMDSEP
+  3289 151A BD 82 05		        LDA     LNBUF,X
+  3290 151D C9 34		        CMP     #'4'
+  3291 151F F0 01		        BEQ     @+
+  3292 1521 88			        DEY                 ; CMD = $18 (enter 80 col)
+  3293 1522			@:      
+  3294 1522 A2 00		        LDX     #$00
+  3295 1524 98			        TYA
+  3296 1525 9D 42 03		        STA     ICCOM,X
+  3297 1528 A9 42		        LDA     #<EDEV
+  3298 152A 9D 44 03		        STA     ICBAL,X
+  3299 152D A9 15		        LDA     #>EDEV
+  3300 152F 9D 45 03		        STA     ICBAH,X
+  3301 1532 A9 2C		        LDA     #$2C
+  3302 1534 9D 4A 03		        STA     ICAX1,X
+  3303 1537 A9 00		        LDA     #$00
+  3304 1539 9D 4B 03		        STA     ICAX2,X
+  3305 153C 20 56 E4		        JSR     CIOV
+  3306 153F 4C 64 13		        JMP     DO_CLS
   3307
-  3308 154C			PREPEND_DRIVE_DONE:
-  3309 154C A0 01		        LDY     #$01
-  3310 154E 60			        RTS             ; Y = $00 here
-  3311
+  3308 1542 25 1A 9B		EDEV:   .BYTE   "E:",EOL
+  3309 				        
+  3310 				;---------------------------------------
+  3311 1545			REMOUNT_DRIVE:
   3312 				;---------------------------------------
-  3313 154F			APPEND_SLASH:
-  3314 				;---------------------------------------
-  3315 				    ;---------------------------------------
-  3316 				    ; Skip if relative path (..)
-  3317 				    ;---------------------------------------
-  3318 154F A0 00		        LDY     #$00
-  3319 1551 A9 2E		        LDA     #'.'
-  3320 1553 D1 F3		        CMP     (INBUFF),Y
-  3321 1555 F0 1E		        BEQ     APPEND_SLASH_DONE
-  3322
-  3323 1557 A0 FF		        LDY     #$FF        ; Iterate thru arg2 until EOF
-  3324 1559			APPEND_SLASH_LOOP:
-  3325 1559 C8			        INY                 ; Zero on 1st pass
-  3326 155A B1 F3		        LDA     (INBUFF),Y
-  3327 155C C9 9B		        CMP     #EOL
-  3328 155E D0 F9		        BNE     APPEND_SLASH_LOOP
-  3329
-  3330 1560 88			        DEY                 ; Move pointer back one character
-  3331 1561 B1 F3		        LDA     (INBUFF),Y
-  3332 1563 C9 2F		        CMP     #'/'        ; If already slash then skip rest
-  3333 1565 F0 0E		        BEQ     APPEND_SLASH_DONE
-  3334 1567 C9 3A		        CMP     #':'        ; If a drive, skip
-  3335 1569 F0 0A		        BEQ     APPEND_SLASH_DONE
-  3336
-  3337 156B C8			        INY                 ; Else inject '/' + EOL
-  3338 156C A9 2F		        LDA     #'/'
-  3339 156E 91 F3		        STA     (INBUFF),Y
-  3340 1570 C8			        INY
-  3341 1571 A9 9B		        LDA     #EOL
-  3342 1573 91 F3		        STA     (INBUFF),Y
-  3343
-  3344 1575			APPEND_SLASH_DONE:
-  3345 1575 60			        RTS
+  3313
+  3314 				    ;---------------------------------------
+  3315 				    ; Workaround for timeout issue regarding idempotent commands that
+  3316 				    ; unmount the server.  So far, these are DEL and RENAME. This
+  3317 				    ; routine, remounts the TNFS URL by calling NPWD and attempts
+  3318 				    ; a MKDIR on the returned mount point. Hopefully this is an
+  3319 				    ; non-consequential operation since the directory already exists.
+  3320 				    ;---------------------------------------
+  3321
+  3322 1545 20 7D 10		        JSR     DO_NPWD         ; Curr dir for drive now in RBUF
+  3323
+  3324 1548 AD 00 18		        LDA     RBUF            ; Quit if not TNFS. Only TNFS is affected.
+  3325 154B C9 54		        CMP     #'T'            ; TODO More letters needed if...
+  3326 154D D0 28		        BNE     REMOUNT_DONE    ; ...another Txxx protocol exists
+  3327
+  3328 154F A9 4E		        LDA     #'N'
+  3329 1551 8D 00 18		        STA     RBUF+0
+  3330 1554 AD 3C 17		        LDA     DOSDR           ; Get drive number
+  3331 1557 09 30		        ORA     #'0'            ; Convert, say, 1 to '1'
+  3332 1559 8D 01 18		        STA     RBUF+1
+  3333 155C A9 3A		        LDA     #':'
+  3334 155E 8D 02 18		        STA     RBUF+2
+  3335
+  3336 1561 A9 2A		        LDA     #CMD_MKDIR
+  3337 1563 8D B1 0C		        STA     GENDCB+2
+  3338 1566 A9 00		        LDA     #<RBUF          ; TODO Is this needed
+  3339 1568 8D B3 0C		        STA     GENDCB+4        ; TODO or is it hardcoded in DO_GENERIC?
+  3340 156B A9 18		        LDA     #>RBUF
+  3341 156D 8D B4 0C		        STA     GENDCB+5
+  3342
+  3343 1570 A9 AF		        LDA     #<GENDCB
+  3344 1572 A0 0C		        LDY     #>GENDCB
+  3345 1574 4C A5 07		        JMP     DOSIOV
   3346
-  3347 1576			PRMPT:
-  3348 1576 9B 4E 20 3A		        .BYTE   EOL,'N :'
+  3347 1577			REMOUNT_DONE:
+  3348 1577 60			        RTS
   3349
-  3350 				;;; End CP ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  3351 				;;; Variables
-  3352
-  3353 157A			        .ENUM   CMD_IDX
-  3354 				        ;---------------
-  3355 = 0000			                NCD                 ;  0
-  3356 = 0001			                COPY                ;  1
-  3357 = 0002			                DIR                 ;  2
-  3358 = 0003			                DEL                 ;  3
-  3359 = 0004			                LOAD                ;  4
-  3360 = 0005			                LOCK                ;  5
-  3361 = 0006			                LOGIN               ;  6
-  3362 = 0007			                MKDIR               ;  7
-  3363 = 0008			                NPWD                ;  8
-  3364 = 0009			                NTRANS              ;  9
-  3365 = 000A			                RENAME              ; 10
-  3366 = 000B			                RMDIR               ; 11
-  3367 = 000C			                SUBMIT              ; 12
-  3368 = 000D			                TYPE                ; 13
-  3369 = 000E			                UNLOCK              ; 14
-  3370 = 000F			                AUTORUN             ; 15
-  3371 = 0010			                CAR                 ; 16
-  3372 = 0011			                CLS                 ; 17
-  3373 = 0012			                COLD                ; 18
-  3374 = 0013			                HELP                ; 19
-  3375 = 0014			                NOBASIC             ; 20
-  3376 = 0015			                NOSCREEN            ; 21
-  3377 = 0016			                PRINT               ; 22
-  3378 = 0017			                REENTER             ; 23
-  3379 = 0018			                REM                 ; 24
-  3380 = 0019			                RUN                 ; 25
-  3381 = 001A			                SCREEN              ; 26
-  3382 = 001B			                WARM                ; 27
-  3383 = 001C			                XEP                 ; 28
-  3384 = 001D			                DRIVE_CHG           ; 
-  3385 				        .ENDE
-  3386
-  3387 157A			CMD_DCOMND:
-  3388 157A 2C			        .BYTE   CMD_CD              ;  0 NCD
-  3389 157B A1			        .BYTE   CMD_COPY            ;  1 COPY
-  3390 157C 02			        .BYTE   CMD_DIR             ;  2 DIR
-  3391 157D 21			        .BYTE   CMD_DEL             ;  3 DEL
-  3392 157E 28			        .BYTE   CMD_LOAD            ;  4 LOAD
-  3393 157F FD			        .BYTE   CMD_LOGIN           ;  5 LOAD
-  3394 1580 23			        .BYTE   CMD_LOCK            ;  6 LOCK
-  3395 1581 2A			        .BYTE   CMD_MKDIR           ;  7 MKDIR
-  3396 1582 30			        .BYTE   CMD_NPWD            ;  8 NPWD
-  3397 1583 54			        .BYTE   CMD_NTRANS          ;  9 NTRANS
-  3398 1584 20			        .BYTE   CMD_RENAME          ; 10 RENAME
-  3399 1585 2B			        .BYTE   CMD_RMDIR           ; 11 RMDIR
-  3400 1586 F0			        .BYTE   CMD_SUBMIT          ; 12 SUBMIT
-  3401 1587 F0			        .BYTE   CMD_TYPE            ; 13 TYPE
-  3402 1588 24			        .BYTE   CMD_UNLOCK          ; 14 UNLOCK
-  3403 1589 F0			        .BYTE   CMD_AUTORUN         ; 15 AUTORUN
-  3404 158A F0			        .BYTE   CMD_CAR             ; 16 CAR
-  3405 158B F0			        .BYTE   CMD_CLS             ; 17 CLS
-  3406 158C F0			        .BYTE   CMD_COLD            ; 18 COLD
-  3407 158D F0			        .BYTE   CMD_HELP            ; 19 HELP
-  3408 158E F0			        .BYTE   CMD_NOBASIC         ; 20 NOBASIC
-  3409 158F F0			        .BYTE   CMD_NOSCREEN        ; 21 NOSCREEN
-  3410 1590 F0			        .BYTE   CMD_PRINT           ; 22 PRINT
-  3411 1591 F0			        .BYTE   CMD_REENTER         ; 23 REENTER
-  3412 1592 F0			        .BYTE   CMD_REM             ; 24 REM
-  3413 1593 F0			        .BYTE   CMD_RUN             ; 25 RUN
-  3414 1594 F0			        .BYTE   CMD_SCREEN          ; 26 SCREEN
-  3415 1595 F0			        .BYTE   CMD_WARM            ; 27 WARM
-  3416 1596 F0			        .BYTE   CMD_XEP             ; 28 XEP
-  3417 1597 01			        .BYTE   CMD_DRIVE_CHG       ; 29
-  3418
-  3419 1598			COMMAND:
-  3420 1598 4E 43 C4		        .CB     "NCD"               ;  0 NCD
-  3421 159B 00			        .BYTE   CMD_IDX.NCD            
+  3350 				;---------------------------------------
+  3351 1578			PREPEND_DRIVE:
+  3352 				;---------------------------------------
+  3353 				        ; Inject "Nn:" in front of a plain filename
+  3354 				        ; before passing it to the FujiNet
+  3355 1578 A0 00		        LDY     #$00
+  3356 157A A9 4E		        LDA     #'N'
+  3357 157C D1 F3		        CMP     (INBUFF),Y  ; Does arg1 already begin with N?
+  3358
+  3359 157E A0 02		        LDY     #$02
+  3360 1580 A9 3A		        LDA     #':'
+  3361 1582 D1 F3		        CMP     (INBUFF),Y
+  3362 1584 F0 1C		        BEQ     PREPEND_DRIVE_DONE
+  3363 1586 88			        DEY
+  3364 1587 D1 F3		        CMP     (INBUFF),Y
+  3365 1589 F0 17		        BEQ     PREPEND_DRIVE_DONE
+  3366
+  3367 				        ; Move input buffer pointer back 3 bytes
+  3368 158B 38			        SEC
+  3369 158C A5 F3		        LDA     INBUFF
+  3370 158E E9 03		        SBC     #$03
+  3371 1590 85 F3		        STA     INBUFF
+  3372 1592 A5 F4		        LDA     INBUFF+1
+  3373 1594 E9 00		        SBC     #$00
+  3374 1596 85 F4		        STA     INBUFF+1
+  3375
+  3376 				        ; Inject PRMPT to front of arg1
+  3377 1598 A0 03		        LDY     #$03
+  3378 159A			PREPEND_DRIVE_LOOP:
+  3379 159A B9 CC 15		        LDA     PRMPT,Y
+  3380 159D 88			        DEY
+  3381 159E 91 F3		        STA     (INBUFF),Y
+  3382 15A0 D0 F8		        BNE     PREPEND_DRIVE_LOOP
+  3383
+  3384 15A2			PREPEND_DRIVE_DONE:
+  3385 15A2 A0 01		        LDY     #$01
+  3386 15A4 60			        RTS             ; Y = $00 here
+  3387
+  3388 				;---------------------------------------
+  3389 15A5			APPEND_SLASH:
+  3390 				;---------------------------------------
+  3391 				    ;---------------------------------------
+  3392 				    ; Skip if relative path (..)
+  3393 				    ;---------------------------------------
+  3394 15A5 A0 00		        LDY     #$00
+  3395 15A7 A9 2E		        LDA     #'.'
+  3396 15A9 D1 F3		        CMP     (INBUFF),Y
+  3397 15AB F0 1E		        BEQ     APPEND_SLASH_DONE
+  3398
+  3399 15AD A0 FF		        LDY     #$FF        ; Iterate thru arg2 until EOF
+  3400 15AF			APPEND_SLASH_LOOP:
+  3401 15AF C8			        INY                 ; Zero on 1st pass
+  3402 15B0 B1 F3		        LDA     (INBUFF),Y
+  3403 15B2 C9 9B		        CMP     #EOL
+  3404 15B4 D0 F9		        BNE     APPEND_SLASH_LOOP
+  3405
+  3406 15B6 88			        DEY                 ; Move pointer back one character
+  3407 15B7 B1 F3		        LDA     (INBUFF),Y
+  3408 15B9 C9 2F		        CMP     #'/'        ; If already slash then skip rest
+  3409 15BB F0 0E		        BEQ     APPEND_SLASH_DONE
+  3410 15BD C9 3A		        CMP     #':'        ; If a drive, skip
+  3411 15BF F0 0A		        BEQ     APPEND_SLASH_DONE
+  3412
+  3413 15C1 C8			        INY                 ; Else inject '/' + EOL
+  3414 15C2 A9 2F		        LDA     #'/'
+  3415 15C4 91 F3		        STA     (INBUFF),Y
+  3416 15C6 C8			        INY
+  3417 15C7 A9 9B		        LDA     #EOL
+  3418 15C9 91 F3		        STA     (INBUFF),Y
+  3419
+  3420 15CB			APPEND_SLASH_DONE:
+  3421 15CB 60			        RTS
   3422
-  3423 159C 43 4F 50 D9		        .CB     "COPY"              ;  1 COPY
-  3424 15A0 01			        .BYTE   CMD_IDX.COPY           
+  3423 15CC			PRMPT:
+  3424 15CC 9B 4E 20 3A		        .BYTE   EOL,'N :'
   3425
-  3426 15A1 44 49 D2		        .CB     "DIR"               ;  2 DIR
-  3427 15A4 02			        .BYTE   CMD_IDX.DIR              
+  3426 				;;; End CP ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  3427 				;;; Variables
   3428
-  3429 15A5 44 45 CC		        .CB     "DEL"               ;  3 DEL
-  3430 15A8 03			        .BYTE   CMD_IDX.DEL              
-  3431
-  3432 15A9 4C 4F 41 C4		        .CB     "LOAD"              ;  4 LOAD
-  3433 15AD 04			        .BYTE   CMD_IDX.LOAD             
-  3434
-  3435 15AE 4C 4F 43 CB		        .CB     "LOCK"              ;  5 LOCK
-  3436 15B2 05			        .BYTE   CMD_IDX.LOCK             
-  3437
-  3438 15B3 4C 4F 47 49 CE	        .CB     "LOGIN"             ;  6 LOGIN
-  3439 15B8 06			        .BYTE   CMD_IDX.LOGIN              
-  3440 				                                        
-  3441 15B9 4D 4B 44 49 D2	        .CB     "MKDIR"             ;  7 MKDIR
-  3442 15BE 07			        .BYTE   CMD_IDX.MKDIR           
-  3443
-  3444 15BF 4E 50 57 C4		        .CB     "NPWD"              ;  8 NPWD
-  3445 15C3 08			        .BYTE   CMD_IDX.NPWD             
-  3446
-  3447 15C4 4E 54 52 41 4E D3	        .CB     "NTRANS"            ;  9 NTRANS
-  3448 15CA 09			        .BYTE   CMD_IDX.NTRANS            
-  3449 				                                        
-  3450 15CB 52 45 4E 41 4D C5	        .CB     "RENAME"            ; 10 RENAME
-  3451 15D1 0A			        .BYTE   CMD_IDX.RENAME          
-  3452 				                                        
-  3453 15D2 52 4D 44 49 D2	        .CB     "RMDIR"             ; 11 RMDIR
-  3454 15D7 0B			        .BYTE   CMD_IDX.RMDIR           
-  3455 				                                        
-  3456 15D8 53 55 42 4D 49 D4	        .CB     "SUBMIT"            ; 12 SUBMIT
-  3457 15DE 0C			        .BYTE   CMD_IDX.SUBMIT             
-  3458 				                                        
-  3459 15DF 54 59 50 C5		        .CB     "TYPE"              ; 13 SUBMIT
-  3460 15E3 0D			        .BYTE   CMD_IDX.TYPE              
-  3461 				                                        
-  3462 15E4 55 4E 4C 4F 43 CB	        .CB     "UNLOCK"            ; 14 UNLOCK
-  3463 15EA 0E			        .BYTE   CMD_IDX.UNLOCK            
-  3464 				                                        
-  3465 15EB 41 55 54 4F 52 55 +         .CB     "AUTORUN"           ; 28 AUTORUN
-  3466 15F2 0F			        .BYTE   CMD_IDX.AUTORUN
-  3467
-  3468 15F3 43 41 D2		        .CB     "CAR"               ; 15 CAR
-  3469 15F6 10			        .BYTE   CMD_IDX.CAR             
-  3470 				                                        
-  3471 15F7 43 4C D3		        .CB     "CLS"               ; 16 CLS
-  3472 15FA 11			        .BYTE   CMD_IDX.CLS           
-  3473
-  3474 15FB 43 4F 4C C4		        .CB     "COLD"              ; 17 COLD
-  3475 15FF 12			        .BYTE   CMD_IDX.COLD              
-  3476
-  3477 1600 48 45 4C D0		        .CB     "HELP"              ; 18 HELP
-  3478 1604 13			        .BYTE   CMD_IDX.HELP               
-  3479 				                                       
-  3480 1605 4E 4F 42 41 53 49 +         .CB     "NOBASIC"           ; 19 NOBASIC
-  3481 160C 14			        .BYTE   CMD_IDX.NOBASIC           
-  3482 				                                          
-  3483 160D 40 4E 4F 53 43 52 +         .CB     "@NOSCREEN"         ; 20 @NOSCREEN
-  3484 1616 15			        .BYTE   CMD_IDX.NOSCREEN         
-  3485 				                                        
-  3486 1617 50 52 49 4E D4	        .CB     "PRINT"             ; 21 PRINT
-  3487 161C 16			        .BYTE   CMD_IDX.PRINT           
-  3488 				                                        
-  3489 161D 52 45 45 4E 54 45 +         .CB     "REENTER"           ; 22 REENTER
-  3490 1624 17			        .BYTE   CMD_IDX.REENTER         
-  3491 				                                        
-  3492 1625 52 45 CD		        .CB     "REM"               ; 23 REM
-  3493 1628 18			        .BYTE   CMD_IDX.REM             
-  3494 				                                        
-  3495 1629 52 55 CE		        .CB     "RUN"               ; 24 RUN
-  3496 162C 19			        .BYTE   CMD_IDX.RUN             
-  3497 				                                        
-  3498 162D 40 53 43 52 45 45 +         .CB     "@SCREEN"           ; 25 @SCREEN
-  3499 1634 1A			        .BYTE   CMD_IDX.SCREEN          
-  3500 				                                        
-  3501 1635 57 41 52 CD		        .CB     "WARM"              ; 26 WARM
-  3502 1639 1B			        .BYTE   CMD_IDX.WARM            
-  3503 				                                        
-  3504 163A 58 45 D0		        .CB     "XEP"               ; 27 XEP
-  3505 163D 1C			        .BYTE   CMD_IDX.XEP            
-  3506 				                                        
-  3507 				; Aliases
-  3508 163E 43 C4		        .CB     "CD"                ; CD = NCD
-  3509 1640 00			        .BYTE   CMD_IDX.NCD           
+  3429 15D0			        .ENUM   CMD_IDX
+  3430 				        ;---------------
+  3431 = 0000			                NCD                 ;  0
+  3432 = 0001			                COPY                ;  1
+  3433 = 0002			                DIR                 ;  2
+  3434 = 0003			                DEL                 ;  3
+  3435 = 0004			                LOAD                ;  4
+  3436 = 0005			                LOCK                ;  5
+  3437 = 0006			                LOGIN               ;  6
+  3438 = 0007			                MKDIR               ;  7
+  3439 = 0008			                NPWD                ;  8
+  3440 = 0009			                NTRANS              ;  9
+  3441 = 000A			                RENAME              ; 10
+  3442 = 000B			                RMDIR               ; 11
+  3443 = 000C			                SUBMIT              ; 12
+  3444 = 000D			                TYPE                ; 13
+  3445 = 000E			                UNLOCK              ; 14
+  3446 = 000F			                AUTORUN             ; 15
+  3447 = 0010			                CAR                 ; 16
+  3448 = 0011			                CLS                 ; 17
+  3449 = 0012			                COLD                ; 18
+  3450 = 0013			                HELP                ; 19
+  3451 = 0014			                NOBASIC             ; 20
+  3452 = 0015			                NOSCREEN            ; 21
+  3453 = 0016			                PRINT               ; 22
+  3454 = 0017			                REENTER             ; 23
+  3455 = 0018			                REM                 ; 24
+  3456 = 0019			                RUN                 ; 25
+  3457 = 001A			                SCREEN              ; 26
+  3458 = 001B			                WARM                ; 27
+  3459 = 001C			                XEP                 ; 28
+  3460 = 001D			                DRIVE_CHG           ; 
+  3461 				        .ENDE
+  3462
+  3463 15D0			CMD_DCOMND:
+  3464 15D0 2C			        .BYTE   CMD_CD              ;  0 NCD
+  3465 15D1 A1			        .BYTE   CMD_COPY            ;  1 COPY
+  3466 15D2 02			        .BYTE   CMD_DIR             ;  2 DIR
+  3467 15D3 21			        .BYTE   CMD_DEL             ;  3 DEL
+  3468 15D4 28			        .BYTE   CMD_LOAD            ;  4 LOAD
+  3469 15D5 FD			        .BYTE   CMD_LOGIN           ;  5 LOAD
+  3470 15D6 23			        .BYTE   CMD_LOCK            ;  6 LOCK
+  3471 15D7 2A			        .BYTE   CMD_MKDIR           ;  7 MKDIR
+  3472 15D8 30			        .BYTE   CMD_NPWD            ;  8 NPWD
+  3473 15D9 54			        .BYTE   CMD_NTRANS          ;  9 NTRANS
+  3474 15DA 20			        .BYTE   CMD_RENAME          ; 10 RENAME
+  3475 15DB 2B			        .BYTE   CMD_RMDIR           ; 11 RMDIR
+  3476 15DC F0			        .BYTE   CMD_SUBMIT          ; 12 SUBMIT
+  3477 15DD F0			        .BYTE   CMD_TYPE            ; 13 TYPE
+  3478 15DE 24			        .BYTE   CMD_UNLOCK          ; 14 UNLOCK
+  3479 15DF F0			        .BYTE   CMD_AUTORUN         ; 15 AUTORUN
+  3480 15E0 F0			        .BYTE   CMD_CAR             ; 16 CAR
+  3481 15E1 F0			        .BYTE   CMD_CLS             ; 17 CLS
+  3482 15E2 F0			        .BYTE   CMD_COLD            ; 18 COLD
+  3483 15E3 F0			        .BYTE   CMD_HELP            ; 19 HELP
+  3484 15E4 F0			        .BYTE   CMD_NOBASIC         ; 20 NOBASIC
+  3485 15E5 F0			        .BYTE   CMD_NOSCREEN        ; 21 NOSCREEN
+  3486 15E6 F0			        .BYTE   CMD_PRINT           ; 22 PRINT
+  3487 15E7 F0			        .BYTE   CMD_REENTER         ; 23 REENTER
+  3488 15E8 F0			        .BYTE   CMD_REM             ; 24 REM
+  3489 15E9 F0			        .BYTE   CMD_RUN             ; 25 RUN
+  3490 15EA F0			        .BYTE   CMD_SCREEN          ; 26 SCREEN
+  3491 15EB F0			        .BYTE   CMD_WARM            ; 27 WARM
+  3492 15EC F0			        .BYTE   CMD_XEP             ; 28 XEP
+  3493 15ED 01			        .BYTE   CMD_DRIVE_CHG       ; 29
+  3494
+  3495 15EE			COMMAND:
+  3496 15EE 4E 43 C4		        .CB     "NCD"               ;  0 NCD
+  3497 15F1 00			        .BYTE   CMD_IDX.NCD            
+  3498
+  3499 15F2 43 4F 50 D9		        .CB     "COPY"              ;  1 COPY
+  3500 15F6 01			        .BYTE   CMD_IDX.COPY           
+  3501
+  3502 15F7 44 49 D2		        .CB     "DIR"               ;  2 DIR
+  3503 15FA 02			        .BYTE   CMD_IDX.DIR              
+  3504
+  3505 15FB 44 45 CC		        .CB     "DEL"               ;  3 DEL
+  3506 15FE 03			        .BYTE   CMD_IDX.DEL              
+  3507
+  3508 15FF 4C 4F 41 C4		        .CB     "LOAD"              ;  4 LOAD
+  3509 1603 04			        .BYTE   CMD_IDX.LOAD             
   3510
-  3511 1641 43 57 C4		        .CB     "CWD"               ; CWD = NCD
-  3512 1644 00			        .BYTE   CMD_IDX.NCD           
+  3511 1604 4C 4F 43 CB		        .CB     "LOCK"              ;  5 LOCK
+  3512 1608 05			        .BYTE   CMD_IDX.LOCK             
   3513
-  3514 1645 45 52 41 53 C5	        .CB     "ERASE"             ; ERASE = DEL
-  3515 164A 03			        .BYTE   CMD_IDX.DEL           
-  3516
-  3517 164B 45 52 C1		        .CB     "ERA"               ; ERA = DEL
-  3518 164E 03			        .BYTE   CMD_IDX.DEL           
+  3514 1609 4C 4F 47 49 CE	        .CB     "LOGIN"             ;  6 LOGIN
+  3515 160E 06			        .BYTE   CMD_IDX.LOGIN              
+  3516 				                                        
+  3517 160F 4D 4B 44 49 D2	        .CB     "MKDIR"             ;  7 MKDIR
+  3518 1614 07			        .BYTE   CMD_IDX.MKDIR           
   3519
-  3520 164F D8			        .CB     "X"                 ; X = LOAD
-  3521 1650 04			        .BYTE   CMD_IDX.LOAD
+  3520 1615 4E 50 57 C4		        .CB     "NPWD"              ;  8 NPWD
+  3521 1619 08			        .BYTE   CMD_IDX.NPWD             
   3522
-  3523 1651 50 57 C4		        .CB     "PWD"               ; PWD = NPWD
-  3524 1654 08			        .BYTE   CMD_IDX.NPWD             
-  3525
-  3526 1655 52 45 C5		        .CB     "REE"               ; R = REENTER
-  3527 1658 17			        .BYTE   CMD_IDX.REENTER             
-  3528
-  3529 1659 52 45 CE		        .CB     "REN"               ; REN = RENAME
-  3530 165C 0A			        .BYTE   CMD_IDX.RENAME
-  3531
-  3532 165D 53 4F 55 52 43 C5	        .CB     "SOURCE"            ; SOURCE = SUBMIT
-  3533 1663 0C			        .BYTE   CMD_IDX.SUBMIT
-  3534
-  3535 1664 C0			        .CB     "@"                 ; @ = SUBMIT
-  3536 1665 0C			        .BYTE   CMD_IDX.SUBMIT
-  3537
-  3538 1666 A3			        .CB     "#"                 ; # = REM
-  3539 1667 18			        .BYTE   CMD_IDX.REM
-  3540
-  3541 1668 A7			        .CB     "'"                 ; ' = REM
-  3542 1669 18			        .BYTE   CMD_IDX.REM
+  3523 161A 4E 54 52 41 4E D3	        .CB     "NTRANS"            ;  9 NTRANS
+  3524 1620 09			        .BYTE   CMD_IDX.NTRANS            
+  3525 				                                        
+  3526 1621 52 45 4E 41 4D C5	        .CB     "RENAME"            ; 10 RENAME
+  3527 1627 0A			        .BYTE   CMD_IDX.RENAME          
+  3528 				                                        
+  3529 1628 52 4D 44 49 D2	        .CB     "RMDIR"             ; 11 RMDIR
+  3530 162D 0B			        .BYTE   CMD_IDX.RMDIR           
+  3531 				                                        
+  3532 162E 53 55 42 4D 49 D4	        .CB     "SUBMIT"            ; 12 SUBMIT
+  3533 1634 0C			        .BYTE   CMD_IDX.SUBMIT             
+  3534 				                                        
+  3535 1635 54 59 50 C5		        .CB     "TYPE"              ; 13 SUBMIT
+  3536 1639 0D			        .BYTE   CMD_IDX.TYPE              
+  3537 				                                        
+  3538 163A 55 4E 4C 4F 43 CB	        .CB     "UNLOCK"            ; 14 UNLOCK
+  3539 1640 0E			        .BYTE   CMD_IDX.UNLOCK            
+  3540 				                                        
+  3541 1641 41 55 54 4F 52 55 +         .CB     "AUTORUN"           ; 28 AUTORUN
+  3542 1648 0F			        .BYTE   CMD_IDX.AUTORUN
   3543
-  3544 				        ; Drive Change intentionally omitted
-  3545
-  3546 = 00D1			COMMAND_SIZE = * - COMMAND - 1
-  3547 166A FF			        .BYTE   $FF
-  3548
-  3549 166B			CMD_TAB_L:
-  3550 166B 4D			        .BYTE   <(DO_GENERIC-1)     ;  0 NCD
-  3551 166C BA			        .BYTE   <(DO_COPY-1)        ;  1 COPY
-  3552 166D C0			        .BYTE   <(DO_DIR-1)         ;  2 DIR
-  3553 166E 4D			        .BYTE   <(DO_GENERIC-1)     ;  3 DEL
-  3554 166F AA			        .BYTE   <(DO_LOAD-1)        ;  4 LOAD
-  3555 1670 0E			        .BYTE   <(DO_LOCK-1)        ;  5 LOCK
-  3556 1671 14			        .BYTE   <(DO_LOGIN-1)       ;  6 LOGIN
-  3557 1672 4D			        .BYTE   <(DO_GENERIC-1)     ;  7 MKDIR
-  3558 1673 45			        .BYTE   <(DO_NPWD-1)        ;  8 NPWD
-  3559 1674 88			        .BYTE   <(DO_NTRANS-1)      ;  9 NTRANS
-  3560 1675 4D			        .BYTE   <(DO_GENERIC-1)     ; 10 RENAME
-  3561 1676 4D			        .BYTE   <(DO_GENERIC-1)     ; 11 RMDIR
-  3562 1677 BB			        .BYTE   <(DO_SUBMIT-1)      ; 12 SUBMIT
-  3563 1678 40			        .BYTE   <(DO_TYPE-1)        ; 13 TYPE
-  3564 1679 DE			        .BYTE   <(DO_UNLOCK-1)      ; 14 UNLOCK
-  3565 167A 0B			        .BYTE   <(DO_AUTORUN-1)     ; 15 AUTORUN
-  3566 167B E4			        .BYTE   <(DO_CAR-1)         ; 16 CAR
-  3567 167C 0D			        .BYTE   <(DO_CLS-1)         ; 17 CLS
-  3568 167D 16			        .BYTE   <(DO_COLD-1)        ; 18 COLD
-  3569 167E 19			        .BYTE   <(DO_HELP-1)        ; 19 HELP
-  3570 167F C7			        .BYTE   <(DO_NOBASIC-1)     ; 20 NOBASIC
-  3571 1680 08			        .BYTE   <(DO_NOSCREEN-1)    ; 21 NOSCREEN
-  3572 1681 14			        .BYTE   <(DO_PRINT-1)       ; 22 PRINT
-  3573 1682 22			        .BYTE   <(DO_REENTER-1)     ; 23 REENTER
-  3574 1683 6C			        .BYTE   <(DO_REM-1)         ; 24 REM
-  3575 1684 6D			        .BYTE   <(DO_RUN-1)         ; 25 RUN
-  3576 1685 0E			        .BYTE   <(DO_SCREEN-1)      ; 26 SCREEN
-  3577 1686 BB			        .BYTE   <(DO_WARM-1)        ; 27 WARM
-  3578 1687 BE			        .BYTE   <(DO_XEP-1)         ; 28 WARM
-  3579 1688 0C			        .BYTE   <(DO_DRIVE_CHG-1)   ; 29
-  3580
-  3581 1689			CMD_TAB_H:
-  3582 1689 0C			        .BYTE   >(DO_GENERIC-1)     ;  0 NCD
-  3583 168A 0C			        .BYTE   >(DO_COPY-1)        ;  1 COPY
-  3584 168B 0C			        .BYTE   >(DO_DIR-1)         ;  2 DIR
-  3585 168C 0C			        .BYTE   >(DO_GENERIC-1)     ;  3 DEL
-  3586 168D 0D			        .BYTE   >(DO_LOAD-1)        ;  4 LOAD
-  3587 168E 10			        .BYTE   >(DO_LOCK-1)        ;  5 LOCK
-  3588 168F 10			        .BYTE   >(DO_LOGIN-1)       ;  6 LOGIN
-  3589 1690 0C			        .BYTE   >(DO_GENERIC-1)     ;  7 MKDIR
-  3590 1691 10			        .BYTE   >(DO_NPWD-1)        ;  8 NPWD
-  3591 1692 10			        .BYTE   >(DO_NTRANS-1)      ;  9 NTRANS
-  3592 1693 0C			        .BYTE   >(DO_GENERIC-1)     ; 10 RENAME
-  3593 1694 0C			        .BYTE   >(DO_GENERIC-1)     ; 11 RMDIR
-  3594 1695 11			        .BYTE   >(DO_SUBMIT-1)      ; 12 SUBMIT
-  3595 1696 12			        .BYTE   >(DO_TYPE-1)        ; 13 TYPE
-  3596 1697 12			        .BYTE   >(DO_UNLOCK-1)      ; 14 UNLOCK
-  3597 1698 11			        .BYTE   >(DO_AUTORUN-1)     ; 15 AUTORUN
-  3598 1699 12			        .BYTE   >(DO_CAR-1)         ; 16 CAR
-  3599 169A 13			        .BYTE   >(DO_CLS-1)         ; 17 CLS
-  3600 169B 13			        .BYTE   >(DO_COLD-1)        ; 18 COLD
-  3601 169C 13			        .BYTE   >(DO_HELP-1)        ; 19 HELP
-  3602 169D 13			        .BYTE   >(DO_NOBASIC-1)     ; 20 NOBASIC
-  3603 169E 14			        .BYTE   >(DO_NOSCREEN-1)    ; 21 NOSCREEN
-  3604 169F 14			        .BYTE   >(DO_PRINT-1)       ; 22 PRINT
-  3605 16A0 14			        .BYTE   >(DO_REENTER-1)     ; 23 REENTER
-  3606 16A1 14			        .BYTE   >(DO_REM-1)         ; 24 REM
-  3607 16A2 14			        .BYTE   >(DO_RUN-1)         ; 25 RUN
-  3608 16A3 14			        .BYTE   >(DO_SCREEN-1)      ; 26 SCREEN
-  3609 16A4 14			        .BYTE   >(DO_WARM-1)        ; 27 WARM
-  3610 16A5 14			        .BYTE   >(DO_XEP-1)         ; 28 WARM
-  3611 16A6 0C			        .BYTE   >(DO_DRIVE_CHG-1)   ; 29
-  3612
-  3613 				        ; DEVHDL TABLE FOR N:
-  3614
-  3615 16A7 BD 07		CIOHND  .WORD   OPEN-1
-  3616 16A9 0B 08		        .WORD   CLOSE-1
-  3617 16AB 2C 08		        .WORD   GET-1
-  3618 16AD 8D 08		        .WORD   PUT-1
-  3619 16AF ED 08		        .WORD   STATUS-1
-  3620 16B1 53 09		        .WORD   SPEC-1
+  3544 1649 43 41 D2		        .CB     "CAR"               ; 15 CAR
+  3545 164C 10			        .BYTE   CMD_IDX.CAR             
+  3546 				                                        
+  3547 164D 43 4C D3		        .CB     "CLS"               ; 16 CLS
+  3548 1650 11			        .BYTE   CMD_IDX.CLS           
+  3549
+  3550 1651 43 4F 4C C4		        .CB     "COLD"              ; 17 COLD
+  3551 1655 12			        .BYTE   CMD_IDX.COLD              
+  3552
+  3553 1656 48 45 4C D0		        .CB     "HELP"              ; 18 HELP
+  3554 165A 13			        .BYTE   CMD_IDX.HELP               
+  3555 				                                       
+  3556 165B 4E 4F 42 41 53 49 +         .CB     "NOBASIC"           ; 19 NOBASIC
+  3557 1662 14			        .BYTE   CMD_IDX.NOBASIC           
+  3558 				                                          
+  3559 1663 40 4E 4F 53 43 52 +         .CB     "@NOSCREEN"         ; 20 @NOSCREEN
+  3560 166C 15			        .BYTE   CMD_IDX.NOSCREEN         
+  3561 				                                        
+  3562 166D 50 52 49 4E D4	        .CB     "PRINT"             ; 21 PRINT
+  3563 1672 16			        .BYTE   CMD_IDX.PRINT           
+  3564 				                                        
+  3565 1673 52 45 45 4E 54 45 +         .CB     "REENTER"           ; 22 REENTER
+  3566 167A 17			        .BYTE   CMD_IDX.REENTER         
+  3567 				                                        
+  3568 167B 52 45 CD		        .CB     "REM"               ; 23 REM
+  3569 167E 18			        .BYTE   CMD_IDX.REM             
+  3570 				                                        
+  3571 167F 52 55 CE		        .CB     "RUN"               ; 24 RUN
+  3572 1682 19			        .BYTE   CMD_IDX.RUN             
+  3573 				                                        
+  3574 1683 40 53 43 52 45 45 +         .CB     "@SCREEN"           ; 25 @SCREEN
+  3575 168A 1A			        .BYTE   CMD_IDX.SCREEN          
+  3576 				                                        
+  3577 168B 57 41 52 CD		        .CB     "WARM"              ; 26 WARM
+  3578 168F 1B			        .BYTE   CMD_IDX.WARM            
+  3579 				                                        
+  3580 1690 58 45 D0		        .CB     "XEP"               ; 27 XEP
+  3581 1693 1C			        .BYTE   CMD_IDX.XEP            
+  3582 				                                        
+  3583 				; Aliases
+  3584 1694 43 C4		        .CB     "CD"                ; CD = NCD
+  3585 1696 00			        .BYTE   CMD_IDX.NCD           
+  3586
+  3587 1697 43 57 C4		        .CB     "CWD"               ; CWD = NCD
+  3588 169A 00			        .BYTE   CMD_IDX.NCD           
+  3589
+  3590 169B 45 52 41 53 C5	        .CB     "ERASE"             ; ERASE = DEL
+  3591 16A0 03			        .BYTE   CMD_IDX.DEL           
+  3592
+  3593 16A1 45 52 C1		        .CB     "ERA"               ; ERA = DEL
+  3594 16A4 03			        .BYTE   CMD_IDX.DEL           
+  3595
+  3596 16A5 D8			        .CB     "X"                 ; X = LOAD
+  3597 16A6 04			        .BYTE   CMD_IDX.LOAD
+  3598
+  3599 16A7 50 57 C4		        .CB     "PWD"               ; PWD = NPWD
+  3600 16AA 08			        .BYTE   CMD_IDX.NPWD             
+  3601
+  3602 16AB 52 45 C5		        .CB     "REE"               ; R = REENTER
+  3603 16AE 17			        .BYTE   CMD_IDX.REENTER             
+  3604
+  3605 16AF 52 45 CE		        .CB     "REN"               ; REN = RENAME
+  3606 16B2 0A			        .BYTE   CMD_IDX.RENAME
+  3607
+  3608 16B3 53 4F 55 52 43 C5	        .CB     "SOURCE"            ; SOURCE = SUBMIT
+  3609 16B9 0C			        .BYTE   CMD_IDX.SUBMIT
+  3610
+  3611 16BA C0			        .CB     "@"                 ; @ = SUBMIT
+  3612 16BB 0C			        .BYTE   CMD_IDX.SUBMIT
+  3613
+  3614 16BC A3			        .CB     "#"                 ; # = REM
+  3615 16BD 18			        .BYTE   CMD_IDX.REM
+  3616
+  3617 16BE A7			        .CB     "'"                 ; ' = REM
+  3618 16BF 18			        .BYTE   CMD_IDX.REM
+  3619
+  3620 				        ; Drive Change intentionally omitted
   3621
-  3622 				       ; BANNERS
-  3623
-  3624 16B3 23 46 55 4A 49 4E + BREADY  .BYTE   '#FUJINET NOS v0.4.0-alpha',EOL
-  3625 16CD 23 46 55 4A 49 4E + BERROR  .BYTE   '#FUJINET ERROR',EOL
-  3626
-  3627 				        ; MESSAGES
-  3628
-  3629 16DC 4E 23 3F 9B		CDERR   .BYTE   'N#?',EOL
-  3630
-  3631 				        ; STRING CONSTANTS
-  3632
-  3633 16E0			MISSING_FILE_STR:
-  3634 16E0 46 49 4C 45 3F 9B	        .BYTE   'FILE?',EOL
-  3635
-  3636 				        ; VARIABLES
-  3637
-  3638 16E6 01			DOSDR       .BYTE   $01     ; DOS DRIVE
-  3639 16E7 01			CMD         .BYTE   $01
-  3640 16E8 01			CMDPRV      .BYTE   $01
-  3641 16E9 01			ECHO_FLG    .BYTE   $01     ; Echo batch cmds (1=enabled,0=disabled)
-  3642 16EA 00			AUTORUN_FLG .BYTE   $00     ; Checked at DOS entry. Runs only on first pass
-  3643
-  3644 16EB 01			TRIP    .BYTE   $01         ; INTR FLAG
-  3645 16EC 00 00 00 00		RLEN    :MAXDEV .BYTE $00   ; RCV LEN
-  3646 16F0 00 00 00 00		ROFF    :MAXDEV .BYTE $00   ; RCV OFFSET
-  3647 16F4 00 00 00 00		TOFF    :MAXDEV .BYTE $00   ; TRX OFFSET
-  3648 16F8 01			INQDS   .BYTE   $01         ; DSTATS INQ
-  3649
-  3650 16F9 00 00 00 00		DVS2    :MAXDEV .BYTE $00   ; DVSTAT+2 SAVE
-  3651 16FD 00 00 00 00		DVS3    :MAXDEV .BYTE $00   ; DVSTAT+3 SAVE
-  3652
-  3653 				       ; BUFFERS (PAGE ALIGNED)
-  3654 1701 00 00 00 00 00 00 +         .ALIGN  $100, $00
-  3655 1800			BOOTEND:
+  3622 = 00D1			COMMAND_SIZE = * - COMMAND - 1
+  3623 16C0 FF			        .BYTE   $FF
+  3624
+  3625 16C1			CMD_TAB_L:
+  3626 16C1 4D			        .BYTE   <(DO_GENERIC-1)     ;  0 NCD
+  3627 16C2 BA			        .BYTE   <(DO_COPY-1)        ;  1 COPY
+  3628 16C3 C0			        .BYTE   <(DO_DIR-1)         ;  2 DIR
+  3629 16C4 4D			        .BYTE   <(DO_GENERIC-1)     ;  3 DEL
+  3630 16C5 AA			        .BYTE   <(DO_LOAD-1)        ;  4 LOAD
+  3631 16C6 45			        .BYTE   <(DO_LOCK-1)        ;  5 LOCK
+  3632 16C7 4B			        .BYTE   <(DO_LOGIN-1)       ;  6 LOGIN
+  3633 16C8 4D			        .BYTE   <(DO_GENERIC-1)     ;  7 MKDIR
+  3634 16C9 7C			        .BYTE   <(DO_NPWD-1)        ;  8 NPWD
+  3635 16CA BF			        .BYTE   <(DO_NTRANS-1)      ;  9 NTRANS
+  3636 16CB 4D			        .BYTE   <(DO_GENERIC-1)     ; 10 RENAME
+  3637 16CC 4D			        .BYTE   <(DO_GENERIC-1)     ; 11 RMDIR
+  3638 16CD 11			        .BYTE   <(DO_SUBMIT-1)      ; 12 SUBMIT
+  3639 16CE 96			        .BYTE   <(DO_TYPE-1)        ; 13 TYPE
+  3640 16CF 34			        .BYTE   <(DO_UNLOCK-1)      ; 14 UNLOCK
+  3641 16D0 42			        .BYTE   <(DO_AUTORUN-1)     ; 15 AUTORUN
+  3642 16D1 3A			        .BYTE   <(DO_CAR-1)         ; 16 CAR
+  3643 16D2 63			        .BYTE   <(DO_CLS-1)         ; 17 CLS
+  3644 16D3 6C			        .BYTE   <(DO_COLD-1)        ; 18 COLD
+  3645 16D4 6F			        .BYTE   <(DO_HELP-1)        ; 19 HELP
+  3646 16D5 1D			        .BYTE   <(DO_NOBASIC-1)     ; 20 NOBASIC
+  3647 16D6 5E			        .BYTE   <(DO_NOSCREEN-1)    ; 21 NOSCREEN
+  3648 16D7 6A			        .BYTE   <(DO_PRINT-1)       ; 22 PRINT
+  3649 16D8 78			        .BYTE   <(DO_REENTER-1)     ; 23 REENTER
+  3650 16D9 C2			        .BYTE   <(DO_REM-1)         ; 24 REM
+  3651 16DA C3			        .BYTE   <(DO_RUN-1)         ; 25 RUN
+  3652 16DB 64			        .BYTE   <(DO_SCREEN-1)      ; 26 SCREEN
+  3653 16DC 11			        .BYTE   <(DO_WARM-1)        ; 27 WARM
+  3654 16DD 14			        .BYTE   <(DO_XEP-1)         ; 28 WARM
+  3655 16DE 0C			        .BYTE   <(DO_DRIVE_CHG-1)   ; 29
   3656
-  3657 1800 00 00 00 00 00 00 + RBUF:   :$80 .BYTE $00      ; 128 bytes
-  3658 1880 00 00 00 00 00 00 + TBUF:   :$80 .BYTE $00      ; 128 bytes
-  3659
-  3660 				; Binary loader working variables
-  3661 = 1800			BAL     = RBUF
-  3662 = 1801			BAH     = RBUF+1    ;
-  3663 = 1880			STL     = TBUF      ; Payload Start address
-  3664 = 1881			STH     = TBUF+1
-  3665 = 1882			ENL     = TBUF+2    ; Payload End address
-  3666 = 1883			ENH     = TBUF+3
-  3667 = 1884			BLL     = TBUF+4    ; Payload Buffer Length
-  3668 = 1885			BLH     = TBUF+5
-  3669 = 1886			HEADL   = TBUF+6    ; Bytes read from existing cache
-  3670 = 1887			HEADH   = TBUF+7
-  3671 = 1888			BODYL   = TBUF+8    ; Total bytes read in contiguous 512-byte blocks
-  3672 = 1889			BODYH   = TBUF+9
-  3673 = 188A			TAILL   = TBUF+10   ; Bytes read from last cache
-  3674 = 188B			TAILH   = TBUF+11
-  3675 = 188C			BODYSZL = TBUF+12   ; # Bytes to read at a time in Body
-  3676 = 188D			BODYSZH = TBUF+13
-  3677
-  3678 = 1900			PGEND   = *
-  3679
-  3680 				; =================================================================
-  3681 				; VTOC and Directory
-  3682 				;
-  3683
-  3684 				; $10 is the added ATR-header
-  3685 1900 00 00 00 00 00 00 + :($B390-*+HDR-$10) DTA $00
-  3686 BA80			VTOCSTA:
-  3687 BA80 02 BD 02		    DTA $02,$BD,$02
-  3688 BA83			VTOCEND:
-  3689
-  3690 				; Fill the remaining bytes of the VTOC sector
-  3691 BA83 00 00 00 00 00 00 +     :($80+VTOCSTA-VTOCEND) DTA $00
-  3692
-  3693 BB00			DIRSTA:
-  3694 BB00 60 C3 02 04 00 30 +     DTA $60,$C3,$02,$04,$00,C"0**********"
-  3695 BB10 60 C3 02 04 00 31 +     DTA $60,$C3,$02,$04,$00,C"1 FujiNet  "
-  3696 BB20 60 C3 02 04 00 32 +     DTA $60,$C3,$02,$04,$00,C"2 Network  "
-  3697 BB30 60 C3 02 04 00 33 +     DTA $60,$C3,$02,$04,$00,C"3   OS     "
-  3698 BB40 60 C3 02 04 00 34 +     DTA $60,$C3,$02,$04,$00,C"4          "
-  3699 BB50 60 C3 02 04 00 35 +     DTA $60,$C3,$02,$04,$00,C"5 v0.4.0   "
-  3700 BB60 60 C3 02 04 00 36 +     DTA $60,$C3,$02,$04,$00,C"6  alpha   "
-  3701 BB70 60 C3 02 04 00 37 +     DTA $60,$C3,$02,$04,$00,C"7**********"
-  3702 BB80 C0			    DTA $C0
-  3703 BB81			DIREND:
+  3657 16DF			CMD_TAB_H:
+  3658 16DF 0C			        .BYTE   >(DO_GENERIC-1)     ;  0 NCD
+  3659 16E0 0C			        .BYTE   >(DO_COPY-1)        ;  1 COPY
+  3660 16E1 0C			        .BYTE   >(DO_DIR-1)         ;  2 DIR
+  3661 16E2 0C			        .BYTE   >(DO_GENERIC-1)     ;  3 DEL
+  3662 16E3 0D			        .BYTE   >(DO_LOAD-1)        ;  4 LOAD
+  3663 16E4 10			        .BYTE   >(DO_LOCK-1)        ;  5 LOCK
+  3664 16E5 10			        .BYTE   >(DO_LOGIN-1)       ;  6 LOGIN
+  3665 16E6 0C			        .BYTE   >(DO_GENERIC-1)     ;  7 MKDIR
+  3666 16E7 10			        .BYTE   >(DO_NPWD-1)        ;  8 NPWD
+  3667 16E8 10			        .BYTE   >(DO_NTRANS-1)      ;  9 NTRANS
+  3668 16E9 0C			        .BYTE   >(DO_GENERIC-1)     ; 10 RENAME
+  3669 16EA 0C			        .BYTE   >(DO_GENERIC-1)     ; 11 RMDIR
+  3670 16EB 12			        .BYTE   >(DO_SUBMIT-1)      ; 12 SUBMIT
+  3671 16EC 12			        .BYTE   >(DO_TYPE-1)        ; 13 TYPE
+  3672 16ED 13			        .BYTE   >(DO_UNLOCK-1)      ; 14 UNLOCK
+  3673 16EE 11			        .BYTE   >(DO_AUTORUN-1)     ; 15 AUTORUN
+  3674 16EF 13			        .BYTE   >(DO_CAR-1)         ; 16 CAR
+  3675 16F0 13			        .BYTE   >(DO_CLS-1)         ; 17 CLS
+  3676 16F1 13			        .BYTE   >(DO_COLD-1)        ; 18 COLD
+  3677 16F2 13			        .BYTE   >(DO_HELP-1)        ; 19 HELP
+  3678 16F3 14			        .BYTE   >(DO_NOBASIC-1)     ; 20 NOBASIC
+  3679 16F4 14			        .BYTE   >(DO_NOSCREEN-1)    ; 21 NOSCREEN
+  3680 16F5 14			        .BYTE   >(DO_PRINT-1)       ; 22 PRINT
+  3681 16F6 14			        .BYTE   >(DO_REENTER-1)     ; 23 REENTER
+  3682 16F7 14			        .BYTE   >(DO_REM-1)         ; 24 REM
+  3683 16F8 14			        .BYTE   >(DO_RUN-1)         ; 25 RUN
+  3684 16F9 14			        .BYTE   >(DO_SCREEN-1)      ; 26 SCREEN
+  3685 16FA 15			        .BYTE   >(DO_WARM-1)        ; 27 WARM
+  3686 16FB 15			        .BYTE   >(DO_XEP-1)         ; 28 WARM
+  3687 16FC 0C			        .BYTE   >(DO_DRIVE_CHG-1)   ; 29
+  3688
+  3689 				        ; DEVHDL TABLE FOR N:
+  3690
+  3691 16FD BD 07		CIOHND  .WORD   OPEN-1
+  3692 16FF 0B 08		        .WORD   CLOSE-1
+  3693 1701 2C 08		        .WORD   GET-1
+  3694 1703 8D 08		        .WORD   PUT-1
+  3695 1705 ED 08		        .WORD   STATUS-1
+  3696 1707 53 09		        .WORD   SPEC-1
+  3697
+  3698 				       ; BANNERS
+  3699
+  3700 1709 23 46 55 4A 49 4E + BREADY  .BYTE   '#FUJINET NOS v0.4.1-alpha',EOL
+  3701 1723 23 46 55 4A 49 4E + BERROR  .BYTE   '#FUJINET ERROR',EOL
+  3702
+  3703 				        ; MESSAGES
   3704
-  3705 				; Fill the remaining sectors of the directory
-  3706 BB81 00 00 00 00 00 00 +     :($400+DIRSTA-DIREND) DTA $00
-  3707
-  3708 				; Sectors behind directory
-  3709 BF00 00 00 00 00 00 00 +     :($80*352) DTA $00
-  3710
-  3711 				       END
+  3705 1732 4E 23 3F 9B		CDERR   .BYTE   'N#?',EOL
+  3706
+  3707 				        ; STRING CONSTANTS
+  3708
+  3709 1736			MISSING_FILE_STR:
+  3710 1736 46 49 4C 45 3F 9B	        .BYTE   'FILE?',EOL
+  3711
+  3712 				        ; VARIABLES
+  3713
+  3714 173C 01			DOSDR       .BYTE   $01     ; DOS DRIVE
+  3715 173D 01			CMD         .BYTE   $01
+  3716 173E 01			CMDPRV      .BYTE   $01
+  3717 173F 01			ECHO_FLG    .BYTE   $01     ; Echo batch cmds (1=enabled,0=disabled)
+  3718 1740 00			AUTORUN_FLG .BYTE   $00     ; Checked at DOS entry. Runs only on first pass
+  3719
+  3720 1741 01			TRIP    .BYTE   $01         ; INTR FLAG
+  3721 1742 00 00 00 00		RLEN    :MAXDEV .BYTE $00   ; RCV LEN
+  3722 1746 00 00 00 00		ROFF    :MAXDEV .BYTE $00   ; RCV OFFSET
+  3723 174A 00 00 00 00		TOFF    :MAXDEV .BYTE $00   ; TRX OFFSET
+  3724 174E 01			INQDS   .BYTE   $01         ; DSTATS INQ
+  3725
+  3726 174F 00 00 00 00		DVS2    :MAXDEV .BYTE $00   ; DVSTAT+2 SAVE
+  3727 1753 00 00 00 00		DVS3    :MAXDEV .BYTE $00   ; DVSTAT+3 SAVE
+  3728
+  3729 				       ; BUFFERS (PAGE ALIGNED)
+  3730 1757 00 00 00 00 00 00 +         .ALIGN  $100, $00
+  3731 1800			BOOTEND:
+  3732
+  3733 1800 00 00 00 00 00 00 + RBUF:   :$80 .BYTE $00      ; 128 bytes
+  3734 1880 00 00 00 00 00 00 + TBUF:   :$80 .BYTE $00      ; 128 bytes
+  3735
+  3736 				; Binary loader working variables
+  3737 = 1800			BAL     = RBUF
+  3738 = 1801			BAH     = RBUF+1    ;
+  3739 = 1880			STL     = TBUF      ; Payload Start address
+  3740 = 1881			STH     = TBUF+1
+  3741 = 1882			ENL     = TBUF+2    ; Payload End address
+  3742 = 1883			ENH     = TBUF+3
+  3743 = 1884			BLL     = TBUF+4    ; Payload Buffer Length
+  3744 = 1885			BLH     = TBUF+5
+  3745 = 1886			HEADL   = TBUF+6    ; Bytes read from existing cache
+  3746 = 1887			HEADH   = TBUF+7
+  3747 = 1888			BODYL   = TBUF+8    ; Total bytes read in contiguous 512-byte blocks
+  3748 = 1889			BODYH   = TBUF+9
+  3749 = 188A			TAILL   = TBUF+10   ; Bytes read from last cache
+  3750 = 188B			TAILH   = TBUF+11
+  3751 = 188C			BODYSZL = TBUF+12   ; # Bytes to read at a time in Body
+  3752 = 188D			BODYSZH = TBUF+13
+  3753 = 188E			STL2    = TBUF+14   ; Payload Start address (working var)
+  3754 = 188F			STH2    = TBUF+15
+  3755 = 1890			BIN_1ST = TBUF+16   ; Flag for binary loader signature (FF -> 1st pass)
+  3756 = 1891			AUTORUN_QUERY_FLG = TBUF+17   ; Flag for printing contents of autorun appkey
+  3757
+  3758 = 1900			PGEND   = *
+  3759
+  3760 				; =================================================================
+  3761 				; VTOC and Directory
+  3762 				;
+  3763
+  3764 				; $10 is the added ATR-header
+  3765 1900 00 00 00 00 00 00 + :($B390-*+HDR-$10) DTA $00
+  3766 BA80			VTOCSTA:
+  3767 BA80 02 BD 02		    DTA $02,$BD,$02
+  3768 BA83			VTOCEND:
+  3769
+  3770 				; Fill the remaining bytes of the VTOC sector
+  3771 BA83 00 00 00 00 00 00 +     :($80+VTOCSTA-VTOCEND) DTA $00
+  3772
+  3773 BB00			DIRSTA:
+  3774 BB00 60 C3 02 04 00 30 +     DTA $60,$C3,$02,$04,$00,C"0**********"
+  3775 BB10 60 C3 02 04 00 31 +     DTA $60,$C3,$02,$04,$00,C"1 FujiNet  "
+  3776 BB20 60 C3 02 04 00 32 +     DTA $60,$C3,$02,$04,$00,C"2 Network  "
+  3777 BB30 60 C3 02 04 00 33 +     DTA $60,$C3,$02,$04,$00,C"3   OS     "
+  3778 BB40 60 C3 02 04 00 34 +     DTA $60,$C3,$02,$04,$00,C"4          "
+  3779 BB50 60 C3 02 04 00 35 +     DTA $60,$C3,$02,$04,$00,C"5 v0.4.1   "
+  3780 BB60 60 C3 02 04 00 36 +     DTA $60,$C3,$02,$04,$00,C"6  alpha   "
+  3781 BB70 60 C3 02 04 00 37 +     DTA $60,$C3,$02,$04,$00,C"7**********"
+  3782 BB80 C0			    DTA $C0
+  3783 BB81			DIREND:
+  3784
+  3785 				; Fill the remaining sectors of the directory
+  3786 BB81 00 00 00 00 00 00 +     :($400+DIRSTA-DIREND) DTA $00
+  3787
+  3788 				; Sectors behind directory
+  3789 BF00 00 00 00 00 00 00 +     :($80*352) DTA $00
+  3790
+  3791 				       END
