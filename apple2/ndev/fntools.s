@@ -91,25 +91,33 @@ INSTALL:    STA     PGSTART     ;Save starting page #
 ;---------------------------------------
 ; Relocate the code
 ;---------------------------------------
-            LDA     PGSTART     ;Get new page #
-            STA     reloc_00+2
-            STA     reloc_01+2
-            STA     reloc_02+2
-            ;STA     reloc_03+2
-            STA     reloc_04+2
-            STA     reloc_05+2
-            STA     reloc_06+2
-            STA     reloc_07+2
-            STA     reloc_08+2
-            STA     reloc_09+2
-            STA     reloc_10+2
-            STA     reloc_11+2
-            STA     reloc_12+2
-            STA     reloc_13+2
-            STA     reloc_14+2
-            STA     reloc_15
-            STA     reloc_16
-            STA     reloc_17
+            LDX     PGSTART     ; Get new page #
+
+            STX     reloc_T00+2
+            STX     reloc_T01
+            STX     reloc_T02
+            TXA
+            INX                 ; Page boundary crossed
+            STX     reloc_T03
+
+            TAX                 ; Revert
+            STX     reloc_000+2
+            STX     reloc_010+2
+            STX     reloc_020+2
+            STX     reloc_030+2
+            STX     reloc_040+2
+            STX     reloc_050+2
+            STX     reloc_060+2
+            STX     reloc_070+2
+            STX     reloc_080+2
+            STX     reloc_090+2
+            STX     reloc_100+2
+
+            INX                 ; Page boundary crossed
+            STX     reloc_110+2
+            STX     reloc_120+2
+
+
 
     ;-----------------------------------
     ; Set up parameters for 
@@ -139,7 +147,69 @@ INSTALL:    STA     PGSTART     ;Save starting page #
 PAGES:      .res    1           ;Length of command handler
 PGSTART:    .res    1           ;Starting page of command handler
             .align  $0100       ; Align to next page boundary
+
+;---------------------------------------
+; Relocated code begins here
+;---------------------------------------
+
 CMDCODE     :=      *
+
+    ;-----------------------------------
+    ; Moved the command tables to here
+    ; to help ease the burden of updating
+    ; the relocation table.
+    ;-----------------------------------
+
+reloc_T00:  JMP PARSER          ; Jump over the command tables
+
+;---------------------------------------
+; Command Tables
+;---------------------------------------
+
+CMD:        .res    1           ; Index to matched command (0=NCD, 1=NPWD, ..)
+
+            .enum CMD_IDX
+                NCD
+                NPWD
+                NTRANS
+            .endenum
+
+COMMAND:
+            ASCIIHI "NCD"
+            .byte   $00
+            .byte   CMD_IDX::NCD
+
+            ASCIIHI "NPWD"
+            .byte   $00
+            .byte   CMD_IDX::NPWD
+
+            ASCIIHI "NTRANS"
+            .byte   $00
+            .byte   CMD_IDX::NTRANS
+
+COMMAND_SIZE = * - COMMAND - 1
+
+CMD_TAB_L:  
+            .byte   <DO_NCD
+            .byte   <DO_NPWD
+            .byte   <DO_NTRANS
+
+CMD_TAB_H:  
+reloc_T01:  .byte   >DO_NCD
+reloc_T02:  .byte   >DO_NPWD
+reloc_T03:  .byte   >DO_NTRANS
+
+PBITS_TAB_L:
+            .byte   $10         ; 0 - NCD
+            .byte   $10         ; 1 - NPWD
+            .byte   $10         ; 2 - NTRANS
+
+PBITS_TAB_H:  
+            .byte   $04         ; 0 - NCD
+            .byte   $04         ; 1 - NPWD
+            .byte   $04         ; 2 - NTRANS
+
+BUFFER:     .addr   $0000
 
 ;************************************
 ; This is the command checker. It  *
@@ -148,7 +218,8 @@ CMDCODE     :=      *
 ; have been entered.
 ;************************************
 
-            CLD                 ; Used as flag
+PARSER:     CLD                 ; Used as flag
+
     ;------------------------------------
     ; Skip leading spaces
     ;------------------------------------
@@ -175,13 +246,13 @@ CMDSKP1:    LDA     #$00        ; Convert EOL or space to null
     ; Compare cmd line char to command table char
     ;--------------------------------------------
 CMDSKP2:
-reloc_00:   CMP     COMMAND,Y   ; Do chars match?
+reloc_000:  CMP     COMMAND,Y   ; Do chars match?
             BNE     SKPCMD      ; No. Skip to next cmd entry and try again
 
     ;------------------------------------
     ; Found matching character
     ;------------------------------------
-reloc_01:   LDA     COMMAND,Y       ; Check if curr char is null ($00)
+reloc_010:  LDA     COMMAND,Y       ; Check if curr char is null ($00)
             BEQ     SETRULES        ; At end of command string (null)?
             CPY     #COMMAND_SIZE-1 ; At end of command table?
             BEQ     NOTFOUND        ; If yes, quit
@@ -192,7 +263,7 @@ reloc_01:   LDA     COMMAND,Y       ; Check if curr char is null ($00)
     ; Skip to next entry in command table
     ;------------------------------------
 SKPCMD:     INY
-reloc_02:   LDA     COMMAND,Y       ; Skip to null char
+reloc_020:  LDA     COMMAND,Y       ; Skip to null char
             BNE     SKPCMD
             ;----
             INY                     ; Advance to next command table entry
@@ -212,14 +283,14 @@ NEXTCMD:    JMP     $0000           ;(Fill in when installed)
 SETRULES:
 ;---------------------------------------
             INY                     ; Advance to command index in table
-reloc_04:   LDA     COMMAND,Y       ; Get command index
-reloc_05:   STA     CMD             ; Store Command index
+reloc_030:  LDA     COMMAND,Y       ; Get command index
+reloc_040:  STA     CMD             ; Store Command index
             DEX
             STX     XLEN            ; Store command length - 1
             TAX
-reloc_06:   LDA     CMD_TAB_L,X     ; Get address of command subroutine
+reloc_050:  LDA     CMD_TAB_L,X     ; Get address of command subroutine
             STA     XTRNADDR
-reloc_07:   LDA     CMD_TAB_H,X     ; Get address of command subroutine
+reloc_060:  LDA     CMD_TAB_H,X     ; Get address of command subroutine
             STA     XTRNADDR+1
 
             LDA     #$00
@@ -228,15 +299,15 @@ reloc_07:   LDA     CMD_TAB_H,X     ; Get address of command subroutine
 ;---------------------------------------
 ; Set up string parsing rules:
 ;---------------------------------------
-reloc_08:   LDA     PBITS_TAB_L,X
+reloc_070:  LDA     PBITS_TAB_L,X
             STA     PBITS
-reloc_09:   LDA     PBITS_TAB_H,X
+reloc_080:  LDA     PBITS_TAB_H,X
             STA     PBITS+1
 
             LDA     HIMEM
-reloc_10:   STA     BUFFER
+reloc_090:  STA     BUFFER
             LDA     HIMEM+1
-reloc_11:   STA     BUFFER+1
+reloc_100:  STA     BUFFER+1
 
 ;---------------------------------------
 ; Exit
@@ -290,7 +361,6 @@ NCD35:	JSR	$C50D
 	LDA	#$02
 NCD4:	RTS
 
-reloc_12:	
 NCDOP:	
 	.byte	$03		; Control has 3 params
 	.byte	NET		; to Network device
@@ -304,7 +374,7 @@ DO_NPWD:
 ;---------------------------------------
             LDX     #$00
 NPWD_LOOP:  
-reloc_13:   LDA     NPWD_STR,X
+reloc_110:  LDA     NPWD_STR,X
             BEQ     NPWD_DONE
             JSR     COUT
             INX
@@ -318,7 +388,7 @@ DO_NTRANS:
 ;---------------------------------------
             LDX     #$00
 NTRANS_LOOP:  
-reloc_14:   LDA     NTRANS_STR,X
+reloc_120:  LDA     NTRANS_STR,X
             BEQ     NTRANS_DONE
             JSR     COUT
             INX
@@ -327,52 +397,5 @@ NTRANS_DONE:
             RTS
 
 NTRANS_STR: ASCIIHIZ    "Executing NTRANS"
-
-CMD:        .res    1           ; Index to matched command (0=NCD, 1=NPWD, ..)
-
-;---------------------------------------
-; Command Tables
-;---------------------------------------
-            .enum CMD_IDX
-                NCD
-                NPWD
-                NTRANS
-            .endenum
-
-COMMAND:    ASCIIHI "NCD"
-            .byte   $00
-            .byte   CMD_IDX::NCD
-
-            ASCIIHI "NPWD"
-            .byte   $00
-            .byte   CMD_IDX::NPWD
-
-            ASCIIHI "NTRANS"
-            .byte   $00
-            .byte   CMD_IDX::NTRANS
-
-COMMAND_SIZE = * - COMMAND - 1
-
-CMD_TAB_L:  
-            .byte   <DO_NCD
-            .byte   <DO_NPWD
-            .byte   <DO_NTRANS
-
-CMD_TAB_H:  
-reloc_15:   .byte   >DO_NCD
-reloc_16:   .byte   >DO_NPWD
-reloc_17:   .byte   >DO_NTRANS
-
-PBITS_TAB_L:
-            .byte   $10         ; 0 - NCD
-            .byte   $10         ; 1 - NPWD
-            .byte   $10         ; 2 - NTRANS
-
-PBITS_TAB_H:  
-            .byte   $04         ; 0 - NCD
-            .byte   $04         ; 1 - NPWD
-            .byte   $04         ; 2 - NTRANS
-
-BUFFER:     .addr   $0000
 
 END         :=      *
