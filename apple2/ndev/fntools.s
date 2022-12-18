@@ -115,7 +115,7 @@ INSTALL:    STA     PGSTART     ;Save starting page #
 
             INX                 ; Page boundary crossed
             ;; STX     reloc_110+2	
-            STX     reloc_120+2
+            ;; STX     reloc_120+2
 
 
 
@@ -171,7 +171,7 @@ CMD:        .res    1           ; Index to matched command (0=NPREFIX, 1=NPWD, .
             .enum CMD_IDX
                 NPREFIX
                 NPWD
-                NTRANS
+                NDEL
             .endenum
 
 COMMAND:
@@ -183,31 +183,31 @@ COMMAND:
             .byte   $00
             .byte   CMD_IDX::NPWD
 
-            ASCIIHI "NTRANS"
+            ASCIIHI "NDEL"
             .byte   $00
-            .byte   CMD_IDX::NTRANS
+            .byte   CMD_IDX::NDEL
 
 COMMAND_SIZE = * - COMMAND - 1
 
 CMD_TAB_L:  
             .byte   <DO_NPREFIX
             .byte   <DO_NPWD
-            .byte   <DO_NTRANS
+            .byte   <DO_NDEL
 
 CMD_TAB_H:  
 reloc_T01:  .byte   >DO_NPREFIX
 reloc_T02:  .byte   >DO_NPWD
-reloc_T03:  .byte   >DO_NTRANS
+reloc_T03:  .byte   >DO_NDEL
 
 PBITS_TAB_L:
             .byte   $10         ; 0 - NPREFIX
             .byte   $10         ; 1 - NPWD
-            .byte   $10         ; 2 - NTRANS
+            .byte   $10         ; 2 - NDEL
 
 PBITS_TAB_H:  
             .byte   $04         ; 0 - NPREFIX
             .byte   $04         ; 1 - NPWD
-            .byte   $04         ; 2 - NTRANS
+            .byte   $04         ; 2 - NDEL
 
 BUFFER:     .addr   $0000
 
@@ -402,18 +402,53 @@ NPWDOP:
 NPWD_DONE:  RTS
 
 ;---------------------------------------
-DO_NTRANS:     
+DO_NDEL:     
 ;---------------------------------------
-            LDX     #$00
-NTRANS_LOOP:  
-reloc_120:  LDA     NTRANS_STR,X
-            BEQ     NTRANS_DONE
-            JSR     COUT
-            INX
-            BNE     NTRANS_LOOP
-NTRANS_DONE: 
-            RTS
+	LDX	#$00
+	LDA	#$00
+:	STA	$0200,X
+	INX
+	BNE	:-
+	LDA	FBITS
+	AND	#$01		; Check for filename
+	BNE	:+
+	LDA	#$01		; zero out len
+	STA	$0200
+	BCC	NDELDO		; Send out empty payload to reset ncd
+	;;
+:	LDA	VPATH1
+	STA	$FA
+	LDA	VPATH1+1
+	STA	$FB
+	LDY	#$00		; Offset 0 - String length
+	STY	$0201
+	LDA	($FA),Y		; Get length
+	TAX
+	STA	$FC		; Store it.
+	INX			;
+	STX	$0200		; Store it in length low.
+	LDA	FBITS
 
-NTRANS_STR: ASCIIHIZ    "Executing NTRANS"
+:   	INY				
+	LDA	($FA),Y		; Next char
+	STA	$0201,Y		; Copy it
+	CPY	$FC		; At end?
+	BNE	:-		; Nope, continue.
+	
+NDELDO:	JSR	$C50D
+	.BYTE	$04
+	.WORD	NDELOP
+	
+	BCC	NDEL4
+	LDA	#$02
+NDEL4:
+	CLC
+	RTS
+
+NDELOP:	
+	.byte	$03		; Control has 3 params
+	.byte	NET		; to Network device
+	.word	IN		; Buffer is at $0200
+	.byte	'!'		; NDEL command
 
 END         :=      *
