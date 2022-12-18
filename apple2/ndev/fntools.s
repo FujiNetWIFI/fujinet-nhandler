@@ -48,7 +48,7 @@ CROUT       :=      $FD8E       ;Print a CR
 COUT        :=      $FDED       ;Std. character output subroutine
 MOVE        :=      $FE2C       ;Block move subroutine
 
-NET 	    :=      $07         ; Hardcoded network device for now.
+NET 	    :=      $09         ; Hardcoded network device for now.
 	
             .org    $2000
 
@@ -114,7 +114,7 @@ INSTALL:    STA     PGSTART     ;Save starting page #
             STX     reloc_100+2
 
             INX                 ; Page boundary crossed
-            STX     reloc_110+2
+            ;; STX     reloc_110+2	
             STX     reloc_120+2
 
 
@@ -166,18 +166,18 @@ reloc_T00:  JMP PARSER          ; Jump over the command tables
 ; Command Tables
 ;---------------------------------------
 
-CMD:        .res    1           ; Index to matched command (0=NCD, 1=NPWD, ..)
+CMD:        .res    1           ; Index to matched command (0=NPREFIX, 1=NPWD, ..)
 
             .enum CMD_IDX
-                NCD
+                NPREFIX
                 NPWD
                 NTRANS
             .endenum
 
 COMMAND:
-            ASCIIHI "NCD"
+            ASCIIHI "NPREFIX"
             .byte   $00
-            .byte   CMD_IDX::NCD
+            .byte   CMD_IDX::NPREFIX
 
             ASCIIHI "NPWD"
             .byte   $00
@@ -190,22 +190,22 @@ COMMAND:
 COMMAND_SIZE = * - COMMAND - 1
 
 CMD_TAB_L:  
-            .byte   <DO_NCD
+            .byte   <DO_NPREFIX
             .byte   <DO_NPWD
             .byte   <DO_NTRANS
 
 CMD_TAB_H:  
-reloc_T01:  .byte   >DO_NCD
+reloc_T01:  .byte   >DO_NPREFIX
 reloc_T02:  .byte   >DO_NPWD
 reloc_T03:  .byte   >DO_NTRANS
 
 PBITS_TAB_L:
-            .byte   $10         ; 0 - NCD
+            .byte   $10         ; 0 - NPREFIX
             .byte   $10         ; 1 - NPWD
             .byte   $10         ; 2 - NTRANS
 
 PBITS_TAB_H:  
-            .byte   $04         ; 0 - NCD
+            .byte   $04         ; 0 - NPREFIX
             .byte   $04         ; 1 - NPWD
             .byte   $04         ; 2 - NTRANS
 
@@ -321,9 +321,9 @@ reloc_100:  STA     BUFFER+1
 ;---------------------------------------
 
 ;---------------------------------------
-DO_NCD:     
+DO_NPREFIX:     
 ;---------------------------------------
-NCD1: 
+NPREFIX1: 
 	LDX	#$00
 	LDA	#$00
 :	STA	$0200,X
@@ -331,12 +331,12 @@ NCD1:
 	BNE	:-
 	LDA	FBITS
 	AND	#$01		; Check for filename
-	BNE	NCD2
+	BNE	NPREFIX2
 	LDA	#$01		; zero out len
 	STA	$0200
-	BCC	NCD35		; Send out empty payload to reset ncd
+	BCC	NPREFIX35		; Send out empty payload to reset ncd
 	;;
-NCD2:	LDA	VPATH1
+NPREFIX2:	LDA	VPATH1
 	STA	$FA
 	LDA	VPATH1+1
 	STA	$FB
@@ -348,40 +348,58 @@ NCD2:	LDA	VPATH1
 	INX			;
 	STX	$0200		; Store it in length low.
 	LDA	FBITS
-NCD3:   INY				
+NPREFIX3:   INY				
 	LDA	($FA),Y		; Next char
 	STA	$0201,Y		; Copy it
 	CPY	$FC		; At end?
-	BNE	NCD3		; Nope, continue.
-NCD35:	JSR	$C50D
+	BNE	NPREFIX3		; Nope, continue.
+NPREFIX35:	JSR	$C50D
 	.BYTE	$04
-	.WORD	NCDOP
+	.WORD	NPREFIXOP
 	
-	BCC	NCD4
+	BCC	NPREFIX4
 	LDA	#$02
-NCD4:	RTS
+NPREFIX4:
+	CLC
+	RTS
 
-NCDOP:	
+NPREFIXOP:	
 	.byte	$03		; Control has 3 params
 	.byte	NET		; to Network device
 	.word	IN		; Buffer is at $0200
-	.byte	','		; NCD command
-
-NCD_STR:    ASCIIHIZ    "Executing NCD"
+	.byte	','		; NPREFIX command
 
 ;---------------------------------------
 DO_NPWD:     
 ;---------------------------------------
-            LDX     #$00
-NPWD_LOOP:  
-reloc_110:  LDA     NPWD_STR,X
-            BEQ     NPWD_DONE
-            JSR     COUT
-            INX
-            BNE     NPWD_LOOP
+NPWD:   LDX	#$00
+	LDA	#$00
+:	STA	$0200,X
+	INX
+	BNE	:-
+	JSR	$C50D		; Call Smartport
+	.BYTE	$00		; Status
+	.WORD	NPWDOP		; Use NPWDOP for params
+	BCS	NPWDON		; error? done.
+	JSR	CROUT
+	LDX	#$00
+:	LDA	IN,X
+	BEQ	NPWDOK
+	ORA	#$80		; Make normal text
+	JSR	COUT
+	INX
+	BNE	:-
+NPWDOK:	JSR	CROUT
+	JSR	CROUT
+	CLC
+NPWDON:	RTS
+NPWDOP:
+	.byte	$03		; Status is 3 params
+	.byte	NET		; to network device
+	.word	IN		; Destination is input buf
+	.byte	'0'		; PWD command.
+	
 NPWD_DONE:  RTS
-
-NPWD_STR:   ASCIIHIZ    "Executing NPWD"
 
 ;---------------------------------------
 DO_NTRANS:     
