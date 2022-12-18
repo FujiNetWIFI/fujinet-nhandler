@@ -99,7 +99,8 @@ INSTALL:    STA     PGSTART     ;Save starting page #
             TXA
             INX                 ; Page boundary crossed
             STX     reloc_T03
-
+            STX	    reloc_T04
+	
             TAX                 ; Revert
             STX     reloc_000+2
             STX     reloc_010+2
@@ -172,6 +173,7 @@ CMD:        .res    1           ; Index to matched command (0=NPREFIX, 1=NPWD, .
                 NPREFIX
                 NPWD
                 NDEL
+	        NMKDIR
             .endenum
 
 COMMAND:
@@ -187,27 +189,34 @@ COMMAND:
             .byte   $00
             .byte   CMD_IDX::NDEL
 
+	    ASCIIHI "NMKDIR"
+	    .byte   $00
+	    .byte   CMD_IDX::NMKDIR
+	
 COMMAND_SIZE = * - COMMAND - 1
 
 CMD_TAB_L:  
             .byte   <DO_NPREFIX
             .byte   <DO_NPWD
             .byte   <DO_NDEL
-
+            .byte   <DO_NMKDIR
+	
 CMD_TAB_H:  
 reloc_T01:  .byte   >DO_NPREFIX
 reloc_T02:  .byte   >DO_NPWD
 reloc_T03:  .byte   >DO_NDEL
-
+reloc_T04:  .byte   >DO_NMKDIR
+	
 PBITS_TAB_L:
             .byte   $10         ; 0 - NPREFIX
             .byte   $10         ; 1 - NPWD
             .byte   $10         ; 2 - NDEL
-
+            .byte   $10         ; 3 - NMKDIR
 PBITS_TAB_H:  
             .byte   $04         ; 0 - NPREFIX
             .byte   $04         ; 1 - NPWD
             .byte   $04         ; 2 - NDEL
+	    .byte   $04         ; 3 - NMKDIR
 
 BUFFER:     .addr   $0000
 
@@ -450,5 +459,55 @@ NDELOP:
 	.byte	NET		; to Network device
 	.word	IN		; Buffer is at $0200
 	.byte	'!'		; NDEL command
+
+;---------------------------------------
+DO_NMKDIR:     
+;---------------------------------------
+	LDX	#$00
+	LDA	#$00
+:	STA	$0200,X
+	INX
+	BNE	:-
+	LDA	FBITS
+	AND	#$01		; Check for filename
+	BNE	:+
+	LDA	#$01		; zero out len
+	STA	$0200
+	BCC	NMKDIRDO		; Send out empty payload to reset ncd
+	;;
+:	LDA	VPATH1
+	STA	$FA
+	LDA	VPATH1+1
+	STA	$FB
+	LDY	#$00		; Offset 0 - String length
+	STY	$0201
+	LDA	($FA),Y		; Get length
+	TAX
+	STA	$FC		; Store it.
+	INX			;
+	STX	$0200		; Store it in length low.
+	LDA	FBITS
+
+:   	INY				
+	LDA	($FA),Y		; Next char
+	STA	$0201,Y		; Copy it
+	CPY	$FC		; At end?
+	BNE	:-		; Nope, continue.
+	
+NMKDIRDO:	JSR	$C50D
+	.BYTE	$04
+	.WORD	NMKDIROP
+	
+	BCC	NMKDIR4
+	LDA	#$02
+NMKDIR4:
+	CLC
+	RTS
+
+NMKDIROP:	
+	.byte	$03		; Control has 3 params
+	.byte	NET		; to Network device
+	.word	IN		; Buffer is at $0200
+	.byte	'*'		; NMKDIR command
 
 END         :=      *
