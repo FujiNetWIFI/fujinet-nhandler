@@ -40,6 +40,7 @@ FBITS       :=      $BE56       ;Parameters fond in parse
 VPATH1	    :=      $BE6C	;pathname specified
 VSLOT       :=      $BE61       ;Slot parameter specified
 VDRIV       :=      $BE62       ;Drive parameter specified
+VTYPE	    :=      $BE6A       ;Type parameter specified
 GETBUFR     :=      $BEF5       ;Get a free space
                     
 MLI         :=      $BF00       ;Entry point to MLI
@@ -100,6 +101,7 @@ INSTALL:    STA     PGSTART     ;Save starting page #
             INX                 ; Page boundary crossed
             STX     reloc_T03
             STX	    reloc_T04
+	    STX     reloc_T05
 	
             TAX                 ; Revert
             STX     reloc_000+2
@@ -174,6 +176,7 @@ CMD:        .res    1           ; Index to matched command (0=NPREFIX, 1=NPWD, .
                 NPWD
                 NDEL
 	        NMKDIR
+	        NOPEN
             .endenum
 
 COMMAND:
@@ -192,32 +195,41 @@ COMMAND:
 	    ASCIIHI "NMKDIR"
 	    .byte   $00
 	    .byte   CMD_IDX::NMKDIR
-	
+
+	    ASCIIHI "NOPEN"
+	    .byte   $00
+	    .byte   CMD_IDX::NOPEN
+
 COMMAND_SIZE = * - COMMAND - 1
 
 CMD_TAB_L:  
             .byte   <DO_NPREFIX
             .byte   <DO_NPWD
             .byte   <DO_NDEL
-            .byte   <DO_NMKDIR
+            .byte   <DO_NMKDIR	
+	    .byte   <DO_NOPEN
 	
 CMD_TAB_H:  
 reloc_T01:  .byte   >DO_NPREFIX
 reloc_T02:  .byte   >DO_NPWD
 reloc_T03:  .byte   >DO_NDEL
 reloc_T04:  .byte   >DO_NMKDIR
+reloc_T05:  .byte   >DO_NOPEN
 	
 PBITS_TAB_L:
             .byte   $10         ; 0 - NPREFIX
             .byte   $10         ; 1 - NPWD
             .byte   $10         ; 2 - NDEL
             .byte   $10         ; 3 - NMKDIR
+	    .byte   $25	        ; 4 - NOPEN
+	
 PBITS_TAB_H:  
             .byte   $04         ; 0 - NPREFIX
             .byte   $04         ; 1 - NPWD
             .byte   $04         ; 2 - NDEL
 	    .byte   $04         ; 3 - NMKDIR
-
+            .byte   $00         ; 4 - NOPEN
+	
 BUFFER:     .addr   $0000
 
 ;************************************
@@ -509,5 +521,69 @@ NMKDIROP:
 	.byte	NET		; to Network device
 	.word	IN		; Buffer is at $0200
 	.byte	'*'		; NMKDIR command
+
+;---------------------------------------
+DO_NOPEN:     
+;---------------------------------------
+	LDX	#$00
+	LDA	#$00
+:	STA	$0200,X
+	INX
+	BNE	:-
+	LDA	FBITS
+	AND	#$01		; Check for filename
+	BNE	:+
+	LDA	#$01		; zero out len
+	STA	$0200
+	BCC	NOPENDO		; Send out empty payload to reset ncd
+	;;
+:	LDA	VPATH1
+	STA	$FA
+	LDA	VPATH1+1
+	STA	$FB
+	LDY	#$00		; Offset 0 - String length
+	STY	IN+1
+	LDA	($FA),Y		; Get length
+	TAX
+	STA	$FC		; Store it.
+	INX
+	INX
+	INX
+	STX	$0200		; Store it in length low.
+	LDY	#$FF
+	
+:	INY
+	LDA	($FA),Y		; Next char
+	STA	IN+4,Y		; Copy it
+	CPY	$FC		; At end?
+	BNE	:-		; Nope, continue.
+
+	LDA	#$0C		; READ/WRITE by default
+	STA	IN+2
+	LDA	#$00		; No Translation
+	STA	IN+3
+
+	LDA	FBITS
+	AND	#$04		; T set?
+	BEQ	NOPENDO		; Nope, go to open
+	LDA	VTYPE		; Yes, get T param
+	STA	IN+2		; Store in first byte of buffer
+	
+NOPENDO:
+	JSR	$C50D
+	.BYTE	$04
+	.WORD	NOPENOP
+	
+	BCC	NOPEN4
+	LDA	#$02
+NOPEN4:
+	CLC
+	RTS
+
+NOPENOP:	
+	.byte	$03		; Control has 3 params
+	.byte	NET		; to Network device
+	.word	IN		; Buffer is at $0200
+	.byte	'O'		; NOPEN command
 
 END         :=      *
