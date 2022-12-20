@@ -574,12 +574,13 @@ NOPENDO:
 	.BYTE	$04
 	.WORD	NOPENOP
 	
-	BCC	NOPEN4
-	LDA	#$02
+	BCS	NOPEN5
 NOPEN4:
-	CLC
 	RTS
 
+NOPEN5:	LDA	#$27		; I/O ERROR
+	RTS
+	
 NOPENOP:	
 	.byte	$03		; Control has 3 params
 	.byte	NET		; to Network device
