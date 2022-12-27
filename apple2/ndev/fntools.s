@@ -588,7 +588,9 @@ NOPENDO:
 NOPEN4:
 	RTS
 
-NOPEN5:	LDA	#$27		; I/O ERROR
+NOPEN5:	LDA	#$08		; I/O ERROR
+	SEC
+	JSR	$BE09
 	RTS
 	
 NOPENOP:	
@@ -603,8 +605,9 @@ DO_NCLOSE:
 
 	LDA	#$C3
 	JSR	$FDED
-	LDA	#$00
+	LDA	#$01
 	STA	IN
+        LDA     #$00
 	STA	IN+1
 	JSR	$C50D		; Do close
 	.BYTE	$04
