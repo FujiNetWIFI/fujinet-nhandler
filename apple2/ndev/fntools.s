@@ -102,6 +102,7 @@ INSTALL:    STA     PGSTART     ;Save starting page #
             STX     reloc_T03
             STX	    reloc_T04
 	    STX     reloc_T05
+            INX                 ; Page boundary crossed
 	    STX	    reloc_T06
 	
             TAX                 ; Revert
@@ -603,8 +604,6 @@ NOPENOP:
 DO_NCLOSE:     
 ;---------------------------------------
 
-	LDA	#$C3
-	JSR	$FDED
 	LDA	#$01
 	STA	IN
         LDA     #$00
