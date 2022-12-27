@@ -102,6 +102,7 @@ INSTALL:    STA     PGSTART     ;Save starting page #
             STX     reloc_T03
             STX	    reloc_T04
 	    STX     reloc_T05
+	    STX	    reloc_T06
 	
             TAX                 ; Revert
             STX     reloc_000+2
@@ -177,6 +178,7 @@ CMD:        .res    1           ; Index to matched command (0=NPREFIX, 1=NPWD, .
                 NDEL
 	        NMKDIR
 	        NOPEN
+	        NCLOSE
             .endenum
 
 COMMAND:
@@ -200,6 +202,10 @@ COMMAND:
 	    .byte   $00
 	    .byte   CMD_IDX::NOPEN
 
+	    ASCIIHI "NCLOSE"
+	    .byte   $00
+	    .byte   CMD_IDX::NCLOSE
+
 COMMAND_SIZE = * - COMMAND - 1
 
 CMD_TAB_L:  
@@ -208,6 +214,7 @@ CMD_TAB_L:
             .byte   <DO_NDEL
             .byte   <DO_NMKDIR	
 	    .byte   <DO_NOPEN
+	    .byte   <DO_NCLOSE
 	
 CMD_TAB_H:  
 reloc_T01:  .byte   >DO_NPREFIX
@@ -215,6 +222,7 @@ reloc_T02:  .byte   >DO_NPWD
 reloc_T03:  .byte   >DO_NDEL
 reloc_T04:  .byte   >DO_NMKDIR
 reloc_T05:  .byte   >DO_NOPEN
+reloc_T06:  .byte   >DO_NCLOSE
 	
 PBITS_TAB_L:
             .byte   $10         ; 0 - NPREFIX
@@ -222,6 +230,7 @@ PBITS_TAB_L:
             .byte   $10         ; 2 - NDEL
             .byte   $10         ; 3 - NMKDIR
 	    .byte   $25	        ; 4 - NOPEN
+	    .byte   $04         ; 5 - NCLOSE
 	
 PBITS_TAB_H:  
             .byte   $04         ; 0 - NPREFIX
@@ -229,6 +238,7 @@ PBITS_TAB_H:
             .byte   $04         ; 2 - NDEL
 	    .byte   $04         ; 3 - NMKDIR
             .byte   $00         ; 4 - NOPEN
+	    .byte   $00         ; 5 - NCLOSE
 	
 BUFFER:     .addr   $0000
 
@@ -587,4 +597,26 @@ NOPENOP:
 	.word	IN		; Buffer is at $0200
 	.byte	'O'		; NOPEN command
 
+;---------------------------------------
+DO_NCLOSE:     
+;---------------------------------------
+
+	LDA	#$C3
+	JSR	$FDED
+	LDA	#$00
+	STA	IN
+	STA	IN+1
+	JSR	$C50D		; Do close
+	.BYTE	$04
+	.WORD	NCLOSEOP	; Do close
+	BCS	NCDON
+NCDON:	CLC
+	RTS
+
+NCLOSEOP:
+	.byte	$03		; Control has 3 params
+	.byte	NET		; Network device
+	.WORD	IN		; Doesn't matter
+	.byte	'C'		; Close
+	
 END         :=      *
