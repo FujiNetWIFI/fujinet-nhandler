@@ -32,6 +32,8 @@ IN          :=      $0200       ;Command input buffer
                     
 EXTRNCMD    :=      $BE06       ;External command JMP instruction
 ERROUT      :=      $BE09       ;Error handler
+VECTOUT	    :=      $BE30      	;Global ProDOS Output Vector (NWRITE)
+VECTIN      :=      $BE32	;Global ProDOS Input Vector (NREAD)
 XTRNADDR    :=      $BE50       ;Start of external cmd handler
 XLEN        :=      $BE52       ;External cmd name length (-1)
 XCNUM       :=      $BE53       ;Command # (0 for external)
@@ -104,6 +106,7 @@ INSTALL:    STA     PGSTART     ;Save starting page #
 	    STX     reloc_T05
             INX                 ; Page boundary crossed
 	    STX	    reloc_T06
+	    STX	    reloc_T07
 	
             TAX                 ; Revert
             STX     reloc_000+2
@@ -118,8 +121,7 @@ INSTALL:    STA     PGSTART     ;Save starting page #
             STX     reloc_090+2
             STX     reloc_100+2
 
-            INX                 ; Page boundary crossed
-            ;; STX     reloc_110+2	
+            STX     reloc_110+1	
             ;; STX     reloc_120+2
 
 
@@ -180,6 +182,7 @@ CMD:        .res    1           ; Index to matched command (0=NPREFIX, 1=NPWD, .
 	        NMKDIR
 	        NOPEN
 	        NCLOSE
+	        NWRITE
             .endenum
 
 COMMAND:
@@ -206,6 +209,10 @@ COMMAND:
 	    ASCIIHI "NCLOSE"
 	    .byte   $00
 	    .byte   CMD_IDX::NCLOSE
+	
+	    ASCIIHI "NWRITE"
+	    .byte   $00
+	    .byte   CMD_IDX::NWRITE
 
 COMMAND_SIZE = * - COMMAND - 1
 
@@ -216,6 +223,7 @@ CMD_TAB_L:
             .byte   <DO_NMKDIR	
 	    .byte   <DO_NOPEN
 	    .byte   <DO_NCLOSE
+            .byte   <DO_NWRITE
 	
 CMD_TAB_H:  
 reloc_T01:  .byte   >DO_NPREFIX
@@ -224,6 +232,7 @@ reloc_T03:  .byte   >DO_NDEL
 reloc_T04:  .byte   >DO_NMKDIR
 reloc_T05:  .byte   >DO_NOPEN
 reloc_T06:  .byte   >DO_NCLOSE
+reloc_T07:  .byte   >DO_NWRITE
 	
 PBITS_TAB_L:
             .byte   $10         ; 0 - NPREFIX
@@ -232,6 +241,7 @@ PBITS_TAB_L:
             .byte   $10         ; 3 - NMKDIR
 	    .byte   $25	        ; 4 - NOPEN
 	    .byte   $04         ; 5 - NCLOSE
+	    .byte   $00         ; 6 - NWRITE
 	
 PBITS_TAB_H:  
             .byte   $04         ; 0 - NPREFIX
@@ -240,6 +250,7 @@ PBITS_TAB_H:
 	    .byte   $04         ; 3 - NMKDIR
             .byte   $00         ; 4 - NOPEN
 	    .byte   $00         ; 5 - NCLOSE
+            .byte   $00		; 6 - NWRITE
 	
 BUFFER:     .addr   $0000
 
@@ -608,6 +619,10 @@ DO_NCLOSE:
 	STA	IN
         LDA     #$00
 	STA	IN+1
+	LDA	VOSAVE
+	STA	VECTOUT
+	LDA	VOSAVE+1
+	STA	VECTOUT+1
 	JSR	$C50D		; Do close
 	.BYTE	$04
 	.WORD	NCLOSEOP	; Do close
@@ -620,5 +635,49 @@ NCLOSEOP:
 	.byte	NET		; Network device
 	.WORD	IN		; Doesn't matter
 	.byte	'C'		; Close
+
+;---------------------------------------
+DO_NWRITE:     
+;---------------------------------------
+	
+	;; Save previous out vector
+
+	LDA	VECTOUT
+	JSR	$FAD7
+	STA	VOSAVE
+	LDA	VECTOUT+1
+	JSR	$FAD7
+	STA	VOSAVE+1
+
+	;; Stuff in new vector
+
+	LDA	#<NWOUT
+	STA	$BE30
+	JSR	$FAD7
+reloc_110:	
+	LDA	#>NWOUT
+	STA	$BE31
+	JSR	$FAD7
+
+	CLC
+	RTS
+
+NWOUT:	STA	IN+2
+	LDA	#$01
+	STA	IN
+	LDA	#$00
+	STA	IN+1
+	JSR	$C50D
+	.BYTE	$09
+	.WORD	NWOP
+	CLC
+	RTS
+	
+NWOP:	.byte	$04		; WRITE has 4 params
+	.byte	NET		; Network
+	.WORD	IN		; Buffer
+	.WORD	1		; 1 byte.
+
+VOSAVE:	.WORD	0000            ; saved vector.
 	
 END         :=      *
