@@ -121,6 +121,8 @@ INSTALL:    STA     PGSTART     ;Save starting page #
             STX     reloc_090+2
             STX     reloc_100+2
 
+	    INX			; Page boundary crossed
+	    INX                 ; twice
             STX     reloc_110+1	
             ;; STX     reloc_120+2
 
