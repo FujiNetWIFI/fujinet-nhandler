@@ -23,6 +23,13 @@ to query the current entry, use:
 
 AUTORUN ?
 
+to bypass executing AUTORUN:
+
+At boot, when the FUJINET NOS banner
+appears -or- when switching from 
+BASIC to DOS the first time, 
+hold the OPTION console switch.
+
 Note: The AUTORUN entry is stored in
 the appkey file "/FujiNet/
 db790000.key" on the FujiNet's SD 

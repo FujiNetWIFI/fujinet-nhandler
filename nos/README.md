@@ -425,6 +425,11 @@ To query the currently defined batch file,
 
     AUTORUN ?
 
+To byess executing the AUTORUN-enabled batch file,
+
+At boot, when the FUJINET NOS banner appears -or- when switching from BASIC to DOS the first time, hold the OPTION console switch.
+
+
 The AUTORUN entry is stored in the appkey file `/FujiNet/db790000.key` on the FujiNet's SD card. Therefore, AUTORUN requires a FAT32-formatted SD card to be installed in the FujiNet device.
 
 Examples:
