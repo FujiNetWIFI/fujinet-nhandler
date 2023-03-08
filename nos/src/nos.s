@@ -1,4 +1,4 @@
-        ;; nos FujiNet Operating System
+        
         ;; Compile with MADS
 
         ;; Authors: Thomas Cherryhomes
@@ -105,6 +105,7 @@ LNBUF   =   $0582       ; Line Buffer (128 bytes)
 ; HARDWARE REGISTERS
 ;---------------------------------------
 
+CONSOL  =   $D01F       ; Console switches
 PORTB   =   $D301       ; On XL/XE, used to enable/disable BASIC
 PACTL   =   $D302       ; PIA CTRL A
 
@@ -141,6 +142,7 @@ EOL     =   $9B         ; EOL CHAR
 CR      =   $0D         ; Carrige Return
 LF      =   $0A         ; Linefeed
 
+OPTION  =   $03
 ESC_KEY =   $1C         ; Hardware code for ESC
 SPC_KEY =   $21         ; Hardware code for SPACE
 
@@ -156,6 +158,7 @@ CMD_DEL             = $21
 CMD_LOAD            = $28
 CMD_LOCK            = $23
 CMD_LOGIN           = $FD
+CMD_LPR             = $F0
 CMD_MKDIR           = $2A
 CMD_NPWD            = $30
 CMD_NTRANS          = 'T'
@@ -1118,6 +1121,10 @@ PRINT_ERROR_DONE:
 ; DOS Entry point
 ;---------------------------------------
 DOS:
+        ; Bypass Autorun if OPTION switch held
+        LDA     CONSOL
+        CMP     #OPTION
+        BEQ     CPLOOP
         ; Autorun injection
         LDA     #CMD_IDX.AUTORUN    ; Check for AUTORUN
         CMP     AUTORUN_FLG         ; True only on 1st entry
@@ -1982,6 +1989,11 @@ LOAD_NEXT1:
         INC     INBUFF+1
 
 LOAD_NEXT2:
+        LDA     #$91          ; Feable attempt to point cmd line
+        STA     DOSVEC          ; to DOSVEC for use by other 
+        LDA     #$05            ; cmd line executables
+        STA     DOSVEC+1
+
         JSR     LOAD_NTRANS     ; Disable any EOL transation
         JSR     LOAD_SETUP      ; Set up run and init to RTS
         LDA     #OINPUT         ; A arg needed in LOAD_OPEN
@@ -2467,6 +2479,13 @@ LOGIN_ERROR:
 
 LOGIN_ERROR_STR:
         .BYTE   'LOGIN [N[n]:] <USERNAME> <PASSWORD>',EOL
+
+;---------------------------------------
+DO_LPR:
+;---------------------------------------
+        LDA     #$B0
+        STA     COLOR2
+        RTS
 
 ;---------------------------------------
 DO_NPWD:
@@ -3435,29 +3454,30 @@ PRMPT:
                 LOAD                ;  4
                 LOCK                ;  5
                 LOGIN               ;  6
-                MKDIR               ;  7
-                NPWD                ;  8
-                NTRANS              ;  9
-                RENAME              ; 10
-                RMDIR               ; 11
-                SUBMIT              ; 12
-                TYPE                ; 13
-                UNLOCK              ; 14
-                AUTORUN             ; 15
-                CAR                 ; 16
-                CLS                 ; 17
-                COLD                ; 18
-                HELP                ; 19
-                NOBASIC             ; 20
-                NOSCREEN            ; 21
-                PRINT               ; 22
-                REENTER             ; 23
-                REM                 ; 24
-                RUN                 ; 25
-                SCREEN              ; 26
-                WARM                ; 27
-                XEP                 ; 28
-                DRIVE_CHG           ; 
+                LPR                 ;  7
+                MKDIR               ;  8
+                NPWD                ;  9
+                NTRANS              ; 10
+                RENAME              ; 11
+                RMDIR               ; 12
+                SUBMIT              ; 13
+                TYPE                ; 14
+                UNLOCK              ; 15
+                AUTORUN             ; 16
+                CAR                 ; 17
+                CLS                 ; 18
+                COLD                ; 19
+                HELP                ; 20
+                NOBASIC             ; 21
+                NOSCREEN            ; 22
+                PRINT               ; 23
+                REENTER             ; 24
+                REM                 ; 25
+                RUN                 ; 26
+                SCREEN              ; 27
+                WARM                ; 28
+                XEP                 ; 29
+                DRIVE_CHG           ; 30
         .ENDE
 
 CMD_DCOMND:
@@ -3466,31 +3486,32 @@ CMD_DCOMND:
         .BYTE   CMD_DIR             ;  2 DIR
         .BYTE   CMD_DEL             ;  3 DEL
         .BYTE   CMD_LOAD            ;  4 LOAD
-        .BYTE   CMD_LOGIN           ;  5 LOAD
-        .BYTE   CMD_LOCK            ;  6 LOCK
-        .BYTE   CMD_MKDIR           ;  7 MKDIR
-        .BYTE   CMD_NPWD            ;  8 NPWD
-        .BYTE   CMD_NTRANS          ;  9 NTRANS
-        .BYTE   CMD_RENAME          ; 10 RENAME
-        .BYTE   CMD_RMDIR           ; 11 RMDIR
-        .BYTE   CMD_SUBMIT          ; 12 SUBMIT
-        .BYTE   CMD_TYPE            ; 13 TYPE
-        .BYTE   CMD_UNLOCK          ; 14 UNLOCK
-        .BYTE   CMD_AUTORUN         ; 15 AUTORUN
-        .BYTE   CMD_CAR             ; 16 CAR
-        .BYTE   CMD_CLS             ; 17 CLS
-        .BYTE   CMD_COLD            ; 18 COLD
-        .BYTE   CMD_HELP            ; 19 HELP
-        .BYTE   CMD_NOBASIC         ; 20 NOBASIC
-        .BYTE   CMD_NOSCREEN        ; 21 NOSCREEN
-        .BYTE   CMD_PRINT           ; 22 PRINT
-        .BYTE   CMD_REENTER         ; 23 REENTER
-        .BYTE   CMD_REM             ; 24 REM
-        .BYTE   CMD_RUN             ; 25 RUN
-        .BYTE   CMD_SCREEN          ; 26 SCREEN
-        .BYTE   CMD_WARM            ; 27 WARM
-        .BYTE   CMD_XEP             ; 28 XEP
-        .BYTE   CMD_DRIVE_CHG       ; 29
+        .BYTE   CMD_LOCK            ;  5 LOCK
+        .BYTE   CMD_LOGIN           ;  6 LOGIN
+        .BYTE   CMD_LPR             ;  7 LPR
+        .BYTE   CMD_MKDIR           ;  8 MKDIR
+        .BYTE   CMD_NPWD            ;  9 NPWD
+        .BYTE   CMD_NTRANS          ; 10 NTRANS
+        .BYTE   CMD_RENAME          ; 11 RENAME
+        .BYTE   CMD_RMDIR           ; 12 RMDIR
+        .BYTE   CMD_SUBMIT          ; 13 SUBMIT
+        .BYTE   CMD_TYPE            ; 14 TYPE
+        .BYTE   CMD_UNLOCK          ; 15 UNLOCK
+        .BYTE   CMD_AUTORUN         ; 16 AUTORUN
+        .BYTE   CMD_CAR             ; 17 CAR
+        .BYTE   CMD_CLS             ; 18 CLS
+        .BYTE   CMD_COLD            ; 19 COLD
+        .BYTE   CMD_HELP            ; 20 HELP
+        .BYTE   CMD_NOBASIC         ; 21 NOBASIC
+        .BYTE   CMD_NOSCREEN        ; 22 NOSCREEN
+        .BYTE   CMD_PRINT           ; 23 PRINT
+        .BYTE   CMD_REENTER         ; 24 REENTER
+        .BYTE   CMD_REM             ; 25 REM
+        .BYTE   CMD_RUN             ; 26 RUN
+        .BYTE   CMD_SCREEN          ; 27 SCREEN
+        .BYTE   CMD_WARM            ; 28 WARM
+        .BYTE   CMD_XEP             ; 29 XEP
+        .BYTE   CMD_DRIVE_CHG       ; 30
 
 COMMAND:
         .CB     "NCD"               ;  0 NCD
@@ -3514,70 +3535,73 @@ COMMAND:
         .CB     "LOGIN"             ;  6 LOGIN
         .BYTE   CMD_IDX.LOGIN              
                                         
-        .CB     "MKDIR"             ;  7 MKDIR
+        .CB     "LPR"               ;  7 LPR
+        .BYTE   CMD_IDX.LPR                
+                                          
+        .CB     "MKDIR"             ;  8 MKDIR
         .BYTE   CMD_IDX.MKDIR           
-
-        .CB     "NPWD"              ;  8 NPWD
+                                        
+        .CB     "NPWD"              ;  9 NPWD
         .BYTE   CMD_IDX.NPWD             
-
-        .CB     "NTRANS"            ;  9 NTRANS
+                                        
+        .CB     "NTRANS"            ; 10 NTRANS
         .BYTE   CMD_IDX.NTRANS            
                                         
-        .CB     "RENAME"            ; 10 RENAME
+        .CB     "RENAME"            ; 11 RENAME
         .BYTE   CMD_IDX.RENAME          
                                         
-        .CB     "RMDIR"             ; 11 RMDIR
+        .CB     "RMDIR"             ; 12 RMDIR
         .BYTE   CMD_IDX.RMDIR           
                                         
-        .CB     "SUBMIT"            ; 12 SUBMIT
+        .CB     "SUBMIT"            ; 13 SUBMIT
         .BYTE   CMD_IDX.SUBMIT             
                                         
-        .CB     "TYPE"              ; 13 SUBMIT
+        .CB     "TYPE"              ; 14 SUBMIT
         .BYTE   CMD_IDX.TYPE              
                                         
-        .CB     "UNLOCK"            ; 14 UNLOCK
+        .CB     "UNLOCK"            ; 15 UNLOCK
         .BYTE   CMD_IDX.UNLOCK            
                                         
-        .CB     "AUTORUN"           ; 28 AUTORUN
-        .BYTE   CMD_IDX.AUTORUN
-
-        .CB     "CAR"               ; 15 CAR
+        .CB     "AUTORUN"           ; 16 AUTORUN
+        .BYTE   CMD_IDX.AUTORUN           
+                                          
+        .CB     "CAR"               ; 17 CAR
         .BYTE   CMD_IDX.CAR             
                                         
-        .CB     "CLS"               ; 16 CLS
-        .BYTE   CMD_IDX.CLS           
-
-        .CB     "COLD"              ; 17 COLD
-        .BYTE   CMD_IDX.COLD              
-
-        .CB     "HELP"              ; 18 HELP
-        .BYTE   CMD_IDX.HELP               
+        .CB     "CLS"               ; 18 CLS
+        .BYTE   CMD_IDX.CLS             
                                        
-        .CB     "NOBASIC"           ; 19 NOBASIC
+        .CB     "COLD"              ; 19 COLD
+        .BYTE   CMD_IDX.COLD              
+                                        
+        .CB     "HELP"              ; 20 HELP
+        .BYTE   CMD_IDX.HELP               
+                                        
+        .CB     "NOBASIC"           ; 21 NOBASIC
         .BYTE   CMD_IDX.NOBASIC           
                                           
-        .CB     "@NOSCREEN"         ; 20 @NOSCREEN
+        .CB     "@NOSCREEN"         ; 22 @NOSCREEN
         .BYTE   CMD_IDX.NOSCREEN         
                                         
-        .CB     "PRINT"             ; 21 PRINT
+        .CB     "PRINT"             ; 23 PRINT
         .BYTE   CMD_IDX.PRINT           
                                         
-        .CB     "REENTER"           ; 22 REENTER
+        .CB     "REENTER"           ; 24 REENTER
         .BYTE   CMD_IDX.REENTER         
                                         
-        .CB     "REM"               ; 23 REM
+        .CB     "REM"               ; 25 REM
         .BYTE   CMD_IDX.REM             
                                         
-        .CB     "RUN"               ; 24 RUN
+        .CB     "RUN"               ; 26 RUN
         .BYTE   CMD_IDX.RUN             
                                         
-        .CB     "@SCREEN"           ; 25 @SCREEN
-        .BYTE   CMD_IDX.SCREEN          
-                                        
-        .CB     "WARM"              ; 26 WARM
-        .BYTE   CMD_IDX.WARM            
-                                        
-        .CB     "XEP"               ; 27 XEP
+        .CB     "@SCREEN"           ; 27 @SCREEN
+        .BYTE   CMD_IDX.SCREEN        
+                                      
+        .CB     "WARM"              ; 28 WARM
+        .BYTE   CMD_IDX.WARM          
+                                      
+        .CB     "XEP"               ; 29 XEP
         .BYTE   CMD_IDX.XEP            
                                         
 ; Aliases
@@ -3630,29 +3654,30 @@ CMD_TAB_L:
         .BYTE   <(DO_LOAD-1)        ;  4 LOAD
         .BYTE   <(DO_LOCK-1)        ;  5 LOCK
         .BYTE   <(DO_LOGIN-1)       ;  6 LOGIN
-        .BYTE   <(DO_GENERIC-1)     ;  7 MKDIR
-        .BYTE   <(DO_NPWD-1)        ;  8 NPWD
-        .BYTE   <(DO_NTRANS-1)      ;  9 NTRANS
-        .BYTE   <(DO_GENERIC-1)     ; 10 RENAME
-        .BYTE   <(DO_GENERIC-1)     ; 11 RMDIR
-        .BYTE   <(DO_SUBMIT-1)      ; 12 SUBMIT
-        .BYTE   <(DO_TYPE-1)        ; 13 TYPE
-        .BYTE   <(DO_UNLOCK-1)      ; 14 UNLOCK
-        .BYTE   <(DO_AUTORUN-1)     ; 15 AUTORUN
-        .BYTE   <(DO_CAR-1)         ; 16 CAR
-        .BYTE   <(DO_CLS-1)         ; 17 CLS
-        .BYTE   <(DO_COLD-1)        ; 18 COLD
-        .BYTE   <(DO_HELP-1)        ; 19 HELP
-        .BYTE   <(DO_NOBASIC-1)     ; 20 NOBASIC
-        .BYTE   <(DO_NOSCREEN-1)    ; 21 NOSCREEN
-        .BYTE   <(DO_PRINT-1)       ; 22 PRINT
-        .BYTE   <(DO_REENTER-1)     ; 23 REENTER
-        .BYTE   <(DO_REM-1)         ; 24 REM
-        .BYTE   <(DO_RUN-1)         ; 25 RUN
-        .BYTE   <(DO_SCREEN-1)      ; 26 SCREEN
-        .BYTE   <(DO_WARM-1)        ; 27 WARM
-        .BYTE   <(DO_XEP-1)         ; 28 WARM
-        .BYTE   <(DO_DRIVE_CHG-1)   ; 29
+        .BYTE   <(DO_LPR-1)         ;  7 LPR
+        .BYTE   <(DO_GENERIC-1)     ;  8 MKDIR
+        .BYTE   <(DO_NPWD-1)        ;  9 NPWD
+        .BYTE   <(DO_NTRANS-1)      ; 10 NTRANS
+        .BYTE   <(DO_GENERIC-1)     ; 11 RENAME
+        .BYTE   <(DO_GENERIC-1)     ; 12 RMDIR
+        .BYTE   <(DO_SUBMIT-1)      ; 13 SUBMIT
+        .BYTE   <(DO_TYPE-1)        ; 14 TYPE
+        .BYTE   <(DO_UNLOCK-1)      ; 15 UNLOCK
+        .BYTE   <(DO_AUTORUN-1)     ; 16 AUTORUN
+        .BYTE   <(DO_CAR-1)         ; 17 CAR
+        .BYTE   <(DO_CLS-1)         ; 18 CLS
+        .BYTE   <(DO_COLD-1)        ; 19 COLD
+        .BYTE   <(DO_HELP-1)        ; 20 HELP
+        .BYTE   <(DO_NOBASIC-1)     ; 21 NOBASIC
+        .BYTE   <(DO_NOSCREEN-1)    ; 22 NOSCREEN
+        .BYTE   <(DO_PRINT-1)       ; 23 PRINT
+        .BYTE   <(DO_REENTER-1)     ; 24 REENTER
+        .BYTE   <(DO_REM-1)         ; 25 REM
+        .BYTE   <(DO_RUN-1)         ; 26 RUN
+        .BYTE   <(DO_SCREEN-1)      ; 27 SCREEN
+        .BYTE   <(DO_WARM-1)        ; 28 WARM
+        .BYTE   <(DO_XEP-1)         ; 29 XEP
+        .BYTE   <(DO_DRIVE_CHG-1)   ; 30
 
 CMD_TAB_H:
         .BYTE   >(DO_GENERIC-1)     ;  0 NCD
@@ -3662,29 +3687,30 @@ CMD_TAB_H:
         .BYTE   >(DO_LOAD-1)        ;  4 LOAD
         .BYTE   >(DO_LOCK-1)        ;  5 LOCK
         .BYTE   >(DO_LOGIN-1)       ;  6 LOGIN
-        .BYTE   >(DO_GENERIC-1)     ;  7 MKDIR
-        .BYTE   >(DO_NPWD-1)        ;  8 NPWD
-        .BYTE   >(DO_NTRANS-1)      ;  9 NTRANS
-        .BYTE   >(DO_GENERIC-1)     ; 10 RENAME
-        .BYTE   >(DO_GENERIC-1)     ; 11 RMDIR
-        .BYTE   >(DO_SUBMIT-1)      ; 12 SUBMIT
-        .BYTE   >(DO_TYPE-1)        ; 13 TYPE
-        .BYTE   >(DO_UNLOCK-1)      ; 14 UNLOCK
-        .BYTE   >(DO_AUTORUN-1)     ; 15 AUTORUN
-        .BYTE   >(DO_CAR-1)         ; 16 CAR
-        .BYTE   >(DO_CLS-1)         ; 17 CLS
-        .BYTE   >(DO_COLD-1)        ; 18 COLD
-        .BYTE   >(DO_HELP-1)        ; 19 HELP
-        .BYTE   >(DO_NOBASIC-1)     ; 20 NOBASIC
-        .BYTE   >(DO_NOSCREEN-1)    ; 21 NOSCREEN
-        .BYTE   >(DO_PRINT-1)       ; 22 PRINT
-        .BYTE   >(DO_REENTER-1)     ; 23 REENTER
-        .BYTE   >(DO_REM-1)         ; 24 REM
-        .BYTE   >(DO_RUN-1)         ; 25 RUN
-        .BYTE   >(DO_SCREEN-1)      ; 26 SCREEN
-        .BYTE   >(DO_WARM-1)        ; 27 WARM
-        .BYTE   >(DO_XEP-1)         ; 28 WARM
-        .BYTE   >(DO_DRIVE_CHG-1)   ; 29
+        .BYTE   >(DO_LPR-1)         ;  7 LPR
+        .BYTE   >(DO_GENERIC-1)     ;  8 MKDIR
+        .BYTE   >(DO_NPWD-1)        ;  9 NPWD
+        .BYTE   >(DO_NTRANS-1)      ; 10 NTRANS
+        .BYTE   >(DO_GENERIC-1)     ; 11 RENAME
+        .BYTE   >(DO_GENERIC-1)     ; 12 RMDIR
+        .BYTE   >(DO_SUBMIT-1)      ; 13 SUBMIT
+        .BYTE   >(DO_TYPE-1)        ; 14 TYPE
+        .BYTE   >(DO_UNLOCK-1)      ; 15 UNLOCK
+        .BYTE   >(DO_AUTORUN-1)     ; 16 AUTORUN
+        .BYTE   >(DO_CAR-1)         ; 17 CAR
+        .BYTE   >(DO_CLS-1)         ; 18 CLS
+        .BYTE   >(DO_COLD-1)        ; 19 COLD
+        .BYTE   >(DO_HELP-1)        ; 20 HELP
+        .BYTE   >(DO_NOBASIC-1)     ; 21 NOBASIC
+        .BYTE   >(DO_NOSCREEN-1)    ; 22 NOSCREEN
+        .BYTE   >(DO_PRINT-1)       ; 23 PRINT
+        .BYTE   >(DO_REENTER-1)     ; 24 REENTER
+        .BYTE   >(DO_REM-1)         ; 25 REM
+        .BYTE   >(DO_RUN-1)         ; 26 RUN
+        .BYTE   >(DO_SCREEN-1)      ; 27 SCREEN
+        .BYTE   >(DO_WARM-1)        ; 28 WARM
+        .BYTE   >(DO_XEP-1)         ; 29 XEP
+        .BYTE   >(DO_DRIVE_CHG-1)   ; 30
 
         ; DEVHDL TABLE FOR N:
 
@@ -3697,7 +3723,7 @@ CIOHND  .WORD   OPEN-1
 
        ; BANNERS
 
-BREADY  .BYTE   '#FUJINET NOS v0.4.1-alpha',EOL
+BREADY  .BYTE   '#FUJINET NOS v0.4.2-alpha',EOL
 BERROR  .BYTE   '#FUJINET ERROR',EOL
 
         ; MESSAGES
@@ -3776,7 +3802,7 @@ DIRSTA:
     DTA $60,$C3,$02,$04,$00,C"2 Network  "
     DTA $60,$C3,$02,$04,$00,C"3   OS     "
     DTA $60,$C3,$02,$04,$00,C"4          "
-    DTA $60,$C3,$02,$04,$00,C"5 v0.4.1   "
+    DTA $60,$C3,$02,$04,$00,C"5 v0.4.2   "
     DTA $60,$C3,$02,$04,$00,C"6  alpha   "
     DTA $60,$C3,$02,$04,$00,C"7**********"
     DTA $C0
