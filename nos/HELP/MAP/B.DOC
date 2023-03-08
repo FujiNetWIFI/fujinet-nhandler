@@ -12,7 +12,7 @@ BITMSK    006E  Bitmask for OS disply
 BLIM      028A  Cass data buf size
 BLKBDV    E471  Memo Pad or Self-test
 BOOTAD    0242  Disk boot loader addr
-BOOT?     0009  Boot flag indicator
+BOOT      0009  Boot flag indicator
 BOTSCR    02BF  # text rows available
 BPTR      003D  Cassette buffer ptr
 BRKKEY    0011  BREAK key status
