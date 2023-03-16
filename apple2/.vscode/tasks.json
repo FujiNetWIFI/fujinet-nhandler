@@ -1,0 +1,19 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "ca65: Compile and Link Current File",
+            "group": "build",
+            "type": "shell",
+            "command": " cl65 -l listing.s -v -t apple2 -C apple2-asm.cfg  \"FUJIAPPLE.S\"",
+            "problemMatcher": [
+                "$ca65",
+                "$ld65",
+                "$ld65-config",
+                "$ld65-unresolved"
+            ]
+        }
+
+    ]
+    
+}
