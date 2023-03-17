@@ -1,9 +1,10 @@
 # fujiapple-ampersand
 Add fujinet commands to applesoft BASIC using ampersand routines
 
-To create the FUJIAPPLE executable:
-   make clean
-   make
+To create the FUJIAPPLE executable and create disk image:
+   make dist
+image will be dist/FUJIAPPLE.po  
+Volume name will be /FUJI.APPLE
 
 Based on the documentation here:
 https://github.com/FujiNetWIFI/fujinet-platformio/wiki/Apple2-Applesoft-Network-extensions
