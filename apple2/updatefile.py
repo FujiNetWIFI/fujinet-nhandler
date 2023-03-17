@@ -9,8 +9,11 @@ pconvert   = [   0x2000    ] # If entry is zero, it will get the address from pf
 pfilenames = [ "FUJIAPPLE" ] # SOURCE
 pfilenamed = [ "FUJIAPPLE" ] # DESTINATION
 
-dosdisk   = "FUJIAPPLE.dsk"
-prodisk   = "FUJIAPPLE.po"
+dosdisk   = "dist/FUJIAPPLE.dsk"
+prodisk   = "dist/FUJIAPPLE.po"
+
+ciderpress_path = "/home/ndavie/Documents/Windows\ Programs/CiderPress/ciderpress.exe"
+
 
 global checked
 
@@ -141,8 +144,9 @@ def start_ciderpress(disk):
     if debug_small:
         print("start_ciderpress")
 
-    disk = "/home/ndavie/Documents/Projects/fujiapple-ampersand/" + disk
-    cmd_str = "wine /home/ndavie/Documents/Windows\ Programs/CiderPress/ciderpress.exe "+disk
+    
+    cmd_str = f"wine {ciderpress_path} {os.getcwd()}/{disk}"
+    print(f"{cmd_str}")
 
     proc = Popen([cmd_str], shell=True,
              stdin=None, stdout=None, stderr=None, close_fds=True)
@@ -550,7 +554,10 @@ def update_version(file, version_signature, new_version):
 
     updated = False
     
-    fp = open(file, "rb")
+    full_file = os.getcwd() + "/" + file
+    
+    print(f"Reading file {full_file}...")
+    fp = open(full_file, "rb")
     contents=fp.read()
     fp.close()
     
@@ -561,10 +568,11 @@ def update_version(file, version_signature, new_version):
     position = contents.find(version_signature)
 
     if position > 0:
+        print(f"Updating file {full_file}...")
         for i in range(len(new_version)):
             content[position+i] = new_version[i]
             
-        fp = open(file, "wb")
+        fp = open(full_file, "wb")
         fp.write(content)
         fp.close()
         updated = True
@@ -587,6 +595,7 @@ if __name__ == "__main__":
     time.sleep(2)
     
     do_dos = False
+    
     
     if do_dos:
         quit_program = False

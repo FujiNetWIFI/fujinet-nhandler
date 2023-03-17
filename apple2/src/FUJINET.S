@@ -858,4 +858,55 @@ FN_LIST_ERROR_OUT:
                 SEC
                 RTS
 
+;******************************************************************
+; FN_ACCEPT
+;   Accept the specified connection from UNIT
+;
+; INPUT
+; X = UNIT DESTINATION
+;******************************************************************
+FN_ACCEPT:
 
+.IF .NOT STRIP_TRACE
+                SAVE_REGS
+                LDA TRACE_FLAG
+                BEQ NO_TRACE42
+                TXA
+                PHA
+                PRINT_STR FN_ACCEPT_STR_ADDR
+                PLA
+                TAX
+                JSR PRTX
+                JSR CROUT
+NO_TRACE42:                
+                RESTORE_REGS
+.ENDIF
+
+                TXA
+                PHA
+                
+                LDY #$00                ; PAYLOAD SIZE = ZERO
+                STY SP_PAYLOAD
+                STY SP_PAYLOAD+1
+                
+                LDY #'A'                ; SEND 'A' TO FUJINET
+                JSR SP_CONTROL
+                STA FN_LAST_ERR
+                BCC ACCEPT_OK
+
+                PLA
+                LDX #FN_ERR
+
+.IF .NOT STRIP_TRACE                
+                PRINT_STR ACCEPT_ERROR_STR_ADDR
+.ENDIF
+
+                CLC
+                BCC ACCEPT_DONE
+ACCEPT_OK:
+
+                LDX #FN_OK
+
+ACCEPT_DONE:
+                STX FN_LAST_ERR  
+                RTS

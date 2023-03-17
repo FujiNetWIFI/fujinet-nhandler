@@ -382,6 +382,7 @@ NOMORECMDS:
 
                 JMP   PREVECT    ; WE DIDN'T FIND OUR COMAND SO GO TO OLD VECTOR
 
+.IF .NOT STRIP_TRACE
 DISPLAY_NETS:
                 SAVE_REGS
                 PRINT_STR NETWORK_STR_ADDR
@@ -438,6 +439,8 @@ NEXT_NERR:
                 JSR CROUT
                 RESTORE_REGS
                 RTS
+.ENDIF
+
 ;*********************************
 ; GETSTR - GETS A STATIC STRING ("BLAH")
 ; INPUT:
@@ -522,6 +525,8 @@ WORDSAV:
                 TAX
                 JSR MOVMF      ; STORE VALUE INTO VARIABLE
                 RTS
+
+.IF .NOT STRIP_TRACE
 ;*************************************
 ; DISPLAY INTERNAL STATE
 ;*************************************
@@ -561,12 +566,20 @@ DISPLAY_INTERNAL_STATE:
 
                 RESTORE_REGS
                 RTS
+.ENDIF
 
 ;*************************************
 ;*************************************
 ;*************************************
 ;*************************************
 
+;*************************************
+; IGNORE_TO_NEXT_BASIC_STATEMENT
+;
+; Skip all crap until we either find a
+; colon, or we're at the end of the 
+; BASIC line
+;*************************************
 IGNORE_TO_NEXT_BASIC_STATEMENT:
                 JSR CHRGOT              
                 BEQ RETURN_TO_BASIC     ; 0 = END OF LINE
@@ -580,7 +593,7 @@ IGNORE_TO_NEXT_BASIC_STATEMENT:
 RETURN_TO_BASIC:
                 RTS
 
-NOPEN:
+;************************************************************************
 ; &NOPEN UNIT,MODE,TRANS,URL$
 ; &NOPEN UNIT,MODE,TRANS,"URL"
 ;
@@ -596,6 +609,8 @@ NOPEN:
 ;        1-CR TO CR (yeah, does nothing)
 ;        2-LF TO CR 
 ;        3-CR/LF TO CR
+;************************************************************************
+NOPEN:
 
 .IF .NOT STRIP_TRACE
                 LDA TRACE_FLAG
@@ -708,10 +723,13 @@ STORING:
 NOPEN_COMPLETE:
 
                 RTS
-;*********************************************
-NCLOSE:
+
+
+;************************************************************************
 ; &NCLOSE UNIT
 ; Closes a network connection.
+;************************************************************************
+NCLOSE:
 
 .IF .NOT STRIP_TRACE
                 LDA TRACE_FLAG
@@ -750,11 +768,11 @@ JUST_CLOSE:
                 STA OPEN_LIST, X
                 RTS
 
-;*********************************************
-NREAD:
-
+;************************************************************************
 ; &NREAD UNIT, VAR$, LEN
 ; Gets len number of bytes and puts them into string variable var$
+;************************************************************************
+NREAD:
 
 .IF .NOT STRIP_TRACE
                 LDA TRACE_FLAG
@@ -850,11 +868,12 @@ TRANSFER_VALUES:
                 
                 RTS
 
-;*****************************************************
-NWRITE:
+;************************************************************************
 ; &NWRITE UNIT,VAR$,LEN
 ; &NWRITE UNIT,"STRING",LEN
 ; Gets len number of bytes and puts them into string variable var$
+;************************************************************************
+NWRITE:
 
 .IF .NOT STRIP_TRACE
                 LDA TRACE_FLAG
@@ -935,12 +954,13 @@ UNIT_OK5:
 
                 RTS
 
- ;*****************************************************               
-NCTRL:
+;************************************************************************
 ; &NCTRL UNIT,COMMAND, PAYLOAD$
 ; Sends a specific control message to the network device 
 ; to do a special command. The payload for this command 
 ; is specified as the very last parameter.
+;************************************************************************
+NCTRL:
 
 .IF .NOT STRIP_TRACE
                 LDA TRACE_FLAG
@@ -1004,12 +1024,13 @@ UNIT_OK4:
 ;*******************
                 RTS
 
-;*******************************************
-NSTATUS:
+;************************************************************************
 ; &NSTATUS UNIT,BW,CONNECTED,NERR
 ; To get the status of network unit. BW = bytes waiting, 
 ; CONNECTED equals 1 if connect and NERR returns 
 ; the network error code
+;************************************************************************
+NSTATUS:
 
 .IF .NOT STRIP_TRACE
                 LDA TRACE_FLAG
@@ -1070,11 +1091,13 @@ SAVE_INFO:
                 JSR BYTESAV    ; CONVERT TO FLOAT AND STORE IN NERR VAR
                 RTS
 
-;*******************************************
-NEND:
+;************************************************************************
 ; &NEND
 ; Remove the fujiapple vector and
 ; put the original vector back
+; Restore HIMEM if it hasn't been changed since we set it
+;************************************************************************
+NEND:
 
 .IF .NOT STRIP_TRACE
                 LDA TRACE_FLAG
@@ -1119,11 +1142,12 @@ RESTORE_VECT:
                 PRINT_STR EXTREMOVED_STR_ADDR      ; LET THE USER KNOW
                 RTS
 
-;*******************************************
-NLIST:
+;************************************************************************
 ; &NLIST
 ; &NLIST A$
 ; Display devices
+;************************************************************************
+NLIST:
 
 .IF .NOT STRIP_TRACE
                 LDA TRACE_FLAG
@@ -1167,10 +1191,11 @@ NO_ARG:
 
 
 .IF .NOT STRIP_TRACE
-;*******************************************
-NTRACE:
+;************************************************************************
 ; &NTRACE
 ; Display debug messages
+;************************************************************************
+NTRACE:
 
                 PRINT_STR FUJIAPPLE_VER_STR_ADDR
 
@@ -1181,16 +1206,55 @@ NTRACE:
 
                 RTS
 
-;*******************************************
-NNOTRACE:
+;************************************************************************
 ; &NNOTRACE
 ; Display debug messages
+;************************************************************************
+NNOTRACE:
 
                 LDA #$00
                 STA TRACE_FLAG
 
                 RTS
 .ENDIF
+
+;************************************************************************
+; &NACCEPT UNIT
+; Accept the incoming connection
+;************************************************************************
+NACCEPT:
+.IF .NOT STRIP_TRACE
+                LDA TRACE_FLAG
+                BEQ NO_TRACE43
+                PRINT_STR NCLOSE_STR_ADDR       ; "NCLOSE"
+
+NO_TRACE43:                
+.ENDIF
+                JSR   GETBYT                    ; GET THE UNIT
+                STX   BASIC_UNIT
+
+.IF .NOT STRIP_TRACE
+                LDA TRACE_FLAG
+                BEQ NO_TRACE34
+
+                SAVE_REGS
+                JSR PRTX
+                JSR CROUT
+                RESTORE_REGS
+NO_TRACE34:
+.ENDIF               
+
+
+                LDX BASIC_UNIT
+                LDA OPEN_LIST, X        ; THIS IS THE ACTUAL UNIT NUMBER
+                CMP #FN_NO_NETWORK      ; TRYING TO ACCEPT SOMETHING THAT IS NOT ACTUALLY OPEN  
+                BEQ ACCEPT_FAILED
+                TAX
+                JSR FN_ACCEPT
+
+ACCEPT_FAILED:
+                RTS
+
 
                 .include "SMARTPORTCMDS.S"
                 .include "FAKESMARTPORT.S"
@@ -1236,6 +1300,9 @@ relocate007:    .WORD   NEND-1
 
                 .BYTE   "N", TOK_LIST, 0        ; NLIST
 relocate008:    .WORD   NLIST-1
+
+                .ASCIIZ "NACCEPT"               ; NACCEPT
+relocate013:    .WORD   NACCEPT-1
 
 .IF .NOT STRIP_TRACE
                 .BYTE   "N", TOK_TRACE, 0       ; NTRACE
@@ -1304,7 +1371,7 @@ RELOCATE_DATA_END:
 
 RELOCATION_TABLE:
 		.WORD 	relocate000+1,relocate001+1,relocate002,relocate003,relocate004,relocate005,relocate006,relocate007,relocate008,relocate009
-		.WORD 	relocate010,relocate011,relocate012;,relocate013,relocate014,relocate015,relocate016,relocate017,relocate018,relocate019
+		.WORD 	relocate010,relocate011,relocate012,relocate013;,relocate014,relocate015,relocate016,relocate017,relocate018,relocate019
 ;		.WORD   relocate020,relocate021,relocate022,relocate023,relocate024,relocate025,relocate026,relocate027,relocate028,relocate029
 
 .include "STR_RELOC.S"
