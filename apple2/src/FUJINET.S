@@ -644,8 +644,9 @@ NO_TRACE33:
                 TXA
                 PHA
                 
-                LDY #$00                ; PAYLOAD SIZE = ZERO
+                LDY #$03                ; PAYLOAD SIZE = ZERO
                 STY SP_PAYLOAD
+                LDY #$00
                 STY SP_PAYLOAD+1
                 
                 LDY #'C'                ; SEND 'C' TO FUJINET
@@ -728,7 +729,6 @@ BW_OK:
                 STY BW+1
 
                 LDA SP_PAYLOAD+2 
-                AND #$02
                 STA CONNECT
 
                 LDX #FN_OK
@@ -885,8 +885,9 @@ NO_TRACE42:
                 TXA
                 PHA
                 
-                LDY #$00                ; PAYLOAD SIZE = ZERO
+                LDY #$03                ; PAYLOAD SIZE = ZERO
                 STY SP_PAYLOAD
+                LDY #$00
                 STY SP_PAYLOAD+1
                 
                 LDY #'A'                ; SEND 'A' TO FUJINET
