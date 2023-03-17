@@ -36,28 +36,16 @@ TEST_BLOCK_STR_ADDR: .WORD TEST_BLOCK_STR
 
 .IF .NOT STRIP_TRACE
 
-
-
-HERE1:  .BYTE "HERE1", $0D, $00
-HERE2:  .BYTE "HERE2", $0D, $00
-HERE3:  .BYTE "HERE3", $0D, $00
-HERE4:  .BYTE "HERE4", $0D, $00
-HERE5:  .BYTE "HERE5", $0D, $00
-HERE6:  .BYTE "HERE6", $0D, $00
-HERE7:  .BYTE "HERE7", $0D, $00
-HERE8:  .BYTE "HERE8", $0D, $00
-
 ; NOT NEEDED IF WE'RE NOT DEBUGGING
-
-
 
 OPEN_ERR_STR:                               .ASCIIZ "FN_OPEN: OPEN ERR:"
 CTRL_ERR_STR:                               .ASCIIZ "FN_OPEN: CTRL ERR:"
 
-
 .ENDIF
 
+;*******************************************
 ; THESE STRING ARE USED AFTER RELOCATING
+;*******************************************
 
 .IF .NOT STRIP_TRACE
 
@@ -324,11 +312,15 @@ NETWORK_NOT_FOUND_STR:                      .ASCIIZ "NETWORK DEVICE NOT FOUND!"
 str017:
 NETWORK_NOT_FOUND_STR_ADDR:                 .WORD NETWORK_NOT_FOUND_STR
 
-; NOT A STRING, BUT NEEDED ANYWAY
+
 
 .IF .NOT USE_SP
+
+; NOT A STRING, BUT NEEDED ANYWAY
+
 trace030:
 FAKE_DISPATCHER_ADDR:                       .WORD FAKE_DISPATCHER
+
 
 FAKE_SMARTPORT_STR:                         .BYTE "**** FAKE SMARTPORT ****", $0D, $00
 trace020:

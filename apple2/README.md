@@ -13,9 +13,11 @@ Additional Documentation:
 
 Boot with a ProDOS disk, have FUJIAPPLE.po in the secondary drive
 
-&NEND - restore last ampersand vector (removes fujiapple from the chain)
+&NEND    - restore last ampersand vector (removes fujiapple from the chain)
 
 &NACCEPT - accept an incoming connection
+
+&NINPUT  - read until carriage return received or 255 characters
 
 BRUN FUJIAPPLE
 This will load the ampersand routines, relocate them to HIMEM, save the existing

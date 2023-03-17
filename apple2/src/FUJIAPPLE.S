@@ -1255,6 +1255,86 @@ NO_TRACE34:
 ACCEPT_FAILED:
                 RTS
 
+;************************************************************************
+; &NINPUT UNIT,VAR$
+;   Reads until either Carriage Return is received or 255 characters
+; are received
+;************************************************************************
+NINPUT:
+
+.IF .NOT STRIP_TRACE
+                LDA TRACE_FLAG
+                BEQ NO_TRACE44      
+                PRINT_STR NINPUT_STR_ADDR       ; "NINPUT"
+NO_TRACE44:
+.ENDIF
+                JSR GETBYT                      ; GET UNIT
+                STX BASIC_UNIT
+
+.IF .NOT STRIP_TRACE
+                LDA TRACE_FLAG
+                BEQ NO_TRACE37
+                SAVE_REGS
+                JSR PRTX
+                JSR CROUT
+                RESTORE_REGS
+NO_TRACE37:
+.ENDIF
+
+                JSR CHKCOM
+
+                JSR PTRGET                      ; GET THE STRING TO RECEIVED OUR DATA
+
+;Returns the address of variable contents in A-reg (high) and Y-reg (low), 
+;as well as in VARPTR at $83.84. If a variable does not exist, it
+;is created. TXTPTR points to the next character. 
+
+                LDA VARPTR                      ; SAVE THE STRING DESCRIPTOR LOCATION 
+                STA STR_DSC_LEN                 ; FOR LATER
+                LDA VARPTR+1
+                STY STR_DSC_LO
+                LDA VARPTR+2
+                STA STR_DSC_HI
+
+                LDX BASIC_UNIT
+                LDA OPEN_LIST,X
+                CMP #FN_NO_NETWORK
+                BNE UNIT_OK6
+
+                PRINT_STR NOT_OPENED_STR_ADDR
+                JMP SYNERR
+
+UNIT_OK6:
+                TAX
+                JSR FN_INPUT
+
+                LDA STR_DSC_LEN                 ; RESTORE THE STRING DESCRIPTOR
+                STA VARPTR                      ; THAT WE SAVED EARLIER SO WE
+                LDA STR_DSC_LO                  
+                STA VARPTR+1
+                LDA STR_DSC_HI
+                STA VARPTR+2
+
+                LDA FN_BUFFER_SIZE              ; THIS IS THE ACTUAL NUMBER OF CHARS WE READ
+                JSR STRINI                      ; CREATE NEW STRING OF LENGTH A
+
+                LDY #$00
+                LDA DSCTMP                      ; DESCRIPTOR FOR NEW STRING
+                STA (VARPTR),Y                  ; UPDATE THE LENGTH
+                INY
+                LDA DSCTMP+1                    ; UPDATE THE LOCATION OF THE STRING
+                STA (VARPTR),Y 
+                INY
+                LDA DSCTMP+2
+                STA (VARPTR),Y
+
+                LDA FN_BUFFER_SIZE              ; USE THE APPLESOFT ROUTINES TO
+                LDY FN_BUFFER_ADDR+1            ; MOVE THE PAYLOAD INTO THE
+                LDX FN_BUFFER_ADDR              ; ACTUAL STRING
+                JSR MOVSTR                      ; COPY BUFFER TO STRING (VAR$)
+
+                RTS
+
 
                 .include "SMARTPORTCMDS.S"
                 .include "FAKESMARTPORT.S"
@@ -1303,6 +1383,9 @@ relocate008:    .WORD   NLIST-1
 
                 .ASCIIZ "NACCEPT"               ; NACCEPT
 relocate013:    .WORD   NACCEPT-1
+
+                .BYTE   "N", TOK_INPUT, 0       ; NINPUT
+relocate014:    .WORD   NINPUT-1
 
 .IF .NOT STRIP_TRACE
                 .BYTE   "N", TOK_TRACE, 0       ; NTRACE
@@ -1371,7 +1454,7 @@ RELOCATE_DATA_END:
 
 RELOCATION_TABLE:
 		.WORD 	relocate000+1,relocate001+1,relocate002,relocate003,relocate004,relocate005,relocate006,relocate007,relocate008,relocate009
-		.WORD 	relocate010,relocate011,relocate012,relocate013;,relocate014,relocate015,relocate016,relocate017,relocate018,relocate019
+		.WORD 	relocate010,relocate011,relocate012,relocate013,relocate014,relocate015;,relocate016,relocate017,relocate018,relocate019
 ;		.WORD   relocate020,relocate021,relocate022,relocate023,relocate024,relocate025,relocate026,relocate027,relocate028,relocate029
 
 .include "STR_RELOC.S"

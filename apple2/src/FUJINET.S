@@ -911,3 +911,75 @@ ACCEPT_OK:
 ACCEPT_DONE:
                 STX FN_LAST_ERR  
                 RTS
+
+;******************************************************************
+; FN_INPUT
+;   Read until carriage return is received or 255 characters are
+; received
+;
+; INPUT
+; X = UNIT DESTINATION
+;******************************************************************
+FN_BUFFER_SIZE: .BYTE $00
+FN_BUFFER:      .RES  $FF
+relocate015:
+FN_BUFFER_ADDR: .WORD FN_BUFFER
+
+
+FN_INPUT:
+
+.IF .NOT STRIP_TRACE
+                SAVE_REGS
+                TXA
+                PHA
+                LDA TRACE_FLAG
+                BEQ NO_TRACE43
+
+                PRINT_STR FN_INPUT_STR_ADDR
+                PLA
+                PHA
+                TAX
+                JSR PRTX
+                JSR CROUT
+NO_TRACE43:     
+                PLA          
+                RESTORE_REGS
+
+.ENDIF
+
+;'R'
+;0-1   payload size (bytes to return)
+;2..   data
+;
+                ; SET PAYLOAD SIZE
+
+GET_MORE:
+                LDY #$01              ; PAYLOAD SIZE 1 BYTE
+                STY SP_PAYLOAD
+                LDA #$00
+                STA SP_PAYLOAD+1
+                STA FN_BUFFER_SIZE
+
+                LDY #'R'
+                JSR SP_CONTROL
+                BCS STOP_INPUT              ; ERROR, JUST RETURN STRING
+
+                LDY FN_BUFFER_SIZE
+                LDA SP_PAYLOAD+2
+
+                CMP #13                     ; IS IT A CR?
+                BEQ STOP_INPUT              ; STOP PROCESSING
+
+                STA FN_BUFFER,Y             ; SAVE THE RECEIVED CHARACTER
+                INY
+                STY FN_BUFFER_SIZE
+                CPY #$FF
+                BNE GET_MORE                ; KEEP GOING UNTIL BUFFER FULL
+
+STOP_INPUT:                                  ; ANY ERROR JUST STOP
+                LDX FN_BUFFER_SIZE
+                RTS
+
+
+
+
