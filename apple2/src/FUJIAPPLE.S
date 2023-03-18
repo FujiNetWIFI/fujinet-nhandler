@@ -181,8 +181,16 @@ NEXT_NETWORK_CACHE:
 ;.ENDIF
 
 .IF RELOCATE
+                JSR CLEAR_CMD_LIST      ; clear the data so we can relocate code/data together
                 JSR RELOCATE_TO_HIMEM   ; copy the code and data, adjust all absolute addresses
+
+
 .ENDIF
+
+                ; let's fix all the smartport data now that
+                ; everything has been relocated
+
+ relocate006:   JSR FILL_CMD_LIST
 
 .IF RELOCATE
 
@@ -249,10 +257,7 @@ relocate005:    STA SIGNATURE,X
                 LDA #SIG_SIZE
                 STA SIGNATURE,X
 
-                ; let's fix all the cmd list's now that
-                ; everything has been relocated
 
- relocate006:   JSR FILL_CMD_LIST
 
 .IF RELOCATE
 .IF WIPE_AFTER
@@ -1456,7 +1461,6 @@ STR_DSC_HI:     .BYTE   0
 .include "SMARTPORT_DATA.S"
 .include "FUJINET_DATA.S"
 
-
 RELOCATE_DATA_END:
 
 ; Anything here is only used during setup and doesn't need to be relocated.
@@ -1465,16 +1469,10 @@ RELOCATE_DATA_END:
 .include "RELOCATION.S" 
 
 RELOCATION_TABLE:
-; in FUJIAPPLE.S
-		.WORD 	relocate000+1,relocate001+1,relocate002+1,relocate003+1,relocate004+1,relocate005+1,relocate006+1,relocate007,relocate008,relocate009
-		.WORD 	relocate010,relocate011,relocate012,relocate013,relocate014,relocate015,relocate016,relocate017,relocate018,relocate019
-		.WORD   relocate020;,relocate021,relocate022,relocate023,relocate024,relocate025,relocate026,relocate027,relocate028,relocate029
-
+.include "FUJIAPPLE_RELOC.S"
 .include "STR_RELOC.S"
-
-               .WORD    relocatesp00,relocatesp01,relocatesp02,relocatesp03;,relocatesp04,relocatesp05,relocatesp06,relocatesp07;,relocatesp08,relocatesp09
-;               .WORD    relocatesp10,relocatesp11,relocatesp12,relocatesp13,relocatesp14,relocatesp15,relocatesp16,relocatesp17,relocatesp18,relocatesp19
-
+.include "SMARTPORT_RELOC.S"
+.include "FAKESMARTPORT_RELOC.S"
 END_RELOCATION_TABLE:	
                 .WORD 	0 ; end of table
 

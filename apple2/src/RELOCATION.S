@@ -414,6 +414,15 @@ TABLE_EXHAUSTED:
 ; AND PROBABLY MIXED YOUR DATA WITH YOUR CODE
 ; THE ILLEGAL INSTRUCTION IS AT SRC_ADDR
 ILLEGAL_INSTRUCTION:
+.IF APPLEII
+        LDA #<ILLEGAL_INSTRUCTION_STR
+        LDY #>ILLEGAL_INSTRUCTION_STR
+        JSR STROUT
+        LDX SRC_ADDR
+        LDA SRC_ADDR+1
+        JSR PRTAX
+        JSR CROUT
+.ENDIF
         BRK
 
 ;====================================
@@ -498,7 +507,7 @@ ADJUST_HIMEM:
 ; Each entry is points to the instruction 
 ; (not the address) we need to relocate
 
-INSTRUCTION_SIZE:   .BYTE $02 ; $00 BRK
+INSTRUCTION_SIZE:   .BYTE $01 ; $00 BRK
 		    .BYTE $02 ; $01 ORA X,IND	
                     .BYTE 0,0,0
                     .BYTE $02 ; $05 ORA ZPG
@@ -756,5 +765,7 @@ DIFF_LO:		.BYTE $00
 DIFF_HI:		.BYTE $00
 
 MOVE_HIGHER:              .BYTE $00
+
+ILLEGAL_INSTRUCTION_STR: .ASCIIZ "RELOCATE ERROR, ILLEGAL INSTRUCTION AT: "
 
 

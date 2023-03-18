@@ -78,6 +78,33 @@ SLOT_ADDR_LO	    	=	ZP2_LO
 SLOT_ADDR_HI		=	ZP2_HI
 
 
+CLEAR_CMD_LIST:
+                LDA #$EA
+
+                STA cmd_list0
+                STA cmd_list1
+                STA cmd_list2
+                STA cmd_list3
+                STA cmd_list4
+                STA cmd_list5
+
+                STA cmd_list0+1
+                STA cmd_list1+1
+                STA cmd_list2+1
+                STA cmd_list3+1
+                STA cmd_list4+1
+                STA cmd_list5+1
+
+                STA cmd_open
+                STA cmd_close
+                STA cmd_control
+                STA cmd_read
+                STA cmd_write 
+                STA cmd_status
+
+                RTS
+
+
 FILL_CMD_LIST:
                 LDA CMD_LIST_ADDR
                 STA cmd_list0
@@ -85,6 +112,7 @@ FILL_CMD_LIST:
                 STA cmd_list2
                 STA cmd_list3
                 STA cmd_list4
+                STA cmd_list5
 
                 LDA CMD_LIST_ADDR+1
                 STA cmd_list0+1
@@ -92,6 +120,7 @@ FILL_CMD_LIST:
                 STA cmd_list2+1
                 STA cmd_list3+1
                 STA cmd_list4+1
+                STA cmd_list5+1
 
                 LDA #SP_CMD_OPEN
                 STA cmd_open
@@ -105,9 +134,6 @@ FILL_CMD_LIST:
                 STA cmd_write 
                 LDA #SP_CMD_STATUS
                 STA cmd_status
-
-
-
 
                 RTS
 
@@ -517,9 +543,8 @@ NO_TRACE12:
 cmd_open:       .BYTE $EA       ; SP_CMD_OPEN
 cmd_list0:      .WORD $EAEA     ; CMD_LIST
                 
-                BCS OPEN_ERROR
-
                 BCC SP_OPEN_DONE
+
 OPEN_ERROR:
 .IF EXT2_TRACE
                 PHA
@@ -573,8 +598,6 @@ NO_TRACE13:
 cmd_close:      .BYTE $EA       ; SP_CMD_CLOSE
 cmd_list1:      .WORD $EAEA     ; CMD_LIST
                 
-                BCS CLOSE_ERROR
-
                 BCC SP_CLOSE_DONE
 CLOSE_ERROR:
 .IF EXT2_TRACE
@@ -1049,7 +1072,6 @@ SP_STATUS_DONE:
 ;**********************************
 CALL_DISPATCHER:
                 JMP (SMARTPORT_DISPATCHER)
-
 
 ;*******************************
 ; DISPLAY_SP_STATUS

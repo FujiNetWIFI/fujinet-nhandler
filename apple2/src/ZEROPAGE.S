@@ -31,23 +31,23 @@ ZP5             =	$EF
 
 .IF .DEFINED(ATARI)
 
-ZP1		=	$A2
+ZP1             =	$A2
 ZP1_LO	        =	$A2
 ZP1_HI	        = 	$A3
 
 ZP2             =	$A4
-ZP2_LO		=	$A4
-ZP2_HI		=	$A5
+ZP2_LO		    =	$A4
+ZP2_HI		    =	$A5
 
 ZP3             =	$A6
-ZP3_LO		=	$A6
-ZP3_HI		=	$A7
+ZP3_LO		    =	$A6
+ZP3_HI		    =	$A7
 
 ZP4             =	$A8
-ZP4_LO		=	$A8
-ZP4_HI		=	$A9
+ZP4_LO		    =	$A8
+ZP4_HI		    =	$A9
 
-ZP5		=	$AA
+ZP5		    =	$AA
 .ENDIF
 
 
