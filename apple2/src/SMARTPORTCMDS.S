@@ -93,6 +93,22 @@ FILL_CMD_LIST:
                 STA cmd_list3+1
                 STA cmd_list4+1
 
+                LDA #SP_CMD_OPEN
+                STA cmd_open
+                LDA #SP_CMD_CLOSE
+                STA cmd_close
+                LDA #SP_CMD_CONTROL
+                STA cmd_control
+                LDA #SP_CMD_READ
+                STA cmd_read
+                LDA #SP_CMD_WRITE
+                STA cmd_write 
+                LDA #SP_CMD_STATUS
+                STA cmd_status
+
+
+
+
                 RTS
 
 ;*******************************
@@ -498,8 +514,8 @@ NO_TRACE12:
                 STX CMD_LIST+1                  ; DESTINATION DEVICE
                 JSR CALL_DISPATCHER
 
-                .BYTE SP_CMD_OPEN
-cmd_list0:      .WORD $EAEA
+cmd_open:       .BYTE $EA       ; SP_CMD_OPEN
+cmd_list0:      .WORD $EAEA     ; CMD_LIST
                 
                 BCS OPEN_ERROR
 
@@ -554,8 +570,8 @@ NO_TRACE13:
                 STX CMD_LIST+1                  ; DESTINATION DEVICE
                 JSR CALL_DISPATCHER
 
-                .BYTE SP_CMD_CLOSE
-cmd_list1:      .WORD $EAEA
+cmd_close:      .BYTE $EA       ; SP_CMD_CLOSE
+cmd_list1:      .WORD $EAEA     ; CMD_LIST
                 
                 BCS CLOSE_ERROR
 
@@ -674,8 +690,8 @@ NO_TRACE14:
 
                 JSR CALL_DISPATCHER
 
-                .BYTE SP_CMD_CONTROL
-cmd_list2:      .WORD $EAEA
+cmd_control:    .BYTE $EA       ; SP_CMD_CONTROL
+cmd_list2:      .WORD $EAEA     ; CMD_LIST
 
                 BCC SP_CTRL_DONE
 
@@ -766,8 +782,8 @@ NO_TRACE15:
                 
                 JSR CALL_DISPATCHER
 
-                .BYTE SP_CMD_READ               ; READ CALL COMMAND NUMBER
-cmd_list3:      .WORD $EAEA
+cmd_read:       .BYTE $EA       ; SP_CMD_READ               ; READ CALL COMMAND NUMBER
+cmd_list3:      .WORD $EAEA     ; CMD_LIST
 
                 STX SP_COUNT
                 STY SP_COUNT+1
@@ -862,8 +878,8 @@ NO_TRACE40:
    
                 JSR CALL_DISPATCHER
 
-                .BYTE SP_CMD_WRITE             ; STATUS CALL COMMAND NUMBER
-cmd_list4:      .WORD $EAEA
+cmd_write:      .BYTE $EA       ; SP_CMD_WRITE             ; STATUS CALL COMMAND NUMBER
+cmd_list4:      .WORD $EAEA     ; CMD_LIST
 
                 STX SP_COUNT
                 STY SP_COUNT+1
@@ -970,8 +986,8 @@ NO_TRACE35:
 
                 JSR CALL_DISPATCHER
 
-                .BYTE SP_CMD_STATUS             ; STATUS CALL COMMAND NUMBER
-cmd_list5:      .WORD $EAEA
+cmd_status:     .BYTE $EA       ; SP_CMD_STATUS             ; STATUS CALL COMMAND NUMBER
+cmd_list5:      .WORD $EAEA     ; CMD_LIST
 
                 STX SP_COUNT
                 STY SP_COUNT+1
