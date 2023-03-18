@@ -350,7 +350,6 @@ FN_READ:
                 BEQ NO_TRACE22
 
                 PRINT_STR FN_READ_STR_ADDR
-                PRINT_STR UNIT_STR_ADDR
                 PLA
                 PHA
                 TAX
@@ -632,7 +631,6 @@ FN_CLOSE:
                 TXA
                 PHA
                 PRINT_STR FN_CLOSE_STR_ADDR
-                PRINT_STR UNIT_STR_ADDR
                 PLA
                 TAX
                 JSR PRTX
@@ -899,7 +897,7 @@ NO_TRACE42:
                 LDX #FN_ERR
 
 .IF .NOT STRIP_TRACE                
-                PRINT_STR ACCEPT_ERROR_STR_ADDR
+                PRINT_STR FN_ACCEPT_ERROR_STR_ADDR
 .ENDIF
 
                 CLC
@@ -933,7 +931,7 @@ FN_INPUT:
                 TXA
                 PHA
                 LDA TRACE_FLAG
-                BEQ NO_TRACE43
+                BEQ NO_TRACE47
 
                 PRINT_STR FN_INPUT_STR_ADDR
                 PLA
@@ -941,7 +939,7 @@ FN_INPUT:
                 TAX
                 JSR PRTX
                 JSR CROUT
-NO_TRACE43:     
+NO_TRACE47:     
                 PLA          
                 RESTORE_REGS
 

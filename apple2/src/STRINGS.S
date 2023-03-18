@@ -87,6 +87,14 @@ NCTRL_STR:                                  .BYTE "NCTRL", $0D, $00
 trace008:
 NCTRL_STR_ADDR:                             .WORD NCTRL_STR
 
+NACCEPT_STR:                                .BYTE "NACCEPT", $0D, $00
+trace053:
+NACCEPT_STR_ADDR:                           .WORD NACCEPT_STR
+
+NINPUT_STR:                                 .BYTE "NINPUT", $0D, $00
+trace054:
+NINPUT_STR_ADDR:                            .WORD NINPUT_STR
+
 FIND_SMARTPORT_SLOT_STR:                    .BYTE "FIND_SMARTPORT_SLOT: ", $00
 trace009:
 FIND_SMARTPORT_SLOT_STR_ADDR:               .WORD FIND_SMARTPORT_SLOT_STR
@@ -211,6 +219,10 @@ FN_WRITE_ERROR_STR:                         .BYTE "FN WRITE ERROR", $0D, $00
 trace045:
 FN_WRITE_ERROR_STR_ADDR:                    .WORD FN_WRITE_ERROR_STR
 
+FN_ACCEPT_ERROR_STR:                        .BYTE "FN ACCEPT ERROR", $0D, $00
+trace050:
+FN_ACCEPT_ERROR_STR_ADDR:                   .WORD FN_ACCEPT_ERROR_STR
+
 SP_READ_ERROR_STR:                          .BYTE "SP_READ ERROR", $0D, $00
 trace040:
 SP_READ_ERROR_STR_ADDR:                     .WORD SP_READ_ERROR_STR
@@ -230,6 +242,14 @@ SP_NO_DCOUNT_STR_ADDR:                      .WORD SP_NO_DCOUNT_STR
 SP_DCOUNT_STR:                              .BYTE $0D, "DCOUNT: ", $00
 trace049:
 SP_DCOUNT_STR_ADDR:                         .WORD SP_DCOUNT_STR
+
+FN_INPUT_STR:                               .BYTE "FN_INPUT: ", $00
+trace051:
+FN_INPUT_STR_ADDR:                          .WORD FN_INPUT_STR
+
+FN_ACCEPT_STR:                              .BYTE "FN_ACCEPT: ", $00
+trace052:
+FN_ACCEPT_STR_ADDR:                         .WORD FN_ACCEPT_STR
 .ENDIF
 
 FUJIAPPLE_VER_STR:                          .BYTE "FUJIAPPLE VERSION: YYYYMMDD.HHMM", $0D, $00

@@ -38,16 +38,15 @@
 ;
 ; EXT_TRACE and EXT2_TRACE includes calls into the SMARTPORT routines
 
-STRIP_TRACE= 1  ; Eliminate all tracing code and strings
-TRACE_ON   = 0  ; &NTRACE is on at the very start
-EXT_TRACE  = 0  ; Extended Trace, 1=display SMARTPORT internal debug messages 
+STRIP_TRACE= 0  ; Eliminate all tracing code and strings
+TRACE_ON   = 1  ; &NTRACE is on at the very start
+EXT_TRACE  = 1  ; Extended Trace, 1=display SMARTPORT internal debug messages 
 EXT2_TRACE = 0  ; Extended Trace 2, display SP_STATUS and SP_CONTROL
 RELOCATE   = 1  ; 1=relocate himem and put our code there
 PRODOS     = 1  ; 0=add dos 3.3 header
 APPLEII    = 1  ; always set to one, EQUs will be for apple zero page
-USE_SP     = 1  ; 1=USE ACTUAL SMARTPORT 0=EMULATE SMARTPORT FUNCTIONS
-
-SMALL_TEST = 0  ; Test only one small specific code
+USE_SP     = 0  ; 1=USE ACTUAL SMARTPORT 0=EMULATE SMARTPORT FUNCTIONS
+WIPE_AFTER = 1  ; WIPE ORIGINAL LOCATION AFTER RELOCATING
 
 START      = $2000
 
@@ -66,7 +65,7 @@ START      = $2000
 ; HEADER FOR BINARY FILES ON DOS 3.3
 
         .WORD NINIT                             ; Starting address
-        .WORD (ENDOFFILE - RELOCATE_CODE_START) ; Length
+        .WORD (ENDOFFILE - STARTOFFILE)         ; Length
 
 .ENDIF
 ; VARIOUS SYSTEM ROUTINES AND LOCATIONS 
@@ -81,54 +80,6 @@ START      = $2000
 STARTOFFILE:
 
 NINIT:
-
-.IF SMALL_TEST
-
-        LDA #<FUJIAPPLE_VER_STR                 ; "VERSON: YYYYMMDD.HHMM" - FILLED BY PYTHON SCRIPT
-        LDY #>FUJIAPPLE_VER_STR
-        JSR  STROUT
-
-        LDA #<TEST_STR
-        LDY #>TEST_STR
-        JSR STROUT
-
-        JSR GET_SMARTPORT_DISPATCH_ADDRESS      ; FIND THE ADDRESS
-
-        LDX #$00
-        STA BASIC_UNIT
-        JSR FN_FIND_NETWORK
-        JSR DISPLAY_NETS
-
-        LDA #$00
-        STA BASIC_UNIT
-
-        JSR FN_OPEN
-        JSR PRINT_REGS
-
-        JSR FN_STATUS
-        LDA BW
-        LDX BW+1
-        JSR PRTAX
-        LDX CONNECT
-        JSR PRTX
-        RTS
-
-TEST_STR:    
-        .BYTE "<><><><><>SMALL TEST MODE<><><><><><>", $0D,$00
-
-.ENDIF
-
-
-                LDA CIDERPRESS_CORRUPTION_TEST
-                CMP #$0A
-                BEQ NOT_CORRUPTED
-                LDA #<CIDERPRESS_CORRUPTION_TEST
-                LDY #>CIDERPRESS_CORRUPTION_TEST
-                JSR STROUT
-                RTS
-
-NOT_CORRUPTED:
-
 
 .IF .NOT STRIP_TRACE
 .IF TRACE_ON
@@ -248,6 +199,7 @@ NEXT_NETWORK_CACHE:
 .ENDIF
 .ENDIF
 
+
 .ENDIF
 
 ; SAVE PREVIOUS VECTOR INFO
@@ -278,6 +230,41 @@ SAVEVECT:
 
 .IF .NOT USE_SP
                 PRINT_STR FAKE_SMARTPORT_STR_ADDR
+.ENDIF
+
+.IF RELOCATE
+.IF WIPE_AFTER
+                LDA #<RELOCATE_CODE_START
+                STA ZP1_LO
+                LDY #>RELOCATE_CODE_START
+                STY ZP1_HI
+                
+                LDX #<(RELOCATE_DATA_END - RELOCATE_CODE_START)
+                LDY #>(RELOCATE_DATA_END - RELOCATE_CODE_START)
+
+WIPE_IT:
+
+WIPE_IT_GOOD:
+                TYA
+                PHA
+                LDY #$00
+                LDA #$A5
+                STA (ZP1),Y
+                LDA ZP1_LO
+                CLC
+                ADC #$01
+                STA ZP1_LO
+                LDA ZP1_HI
+                ADC #$00
+                STA ZP1_HI
+                PLA
+                TAY
+                DEX
+                BNE WIPE_IT
+                DEY
+                BNE WIPE_IT_GOOD
+
+.ENDIF
 .ENDIF
 
 .IF PRODOS
@@ -1226,7 +1213,7 @@ NACCEPT:
 .IF .NOT STRIP_TRACE
                 LDA TRACE_FLAG
                 BEQ NO_TRACE43
-                PRINT_STR NCLOSE_STR_ADDR       ; "NCLOSE"
+                PRINT_STR NACCEPT_STR_ADDR       ; "NACCEPT"
 
 NO_TRACE43:                
 .ENDIF
@@ -1235,15 +1222,14 @@ NO_TRACE43:
 
 .IF .NOT STRIP_TRACE
                 LDA TRACE_FLAG
-                BEQ NO_TRACE34
+                BEQ NO_TRACE45
 
                 SAVE_REGS
                 JSR PRTX
                 JSR CROUT
                 RESTORE_REGS
-NO_TRACE34:
+NO_TRACE45:
 .ENDIF               
-
 
                 LDX BASIC_UNIT
                 LDA OPEN_LIST, X        ; THIS IS THE ACTUAL UNIT NUMBER
@@ -1273,12 +1259,12 @@ NO_TRACE44:
 
 .IF .NOT STRIP_TRACE
                 LDA TRACE_FLAG
-                BEQ NO_TRACE37
+                BEQ NO_TRACE46
                 SAVE_REGS
                 JSR PRTX
                 JSR CROUT
                 RESTORE_REGS
-NO_TRACE37:
+NO_TRACE46:
 .ENDIF
 
                 JSR CHKCOM
@@ -1459,11 +1445,10 @@ RELOCATION_TABLE:
 
 .include "STR_RELOC.S"
 
-.IF USE_SP
+
                .WORD    relocatesp00,relocatesp01,relocatesp02,relocatesp03,relocatesp04,relocatesp05,relocatesp06,relocatesp07;,relocatesp08,relocatesp09
-.ELSE
-;                .WORD   relocatefsp00
-.ENDIF
+;               .WORD    relocatesp10,relocatesp11,relocatesp12,relocatesp13,relocatesp14,relocatesp15,relocatesp16,relocatesp17,relocatesp18,relocatesp19
+
 END_RELOCATION_TABLE:	
                 .WORD 	0 ; end of table
 
