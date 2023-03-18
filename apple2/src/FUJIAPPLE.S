@@ -39,8 +39,8 @@
 ; EXT_TRACE and EXT2_TRACE includes calls into the SMARTPORT routines
 
 STRIP_TRACE= 0  ; Eliminate all tracing code and strings
-TRACE_ON   = 1  ; &NTRACE is on at the very start
-EXT_TRACE  = 1  ; Extended Trace, 1=display SMARTPORT internal debug messages 
+TRACE_ON   = 0  ; &NTRACE is on at the very start
+EXT_TRACE  = 0  ; Extended Trace, 1=display SMARTPORT internal debug messages 
 EXT2_TRACE = 0  ; Extended Trace 2, display SP_STATUS and SP_CONTROL
 RELOCATE   = 1  ; 1=relocate himem and put our code there
 PRODOS     = 1  ; 0=add dos 3.3 header
@@ -88,6 +88,7 @@ NINIT:
                 JSR NNOTRACE
 .ENDIF
 .ENDIF
+                JSR FILL_CMD_LIST
 
                 JSR GET_SMARTPORT_DISPATCH_ADDRESS      ; FIND THE ADDRESS
 
@@ -149,7 +150,7 @@ NEXT_NETWORK_CACHE:
 ;.IF .NOT STRIP_TRACE
 ;.IF EXT_TRACE
                 JSR CROUT               ; CARRIAGE RETURN
-                LDA #<HIMEM_IS_STR          ; "HIMEM IS:"
+                LDA #<HIMEM_IS_STR          ; "OLD HIMEM:"
                 LDY #>HIMEM_IS_STR
                 JSR STROUT
 
@@ -166,8 +167,8 @@ NEXT_NETWORK_CACHE:
 .ENDIF
 
 ;.IF .NOT STRIP_TRACE
-		LDA #<RELOCATING_STR    ; "RELOCATING TO:"
-		LDY #>RELOCATING_STR
+		LDA #<NEW_HIMEM_STR    ; "NEW HIMEM: "
+		LDY #>NEW_HIMEM_STR
 		JSR STROUT
 ;.ENDIF
 
@@ -207,30 +208,51 @@ NEXT_NETWORK_CACHE:
 SAVEVECT:
 
                 LDA AMPVECT
-                STA PREVECT
+relocate000:    STA PREVECT
                 LDA AMPVECT+1
-                STA PREVECT+1
+relocate001:    STA PREVECT+1
                 LDA AMPVECT+2
-                STA PREVECT+2
+relocate002:    STA PREVECT+2
 
 ; UPDATE THE AMPERSAND VECTOR TO OUR ROUTINE
 
-                LDA #$4C                ; JMP
+                LDA #$4C                                ; JMP
                 STA AMPVECT
-                LDA RELOC_FUJIAPPLE     ; SET THE AMPERSAND VECTOR
+relocate003:    LDA RELOC_NSTART                        ; SET THE AMPERSAND VECTOR
                 STA AMPVECT+1
-                LDA RELOC_FUJIAPPLE+1
+relocate004:    LDA RELOC_NSTART+1
                 STA AMPVECT+2
         
 ; ANNOUNCE OUR SUCCESS
 
-                LDA #<EXTADDED_STR          ; "FUJINET EXTENSION ADDED"
+                LDA #<EXTADDED_STR                      ; "FUJINET EXTENSION ADDED"
                 LDY #>EXTADDED_STR          
                 JSR STROUT
 
 .IF .NOT USE_SP
                 PRINT_STR FAKE_SMARTPORT_STR_ADDR
+                JSR GET_SMARTPORT_DISPATCH_ADDRESS      ; FIND THE ADDRESS AGAIN, SINCE IT WAS RELOCATED
 .ENDIF
+
+
+                ; RELOCATION CODE WILL CLOBBER THE
+                ; STRING, THINKING IT'S CODE,
+                ; SO PUT IT THERE AFTER IT'S
+                ; BEEN MOVED
+
+                LDX #$00
+CPY_SIG:
+                LDA SIGNATURE_STR,X
+relocate005:    STA SIGNATURE,X
+                INX
+                BNE CPY_SIG
+                LDA #SIG_SIZE
+                STA SIGNATURE,X
+
+                ; let's fix all the cmd list's now that
+                ; everything has been relocated
+
+ relocate006:   JSR FILL_CMD_LIST
 
 .IF RELOCATE
 .IF WIPE_AFTER
@@ -241,14 +263,12 @@ SAVEVECT:
                 
                 LDX #<(RELOCATE_DATA_END - RELOCATE_CODE_START)
                 LDY #>(RELOCATE_DATA_END - RELOCATE_CODE_START)
-
 WIPE_IT:
-
 WIPE_IT_GOOD:
                 TYA
                 PHA
                 LDY #$00
-                LDA #$A5
+                LDA #$00
                 STA (ZP1),Y
                 LDA ZP1_LO
                 CLC
@@ -297,8 +317,9 @@ RELOCATE_CODE_START:
 ;10150 RETURN
 
 ;****************************************
-                .ASCIIZ "FUJIAMP"
-                .BYTE 7
+SIGNATURE:
+                .BYTE $EA,$EA,$EA,$EA,$EA,$EA,$EA
+                .BYTE $EA
 ;****************************************
 ; NSTART - FUJINET EXTENSION START
 ;   THIS IS THE ENTRY POINT OF THE AMPERSAND ROUTINE
@@ -1096,10 +1117,10 @@ NO_TRACE7:
 .IF RELOCATE
 
                 LDA HIMEM
-                CMP RELOC_FUJIAPPLE
+                CMP RELOC_NSTART
                 BNE NO_RESTORE
                 LDA HIMEM+1
-                CMP RELOC_FUJIAPPLE+1
+                CMP RELOC_NSTART+1
                 BNE NO_RESTORE
 
                 PRINT_STR RESTORE_HIMEM_STR_ADDR
@@ -1339,46 +1360,46 @@ RELOCATE_CODE_END:
 
 ;**************************************
 
-relocate000:
-RELOC_FUJIAPPLE: .WORD NSTART
+relocate007:
+RELOC_NSTART:   .WORD NSTART
 
 COMMANDS:
                 .ASCIIZ "NOPEN"                 ; NOPEN
-relocate001:    .WORD   NOPEN-1
+relocate008:    .WORD   NOPEN-1
 
                 .BYTE   'N', TOK_READ, 00       ; NREAD
-relocate002:    .WORD   NREAD-1
+relocate009:    .WORD   NREAD-1
 
                 .ASCIIZ "NWRITE"                ; NWRITE
-relocate003:    .WORD   NWRITE-1
+relocate010:    .WORD   NWRITE-1
 
                 .ASCIIZ "NCTRL"                 ; NCTRL
-relocate004:    .WORD   NCTRL-1
+relocate011:    .WORD   NCTRL-1
 
                 .BYTE   "NST", TOK_AT, "US", 0  ; NSTATUS
-relocate005:    .WORD   NSTATUS-1
+relocate012:    .WORD   NSTATUS-1
 
                 .ASCIIZ "NCLOSE"                ; NCLOSE
-relocate006:    .WORD   NCLOSE-1
+relocate013:    .WORD   NCLOSE-1
 
                 .BYTE   "N", TOK_END, 0         ; NEND
-relocate007:    .WORD   NEND-1   
+relocate014:    .WORD   NEND-1   
 
                 .BYTE   "N", TOK_LIST, 0        ; NLIST
-relocate008:    .WORD   NLIST-1
+relocate015:    .WORD   NLIST-1
 
                 .ASCIIZ "NACCEPT"               ; NACCEPT
-relocate013:    .WORD   NACCEPT-1
+relocate016:    .WORD   NACCEPT-1
 
                 .BYTE   "N", TOK_INPUT, 0       ; NINPUT
-relocate014:    .WORD   NINPUT-1
+relocate017:    .WORD   NINPUT-1
 
 .IF .NOT STRIP_TRACE
                 .BYTE   "N", TOK_TRACE, 0       ; NTRACE
-trace028:       .WORD   NTRACE-1
+trace053:       .WORD   NTRACE-1
 
                 .BYTE   "N",TOK_NOTRACE, 0      ; NNOTRACE
-trace029:       .WORD   NNOTRACE-1
+trace054:       .WORD   NNOTRACE-1
 .ENDIF
 
 ;*******************************************
@@ -1406,7 +1427,7 @@ URL:
                 .ASCIIZ "N:HTTPS://www.gnu.org/licenses/gpl-3.0.txt"
 .ENDIF
                 .RES    255       
-relocate009:
+relocate018:
 URL_ADDR:       .WORD   URL
 COMMAND:        .BYTE   0       ; FUJINET COMMAND
 BASIC_PAYLOAD:  .RES    255     ; PAYLOAD TO SEND
@@ -1414,12 +1435,12 @@ BW:             .WORD   0       ; BYTES WAITING
 CONNECT:        .BYTE   0       ; 1=CONNECTED
 BUFLEN:         .BYTE   0
 BUF:            .RES    255     ; GENERIC BUFFER FOR READ/WRITE
-relocate012:
+relocate019:
 BUF_ADDR:       .WORD   BUF
 STRADDR:        .WORD   0
 STRLEN:         .BYTE   0
 STRBUF:         .RES    255
-relocate010:
+relocate020:
 STRBUF_ADDR:    .WORD   STRBUF
 NETWORK_CACHE:  .BYTE   FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK
 OPEN_LIST:      .BYTE   FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK      ; BASIC UNIT INDEX TO ACTUAL UNIT
@@ -1430,6 +1451,11 @@ STR_DSC_LO:     .BYTE   0
 STR_DSC_HI:     .BYTE   0
 
 .include "STRINGS.S"
+.include "REGS_DATA.S"
+.include "FAKESMARTPORT_DATA.S"
+.include "SMARTPORT_DATA.S"
+.include "FUJINET_DATA.S"
+
 
 RELOCATE_DATA_END:
 
@@ -1439,14 +1465,14 @@ RELOCATE_DATA_END:
 .include "RELOCATION.S" 
 
 RELOCATION_TABLE:
-		.WORD 	relocate000+1,relocate001+1,relocate002,relocate003,relocate004,relocate005,relocate006,relocate007,relocate008,relocate009
-		.WORD 	relocate010,relocate011,relocate012,relocate013,relocate014,relocate015;,relocate016,relocate017,relocate018,relocate019
-;		.WORD   relocate020,relocate021,relocate022,relocate023,relocate024,relocate025,relocate026,relocate027,relocate028,relocate029
+; in FUJIAPPLE.S
+		.WORD 	relocate000+1,relocate001+1,relocate002+1,relocate003+1,relocate004+1,relocate005+1,relocate006+1,relocate007,relocate008,relocate009
+		.WORD 	relocate010,relocate011,relocate012,relocate013,relocate014,relocate015,relocate016,relocate017,relocate018,relocate019
+		.WORD   relocate020;,relocate021,relocate022,relocate023,relocate024,relocate025,relocate026,relocate027,relocate028,relocate029
 
 .include "STR_RELOC.S"
 
-
-               .WORD    relocatesp00,relocatesp01,relocatesp02,relocatesp03,relocatesp04,relocatesp05,relocatesp06,relocatesp07;,relocatesp08,relocatesp09
+               .WORD    relocatesp00,relocatesp01,relocatesp02,relocatesp03;,relocatesp04,relocatesp05,relocatesp06,relocatesp07;,relocatesp08,relocatesp09
 ;               .WORD    relocatesp10,relocatesp11,relocatesp12,relocatesp13,relocatesp14,relocatesp15,relocatesp16,relocatesp17,relocatesp18,relocatesp19
 
 END_RELOCATION_TABLE:	

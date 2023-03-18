@@ -10,21 +10,21 @@
 .IF .NOT .DEFINED(ZP1)
 
 .IF .DEFINED(APPLEII)
-ZP1	        =	$EB
+ZP1             =	$EB
 ZP1_LO	        =	$EB
 ZP1_HI	        = 	$EC
 
-ZP2	        =	$ED
+ZP2             =	$ED
 ZP2_LO	        =	$ED
-ZP2_HI		=	$EE
+ZP2_HI          =	$EE
 
-ZP3	        =	$FA
-ZP3_LO		=	$FA
-ZP3_HI	   	=	$FB
+ZP3             =	$FA
+ZP3_LO          =	$FA
+ZP3_HI	   	    =	$FB
 
-ZP4	        =	$FC
-ZP4_LO		=	$FC
-ZP4_HI		=	$FD
+ZP4	            =	$FC
+ZP4_LO		    =	$FC
+ZP4_HI		    =	$FD
 
 ZP5             =	$EF
 .ENDIF

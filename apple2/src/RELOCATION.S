@@ -51,7 +51,7 @@ MOD_ADDR_HI		=	ZP4_HI
 INSTRUCT_SIZE		=	ZP5
 
 ;====================================
-; RELOCATE_TO_HIMEM
+; 
 ;   Move the code and data to HIMEM
 ; RELOCATE_TO_TGT_ADDRESS
 ;   Move the code and data to the address
@@ -408,8 +408,13 @@ TABLE_EXHAUSTED:
         
         JSR MOVE_TO_TARGET
 
-ILLEGAL_INSTRUCTION:
     	RTS
+
+; IF WE'RE HERE, WE'VE GOT AN ILLEGAL INSTRUCTION
+; AND PROBABLY MIXED YOUR DATA WITH YOUR CODE
+; THE ILLEGAL INSTRUCTION IS AT SRC_ADDR
+ILLEGAL_INSTRUCTION:
+        BRK
 
 ;====================================
 ; MOVE_TO_TARGET

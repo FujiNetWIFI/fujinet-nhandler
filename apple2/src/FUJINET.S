@@ -37,7 +37,7 @@ FN_ERR_CONNECTION_ABORTED = 211	    ;$D3 Connection Aborted
 FN_ERR_BAD_CREDENTIALS  = 212	    ;$D4 Invalid Username or Password (debating whether to overload as access denied.)
 FN_ERR_MEMORY_ERROR     = 255	    ;$FF Could not allocate either receive or transmit buffers.
 
-FN_LAST_ERR:            .BYTE $00
+
 
 ;******************************************************************;
 ; CPY_STR_TO_SP_PAYLOAD
@@ -703,16 +703,6 @@ NO_TRACE24:
 .ENDIF
 .ENDIF
 
-;  sp_status(net,'S');
-;
-;  bw = sp_payload[0];
-;  bw |= (sp_payload[1]) << 8;
-;
-;  if (bw==0)
-;    return;
-;  sp_status(net,'S');
-;  return sp_payload[2] & 0x02; // Bit 2 = Connected?
-
                 LDY #'S'
                 JSR SP_STATUS
                 STA FN_LAST_ERR
@@ -918,10 +908,6 @@ ACCEPT_DONE:
 ; INPUT
 ; X = UNIT DESTINATION
 ;******************************************************************
-FN_BUFFER_SIZE: .BYTE $00
-FN_BUFFER:      .RES  $FF
-relocate015:
-FN_BUFFER_ADDR: .WORD FN_BUFFER
 
 
 FN_INPUT:

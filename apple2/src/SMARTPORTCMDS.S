@@ -3,9 +3,11 @@
 ;
 ; Generic smartport commands for use with Fujinet
 ; By Norman Davie
+;
+; NOTE: Relocation code does not expect data to be mixed
+;       with code.  As a result, we need to put NOPs where
+;       CMDLIST would be then fill it later
 
-; Call GET_SMARTPORT_ADDRESS
-; Call FIND_FIJINET
 
         .include "APPLEEQU.S"
         .include "ZEROPAGE.S"
@@ -71,34 +73,27 @@ SP_STATUS_FLAG_DEVICE_INTERRUPT = %00000010
 SP_STATUS_FLAG_DEVICE_OPEN      = %00000001
 
 
-SMARTPORT_DISPATCHER: 
-DISPATCHER_ADDR_LO:     .BYTE $00
-DISPATCHER_ADDR_HI:     .BYTE $00
-
-relocatesp00:
-SP_PAYLOAD_ADDR:        .WORD  SP_PAYLOAD
-relocatesp01:
-SP_PAYLOAD_STR_ADDR:    .WORD  SP_PAYLOAD+5
-
-SP_COUNT:               .WORD   $FFFF           ; BYTES IN PAYLOAD?
-LAST_SP_ERR:            .BYTE   SP_ERR          ; ERROR CODE
-
-CMD_LIST:               .RES 15               
-
-SP_PAYLOAD:
-DCOUNT:                 .BYTE   $01             ; NUMBER OF DEVICES
-INTSTATE:               .BYTE   $FF             ; INTERRUPT STATUS (IF BIT 6 IS SET, THEN NO INTERRUPT)
-MANUFACTURER:           .WORD   $FFFF           ; DRIVER MANUFACTURER
-                                                ; $0000 - UNDETERMINED
-                                                ; $0001 - APPLE
-                                                ; $0002-$FFFF 3RD PARTY DRIVER
-INTERFACEVER:           .WORD   $FFFF           ; INTERFACE VERSION
-                        .WORD   $0000           ; RESERVED (MUST BE $0000)
-                        .RES    1024            ; RESERVED FOR DATA
-
 SLOT_ADDR		=	ZP2
 SLOT_ADDR_LO	    	=	ZP2_LO
 SLOT_ADDR_HI		=	ZP2_HI
+
+
+FILL_CMD_LIST:
+                LDA CMD_LIST_ADDR
+                STA cmd_list0
+                STA cmd_list1
+                STA cmd_list2
+                STA cmd_list3
+                STA cmd_list4
+
+                LDA CMD_LIST_ADDR+1
+                STA cmd_list0+1
+                STA cmd_list1+1
+                STA cmd_list2+1
+                STA cmd_list3+1
+                STA cmd_list4+1
+
+                RTS
 
 ;*******************************
 ; WIPE_PAYLOAD
@@ -392,9 +387,6 @@ SLOT_FIND_DONE:
 
                 RTS
         
-SMARTPORT_ID:   .BYTE $20, $00, $03, $00 
-
-
 ;*******************************
 ; GET_SMARTPORT_DISPATCH_ADDRESS
 ; INPUT:
@@ -454,7 +446,6 @@ NO_DISPATCHER:
                 STA DISPATCHER_ADDR_HI  ; PUT ADDRESS IN A AND X
                 STX DISPATCHER_ADDR_LO
 DONE:        
-
                 LDA DISPATCHER_ADDR_HI  ; PUT ADDRESS IN A AND X
                 LDX DISPATCHER_ADDR_LO
 
@@ -508,7 +499,7 @@ NO_TRACE12:
                 JSR CALL_DISPATCHER
 
                 .BYTE SP_CMD_OPEN
-relocatesp02:   .WORD CMD_LIST
+cmd_list0:      .WORD $EAEA
                 
                 BCS OPEN_ERROR
 
@@ -564,7 +555,7 @@ NO_TRACE13:
                 JSR CALL_DISPATCHER
 
                 .BYTE SP_CMD_CLOSE
-relocatesp03:   .WORD CMD_LIST
+cmd_list1:      .WORD $EAEA
                 
                 BCS CLOSE_ERROR
 
@@ -684,7 +675,7 @@ NO_TRACE14:
                 JSR CALL_DISPATCHER
 
                 .BYTE SP_CMD_CONTROL
-relocatesp04:   .WORD CMD_LIST
+cmd_list2:      .WORD $EAEA
 
                 BCC SP_CTRL_DONE
 
@@ -776,7 +767,7 @@ NO_TRACE15:
                 JSR CALL_DISPATCHER
 
                 .BYTE SP_CMD_READ               ; READ CALL COMMAND NUMBER
-relocatesp05:   .WORD CMD_LIST
+cmd_list3:      .WORD $EAEA
 
                 STX SP_COUNT
                 STY SP_COUNT+1
@@ -872,7 +863,7 @@ NO_TRACE40:
                 JSR CALL_DISPATCHER
 
                 .BYTE SP_CMD_WRITE             ; STATUS CALL COMMAND NUMBER
-relocatesp06:   .WORD CMD_LIST
+cmd_list4:      .WORD $EAEA
 
                 STX SP_COUNT
                 STY SP_COUNT+1
@@ -980,7 +971,7 @@ NO_TRACE35:
                 JSR CALL_DISPATCHER
 
                 .BYTE SP_CMD_STATUS             ; STATUS CALL COMMAND NUMBER
-relocatesp07:   .WORD CMD_LIST
+cmd_list5:      .WORD $EAEA
 
                 STX SP_COUNT
                 STY SP_COUNT+1
@@ -1085,10 +1076,6 @@ NO_TRACE17:
                 RTS
 
 
-
-
-NUM_DEVICES:    .BYTE $00
-
 .IF .NOT STRIP_TRACE
 ;*******************************
 ; ISTROUT
@@ -1170,14 +1157,6 @@ DISPLAY_ERROR_OUT:
                 JSR PRTX
 
                 RTS
-
-
-
-FIND_DEVICE_BUF_LEN:    .BYTE 0
-FIND_DEVICE_BUF:        .RES  255
-relocate011:
-FIND_DEVICE_BUF_ADDR:   .WORD FIND_DEVICE_BUF
-
 
 ;***************************************************************
 
