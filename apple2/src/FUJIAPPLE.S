@@ -38,9 +38,9 @@
 ;
 ; EXT_TRACE and EXT2_TRACE includes calls into the SMARTPORT routines
 
-STRIP_TRACE= 1  ; Eliminate all tracing code and strings
+STRIP_TRACE= 0  ; Eliminate all tracing code and strings
 TRACE_ON   = 1  ; &NTRACE is on at the very start
-EXT_TRACE  = 1  ; Extended Trace, 1=display SMARTPORT internal debug messages 
+EXT_TRACE  = 0  ; Extended Trace, 1=display SMARTPORT internal debug messages 
 EXT2_TRACE = 0  ; Extended Trace 2, display SP_STATUS and SP_CONTROL
 RELOCATE   = 1  ; 1=relocate himem and put our code there
 PRODOS     = 1  ; 0=add dos 3.3 header
@@ -185,8 +185,12 @@ NEXT_NETWORK_CACHE:
                 JSR RELOCATE_TO_HIMEM   ; copy the code and data, adjust all absolute addresses
 .ENDIF    
 
- relocate000:   JSR FILL_CMD_LIST       ; let's fix all the smartport instruction data now that
+relocate000:    JSR FILL_CMD_LIST       ; let's fix all the smartport instruction data now that
                                         ; everything has been relocated
+
+.IF .NOT USE_SP
+                JSR GET_SMARTPORT_DISPATCH_ADDRESS      ; address would have changed during relocation
+.ENDIF
 
 .IF RELOCATE
 
@@ -249,10 +253,10 @@ CPY_SIG:
                 LDA SIGNATURE_STR,X
 relocate006:    STA SIGNATURE,X
                 INX
+                CPX #SIG_SIZE
                 BNE CPY_SIG
                 LDA #SIG_SIZE
-                STA SIGNATURE,X
-
+relocate007:    STA SIGNATURE,X
 
 
 .IF RELOCATE
@@ -321,6 +325,7 @@ RELOCATE_CODE_START:
 SIGNATURE:
                 .BYTE $EA,$EA,$EA,$EA,$EA,$EA,$EA
                 .BYTE $EA
+
 ;****************************************
 ; NSTART - FUJINET EXTENSION START
 ;   THIS IS THE ENTRY POINT OF THE AMPERSAND ROUTINE
@@ -1361,39 +1366,39 @@ RELOCATE_CODE_END:
 
 ;**************************************
 
-relocate007:
+relocate008:
 RELOC_NSTART:   .WORD NSTART
 
 COMMANDS:
                 .ASCIIZ "NOPEN"                 ; NOPEN
-relocate008:    .WORD   NOPEN-1
+relocate009:    .WORD   NOPEN-1
 
                 .BYTE   'N', TOK_READ, 00       ; NREAD
-relocate009:    .WORD   NREAD-1
+relocate010:    .WORD   NREAD-1
 
                 .ASCIIZ "NWRITE"                ; NWRITE
-relocate010:    .WORD   NWRITE-1
+relocate011:    .WORD   NWRITE-1
 
                 .ASCIIZ "NCTRL"                 ; NCTRL
-relocate011:    .WORD   NCTRL-1
+relocate012:    .WORD   NCTRL-1
 
                 .BYTE   "NST", TOK_AT, "US", 0  ; NSTATUS
-relocate012:    .WORD   NSTATUS-1
+relocate013:    .WORD   NSTATUS-1
 
                 .ASCIIZ "NCLOSE"                ; NCLOSE
-relocate013:    .WORD   NCLOSE-1
+relocate014:    .WORD   NCLOSE-1
 
                 .BYTE   "N", TOK_END, 0         ; NEND
-relocate014:    .WORD   NEND-1   
+relocate015:    .WORD   NEND-1   
 
                 .BYTE   "N", TOK_LIST, 0        ; NLIST
-relocate015:    .WORD   NLIST-1
+relocate016:    .WORD   NLIST-1
 
                 .ASCIIZ "NACCEPT"               ; NACCEPT
-relocate016:    .WORD   NACCEPT-1
+relocate017:    .WORD   NACCEPT-1
 
                 .BYTE   "N", TOK_INPUT, 0       ; NINPUT
-relocate017:    .WORD   NINPUT-1
+relocate018:    .WORD   NINPUT-1
 
 .IF .NOT STRIP_TRACE
                 .BYTE   "N", TOK_TRACE, 0       ; NTRACE
@@ -1428,7 +1433,7 @@ URL:
                 .ASCIIZ "N:HTTPS://www.gnu.org/licenses/gpl-3.0.txt"
 .ENDIF
                 .RES    255       
-relocate018:
+relocate019:
 URL_ADDR:       .WORD   URL
 COMMAND:        .BYTE   0       ; FUJINET COMMAND
 BASIC_PAYLOAD:  .RES    255     ; PAYLOAD TO SEND
@@ -1436,12 +1441,12 @@ BW:             .WORD   0       ; BYTES WAITING
 CONNECT:        .BYTE   0       ; 1=CONNECTED
 BUFLEN:         .BYTE   0
 BUF:            .RES    255     ; GENERIC BUFFER FOR READ/WRITE
-relocate019:
+relocate020:
 BUF_ADDR:       .WORD   BUF
 STRADDR:        .WORD   0
 STRLEN:         .BYTE   0
 STRBUF:         .RES    255
-relocate020:
+relocate021:
 STRBUF_ADDR:    .WORD   STRBUF
 NETWORK_CACHE:  .BYTE   FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK
 OPEN_LIST:      .BYTE   FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK      ; BASIC UNIT INDEX TO ACTUAL UNIT
