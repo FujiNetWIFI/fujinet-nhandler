@@ -111,8 +111,22 @@ RELOCATE_TO_TGT_ADDR:
 ; Figure out how much we need to adjust
 ; all addresses by
 
-        LDA MOVE_HIGHER
-        BNE MOVE_UP1
+        LDA MOVE_HIGHER         ; ZERO = MOVE HIGHER
+        BNE MOVE_DOWN1
+
+MOVE_UP1:
+
+        LDA TGT_ADDR_LO
+        SEC
+        SBC SRC_ADDR_LO
+        STA DIFF_LO
+        
+        LDA TGT_ADDR_HI
+        SBC SRC_ADDR_HI
+        STA DIFF_HI
+
+        CLC
+        BCC SEARCH_RELOC
 
 MOVE_DOWN1:
 
@@ -125,19 +139,6 @@ MOVE_DOWN1:
         SBC TGT_ADDR_HI
         STA DIFF_HI
         
-        CLC
-        BCC SEARCH_RELOC
-
-MOVE_UP1:
-
-        LDA TGT_ADDR_LO
-        SEC
-        SBC SRC_ADDR_LO
-        STA DIFF_LO
-        
-        LDA TGT_ADDR_HI
-        SBC SRC_ADDR_HI
-        STA DIFF_HI
 
 SEARCH_RELOC:
         LDA #<RELOCATION_TABLE
@@ -231,7 +232,7 @@ ABSOLUTE_INSTRUCT:
 ; IF ADDRESS_HI < STARTING_OF_BLOCK THEN MOVE_TO_NEXT_INSTRUCTION
 
         CMP #>RELOCATE_CODE_START	
-        BCC MOVE_TO_NEXT_INSTRUCTION	; is the address less than our starint address?
+        BCC MOVE_TO_NEXT_INSTRUCTION	; is the address less than our starting address?
 
         BCS STORE_ADDRESS		; we're within range, so just store address
 
@@ -347,11 +348,12 @@ UPDATE_ADDRESSES:
 	
         DEY 				; y back to zero
 
-        LDA MOVE_HIGHER
+        LDA MOVE_HIGHER         ; ZERO = MOVE HIGHER
         BNE MOVE_DOWN2
 
 MOVE_UP2:
-        LDA (MOD_ADDR),Y; 
+        
+        LDA (MOD_ADDR),Y        ; add diff to the address!
         CLC
         ADC DIFF_LO
         STA (MOD_ADDR),Y
@@ -365,7 +367,7 @@ MOVE_UP2:
         BCC MOVE_NEXT
 
 MOVE_DOWN2:
-        LDA (MOD_ADDR),Y; 
+        LDA (MOD_ADDR),Y        ; subtract diff from the address      
         SEC
         SBC DIFF_LO
         STA (MOD_ADDR),Y
@@ -376,6 +378,7 @@ MOVE_DOWN2:
         STA (MOD_ADDR),Y
 
 MOVE_NEXT:
+
 ; move to the next entry in the table
 
         CLC

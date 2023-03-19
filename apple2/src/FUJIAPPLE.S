@@ -38,15 +38,15 @@
 ;
 ; EXT_TRACE and EXT2_TRACE includes calls into the SMARTPORT routines
 
-STRIP_TRACE= 0  ; Eliminate all tracing code and strings
-TRACE_ON   = 0  ; &NTRACE is on at the very start
-EXT_TRACE  = 0  ; Extended Trace, 1=display SMARTPORT internal debug messages 
+STRIP_TRACE= 1  ; Eliminate all tracing code and strings
+TRACE_ON   = 1  ; &NTRACE is on at the very start
+EXT_TRACE  = 1  ; Extended Trace, 1=display SMARTPORT internal debug messages 
 EXT2_TRACE = 0  ; Extended Trace 2, display SP_STATUS and SP_CONTROL
 RELOCATE   = 1  ; 1=relocate himem and put our code there
 PRODOS     = 1  ; 0=add dos 3.3 header
 APPLEII    = 1  ; always set to one, EQUs will be for apple zero page
 USE_SP     = 0  ; 1=USE ACTUAL SMARTPORT 0=EMULATE SMARTPORT FUNCTIONS
-WIPE_AFTER = 1  ; WIPE ORIGINAL LOCATION AFTER RELOCATING
+WIPE_AFTER = 1  ; WIPE ORIGINAL LOCATION AFTER RELOCATING -- FORCES A CRASH
 
 START      = $2000
 
@@ -147,8 +147,8 @@ NEXT_NETWORK_CACHE:
 
 ; RELOCATE US TO WHERE IT'S SAFE
 
-;.IF .NOT STRIP_TRACE
-;.IF EXT_TRACE
+.IF .NOT STRIP_TRACE
+.IF EXT_TRACE
                 JSR CROUT               ; CARRIAGE RETURN
                 LDA #<HIMEM_IS_STR          ; "OLD HIMEM:"
                 LDY #>HIMEM_IS_STR
@@ -159,38 +159,34 @@ NEXT_NETWORK_CACHE:
 		LDX HIMEM
                 STX OLDHIMEM
 		JSR PRTAX               ; PRINT ADDRESS
-;.ENDIF
-;.ENDIF
+.ENDIF
+.ENDIF
 
 .IF RELOCATE
 		JSR ADJUST_HIMEM        ; Move HIMEM so we can put our code at it. 
 .ENDIF
 
-;.IF .NOT STRIP_TRACE
+.IF .NOT STRIP_TRACE
 		LDA #<NEW_HIMEM_STR    ; "NEW HIMEM: "
 		LDY #>NEW_HIMEM_STR
 		JSR STROUT
-;.ENDIF
+.ENDIF
 
 		LDA HIMEM+1
 		LDX HIMEM
 
-;.IF .NOT STRIP_TRACE
+.IF .NOT STRIP_TRACE
 		JSR PRTAX               ; PRINT NEW HIMEM ADDRESS
                 JSR CROUT
-;.ENDIF
+.ENDIF
 
 .IF RELOCATE
                 JSR CLEAR_CMD_LIST      ; clear the data so we can relocate code/data together
                 JSR RELOCATE_TO_HIMEM   ; copy the code and data, adjust all absolute addresses
+.ENDIF    
 
-
-.ENDIF
-
-                ; let's fix all the smartport data now that
-                ; everything has been relocated
-
- relocate006:   JSR FILL_CMD_LIST
+ relocate000:   JSR FILL_CMD_LIST       ; let's fix all the smartport instruction data now that
+                                        ; everything has been relocated
 
 .IF RELOCATE
 
@@ -216,19 +212,19 @@ NEXT_NETWORK_CACHE:
 SAVEVECT:
 
                 LDA AMPVECT
-relocate000:    STA PREVECT
+relocate001:    STA PREVECT
                 LDA AMPVECT+1
-relocate001:    STA PREVECT+1
+relocate002:    STA PREVECT+1
                 LDA AMPVECT+2
-relocate002:    STA PREVECT+2
+relocate003:    STA PREVECT+2
 
 ; UPDATE THE AMPERSAND VECTOR TO OUR ROUTINE
 
                 LDA #$4C                                ; JMP
                 STA AMPVECT
-relocate003:    LDA RELOC_NSTART                        ; SET THE AMPERSAND VECTOR
+relocate004:    LDA RELOC_NSTART                        ; SET THE AMPERSAND VECTOR
                 STA AMPVECT+1
-relocate004:    LDA RELOC_NSTART+1
+relocate005:    LDA RELOC_NSTART+1
                 STA AMPVECT+2
         
 ; ANNOUNCE OUR SUCCESS
@@ -251,7 +247,7 @@ relocate004:    LDA RELOC_NSTART+1
                 LDX #$00
 CPY_SIG:
                 LDA SIGNATURE_STR,X
-relocate005:    STA SIGNATURE,X
+relocate006:    STA SIGNATURE,X
                 INX
                 BNE CPY_SIG
                 LDA #SIG_SIZE

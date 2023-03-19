@@ -784,14 +784,6 @@ NO_TRACE15:
                 LDA #$00
                 STA CMD_LIST+5                  ; [5] LENGTH HI
 
-                LDA CMD_LIST+4                  ; ADD THE PARAMETER LIST LENGTH TO THE BUFFER SIZE
-                CLC
-                ADC #SP_READ_PARAM_COUNT
-                STA CMD_LIST+4
-                LDA CMD_LIST+5
-                ADC #$00
-                STA CMD_LIST+5
-
                 ; *** Based on Smartport SCSI info below
                 ; *** Not sure if necessary
                 ; *** was not set in the example by Thom Cherryhomes
