@@ -736,11 +736,19 @@ BW_DONE:
 FN_FIND_NETWORK:
 
 .IF .NOT STRIP_TRACE
-
+.IF EXT2_TRACE
                 LDA TRACE_FLAG
                 BEQ NO_TRACE25
                 PRINT_STR FN_FIND_NETWORK_STR_ADDR
+                LDA #SPACE
+                JSR COUT
+                LDX BASIC_UNIT
+                JSR PRTX
+                LDA #SPACE
+                JSR COUT
+
 NO_TRACE25:                
+.ENDIF
 .ENDIF
 
                 LDA BASIC_UNIT
@@ -750,7 +758,17 @@ NO_TRACE25:
                 ; LOOK FOR "NETWORK"
                 LDA NETWORK_STR_ADDR+1
                 LDY NETWORK_STR_ADDR
-         
+
+.IF .NOT STRIP_TRACE
+.IF EXT2_TRACE
+                PRINT_STR NETWORK_STR_ADDR
+                LDA #SPACE
+                JSR COUT
+                LDA NETWORK_STR_ADDR+1
+                LDY NETWORK_STR_ADDR
+.ENDIF
+.ENDIF
+    
                 JSR SP_FIND_DEVICE          ; LOOK FOR "NETWORK"
                 CPX #SP_ERR
                 BNE FOUND_IT
@@ -771,15 +789,40 @@ MULTI_NETWORK:
                 LDA NETWORK_STR_WITH_NUMBER_ADDR+1
                 LDY NETWORK_STR_WITH_NUMBER_ADDR 
 
+.IF .NOT STRIP_TRACE
+.IF EXT2_TRACE
+                PRINT_STR NETWORK_STR_WITH_NUMBER_ADDR
+                LDA #SPACE
+                JSR COUT
+                LDA NETWORK_STR_WITH_NUMBER_ADDR+1
+                LDY NETWORK_STR_WITH_NUMBER_ADDR 
+.ENDIF
+.ENDIF
                 JSR SP_FIND_DEVICE              ; LOOK FOR "NETWORK_X" WHERE X IS 0-3
                 CPX #SP_ERR
                 BNE FOUND_IT
-FIND_ERROR:                
+FIND_ERROR:
+.IF .NOT STRIP_TRACE
+.IF EXT2_TRACE
+                PRINT_STR DEVICE_NOT_FOUND_STR_ADDR
+                JSR CROUT
+.ENDIF        
+.ENDIF        
                 LDX #FN_ERR
+                RTS
 FOUND_IT:
                 TXA
                 TAY                             ; RETURN IN Y
+                LDX #FN_OK
 
+.IF .NOT STRIP_TRACE
+.IF EXT2_TRACE
+                SAVE_REGS
+                JSR PRTAX
+                JSR CROUT
+                RESTORE_REGS
+.ENDIF
+.ENDIF
                 RTS
 
 

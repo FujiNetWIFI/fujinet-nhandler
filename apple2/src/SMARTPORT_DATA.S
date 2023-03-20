@@ -12,9 +12,9 @@ SP_PAYLOAD_STR_ADDR:    .WORD  SP_PAYLOAD+5
 SP_COUNT:               .WORD   $FFFF           ; BYTES IN PAYLOAD?
 LAST_SP_ERR:            .BYTE   SP_ERR          ; ERROR CODE
 
-CMD_LIST:               .RES 15   
+CMD_LIST:               .RES    $15   
 relocatesp02:            
-CMD_LIST_ADDR:          .WORD CMD_LIST
+CMD_LIST_ADDR:          .WORD   CMD_LIST
 SP_PAYLOAD:
 DCOUNT:                 .BYTE   $01             ; NUMBER OF DEVICES
 INTSTATE:               .BYTE   $FF             ; INTERRUPT STATUS (IF BIT 6 IS SET, THEN NO INTERRUPT)

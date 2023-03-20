@@ -1084,7 +1084,7 @@ NO_TRACE17:
                 LDX #$00                                ; SMARTPORT DEVICE ZERO
                 LDY #$00
                 JSR SP_STATUS
-                LDX DCOUNT                              ; DCOUNT = NUMBER OF DEVICES
+                STX DCOUNT                              ; DCOUNT = NUMBER OF DEVICES
 
                 PRINT_STR COUNT_STR_ADDR
                 LDX DCOUNT

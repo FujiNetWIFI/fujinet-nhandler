@@ -27,6 +27,9 @@ ZP4_LO		    =	$FC
 ZP4_HI		    =	$FD
 
 ZP5             =	$EF
+
+ZP_BLOCK_SIZE   = ZP4_HI - ZP1 + 1
+
 .ENDIF
 
 .IF .DEFINED(ATARI)

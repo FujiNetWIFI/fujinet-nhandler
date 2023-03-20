@@ -10,4 +10,4 @@ BYTES_WAITING:          .WORD $0010
 
 GET_INDEX:              .BYTE $FF
 STORE_INDEX:            .BYTE $FF
-SAVE_ZERO_PAGE:         .RES 10
+SAVED_ZERO_PAGE:        .RES $15

@@ -38,11 +38,11 @@
 ;
 ; EXT_TRACE and EXT2_TRACE includes calls into the SMARTPORT routines
 
-STRIP_TRACE= 0  ; Eliminate all tracing code and strings
-TRACE_ON   = 1  ; &NTRACE is on at the very start
+STRIP_TRACE= 1  ; Eliminate all tracing code and strings
+TRACE_ON   = 0  ; &NTRACE is on at the very start
 EXT_TRACE  = 0  ; Extended Trace, 1=display SMARTPORT internal debug messages 
 EXT2_TRACE = 0  ; Extended Trace 2, display SP_STATUS and SP_CONTROL
-RELOCATE   = 1  ; 1=relocate himem and put our code there
+RELOCATE   = 0  ; 1=relocate himem and put our code there
 PRODOS     = 1  ; 0=add dos 3.3 header
 APPLEII    = 1  ; always set to one, EQUs will be for apple zero page
 USE_SP     = 0  ; 1=USE ACTUAL SMARTPORT 0=EMULATE SMARTPORT FUNCTIONS
@@ -167,17 +167,21 @@ NEXT_NETWORK_CACHE:
 .ENDIF
 
 .IF .NOT STRIP_TRACE
+.IF EXT_TRACE
 		LDA #<NEW_HIMEM_STR    ; "NEW HIMEM: "
 		LDY #>NEW_HIMEM_STR
 		JSR STROUT
+.ENDIF
 .ENDIF
 
 		LDA HIMEM+1
 		LDX HIMEM
 
 .IF .NOT STRIP_TRACE
+.IF EXT_TRACE
 		JSR PRTAX               ; PRINT NEW HIMEM ADDRESS
                 JSR CROUT
+.ENDIF
 .ENDIF
 
 .IF RELOCATE

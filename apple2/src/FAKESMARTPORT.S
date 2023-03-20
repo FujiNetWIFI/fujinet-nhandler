@@ -62,7 +62,9 @@ GET_SMARTPORT_DISPATCH_ADDRESS:
 ;******************************************************************
 ; FAKE_DISPATCHER
 ;   Simulates dispatcher calls so we can test in an emulator
-; NOTE: Destroys ZP1
+; This routine saves part of the contents of ZP to absolute memory
+; and then restores them.
+;
 ; ZP1 = Address from stack
 ; ZP2 = CMD_LIST
 ; ZP3 = STORAGE
@@ -75,46 +77,62 @@ GET_SMARTPORT_DISPATCH_ADDRESS:
 ; 3 - NETWORK_1
 ; 4 - NETWORK_2
 
+ADDRESS_ON_STACK        = ZP1
+ADDRESS_ON_STACK_LO     = ZP1_LO
+ADDRESS_ON_STACK_HI     = ZP1_HI
 
+ZCMD_LIST               = ZP2
+ZCMD_LIST_LO            = ZP2_LO
+ZCMD_LIST_HI            = ZP2_HI
 
+ZPAYLOAD                = ZP3
+ZPAYLOAD_LO             = ZP3_LO
+ZPAYLOAD_HI             = ZP3_HI
 
-REGS_TO_SAVE            = 7
+SRC_STR                 = ZP4
+SRC_STR_LO              = ZP4_LO
+SRC_STR_HI              = ZP4_HI
+
 
 FAKE_DISPATCHER:
                 LDX #$00
 SAVE_ZP:
-                LDA ZP2,X
-                STA SAVE_ZERO_PAGE,X
+                LDA ZP1,X
+                STA SAVED_ZERO_PAGE,X
                 INX
-                CPX #REGS_TO_SAVE
+                CPX #ZP_BLOCK_SIZE
                 BNE SAVE_ZP
 
-                ; ADDRESS WE CALLED FROM IS ON STACK
+                ; ADDRESS OF THE NEXT
+                ; INSTRUCTION MINUS 1
+                ; THIS WILL BE THE (ADDRESS
+                ; OF THE PARAMETERS) - 1
+
                 PLA
-                STA ZP1_LO
+                STA ADDRESS_ON_STACK_LO
                 PLA
-                STA ZP1_HI
+                STA ADDRESS_ON_STACK_HI         ; NWD CONFIRMED CORRECT
 
 ;                JSR CALL_DISPATCHER
 ;
-;Y+1:            .BYTE SP_CMD_STATUS             ; STATUS CALL COMMAND NUMBER
+;Y+1:            .BYTE SP_CMD_STATUS            ; STATUS CALL COMMAND NUMBER
 ;y+2:            .WORD CMD_LIST
 ;Y+4:            NEXT INSTRUCTION
 
 ; let's play, fake the call!
 
-                JSR WIPE_PAYLOAD
+                JSR WIPE_PAYLOAD                ; CLEAR OUR PAYLOAD
 
-                LDA #$01
-                LDA (ZP2),y
-                STA REQUESTED_CMD         ; SMARTPORT COMMAND
+                LDY #$01
+                LDA (ADDRESS_ON_STACK),Y
+                STA REQUESTED_CMD               ; SMARTPORT COMMAND
 
-                LDY #$02        ; GET CMD_LIST ADDRESS
-                LDA (ZP1),Y
-                STA ZP2_LO      ; POINTER TO CMDLIST (STORED_AFTER_CALL)
-                INY
-                LDA (ZP1),y
-                STA ZP2_HI
+                LDY #$02                        ; GET CMD_LIST ADDRESS
+                LDA (ADDRESS_ON_STACK),Y        
+                STA ZCMD_LIST_LO                ; POINTER TO CMDLIST (STORED_AFTER_CALL)
+                INY ; #$03
+                LDA (ADDRESS_ON_STACK),Y
+                STA ZCMD_LIST_HI                ; NWD CONFIRMED CORRECT
 
                 ; COMMON TO ALL CALLS
                 ; SMARTPORT CONTROLLER CMDLIST
@@ -122,16 +140,16 @@ SAVE_ZP:
                 ; 1   unit number
                 ; 2-3 storage
                 
-                LDY #$01            ; CMD_LIST
-                LDA (ZP2),Y         ; UNIT #
-                STA REQUESTED_UNIT
+                LDY #$01                        ; CMD_LIST
+                LDA (ZCMD_LIST),Y               ; UNIT #
+                STA REQUESTED_UNIT              ; NWD CONFIRMED CORRECT
 
-                LDY #2
-                LDA (ZP2),Y
-                STA ZP3_LO
-                INY
-                LDA (ZP2),Y 
-                STA ZP3_HI          ; WHERE TO STORE RESULT
+                LDY #$02
+                LDA (ZCMD_LIST),Y               ; where to store
+                STA ZPAYLOAD_LO
+                INY ; #$03
+                LDA (ZCMD_LIST),Y               ; NWD CONFIRMED CORRECT
+                STA ZPAYLOAD_HI                 ; WHERE TO STORE RESULT
 
                 LDA REQUESTED_CMD
                 CMP #SP_CMD_STATUS
@@ -152,13 +170,13 @@ SAVE_ZP:
                 ; 4   status code
 
                 LDY #4
-                LDA (ZP2),Y
+                LDA (ZCMD_LIST),Y
                 CMP #SP_STATUS_CODE
                 BNE COMPLETE_CMD_            ; DON'T KNOW WHAT TO DO...
 
                 LDY #$00
                 LDA #NUMBER_OF_FAKE_UNITS
-                STA (ZP3),Y
+                STA (ZPAYLOAD),Y
                 CLC
                 BCC COMPLETE_CMD_
 
@@ -203,10 +221,10 @@ NETWORK_1_AND_UP:
                 LDY NETWORK_STR_WITH_NUMBER_ADDR+1
                 LDX NETWORK_STR_WITH_NUMBER_LEN
                 CLC
-                BCC COPY_2_PAYLOAD
+                BCC COPY_2_PAYLOAD_2
 
 CHECK_READ_CMD:
-;               LDA REQUESTED_CMD
+                LDA REQUESTED_CMD
                 CMP #SP_CMD_READ
                 BNE CHECK_WRITE_CMD
 
@@ -221,21 +239,20 @@ CHECK_READ_CMD:
                 ;6-7    address pointer
 
                 LDY #4
-                LDA (ZP2),Y
+                LDA (ZCMD_LIST),Y
                 STA REQUESTED_BYTES
                 INY
-                LDA (ZP2),y
+                LDA (ZCMD_LIST),y
                 STA REQUESTED_BYTES+1
 
                 LDA TEST_BLOCK_STR_ADDR
                 LDY TEST_BLOCK_STR_ADDR+1
                 LDX REQUESTED_BYTES         ; Yeah, I'm cheating, only the low byte
 
+COPY_2_PAYLOAD_2:
                 CLC
                 BCC COPY_2_PAYLOAD
 
-COPY_2_PAYLOAD_2:
-                BCC COPY_2_PAYLOAD
 
 COMPLETE_CMD_:
                 BCC COMPLETE_CMD_2
@@ -255,18 +272,18 @@ CHECK_WRITE_CMD:
                 ;4-5    byte count
                 ;6-7    address pointer
                 CLC
-                BCC COMPLETE_CMD
+                BCC COMPLETE_CMD_2
 
 CHECK_CONTROL:
 ;               LDA REQUESTED_CMD
                 CMP #SP_CMD_CONTROL               
-                BNE COMPLETE_CMD
+                BNE COMPLETE_CMD_2
 
                 ; ***********************
                 ; SP_CMD_CONTROL
                 ; ***********************   
                 LDY #4
-                LDA (ZP2),Y
+                LDA (ZCMD_LIST),Y
                 STA CONTROL_CMD
 
                 CMP #'O'
@@ -308,18 +325,39 @@ CTRL_R:
                 CMP #'R'
                 BNE CTRL_W
 
+COMPLETE_CMD_2:
+                CLC
+                BCC COMPLETE_CMD
+                
 CTRL_W:
                 CMP #'W'
                 BNE CTRL_A 
+
+                CLC
+                BCC COMPLETE_CMD
+                
 CTRL_A:
                 CMP #'A'
                 BNE CTRL_CLOSE_CONNECTION 
+
+                CLC
+                BCC COMPLETE_CMD
+
 CTRL_CLOSE_CONNECTION:
                 CMP #'c'
                 BNE CTRL_D 
+                
+                CLC
+                BCC COMPLETE_CMD
+                
+
 CTRL_D:
                 CMP #'D'
                 BNE COMPLETE_CMD
+
+                CLC
+                BCC COMPLETE_CMD
+                
                 
                 ;Byte   Definition
                 ; 'O'-open
@@ -351,21 +389,18 @@ CTRL_D:
                 ; set UDP destination
                 ;0-1    payload size?
                 ;2...   url?
-COMPLETE_CMD_2:
-                CLC
-                BCC COMPLETE_CMD
+
 COPY_2_PAYLOAD:
 
                 ; SP_PAYLOAD+4 LENGTH
                 ; SP_PAYLOAD+5 STRING
 
-                STA ZP4_LO                      ; GET THE STRING FROM
-                STY ZP4_HI
+                STA SRC_STR_LO                      ; GET THE STRING FROM
+                STY SRC_STR_HI
 
-                INX                             ; ADD NULL
                 TXA
                 LDY #4                          ; PAYLOAD+4
-                STA (ZP3),Y                     ; STORE THE LENGTH
+                STA (ZPAYLOAD),Y                     ; STORE THE LENGTH
                 
                 TXA                             ; LENGTH OF STRING
                 TAY
@@ -381,9 +416,9 @@ COPY_2_PAYLOAD:
                 INX
 CPY2PAYLOAD:
                 LDY GET_INDEX
-                LDA (ZP4),Y                     ; GET THE STRING
+                LDA (SRC_STR),Y                     ; GET THE STRING
                 LDY STORE_INDEX
-                STA (ZP3),Y                     ; STORE THE STRING
+                STA (ZPAYLOAD),Y                     ; STORE THE STRING
 
                 DEC STORE_INDEX
                 DEC GET_INDEX
@@ -399,45 +434,47 @@ COMPLETE_CMD:
                 ; INCREASE ADDRESS BY NUMBER OF PARAMETERS
 
                 LDY #$02
-                LDA (ZP1),Y
-                STA ZP2_LO                      ; CMD_LIST
+                LDA (ADDRESS_ON_STACK),Y
+                STA ZCMD_LIST_LO                      ; CMD_LIST
                 INY
-                LDA (ZP1),y
-                STA ZP2_HI
-
-                ; ZP2 NOW POINTS TO THE COMMAND LIST
-                ; FIRST ITEM THERE IS THE PCOUNT
+                LDA (ADDRESS_ON_STACK),Y
+                STA ZCMD_LIST_HI
 
                 LDY #$00
-                LDA (ZP2),Y
-                TAY ; ADD ONE
+                LDA (ZCMD_LIST),Y           ; NUMBER OF PARAMETERS
+                TAY                         ; ADD ONE
                 INY
                 TYA
-                CLC
-                ADC ZP1_LO
-                STA ZP1_LO
-                LDA ZP1_HI
-                ADC #$00
-                STA ZP1_HI
+                CLC                         ; ADD THE NUMBER OF PARAMETERS + 1TO THE 
+                ADC ADDRESS_ON_STACK_LO     ; ADDRESS THAT WAS ON THE STACK
+                STA ADDRESS_ON_STACK_LO     ; WHEN WE CAME HERE.
+                LDA ADDRESS_ON_STACK_HI     ; THAT GIVES US THE ADDRESS WE ARE
+                ADC #$00                    ; TO CONTINUE FROM
+                STA ADDRESS_ON_STACK_HI
 
-                ; ZP1 SHOULD NOT BE POINTING AT THE
-                ; INSTRUCTIONS FOLLOWING THE PARAMETERS
+                LDA ADDRESS_ON_STACK_LO
+                STA CONTINUE_ADDRESS        ; CONTINUE ADDRESS IS NOW POINTING
+                LDA ADDRESS_ON_STACK_HI     ; TO THE ADDRESS FOLLOWING THE PARAMETERS
+                STA CONTINUE_ADDRESS+1
 
-                LDX #$00
+                LDY #$00                    ; RESTORE THE ZERO PAGE DATA
 RESTORE_ZP:
-                LDA SAVE_ZERO_PAGE,X
-                STA ZP2,X
+                LDA SAVED_ZERO_PAGE,Y
+                STA ZP1,Y
                 
-                INX
-                CPX #REGS_TO_SAVE
+                INY
+                CPY #ZP_BLOCK_SIZE
                 BNE RESTORE_ZP
 
-
                 LDA #SP_ERROR_OK
-                CLC                             ; NO ERROR
+                CLC                         ; NO ERROR
 
                 ; CONTINUE EXECUTION AFTER PARAMETERS
-                JMP (ZP1)
+
+                .BYTE $4C                   ; JMP
+CONTINUE_ADDRESS:
+                .WORD $0000                
+
                 
 
 .ENDIF 
