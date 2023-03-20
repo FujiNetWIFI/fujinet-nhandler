@@ -37,7 +37,11 @@ dist: $(TARGET_EXEC)
 
 tnfs: dist/FUJIAPPLE.po
 ifneq ('$(TNFS_SERVER)','')
+ifneq ('$(WINDIR)','')
+    cp dist/FUJIAPPLE.po \\$(TNFS_SERVER)\$(TNFS_SHARE))
+else
 	cp dist/FUJIAPPLE.po /run/user/1000/gvfs/smb-share:server=$(TNFS_SERVER),share=$(TNFS_SHARE)
+endif
 else
 	$(info ***********************************************)
 	$(info *** No TNFS server environment variable set ***)
