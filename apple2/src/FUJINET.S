@@ -37,7 +37,7 @@ FN_ERR_CONNECTION_ABORTED = 211	    ;$D3 Connection Aborted
 FN_ERR_BAD_CREDENTIALS  = 212	    ;$D4 Invalid Username or Password (debating whether to overload as access denied.)
 FN_ERR_MEMORY_ERROR     = 255	    ;$FF Could not allocate either receive or transmit buffers.
 
-FN_LAST_ERR:            .BYTE $00
+
 
 ;******************************************************************;
 ; CPY_STR_TO_SP_PAYLOAD
@@ -350,7 +350,6 @@ FN_READ:
                 BEQ NO_TRACE22
 
                 PRINT_STR FN_READ_STR_ADDR
-                PRINT_STR UNIT_STR_ADDR
                 PLA
                 PHA
                 TAX
@@ -632,7 +631,6 @@ FN_CLOSE:
                 TXA
                 PHA
                 PRINT_STR FN_CLOSE_STR_ADDR
-                PRINT_STR UNIT_STR_ADDR
                 PLA
                 TAX
                 JSR PRTX
@@ -644,8 +642,9 @@ NO_TRACE33:
                 TXA
                 PHA
                 
-                LDY #$00                ; PAYLOAD SIZE = ZERO
+                LDY #$03                ; PAYLOAD SIZE = ZERO
                 STY SP_PAYLOAD
+                LDY #$00
                 STY SP_PAYLOAD+1
                 
                 LDY #'C'                ; SEND 'C' TO FUJINET
@@ -704,16 +703,6 @@ NO_TRACE24:
 .ENDIF
 .ENDIF
 
-;  sp_status(net,'S');
-;
-;  bw = sp_payload[0];
-;  bw |= (sp_payload[1]) << 8;
-;
-;  if (bw==0)
-;    return;
-;  sp_status(net,'S');
-;  return sp_payload[2] & 0x02; // Bit 2 = Connected?
-
                 LDY #'S'
                 JSR SP_STATUS
                 STA FN_LAST_ERR
@@ -728,7 +717,6 @@ BW_OK:
                 STY BW+1
 
                 LDA SP_PAYLOAD+2 
-                AND #$02
                 STA CONNECT
 
                 LDX #FN_OK
@@ -748,11 +736,19 @@ BW_DONE:
 FN_FIND_NETWORK:
 
 .IF .NOT STRIP_TRACE
-
+.IF EXT2_TRACE
                 LDA TRACE_FLAG
                 BEQ NO_TRACE25
                 PRINT_STR FN_FIND_NETWORK_STR_ADDR
+                LDA #SPACE
+                JSR COUT
+                LDX BASIC_UNIT
+                JSR PRTX
+                LDA #SPACE
+                JSR COUT
+
 NO_TRACE25:                
+.ENDIF
 .ENDIF
 
                 LDA BASIC_UNIT
@@ -762,7 +758,17 @@ NO_TRACE25:
                 ; LOOK FOR "NETWORK"
                 LDA NETWORK_STR_ADDR+1
                 LDY NETWORK_STR_ADDR
-         
+
+.IF .NOT STRIP_TRACE
+.IF EXT2_TRACE
+                PRINT_STR NETWORK_STR_ADDR
+                LDA #SPACE
+                JSR COUT
+                LDA NETWORK_STR_ADDR+1
+                LDY NETWORK_STR_ADDR
+.ENDIF
+.ENDIF
+    
                 JSR SP_FIND_DEVICE          ; LOOK FOR "NETWORK"
                 CPX #SP_ERR
                 BNE FOUND_IT
@@ -783,15 +789,40 @@ MULTI_NETWORK:
                 LDA NETWORK_STR_WITH_NUMBER_ADDR+1
                 LDY NETWORK_STR_WITH_NUMBER_ADDR 
 
+.IF .NOT STRIP_TRACE
+.IF EXT2_TRACE
+                PRINT_STR NETWORK_STR_WITH_NUMBER_ADDR
+                LDA #SPACE
+                JSR COUT
+                LDA NETWORK_STR_WITH_NUMBER_ADDR+1
+                LDY NETWORK_STR_WITH_NUMBER_ADDR 
+.ENDIF
+.ENDIF
                 JSR SP_FIND_DEVICE              ; LOOK FOR "NETWORK_X" WHERE X IS 0-3
                 CPX #SP_ERR
                 BNE FOUND_IT
-FIND_ERROR:                
+FIND_ERROR:
+.IF .NOT STRIP_TRACE
+.IF EXT2_TRACE
+                PRINT_STR DEVICE_NOT_FOUND_STR_ADDR
+                JSR CROUT
+.ENDIF        
+.ENDIF        
                 LDX #FN_ERR
+                RTS
 FOUND_IT:
                 TXA
                 TAY                             ; RETURN IN Y
+                LDX #FN_OK
 
+.IF .NOT STRIP_TRACE
+.IF EXT2_TRACE
+                SAVE_REGS
+                JSR PRTAX
+                JSR CROUT
+                RESTORE_REGS
+.ENDIF
+.ENDIF
                 RTS
 
 
@@ -857,5 +888,121 @@ FN_LIST_ERROR_OUT:
                 LDX #FN_ERR
                 SEC
                 RTS
+
+;******************************************************************
+; FN_ACCEPT
+;   Accept the specified connection from UNIT
+;
+; INPUT
+; X = UNIT DESTINATION
+;******************************************************************
+FN_ACCEPT:
+
+.IF .NOT STRIP_TRACE
+                SAVE_REGS
+                LDA TRACE_FLAG
+                BEQ NO_TRACE42
+                TXA
+                PHA
+                PRINT_STR FN_ACCEPT_STR_ADDR
+                PLA
+                TAX
+                JSR PRTX
+                JSR CROUT
+NO_TRACE42:                
+                RESTORE_REGS
+.ENDIF
+
+                
+                LDY #$03                ; PAYLOAD SIZE = ZERO
+                STY SP_PAYLOAD
+                LDY #$00
+                STY SP_PAYLOAD+1
+                
+                LDY #'A'                ; SEND 'A' TO FUJINET
+                JSR SP_CONTROL
+                STA FN_LAST_ERR
+                BCC ACCEPT_OK
+
+                LDX #FN_ERR
+
+.IF .NOT STRIP_TRACE                
+                PRINT_STR FN_ACCEPT_ERROR_STR_ADDR
+.ENDIF
+
+                CLC
+                BCC ACCEPT_DONE
+ACCEPT_OK:
+                LDX #FN_OK
+
+ACCEPT_DONE:
+                STX FN_LAST_ERR  
+                RTS
+
+;******************************************************************
+; FN_INPUT
+;   Read until carriage return is received or 255 characters are
+; received
+;
+; INPUT
+; X = UNIT DESTINATION
+;******************************************************************
+
+
+FN_INPUT:
+
+.IF .NOT STRIP_TRACE
+                SAVE_REGS
+                TXA
+                PHA
+                LDA TRACE_FLAG
+                BEQ NO_TRACE47
+
+                PRINT_STR FN_INPUT_STR_ADDR
+                PLA
+                PHA
+                TAX
+                JSR PRTX
+                JSR CROUT
+NO_TRACE47:     
+                PLA          
+                RESTORE_REGS
+
+.ENDIF
+
+;'R'
+;0-1   payload size (bytes to return)
+;2..   data
+;
+                ; SET PAYLOAD SIZE
+
+GET_MORE:
+                LDY #$01              ; PAYLOAD SIZE 1 BYTE
+                STY SP_PAYLOAD
+                LDA #$00
+                STA SP_PAYLOAD+1
+                STA FN_BUFFER_SIZE
+
+                LDY #'R'
+                JSR SP_CONTROL
+                BCS STOP_INPUT              ; ERROR, JUST RETURN STRING
+
+                LDY FN_BUFFER_SIZE
+                LDA SP_PAYLOAD+2
+
+                CMP #13                     ; IS IT A CR?
+                BEQ STOP_INPUT              ; STOP PROCESSING
+
+                STA FN_BUFFER,Y             ; SAVE THE RECEIVED CHARACTER
+                INY
+                STY FN_BUFFER_SIZE
+                CPY #$FF
+                BNE GET_MORE                ; KEEP GOING UNTIL BUFFER FULL
+
+STOP_INPUT:                                  ; ANY ERROR JUST STOP
+                LDX FN_BUFFER_SIZE
+                RTS
+
+
 
 

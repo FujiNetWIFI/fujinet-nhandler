@@ -1,0 +1,5 @@
+.IF .NOT STRIP_TRACE
+
+		.WORD	trace050,trace051,trace052
+
+.ENDIF

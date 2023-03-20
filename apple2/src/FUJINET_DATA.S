@@ -1,0 +1,5 @@
+FN_BUFFER_SIZE:     .BYTE $00
+FN_BUFFER:          .RES  $FF
+relocatefn00:
+FN_BUFFER_ADDR:     .WORD FN_BUFFER
+FN_LAST_ERR:        .BYTE $00

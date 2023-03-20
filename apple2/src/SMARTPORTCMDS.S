@@ -3,9 +3,11 @@
 ;
 ; Generic smartport commands for use with Fujinet
 ; By Norman Davie
+;
+; NOTE: Relocation code does not expect data to be mixed
+;       with code.  As a result, we need to put NOPs where
+;       CMDLIST would be then fill it later
 
-; Call GET_SMARTPORT_ADDRESS
-; Call FIND_FIJINET
 
         .include "APPLEEQU.S"
         .include "ZEROPAGE.S"
@@ -71,34 +73,69 @@ SP_STATUS_FLAG_DEVICE_INTERRUPT = %00000010
 SP_STATUS_FLAG_DEVICE_OPEN      = %00000001
 
 
-SMARTPORT_DISPATCHER: 
-DISPATCHER_ADDR_LO:     .BYTE $00
-DISPATCHER_ADDR_HI:     .BYTE $00
-
-relocatesp00:
-SP_PAYLOAD_ADDR:        .WORD  SP_PAYLOAD
-relocatesp01:
-SP_PAYLOAD_STR_ADDR:    .WORD  SP_PAYLOAD+5
-
-SP_COUNT:               .WORD   $FFFF           ; BYTES IN PAYLOAD?
-LAST_SP_ERR:            .BYTE   SP_ERR          ; ERROR CODE
-
-CMD_LIST:               .RES 15               
-
-SP_PAYLOAD:
-DCOUNT:                 .BYTE   $01             ; NUMBER OF DEVICES
-INTSTATE:               .BYTE   $FF             ; INTERRUPT STATUS (IF BIT 6 IS SET, THEN NO INTERRUPT)
-MANUFACTURER:           .WORD   $FFFF           ; DRIVER MANUFACTURER
-                                                ; $0000 - UNDETERMINED
-                                                ; $0001 - APPLE
-                                                ; $0002-$FFFF 3RD PARTY DRIVER
-INTERFACEVER:           .WORD   $FFFF           ; INTERFACE VERSION
-                        .WORD   $0000           ; RESERVED (MUST BE $0000)
-                        .RES    1024            ; RESERVED FOR DATA
-
 SLOT_ADDR		=	ZP2
 SLOT_ADDR_LO	    	=	ZP2_LO
 SLOT_ADDR_HI		=	ZP2_HI
+
+
+CLEAR_CMD_LIST:
+                LDA #$EA
+
+                STA cmd_list0
+                STA cmd_list1
+                STA cmd_list2
+                STA cmd_list3
+                STA cmd_list4
+                STA cmd_list5
+
+                STA cmd_list0+1
+                STA cmd_list1+1
+                STA cmd_list2+1
+                STA cmd_list3+1
+                STA cmd_list4+1
+                STA cmd_list5+1
+
+                STA cmd_open
+                STA cmd_close
+                STA cmd_control
+                STA cmd_read
+                STA cmd_write 
+                STA cmd_status
+
+                RTS
+
+
+FILL_CMD_LIST:
+                LDA CMD_LIST_ADDR
+                STA cmd_list0
+                STA cmd_list1
+                STA cmd_list2
+                STA cmd_list3
+                STA cmd_list4
+                STA cmd_list5
+
+                LDA CMD_LIST_ADDR+1
+                STA cmd_list0+1
+                STA cmd_list1+1
+                STA cmd_list2+1
+                STA cmd_list3+1
+                STA cmd_list4+1
+                STA cmd_list5+1
+
+                LDA #SP_CMD_OPEN
+                STA cmd_open
+                LDA #SP_CMD_CLOSE
+                STA cmd_close
+                LDA #SP_CMD_CONTROL
+                STA cmd_control
+                LDA #SP_CMD_READ
+                STA cmd_read
+                LDA #SP_CMD_WRITE
+                STA cmd_write 
+                LDA #SP_CMD_STATUS
+                STA cmd_status
+
+                RTS
 
 ;*******************************
 ; WIPE_PAYLOAD
@@ -392,9 +429,6 @@ SLOT_FIND_DONE:
 
                 RTS
         
-SMARTPORT_ID:   .BYTE $20, $00, $03, $00 
-
-
 ;*******************************
 ; GET_SMARTPORT_DISPATCH_ADDRESS
 ; INPUT:
@@ -454,7 +488,6 @@ NO_DISPATCHER:
                 STA DISPATCHER_ADDR_HI  ; PUT ADDRESS IN A AND X
                 STX DISPATCHER_ADDR_LO
 DONE:        
-
                 LDA DISPATCHER_ADDR_HI  ; PUT ADDRESS IN A AND X
                 LDX DISPATCHER_ADDR_LO
 
@@ -507,12 +540,11 @@ NO_TRACE12:
                 STX CMD_LIST+1                  ; DESTINATION DEVICE
                 JSR CALL_DISPATCHER
 
-                .BYTE SP_CMD_OPEN
-relocatesp02:   .WORD CMD_LIST
+cmd_open:       .BYTE $EA       ; SP_CMD_OPEN
+cmd_list0:      .WORD $EAEA     ; CMD_LIST
                 
-                BCS OPEN_ERROR
-
                 BCC SP_OPEN_DONE
+
 OPEN_ERROR:
 .IF EXT2_TRACE
                 PHA
@@ -563,11 +595,9 @@ NO_TRACE13:
                 STX CMD_LIST+1                  ; DESTINATION DEVICE
                 JSR CALL_DISPATCHER
 
-                .BYTE SP_CMD_CLOSE
-relocatesp03:   .WORD CMD_LIST
+cmd_close:      .BYTE $EA       ; SP_CMD_CLOSE
+cmd_list1:      .WORD $EAEA     ; CMD_LIST
                 
-                BCS CLOSE_ERROR
-
                 BCC SP_CLOSE_DONE
 CLOSE_ERROR:
 .IF EXT2_TRACE
@@ -683,8 +713,8 @@ NO_TRACE14:
 
                 JSR CALL_DISPATCHER
 
-                .BYTE SP_CMD_CONTROL
-relocatesp04:   .WORD CMD_LIST
+cmd_control:    .BYTE $EA       ; SP_CMD_CONTROL
+cmd_list2:      .WORD $EAEA     ; CMD_LIST
 
                 BCC SP_CTRL_DONE
 
@@ -754,14 +784,6 @@ NO_TRACE15:
                 LDA #$00
                 STA CMD_LIST+5                  ; [5] LENGTH HI
 
-                LDA CMD_LIST+4                  ; ADD THE PARAMETER LIST LENGTH TO THE BUFFER SIZE
-                CLC
-                ADC #SP_READ_PARAM_COUNT
-                STA CMD_LIST+4
-                LDA CMD_LIST+5
-                ADC #$00
-                STA CMD_LIST+5
-
                 ; *** Based on Smartport SCSI info below
                 ; *** Not sure if necessary
                 ; *** was not set in the example by Thom Cherryhomes
@@ -775,8 +797,8 @@ NO_TRACE15:
                 
                 JSR CALL_DISPATCHER
 
-                .BYTE SP_CMD_READ               ; READ CALL COMMAND NUMBER
-relocatesp05:   .WORD CMD_LIST
+cmd_read:       .BYTE $EA       ; SP_CMD_READ               ; READ CALL COMMAND NUMBER
+cmd_list3:      .WORD $EAEA     ; CMD_LIST
 
                 STX SP_COUNT
                 STY SP_COUNT+1
@@ -871,8 +893,8 @@ NO_TRACE40:
    
                 JSR CALL_DISPATCHER
 
-                .BYTE SP_CMD_WRITE             ; STATUS CALL COMMAND NUMBER
-relocatesp06:   .WORD CMD_LIST
+cmd_write:      .BYTE $EA       ; SP_CMD_WRITE             ; STATUS CALL COMMAND NUMBER
+cmd_list4:      .WORD $EAEA     ; CMD_LIST
 
                 STX SP_COUNT
                 STY SP_COUNT+1
@@ -979,8 +1001,8 @@ NO_TRACE35:
 
                 JSR CALL_DISPATCHER
 
-                .BYTE SP_CMD_STATUS             ; STATUS CALL COMMAND NUMBER
-relocatesp07:   .WORD CMD_LIST
+cmd_status:     .BYTE $EA       ; SP_CMD_STATUS             ; STATUS CALL COMMAND NUMBER
+cmd_list5:      .WORD $EAEA     ; CMD_LIST
 
                 STX SP_COUNT
                 STY SP_COUNT+1
@@ -1043,7 +1065,6 @@ SP_STATUS_DONE:
 CALL_DISPATCHER:
                 JMP (SMARTPORT_DISPATCHER)
 
-
 ;*******************************
 ; DISPLAY_SP_STATUS
 ;   Displays the device count,
@@ -1063,7 +1084,7 @@ NO_TRACE17:
                 LDX #$00                                ; SMARTPORT DEVICE ZERO
                 LDY #$00
                 JSR SP_STATUS
-                LDX DCOUNT                              ; DCOUNT = NUMBER OF DEVICES
+                STX DCOUNT                              ; DCOUNT = NUMBER OF DEVICES
 
                 PRINT_STR COUNT_STR_ADDR
                 LDX DCOUNT
@@ -1084,10 +1105,6 @@ NO_TRACE17:
 
                 RTS
 
-
-
-
-NUM_DEVICES:    .BYTE $00
 
 .IF .NOT STRIP_TRACE
 ;*******************************
@@ -1170,14 +1187,6 @@ DISPLAY_ERROR_OUT:
                 JSR PRTX
 
                 RTS
-
-
-
-FIND_DEVICE_BUF_LEN:    .BYTE 0
-FIND_DEVICE_BUF:        .RES  255
-relocate011:
-FIND_DEVICE_BUF_ADDR:   .WORD FIND_DEVICE_BUF
-
 
 ;***************************************************************
 
