@@ -913,8 +913,6 @@ NO_TRACE42:
                 RESTORE_REGS
 .ENDIF
 
-                TXA
-                PHA
                 
                 LDY #$03                ; PAYLOAD SIZE = ZERO
                 STY SP_PAYLOAD
@@ -926,7 +924,6 @@ NO_TRACE42:
                 STA FN_LAST_ERR
                 BCC ACCEPT_OK
 
-                PLA
                 LDX #FN_ERR
 
 .IF .NOT STRIP_TRACE                
@@ -936,7 +933,6 @@ NO_TRACE42:
                 CLC
                 BCC ACCEPT_DONE
 ACCEPT_OK:
-
                 LDX #FN_OK
 
 ACCEPT_DONE:
