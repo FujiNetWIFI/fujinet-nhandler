@@ -1,14 +1,20 @@
 
-#set these environment variables to copy to TNFS server
-export TNFS_SERVER
-export TNFS_SHARE
+# set these environment variables in your .basrc or windows environment
+# to automagically copy the FUJIAPPLE.po file to the TNFS server
 
-#TNFS_SERVER  	?= 192.168.2.21
-#TNFS_SHARE      ?= tnfs/apple
+# .bashrc
+# TNFS_SERVER="192.168.2.21"
+# TNFS_SHARE="tnfs/apple"
+# export TNFS_SERVER
+# export TNFS_SHARE
+#
+# windows
+# SET TNFS_SERVER=tnfs
+# SET TNFS_SHARE=tnfs\apple
 
 TNFS_SERVER = $(shell echo $$TNFS_SERVER)
 TNFS_SHARE  = $(shell echo $$TNFS_SHARE)
-WINDIR      = $(shell echo $$WINDIR)
+OS          = $(shell echo $$OS)
 
 
 TARGET_EXEC ?= FUJIAPPLE
@@ -37,18 +43,16 @@ dist: $(TARGET_EXEC)
 
 tnfs: dist/FUJIAPPLE.po
 ifneq ('$(TNFS_SERVER)','')
-ifneq ('$(WINDIR)','')
-    cp dist/FUJIAPPLE.po \\$(TNFS_SERVER)\$(TNFS_SHARE))
+
+ifneq ('$(OS)','')
+    cp dist/FUJIAPPLE.po //$(TNFS_SERVER)/$(TNFS_SHARE)
 else
 	cp dist/FUJIAPPLE.po /run/user/1000/gvfs/smb-share:server=$(TNFS_SERVER),share=$(TNFS_SHARE)
 endif
+
 else
 	$(info ***********************************************)
 	$(info *** No TNFS server environment variable set ***)
 	$(info ***********************************************)
 endif
-
-
-    
-
 

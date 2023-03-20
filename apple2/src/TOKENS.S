@@ -126,7 +126,9 @@ STORING:
                 STA NERR,X
 
 NOPEN_COMPLETE:
-
+                LDY #$00
+                STA BW
+                
                 RTS
 
 
