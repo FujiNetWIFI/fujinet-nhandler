@@ -39,13 +39,13 @@
 ; EXT_TRACE and EXT2_TRACE includes calls into the SMARTPORT routines
 
 STRIP_TRACE= 1  ; Eliminate all tracing code and strings
-TRACE_ON   = 0  ; &NTRACE is on at the very start
+TRACE_ON   = 1  ; &NTRACE is on at the very start
 EXT_TRACE  = 0  ; Extended Trace, 1=display SMARTPORT internal debug messages 
 EXT2_TRACE = 0  ; Extended Trace 2, display SP_STATUS and SP_CONTROL
 RELOCATE   = 0  ; 1=relocate himem and put our code there
 PRODOS     = 1  ; 0=add dos 3.3 header
 APPLEII    = 1  ; always set to one, EQUs will be for apple zero page
-USE_SP     = 1  ; 1=USE ACTUAL SMARTPORT 0=EMULATE SMARTPORT FUNCTIONS
+USE_SP     = 0  ; 1=USE ACTUAL SMARTPORT 0=EMULATE SMARTPORT FUNCTIONS
 WIPE_AFTER = 1  ; WIPE ORIGINAL LOCATION AFTER RELOCATING -- FORCES A CRASH
 
 START      = $2000
@@ -662,6 +662,9 @@ relocate017:    .WORD   NACCEPT-1
                 .BYTE   "N", TOK_INPUT, 0       ; NINPUT
 relocate018:    .WORD   NINPUT-1
 
+                .BYTE   "N", TOK_PRINT, 0       ; NPRINT
+relocate019:    .WORD   NPRINT-1
+
 .IF .NOT STRIP_TRACE
                 .BYTE   "N", TOK_TRACE, 0       ; NTRACE
 trace053:       .WORD   NTRACE-1
@@ -690,12 +693,9 @@ BASIC_UNIT:     .BYTE   0       ; BASIC UNIT 0-4 NOT FUJINET UNIT
 MODE:           .BYTE   4       ; 4=READ ONLY, 6=READ DIRECTORY, 8= WRITE ONLY, 12=READ/WRITE, 13= HTTP POST
 TRANSLATION:    .BYTE   0       ; 0 = NO TRANSLATION, 1=CR to ATASCII EOL, 2=LF to ATASCII EOL, 3=CR/LF to ATASCII EOL
 URL_LEN:        .BYTE   45
-URL:            
-.IF .NOT STRIP_TRACE
-                .ASCIIZ "N:HTTPS://www.gnu.org/licenses/gpl-3.0.txt"
-.ENDIF
-                .RES    255       
-relocate019:
+URL:            .RES    255 
+
+relocate020:
 URL_ADDR:       .WORD   URL
 COMMAND:        .BYTE   0       ; FUJINET COMMAND
 BASIC_PAYLOAD:  .RES    255     ; PAYLOAD TO SEND
@@ -703,12 +703,14 @@ BW:             .WORD   0       ; BYTES WAITING
 CONNECT:        .BYTE   0       ; 1=CONNECTED
 BUFLEN:         .BYTE   0
 BUF:            .RES    255     ; GENERIC BUFFER FOR READ/WRITE
-relocate020:
+
+relocate021:
 BUF_ADDR:       .WORD   BUF
 STRADDR:        .WORD   0
 STRLEN:         .BYTE   0
 STRBUF:         .RES    255
-relocate021:
+
+relocate022:
 STRBUF_ADDR:    .WORD   STRBUF
 NETWORK_CACHE:  .BYTE   FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK
 OPEN_LIST:      .BYTE   FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK      ; BASIC UNIT INDEX TO ACTUAL UNIT

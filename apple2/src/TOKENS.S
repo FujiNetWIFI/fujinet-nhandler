@@ -177,7 +177,7 @@ JUST_CLOSE:
 
 ;************************************************************************
 ; &NREAD UNIT, VAR$, LEN
-; Gets len number of bytes and puts them into string variable var$
+; Gets "LEN" number of bytes and puts them into string variable var$
 ;************************************************************************
 NREAD:
 
@@ -278,7 +278,7 @@ TRANSFER_VALUES:
 ;************************************************************************
 ; &NWRITE UNIT,VAR$,LEN
 ; &NWRITE UNIT,"STRING",LEN
-; Gets len number of bytes and puts them into string variable var$
+; Writes "LEN" characters of the string to the unit
 ;************************************************************************
 NWRITE:
 
@@ -351,11 +351,7 @@ COPYBUF:
                 JMP SYNERR
 
 UNIT_OK5:
-;****** TO DO *********
-; BUF NOW CONTAINS DATA
-; TO BE SENT
-; CALL FUJINET
-;**********************
+
                 TAX
                 JSR FN_WRITE
 
@@ -407,6 +403,7 @@ GETVAR3:
 STORE3:
 
 ; MOVE STRING TO PAYLOAD
+
                 LDY DSCTMP
 CPY2BUF:
                 LDA (DSCTMP+1),Y
@@ -424,11 +421,7 @@ CPY2BUF:
                 JMP SYNERR
                 
 UNIT_OK4:
-;****** TO DO *******
-; UNIT, COMMAND ARE STORED
-; AND PAYLOAD$ IS IN BASIC_PAYLOAD
-; CALL FUJINET
-;*******************
+
                 RTS
 
 ;************************************************************************
@@ -552,7 +545,7 @@ RESTORE_VECT:
 ;************************************************************************
 ; &NLIST
 ; &NLIST A$
-; Display devices
+; Display devices or store devices into A$
 ;************************************************************************
 NLIST:
 
@@ -615,7 +608,7 @@ NTRACE:
 
 ;************************************************************************
 ; &NNOTRACE
-; Display debug messages
+; No longer display debug messages
 ;************************************************************************
 NNOTRACE:
 
@@ -740,3 +733,85 @@ UNIT_OK6:
                 JSR MOVSTR                      ; COPY BUFFER TO STRING (VAR$)
 
                 RTS
+
+;************************************************************************
+; &NPRINT UNIT,VAR$
+; &NPRINT UNIT,"STRING"
+;  Writes the string to the unit
+;************************************************************************
+NPRINT:
+
+.IF .NOT STRIP_TRACE
+                LDA TRACE_FLAG
+                BEQ NO_TRACE4      
+                PRINT_STR NPRINT_STR_ADDR       ; "NPRINT"
+NO_TRACE4:
+.ENDIF
+                JSR GETBYT                      ; GET UNIT
+                STX BASIC_UNIT
+
+.IF .NOT STRIP_TRACE
+                LDA TRACE_FLAG
+                BEQ NO_TRACE37
+                SAVE_REGS
+                JSR PRTX
+                JSR CROUT
+                RESTORE_REGS
+NO_TRACE37:
+.ENDIF
+
+                JSR CHKCOM
+                JSR CHRGOT                      ; WHAT ARE WE POINTING AT IN BASIC?
+                CMP #QUOTE                      ; IS IT A STATIC STRING?
+                BNE GETVAR2
+
+                JSR GETSTR                      ; GET THE STATIC STRING
+                CLC
+                BCC STORE4
+
+GETVAR2:
+                JSR GETSTRVAR                   ; GET VAR$
+
+                LDA DSCTMP                      ; SAVE THE STRING DESCRIPTOR LOCATION 
+                STA STR_DSC_LEN                 ; FOR LATER
+                LDA DSCTMP+1
+                STA STR_DSC_LO
+                LDA DSCTMP+2
+                STA STR_DSC_HI
+
+STORE4:
+                LDA STR_DSC_LEN
+                STA BUFLEN
+
+                LDY #$00
+                LDA STR_DSC_LEN
+                STA DSCTMP,Y 
+                INY
+                LDA STR_DSC_LO
+                STA DSCTMP,Y  
+                INY
+                LDA STR_DSC_HI
+                STA DSCTMP,Y
+
+                LDY BUFLEN
+COPYBUF2:
+                LDA (DSCTMP+1),Y
+                STA BUF,Y
+                DEY
+                BPL COPYBUF2
+
+                LDX BASIC_UNIT
+                LDA OPEN_LIST,X
+                CMP #FN_NO_NETWORK
+                BNE UNIT_OK7
+
+                PRINT_STR NOT_OPENED_STR_ADDR
+                JMP SYNERR
+
+UNIT_OK7:
+
+                TAX
+                JSR FN_WRITE
+
+                RTS
+

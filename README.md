@@ -1,7 +1,7 @@
 n-handler
 =========
 
-The n-handler allows BASIC programs to access the Fujinet device.
+N: Handler code goes here:
 
-For Atari and Apple II
-
+prototype/ 	Non-relocatable prototype code
+relocatable/	relocatable code that @damosan is working on.

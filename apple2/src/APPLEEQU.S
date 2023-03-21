@@ -44,6 +44,7 @@ TOK_LIST                =       188     ; APPLESOFT TOKEN FOR LIST
 TOK_TRACE               =       155     ; APPLESOFT TOKEN FOR TRACE       
 TOK_NOTRACE             =       156     ; APPLESOFT TOKEN FOR NOTRACE
 TOK_INPUT               =       132     ; APPLESOFT TOKEN FOR INPUT  
+TOK_PRINT               =       186     ; APPLESOFT TOKEN FOR PRINT
 
 
 NEXT_WITHOUT_FOR        =   0

@@ -15,4 +15,7 @@ ECHOSERVER.BAS.TXT
   and if someone sends something, then reply with whatever was sent
   If connection drops, them wait for the next connection.
 
-  
+REVERSI.BAS
+REVERSE.BAS.TXT
+  Classic game of reversi between two computers.  One host, one client.
+    
