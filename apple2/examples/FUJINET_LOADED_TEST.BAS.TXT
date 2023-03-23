@@ -1,31 +1,3 @@
-NEW
-
- 10 GOSUB 10000
-
- 100 PRINT "READ WEB": REM PR#3 = 80-column mode 
- 110 F = 0
- 120 BW = 255:CN = 255:ER = 255
- 
- 200 F$="N:HTTPS://www.gnu.org/licenses/gpl-3.0.txt"
- 210 PRINT "OPEN ";F$
- 220 R = 4: TR=2
- 230 & NOPEN F, R,TR, F$
- 240 & NSTATUS F, BW, CN, ER
- 
- 300 B = 255
- 330 A$="NOTHING"
- 
- 340 & NREAD F,A$, B
- 350 PRINT A$;
- 
- 360 & NSTATUS F, BW, CN, ER
- 370 IF BW > 0 THEN 330
- 
- 400 PRINT "CLOSE"
- 410 &NCLOSE F
- 
- 9999 END
- 
 REM *************************
 REM DETERMINE IF FUJI EXTENSIONS ARE INSTALLED
 REM *************************
@@ -44,5 +16,3 @@ REM *************************
 10130 IF A$=B$ THEN R=1: GOTO 10150
 10140 R=0
 10150 RETURN
-
-SAVE /FUJI.APPLE/READWEB.BAS

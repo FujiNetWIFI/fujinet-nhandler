@@ -17,12 +17,7 @@
 ;************************************************************************
 NOPEN:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE1
-                PRINT_STR NOPEN_STR_ADDR        ; "NOPEN"
-NO_TRACE1:
-.ENDIF
+                DISPLAY_TRACE NOPEN_STR_ADDR    ; #<LINNUM> NOPEN
 
                 JSR GETBYT                      ; GET THE BASIC UNIT
                 STX BASIC_UNIT        
@@ -61,7 +56,7 @@ NOPEN_NETWORK_FOUND:
 
                 LDX BASIC_UNIT                  ; LOAD THE "BASIC" UNIT NUMBER
                 LDA NETWORK_CACHE,X
-                STA OPEN_LIST, X                     ; STORE THE ACTUAL UNIT NUMBER FOR LATER USE
+                STA OPEN_LIST, X                ; STORE THE ACTUAL UNIT NUMBER FOR LATER USE
 
                 JSR CHKCOM
                 JSR GETBYT                      ; GET MODE
@@ -138,13 +133,8 @@ NOPEN_COMPLETE:
 ;************************************************************************
 NCLOSE:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE2
-                PRINT_STR NCLOSE_STR_ADDR       ; "NCLOSE"
+                DISPLAY_TRACE NCLOSE_STR_ADDR    ; #<LINNUM> NCLOSE
 
-NO_TRACE2:                
-.ENDIF
                 JSR   GETBYT                    ; GET THE UNIT
                 STX   BASIC_UNIT
 
@@ -181,12 +171,8 @@ JUST_CLOSE:
 ;************************************************************************
 NREAD:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE3
-                PRINT_STR NREAD_STR_ADDR        ; "NREAD"
-NO_TRACE3:                
-.ENDIF
+                DISPLAY_TRACE NREAD_STR_ADDR    ; #<LINNUM> NREAD
+
                 JSR   GETBYT                    ; GET THE UNIT
                 STX   BASIC_UNIT
 
@@ -282,12 +268,8 @@ TRANSFER_VALUES:
 ;************************************************************************
 NWRITE:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE4      
-                PRINT_STR NWRITE_STR_ADDR       ; "NWRITE"
-NO_TRACE4:
-.ENDIF
+                DISPLAY_TRACE NWRITE_STR_ADDR   ; #<LINNUM> NWRITE
+
                 JSR GETBYT                      ; GET UNIT
                 STX BASIC_UNIT
 
@@ -365,12 +347,8 @@ UNIT_OK5:
 ;************************************************************************
 NCTRL:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE5
-                PRINT_STR NCTRL_STR_ADDR        ; "NCTRL"
-NO_TRACE5:
-.ENDIF
+                DISPLAY_TRACE NCTRL_STR_ADDR    ; #<LINNUM> NCTRL
+
                 JSR GETBYT     ; GET UNIT
                 STX BASIC_UNIT
 
@@ -432,12 +410,8 @@ UNIT_OK4:
 ;************************************************************************
 NSTATUS:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE6
-                PRINT_STR NSTATUS_STR_ADDR
-NO_TRACE6:                
-.ENDIF
+                DISPLAY_TRACE NSTATUS_STR_ADDR  ; #<LINNUM> NSTATUS
+
                 JSR GETBYT
                 STX BASIC_UNIT       ; STORE THE UNIT NUMBER
 
@@ -499,12 +473,7 @@ SAVE_INFO:
 ;************************************************************************
 NEND:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE7
-                PRINT_STR NEND_STR_ADDR
-NO_TRACE7:
-.ENDIF
+                DISPLAY_TRACE NEND_STR_ADDR    ; #<LINNUM> NEND
 
 .IF RELOCATE
 
@@ -549,12 +518,7 @@ RESTORE_VECT:
 ;************************************************************************
 NLIST:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE8
-                PRINT_STR NLIST_STR_ADDR
-NO_TRACE8:                
-.ENDIF
+                DISPLAY_TRACE NLIST_STR_ADDR    ; #<LINNUM> NLIST
 
                 JSR CHRGOT
                 BEQ NO_ARG
@@ -623,13 +587,8 @@ NNOTRACE:
 ; Accept the incoming connection
 ;************************************************************************
 NACCEPT:
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE43
-                PRINT_STR NACCEPT_STR_ADDR       ; "NACCEPT"
+                DISPLAY_TRACE NACCEPT_STR_ADDR  ; #<LINNUM> NACCEPT
 
-NO_TRACE43:                
-.ENDIF
                 JSR   GETBYT                    ; GET THE UNIT
                 STX   BASIC_UNIT
 
@@ -661,12 +620,8 @@ ACCEPT_FAILED:
 ;************************************************************************
 NINPUT:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE44      
-                PRINT_STR NINPUT_STR_ADDR       ; "NINPUT"
-NO_TRACE44:
-.ENDIF
+                DISPLAY_TRACE NINPUT_STR_ADDR   ; #<LINNUM> NINPUT
+
                 JSR GETBYT                      ; GET UNIT
                 STX BASIC_UNIT
 
@@ -714,7 +669,7 @@ UNIT_OK6:
                 LDA STR_DSC_HI
                 STA VARPTR+2
 
-                LDA FN_BUFFER_SIZE              ; THIS IS THE ACTUAL NUMBER OF CHARS WE READ
+                LDA STRLEN              ; THIS IS THE ACTUAL NUMBER OF CHARS WE READ
                 JSR STRINI                      ; CREATE NEW STRING OF LENGTH A
 
                 LDY #$00
@@ -727,9 +682,9 @@ UNIT_OK6:
                 LDA DSCTMP+2
                 STA (VARPTR),Y
 
-                LDA FN_BUFFER_SIZE              ; USE THE APPLESOFT ROUTINES TO
-                LDY FN_BUFFER_ADDR+1            ; MOVE THE PAYLOAD INTO THE
-                LDX FN_BUFFER_ADDR              ; ACTUAL STRING
+                LDA STRLEN                      ; USE THE APPLESOFT ROUTINES TO
+                LDY STRBUF_ADDR+1               ; MOVE THE PAYLOAD INTO THE
+                LDX STRBUF_ADDR                 ; ACTUAL STRING
                 JSR MOVSTR                      ; COPY BUFFER TO STRING (VAR$)
 
                 RTS
@@ -741,23 +696,19 @@ UNIT_OK6:
 ;************************************************************************
 NPRINT:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE4      
-                PRINT_STR NPRINT_STR_ADDR       ; "NPRINT"
-NO_TRACE4:
-.ENDIF
+                DISPLAY_TRACE NPRINT_STR_ADDR    ; #<LINNUM> NPRINT
+
                 JSR GETBYT                      ; GET UNIT
                 STX BASIC_UNIT
 
 .IF .NOT STRIP_TRACE
                 LDA TRACE_FLAG
-                BEQ NO_TRACE37
+                BEQ NO_TRACE51
                 SAVE_REGS
                 JSR PRTX
                 JSR CROUT
                 RESTORE_REGS
-NO_TRACE37:
+NO_TRACE51:
 .ENDIF
 
                 JSR CHKCOM

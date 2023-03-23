@@ -31,3 +31,4 @@ FIND_DEVICE_BUF:        .RES  255
 relocatesp03:
 FIND_DEVICE_BUF_ADDR:   .WORD FIND_DEVICE_BUF
 SMARTPORT_ID:           .BYTE $20, $00, $03, $00 
+BCD:                    .BYTE $00

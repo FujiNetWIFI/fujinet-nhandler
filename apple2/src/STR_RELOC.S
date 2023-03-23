@@ -12,6 +12,6 @@
 		.WORD   trace020,trace021,trace022,trace023,trace024,trace025,trace026,trace027,trace028,trace029
 		.WORD   trace030,trace031,trace032,trace033,trace034,trace035,trace036,trace037,trace038,trace039
 		.WORD   trace040,trace041,trace042,trace043,trace044,trace045,trace046,trace047,trace048,trace049
-		.WORD	trace053,trace054;,trace055,trace056,trace057,trace058,trace059
+		.WORD	trace053,trace054,trace055;,trace056,trace057,trace058,trace059
 
 .ENDIF

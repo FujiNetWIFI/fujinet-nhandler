@@ -329,9 +329,6 @@ OPEN_OK2:
 ; set UDP destination
 
 
-SMARTPORT_READ  = 1
-SMARTPORT_WRITE = 1
-.IF SMARTPORT_READ
 ;******************************************************************
 ; FN_READ - SMARTPORT VERSION
 ; Read the specified UNIT
@@ -387,81 +384,9 @@ READ_DONE:
                 LDY SP_COUNT
                 LDA LAST_SP_ERR
                 RTS
-.ELSE
-
-;******************************************************************
-; FN_READ - **** CONTROL VERSION ****
-; Read the specified UNIT
-;
-; INPUT
-; X = UNIT DESTINATION
-; BUFLEN = NUMBER OF BYTES TO READ
-;******************************************************************
-
-FN_READ:
-
-.IF .NOT STRIP_TRACE
-                SAVE_REGS
-                TXA
-                PHA
-                LDA TRACE_FLAG
-                BEQ NO_TRACE22
-
-                PRINT_STR FN_READ_STR_ADDR
-                PLA
-                PHA
-                TAX
-                JSR PRTX
-                JSR CROUT
-NO_TRACE22:     
-                PLA          
-                RESTORE_REGS
-
-.ENDIF
-
-;'R'
-;0-1   payload size (bytes to return)
-;2..   data
-;
-                ; SET PAYLOAD SIZE
-
-                LDY BUFLEN              ; PAYLOAD SIZE
-                STY SP_PAYLOAD
-                LDA #$00
-                STA SP_PAYLOAD+1
-
-                LDY #'R'
-                JSR SP_CONTROL
-                STA FN_LAST_ERR
-                BCC READ_OK
-
-READ_ERR:
-
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE                
-                PRINT_STR FN_READ_ERROR_STR_ADDR
-                JSR DUMP_SP_PAYLOAD
-.ENDIF
-.ENDIF
-
-                LDX #FN_ERR
-                LDA FN_LAST_ERR
-                CLC
-                BCC READ_DONE
-READ_OK:
-
-.IF .NOT STRIP_TRACE
-                JSR DUMP_SP_PAYLOAD_HEX   
-.ENDIF
-                LDX #FN_OK
-READ_DONE:
-                LDY SP_COUNT
-                LDA LAST_SP_ERR
-                RTS
-.ENDIF
 
 
-.IF SMARTPORT_WRITE
+
 ;******************************************************************
 ; FN_WRITE - SMARTPORT VERSION
 ; Read the specified UNIT
@@ -530,90 +455,6 @@ WRITE_DONE:
                 LDY SP_COUNT
                 
                 RTS
-.ELSE
-
-;******************************************************************
-; FN_WRITE - **** CONTROL VERSION ****
-; Read the specified UNIT
-;
-; INPUT
-; X      = UNIT DESTINATION
-; BUFLEN = NUMBER OF BYTES TO WRITE
-; BUF    = BUFFER TO SEND
-;******************************************************************
-FN_WRITE:
-
-                TXA
-                PHA
-
-.IF .NOT STRIP_TRACE
-                SAVE_REGS
-                TXA
-                PHA
-                LDA TRACE_FLAG
-                BEQ NO_TRACE41
-
-                PRINT_STR FN_WRITE_STR_ADDR
-                PLA
-                PHA
-                TAX
-                JSR PRTX
-                JSR CROUT
-NO_TRACE41:     
-                PLA          
-                RESTORE_REGS
-
-.ENDIF
-
-                LDX BUFLEN                  ; MAX SIZE 255
-                LDA BUF_ADDR 
-                LDY BUF_ADDR+1
-
-                JSR CPY_BUF_TO_CTRL_SP_PAYLOAD
-
-;'W'
-; 0-1  payload size (bytes to write)
-; 2..  data
-
-                ; SET PAYLOAD SIZE
-
-                ; x = destination
-                PLA
-                TAX
-
-                LDY BUFLEN              ; PAYLOAD SIZE
-                STY SP_PAYLOAD
-                LDA #$00
-                STA SP_PAYLOAD+1
-
-                LDY #'W'
-                JSR SP_CONTROL
-                STA FN_LAST_ERR
-                BCC WRITE_OK
-
-WRITE_ERR:
-
-
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE                
-                PRINT_STR FN_WRITE_ERROR_STR_ADDR
-                JSR DUMP_SP_PAYLOAD
-.ENDIF
-.ENDIF
-
-                LDX #FN_ERR
-                LDA FN_LAST_ERR
-                CLC
-                BCC WRITE_DONE
-WRITE_OK:
-   
-                LDX #FN_OK
-WRITE_DONE:
-                LDY SP_COUNT
-                LDA LAST_SP_ERR
-                RTS
-
-.ENDIF
 
 ;******************************************************************
 ; FN_CLOSE
@@ -851,7 +692,8 @@ NEXT_DEV1:
                 STA FN_LAST_ERR
                 BCS FN_LIST_ERROR_OUT   ; SHOULD NEVER HAPPEN, BUT IF IT DOES, JUST EXIT
 
-                LDX #$00              
+                LDX #$00
+                STX BCD              
 NEXT_CHAR:
                 LDA SP_PAYLOAD+5,X
                 LDY STRLEN
@@ -956,7 +798,7 @@ FN_INPUT:
                 TXA
                 PHA
                 LDA TRACE_FLAG
-                BEQ NO_TRACE47
+                BEQ @skip
 
                 PRINT_STR FN_INPUT_STR_ADDR
                 PLA
@@ -964,43 +806,40 @@ FN_INPUT:
                 TAX
                 JSR PRTX
                 JSR CROUT
-NO_TRACE47:     
+@skip:     
                 PLA          
                 RESTORE_REGS
 
 .ENDIF
 
-;'R'
-;0-1   payload size (bytes to return)
-;2..   data
-;
-                ; SET PAYLOAD SIZE
+                LDA #$FF
+                STA STRLEN
+GET_NEXT_CHAR:
+                INC STRLEN
+                ; X = DEVICE
+                TXA                 ; SAVE THE DEVICE
+                PHA
+                LDY #1              ; READ ONE CHARACTER        
+                JSR SP_READ
+                BCC INPUT_OK      ; IF NO CHARACTERS TO READ, THEN QUIT
+INPUT_ERR:
+                PLA
+                CLC
+                BCC INPUT_STOP
 
-GET_MORE:
-                LDY #$01              ; PAYLOAD SIZE 1 BYTE
-                STY SP_PAYLOAD
-                LDA #$00
-                STA SP_PAYLOAD+1
-                STA FN_BUFFER_SIZE
-
-                LDY #'R'
-                JSR SP_CONTROL
-                BCS STOP_INPUT              ; ERROR, JUST RETURN STRING
-
-                LDY FN_BUFFER_SIZE
-                LDA SP_PAYLOAD+2
-
-                CMP #13                     ; IS IT A CR?
-                BEQ STOP_INPUT              ; STOP PROCESSING
-
-                STA FN_BUFFER,Y             ; SAVE THE RECEIVED CHARACTER
-                INY
-                STY FN_BUFFER_SIZE
+INPUT_OK:
+                PLA
+                TAX                 ; RESTORE THE DEVICE
+                LDY STRLEN
+                LDA SP_PAYLOAD
+                STA STRLEN,Y
                 CPY #$FF
-                BNE GET_MORE                ; KEEP GOING UNTIL BUFFER FULL
+                BEQ INPUT_STOP      ; MAX 255 CHARACTERS
 
-STOP_INPUT:                                  ; ANY ERROR JUST STOP
-                LDX FN_BUFFER_SIZE
+                CMP #CR
+                BNE GET_NEXT_CHAR   ; STOP IF WE RECEIVE A CR
+INPUT_STOP:
+                LDX #FN_OK
                 RTS
 
 

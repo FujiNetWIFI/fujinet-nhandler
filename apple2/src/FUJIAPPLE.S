@@ -39,16 +39,16 @@
 ; EXT_TRACE and EXT2_TRACE includes calls into the SMARTPORT routines
 
 STRIP_TRACE= 1  ; Eliminate all tracing code and strings
-TRACE_ON   = 1  ; &NTRACE is on at the very start
+TRACE_ON   = 0  ; &NTRACE is on at the very start
 EXT_TRACE  = 0  ; Extended Trace, 1=display SMARTPORT internal debug messages 
 EXT2_TRACE = 0  ; Extended Trace 2, display SP_STATUS and SP_CONTROL
-RELOCATE   = 0  ; 1=relocate himem and put our code there
+RELOCATE   = 1  ; 1=relocate himem and put our code there
 PRODOS     = 1  ; 0=add dos 3.3 header
 APPLEII    = 1  ; always set to one, EQUs will be for apple zero page
 USE_SP     = 0  ; 1=USE ACTUAL SMARTPORT 0=EMULATE SMARTPORT FUNCTIONS
 WIPE_AFTER = 1  ; WIPE ORIGINAL LOCATION AFTER RELOCATING -- FORCES A CRASH
 
-START      = $2000
+START      = $4000
 
 .IF PRODOS
 
@@ -303,25 +303,24 @@ WIPE_IT_GOOD:
 .ENDIF
 
 RELOCATE_CODE_START:
-;****************************************
-; THIS IS USED TO DETERMINE IF THE
-; EXTENSIONS HAVE ALREADY BEEN INSTALLED
-; (R=1)
-;****************************************
-;10000 REM *************************
-;10010 REM DETERMINE IF FUJI EXTENSIONS
-;10015 REM HAVE BEEN INSTALLED (R=1)
-;10020 REM *************************
+
+;REM *******************************************
+;REM DETERMINE IF FUJI EXTENSIONS ARE INSTALLED
+;REM *******************************************
+;10000 GOSUB 10030: IF R=1 THEN PRINT "EXTENSIONS ALREADY INSTALLED.": RETURN
+;10010 PRINT "LOADING EXTENSIONS..."
+;10020 PRINT  CHR$ (4);"BRUN /FUJI.APPLE/FUJIAPPLE":RETURN
+;
 ;10030 X = PEEK(1014)+PEEK(1015)*256
 ;10040 X = X - 1
-;10050 C = PEEK(X): IF C = 0 OR C > 20 THEN 10080
-;10060 X = X - C - 1
-;10070 A$=""
-;10080 FOR Y = 1 TO C: A$=A$+CHR$(PEEK(X)):X=X+1:NEXT Y
-;10090 B$ = "FUJIAMP"
-;10100 PRINT A$;"--";B$;"?";
-;10130 IF A$=B$ THEN R=1: PRINT "YES":GOTO 10150
-;10140 R=0:PRINT "NO"
+;10050 C = PEEK(X)
+;10060 IF C = 0 OR C > 20 THEN 10140
+;10070 X = X - C
+;10080 A$=""
+;10090 FOR Y = 1 TO C: A$=A$+CHR$(PEEK(X)):X=X+1:NEXT Y
+;10100 B$ = "FUJIAMP"
+;10130 IF A$=B$ THEN R=1: GOTO 10150
+;10140 R=0
 ;10150 RETURN
 
 ;****************************************

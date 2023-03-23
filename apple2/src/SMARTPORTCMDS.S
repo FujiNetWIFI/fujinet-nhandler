@@ -1136,6 +1136,13 @@ PRINTI_STOP:
 ;**********************************
 DISPLAY_SP_DEVICES:
 
+                JSR SETINV
+                PRINT_STR DEV_LIST_STR_ADDR
+                JSR SETNORM
+
+                JSR CROUT
+                JSR CROUT
+
                 LDX #$00
                 LDY #SP_CMD_STATUS
                 JSR SP_STATUS
@@ -1145,20 +1152,20 @@ DISPLAY_SP_DEVICES:
                 STX NUM_DEVICES
 
                 LDX #$01
+                STX BCD
 NEXT_DEV:               
                 TXA
                 PHA
 
                 PRINT_STR UNIT_STR_ADDR
 
-                PLA                     ; GET BACK OUR VALUE OF 
-                PHA                     ; X WE STORED ON THE STACK
+                LDA BCD
                 TAX
                 JSR PRTX
                 
                 PRINT_STR NAME_STR_ADDR
 
-                PLA                     ; ONCE AGAIN, GET OUR VALUE OF X
+                PLA                     ; GET BACK OUR VALUE OF X
                 PHA
                 TAX
 
@@ -1170,22 +1177,25 @@ NEXT_DEV:
 
                 JSR CROUT
 
+                LDA BCD                 ; WHEN DISPLAYING DEVICE UNITS
+                SED                     ; USE DECIMAL NOT HEX
+                CLC
+                ADC #$01
+                STA BCD
+                CLD 
+
                 PLA
                 TAX
                 INX
                 CPX NUM_DEVICES
                 BNE NEXT_DEV
+                CLC
                 RTS
 
 DISPLAY_ERROR_OUT:
-                JSR PRTX
-
-                PRINT_STR UNIT_STR_ADDR
 
                 PLA
-                TAX
-                JSR PRTX
-
+                SEC
                 RTS
 
 ;***************************************************************

@@ -95,6 +95,10 @@ NINPUT_STR:                                 .BYTE "NINPUT", $0D, $00
 trace010:
 NINPUT_STR_ADDR:                            .WORD NINPUT_STR
 
+NPRINT_STR:                                 .BYTE "NPRINT", $0D, $00
+trace055:
+NPRINT_STR_ADDR:                            .WORD NPRINT_STR
+
 FIND_SMARTPORT_SLOT_STR:                    .BYTE "FIND_SMARTPORT_SLOT: ", $00
 trace011:
 FIND_SMARTPORT_SLOT_STR_ADDR:               .WORD FIND_SMARTPORT_SLOT_STR

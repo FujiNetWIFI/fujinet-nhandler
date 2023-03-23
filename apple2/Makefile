@@ -38,7 +38,7 @@ version: $(TARGET_EXEC)
 
 dist: $(TARGET_EXEC)
 	cp dist/FUJIAPPLE_clean.po dist/FUJIAPPLE.po
-	java -jar dist/ac.jar -p dist/FUJIAPPLE.po FUJIAPPLE bin 0x2000 <FUJIAPPLE
+	java -jar dist/ac.jar -p dist/FUJIAPPLE.po FUJIAPPLE bin 0x4000 <FUJIAPPLE
 
 
 tnfs: dist/FUJIAPPLE.po
