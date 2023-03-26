@@ -3,7 +3,9 @@
 SPACE                   =   $A0         ; SPACE CHARACTER FOR COUT
 COLON                   =   ':'+$80     ; COLON CHARACTER FOR COUT
 POUND                   =   '#'+$80     ; HASH SIGN FOR COUT
-CR                      =   $0D         ; CARRIAGE RETURN
+SEMICOLON               =   ';'         ; ASCII SEMICOLON CHARACTER
+CR                      =   $0D         ; ASCII CARRIAGE RETURN
+QUOTE                   =   '"'         ; ASCII QUOTE CHARACTER
 
 FRESPC                  =   $71         ; Applesoft pointer at the string storage area, used when a new string is created.
 AMPVECT                 =   $03F5       ; AMPERSAND VECTOR FOR APPLESOFT
@@ -47,7 +49,6 @@ SETNORM                 =   $FE84       ; SET NORMAL
 TOK_READ                =       135     ; APPLESOFT TOKEN FOR READ
 TOK_AT                  =       197     ; APPLESOFT TOKEN FOR AT
 TOK_END                 =       128     ; APPLESOFT TOKEN FOR END
-QUOTE                   =       $22     ; ASCII QUOTE CHARACTER
 TOK_LIST                =       188     ; APPLESOFT TOKEN FOR LIST                          
 TOK_TRACE               =       155     ; APPLESOFT TOKEN FOR TRACE       
 TOK_NOTRACE             =       156     ; APPLESOFT TOKEN FOR NOTRACE

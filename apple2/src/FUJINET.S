@@ -8,7 +8,7 @@
 
 FN_OK                   = 0
 FN_ERR                  = $FE
-FN_NO_NETWORK           = $FD
+FN_ERR_NO_DEVICE        = $FD
 
 FN_ERR_WRITE_ONLY       = 131	    ;$83 Protocol is in Write-only mode
 FN_ERR_INVALID_COMMAND  = 132	    ;$84 Protocol was sent an invalid command
@@ -789,8 +789,6 @@ ACCEPT_DONE:
 ; INPUT
 ; X = UNIT DESTINATION
 ;******************************************************************
-
-
 FN_INPUT:
 
 .IF .NOT STRIP_TRACE
@@ -836,12 +834,45 @@ INPUT_OK:
                 CPY #$FF
                 BEQ INPUT_STOP      ; MAX 255 CHARACTERS
 
-                CMP #CR
+                CMP EOL
                 BNE GET_NEXT_CHAR   ; STOP IF WE RECEIVE A CR
 INPUT_STOP:
                 LDX #FN_OK
                 RTS
 
+;******************************************************************
+; FN_CLOCK
+;   Get the current time from the Fujinet Clock
+;
+;******************************************************************
+FN_CLOCK:
 
+                JSR WIPE_PAYLOAD 
+
+                LDX FN_CLOCK_CACHE
+                CPX #FN_ERR_NO_DEVICE
+                BEQ @skip
+
+                LDY #'T'
+                JSR SP_STATUS
+@skip:
+                LDA SP_PAYLOAD
+                STA CENTURY 
+                LDA SP_PAYLOAD+1
+                STA YEAR 
+                LDA SP_PAYLOAD+2
+                STA MONTH
+                LDA SP_PAYLOAD+3
+                STA DAY 
+                LDA SP_PAYLOAD+4
+                STA HOUR 
+                LDA SP_PAYLOAD+5
+                STA MINUTE 
+                LDA SP_PAYLOAD+6
+                STA SECOND 
+NO_CLOCK:
+                RTS
+
+  
 
 

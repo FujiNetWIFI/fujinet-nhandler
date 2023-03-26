@@ -784,16 +784,6 @@ NO_TRACE15:
                 LDA #$00
                 STA CMD_LIST+5                  ; [5] LENGTH HI
 
-                ; *** Based on Smartport SCSI info below
-                ; *** Not sure if necessary
-                ; *** was not set in the example by Thom Cherryhomes
-
-;                LDA #00
-;                STA CMD_LIST+6                  ; [6] ???? BLOCK ADDRESS OF TARGET BLOCK
-;                LDA #00
-;                STA CMD_LIST+7                  ; [7] ????
-
-                ; ***
                 
                 JSR CALL_DISPATCHER
 
@@ -880,16 +870,6 @@ NO_TRACE40:
                 STA CMD_LIST+6                  ; ADDRESS POINTER LOW
                 STA CMD_LIST+7                  ; ADDRESS POINTER MID
                 STA CMD_LIST+8                  ; ADDRESS POINTER HI
-
-                ; *** Based on Smartport SCSI info below
-                ; *** Not sure if necessary
-                ; *** was not set in the example by Thom Cherryhomes
-                
-;                LDA #0                          ; DATA POINTER
-;                STA CMD_LIST+6                
-;                STA CMD_LIST+7
-
-                ; ***
    
                 JSR CALL_DISPATCHER
 
@@ -1253,6 +1233,7 @@ NO_TRACE19:
                 LDX #$00
                 LDY #SP_CMD_STATUS                      ; ASK FOR SMARTPORT STATUS
                 JSR SP_STATUS
+                
  ;               BCC GOT_DEVICE_COUNT                    ; GOT AN ERROR
  ;               PRINT_STR SP_NO_DCOUNT_STR_ADDR
  ;               SEC

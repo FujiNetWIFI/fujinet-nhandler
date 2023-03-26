@@ -38,14 +38,15 @@
 ;
 ; EXT_TRACE and EXT2_TRACE includes calls into the SMARTPORT routines
 
-STRIP_TRACE= 1  ; Eliminate all tracing code and strings
+STRIP_TRACE= 0  ; Eliminate all tracing code and strings
 TRACE_ON   = 0  ; &NTRACE is on at the very start
 EXT_TRACE  = 0  ; Extended Trace, 1=display SMARTPORT internal debug messages 
 EXT2_TRACE = 0  ; Extended Trace 2, display SP_STATUS and SP_CONTROL
-RELOCATE   = 1  ; 1=relocate himem and put our code there
+EXT3_TRACE = 0  ; Extended Trace 3, display commands in the dispatch call
+RELOCATE   = 0  ; 1=relocate himem and put our code there
 PRODOS     = 1  ; 0=add dos 3.3 header
 APPLEII    = 1  ; always set to one, EQUs will be for apple zero page
-USE_SP     = 0  ; 1=USE ACTUAL SMARTPORT 0=EMULATE SMARTPORT FUNCTIONS
+USE_SP     = 1  ; 1=USE ACTUAL SMARTPORT 0=EMULATE SMARTPORT FUNCTIONS
 WIPE_AFTER = 1  ; WIPE ORIGINAL LOCATION AFTER RELOCATING -- FORCES A CRASH
 
 START      = $4000
@@ -145,6 +146,20 @@ NEXT_NETWORK_CACHE:
 .ENDIF
 .ENDIF
 
+                ; FIND THE FN_CLOCK SO WE DON'T NEED TO
+                ; KEEP LOOKING FOR THE UNIT NUMBER
+
+                LDA #FN_ERR_NO_DEVICE
+                STA FN_CLOCK_CACHE
+
+                LDA CLOCK_STR_ADDR+1
+                LDY CLOCK_STR_ADDR
+    
+                JSR SP_FIND_DEVICE          ; LOOK FOR "NETWORK"
+                CPX #SP_ERR
+                BEQ @skip
+                STX FN_CLOCK_CACHE
+ @skip:               
 ; RELOCATE US TO WHERE IT'S SAFE
 
 .IF .NOT STRIP_TRACE
@@ -664,6 +679,12 @@ relocate018:    .WORD   NINPUT-1
                 .BYTE   "N", TOK_PRINT, 0       ; NPRINT
 relocate019:    .WORD   NPRINT-1
 
+                .ASCIIZ "NTIME"                 ; NTIME
+relocate023:    .WORD   NTIME-1
+
+                .ASCIIZ "NSETEOL"               ; NSETEOL
+relocate024:    .WORD   NSETEOL-1
+
 .IF .NOT STRIP_TRACE
                 .BYTE   "N", TOK_TRACE, 0       ; NTRACE
 trace053:       .WORD   NTRACE-1
@@ -711,13 +732,25 @@ STRBUF:         .RES    255
 
 relocate022:
 STRBUF_ADDR:    .WORD   STRBUF
-NETWORK_CACHE:  .BYTE   FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK
-OPEN_LIST:      .BYTE   FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK      ; BASIC UNIT INDEX TO ACTUAL UNIT
+FN_CLOCK_CACHE: .BYTE   FN_ERR_NO_DEVICE
+NETWORK_CACHE:  .BYTE   FN_ERR_NO_DEVICE, FN_ERR_NO_DEVICE, FN_ERR_NO_DEVICE, FN_ERR_NO_DEVICE
+OPEN_LIST:      .BYTE   FN_ERR_NO_DEVICE, FN_ERR_NO_DEVICE, FN_ERR_NO_DEVICE, FN_ERR_NO_DEVICE      ; BASIC UNIT INDEX TO ACTUAL UNIT
 NERR:           .BYTE   FN_ERR, FN_ERR, FN_ERR, FN_ERR                                  ; LAST ERROR
 
 STR_DSC_LEN:    .BYTE   0
 STR_DSC_LO:     .BYTE   0
 STR_DSC_HI:     .BYTE   0
+
+CENTURY:        .BYTE   0
+YEAR:           .BYTE   0
+MONTH:          .BYTE   0
+DAY:            .BYTE   0
+HOUR:           .BYTE   0
+MINUTE:         .BYTE   0
+SECOND:         .BYTE   0
+
+EOL:            .BYTE   $0D
+
 
 .include "STRINGS.S"
 .include "REGS_DATA.S"
