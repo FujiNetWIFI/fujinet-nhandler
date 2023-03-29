@@ -95,6 +95,18 @@ NINPUT_STR:                                 .BYTE "NINPUT", $0D, $00
 trace010:
 NINPUT_STR_ADDR:                            .WORD NINPUT_STR
 
+NPRINT_STR:                                 .BYTE "NPRINT", $0D, $00
+trace055:
+NPRINT_STR_ADDR:                            .WORD NPRINT_STR
+
+NSETEOL_STR:                                .BYTE "NSETEOL", $0D, $00
+trace056:
+NSETEOL_STR_ADDR:                           .WORD NSETEOL_STR
+
+NTIME_STR:                                  .BYTE "NTIME", $0D, $00
+trace057:
+NTIME_STR_ADDR:                             .WORD NTIME_STR
+
 FIND_SMARTPORT_SLOT_STR:                    .BYTE "FIND_SMARTPORT_SLOT: ", $00
 trace011:
 FIND_SMARTPORT_SLOT_STR_ADDR:               .WORD FIND_SMARTPORT_SLOT_STR
@@ -308,21 +320,54 @@ SP_SUCCESS_STR:                             .ASCIIZ "SMARTPORT SUCCESS:  "
 str013:
 SP_SUCCESS_STR_ADDR:                        .WORD SP_SUCCESS_STR
 
+
+.IF .NOT USE_SP
 FUJI_DISK_0_STR_LEN:                        .BYTE 14
+.ENDIF
+; NOTE:  WITH FAKEPORT, THIS STRING WILL HAVE THE "0" MODIFIED
 FUJI_DISK_0_STR:                            .ASCIIZ "FUJINET_DISK_0"
 str014:
 FUJI_DISK_0_STR_ADDR:                       .WORD FUJI_DISK_0_STR
+.IF .NOT USE_SP
+DISK_STR_WITH_NUMBER_INDEX:                 .BYTE 13
+.ENDIF
 
+.IF .NOT USE_SP
 NETWORK_STR_LEN:                            .BYTE 7
+.ENDIF
 NETWORK_STR:                                .ASCIIZ "NETWORK"
 str015:
 NETWORK_STR_ADDR:                           .WORD NETWORK_STR
 
+.IF .NOT USE_SP
 NETWORK_STR_WITH_NUMBER_LEN:                .BYTE 9
+.ENDIF
 NETWORK_STR_WITH_NUMBER:                    .ASCIIZ "NETWORK_1"
 str016:
 NETWORK_STR_WITH_NUMBER_ADDR:               .WORD NETWORK_STR_WITH_NUMBER
 NETWORK_STR_WITH_NUMBER_INDEX:              .BYTE 8
+
+
+.IF .NOT USE_SP
+CLOCK_STR_LEN:                              .BYTE 8
+.ENDIF
+CLOCK_STR:                                  .ASCIIZ "FN_CLOCK"
+str019:
+CLOCK_STR_ADDR:                             .WORD CLOCK_STR
+
+.IF .NOT USE_SP
+CPM_STR_LEN:                                .BYTE 3
+.ENDIF
+CPM_STR:                                    .ASCIIZ "CPM"
+str020:
+CPM_STR_ADDR:                               .WORD CPM_STR
+
+.IF .NOT USE_SP
+PRINTER_STR_LEN:                            .BYTE 8
+.ENDIF
+PRINTER_STR:                                .ASCIIZ "PRINTER"
+str021:
+PRINTER_STR_ADDR:                           .WORD PRINTER_STR
 
 DEVICE_NOT_FOUND_STR:                       .ASCIIZ "DEVICE NOT FOUND!"
 str017:

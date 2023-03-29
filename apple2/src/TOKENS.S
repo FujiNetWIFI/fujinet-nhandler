@@ -17,12 +17,7 @@
 ;************************************************************************
 NOPEN:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE1
-                PRINT_STR NOPEN_STR_ADDR        ; "NOPEN"
-NO_TRACE1:
-.ENDIF
+                DISPLAY_TRACE NOPEN_STR_ADDR    ; #<LINNUM> NOPEN
 
                 JSR GETBYT                      ; GET THE BASIC UNIT
                 STX BASIC_UNIT        
@@ -61,7 +56,7 @@ NOPEN_NETWORK_FOUND:
 
                 LDX BASIC_UNIT                  ; LOAD THE "BASIC" UNIT NUMBER
                 LDA NETWORK_CACHE,X
-                STA OPEN_LIST, X                     ; STORE THE ACTUAL UNIT NUMBER FOR LATER USE
+                STA OPEN_LIST, X                ; STORE THE ACTUAL UNIT NUMBER FOR LATER USE
 
                 JSR CHKCOM
                 JSR GETBYT                      ; GET MODE
@@ -120,7 +115,7 @@ STORING:
                 BCC NOPEN_COMPLETE
 
                 LDX BASIC_UNIT                  ; FAILED TO OPEN
-                LDA #FN_NO_NETWORK              ; INDICATE THE NETWORK IS 
+                LDA #FN_ERR_NO_DEVICE              ; INDICATE THE NETWORK IS 
                 STA OPEN_LIST,X                   ; NOT IN USE
                 LDA FN_LAST_ERR
                 STA NERR,X
@@ -134,17 +129,15 @@ NOPEN_COMPLETE:
 
 ;************************************************************************
 ; &NCLOSE UNIT
+;
 ; Closes a network connection.
+;
+; UNIT = 0-4 BASIC NETWORK (not Fujinet unit number)
 ;************************************************************************
 NCLOSE:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE2
-                PRINT_STR NCLOSE_STR_ADDR       ; "NCLOSE"
+                DISPLAY_TRACE NCLOSE_STR_ADDR    ; #<LINNUM> NCLOSE
 
-NO_TRACE2:                
-.ENDIF
                 JSR   GETBYT                    ; GET THE UNIT
                 STX   BASIC_UNIT
 
@@ -162,7 +155,7 @@ NO_TRACE34:
 
                 LDX BASIC_UNIT
                 LDA OPEN_LIST, X          ; THIS IS THE ACTUAL UNIT NUMBER
-                CMP #FN_NO_NETWORK   ; CLOSING SOMETHING THAT IS NOT ACTUALLY OPEN  
+                CMP #FN_ERR_NO_DEVICE   ; CLOSING SOMETHING THAT IS NOT ACTUALLY OPEN  
                 BEQ JUST_CLOSE
                 TAX
                 JSR FN_CLOSE
@@ -171,22 +164,18 @@ JUST_CLOSE:
                 LDX BASIC_UNIT          ; SAVE ANY ERROR THAT OCCURED DURING CLOSE
                 STA NERR,X
 
-                LDA #FN_NO_NETWORK      ; REGARDLESS, INDICATE BASIC UNIT IS CLOSED
+                LDA #FN_ERR_NO_DEVICE      ; REGARDLESS, INDICATE BASIC UNIT IS CLOSED
                 STA OPEN_LIST, X
                 RTS
 
 ;************************************************************************
 ; &NREAD UNIT, VAR$, LEN
-; Gets len number of bytes and puts them into string variable var$
+; Gets "LEN" number of bytes and puts them into string variable var$
 ;************************************************************************
 NREAD:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE3
-                PRINT_STR NREAD_STR_ADDR        ; "NREAD"
-NO_TRACE3:                
-.ENDIF
+                DISPLAY_TRACE NREAD_STR_ADDR    ; #<LINNUM> NREAD
+
                 JSR   GETBYT                    ; GET THE UNIT
                 STX   BASIC_UNIT
 
@@ -222,10 +211,10 @@ NO_TRACE36:
 
                 LDX BASIC_UNIT                  ; CONVERT THE BASIC_UNIT TO THE FUJINET UNIT
                 LDA OPEN_LIST,X
-                CMP #FN_NO_NETWORK              ; $FF INDICATES IT WAS NEVER OPENED
+                CMP #FN_ERR_NO_DEVICE              ; $FF INDICATES IT WAS NEVER OPENED
                 BNE UNIT_OK2
 
-                LDA #FN_NO_NETWORK              ; RETURN ERROR THAT WE WERE NEVER CONNECTED
+                LDA #FN_ERR_NO_DEVICE              ; RETURN ERROR THAT WE WERE NEVER CONNECTED
                 STA NERR,X
                 RTS
 
@@ -278,16 +267,17 @@ TRANSFER_VALUES:
 ;************************************************************************
 ; &NWRITE UNIT,VAR$,LEN
 ; &NWRITE UNIT,"STRING",LEN
-; Gets len number of bytes and puts them into string variable var$
+;
+; Writes "LEN" characters of the string to the unit
+;
+; UNIT = 0-4 BASIC NETWORK (not Fujinet unit number)
+; VAR$ = The byte data to send to the unit
+; LEN  = The number of bytes within the string to send
 ;************************************************************************
 NWRITE:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE4      
-                PRINT_STR NWRITE_STR_ADDR       ; "NWRITE"
-NO_TRACE4:
-.ENDIF
+                DISPLAY_TRACE NWRITE_STR_ADDR   ; #<LINNUM> NWRITE
+
                 JSR GETBYT                      ; GET UNIT
                 STX BASIC_UNIT
 
@@ -307,6 +297,17 @@ NO_TRACE37:
                 BNE GETVAR
 
                 JSR GETSTR                      ; GET THE STATIC STRING
+
+                ; WE'RE GOING TO CREATE A NEW DESCRIPTION
+                ; THE SAME WAY APPLESOFT DOES
+
+                LDA STRLEN                      ; GETSTR STORES THE STRING LENGTH HERE
+                STA DSCTMP
+
+                LDA STRBUF_ADDR                 ; THE ADDRESS OF OUR STATIC STRING
+                STA DSCTMP+1
+                LDA STRBUF_ADDR+1
+                STA DSCTMP+2
                 CLC
                 BCC STORE2
 
@@ -344,18 +345,14 @@ COPYBUF:
 
                 LDX BASIC_UNIT
                 LDA OPEN_LIST,X
-                CMP #FN_NO_NETWORK
+                CMP #FN_ERR_NO_DEVICE
                 BNE UNIT_OK5
 
                 PRINT_STR NOT_OPENED_STR_ADDR
                 JMP SYNERR
 
 UNIT_OK5:
-;****** TO DO *********
-; BUF NOW CONTAINS DATA
-; TO BE SENT
-; CALL FUJINET
-;**********************
+
                 TAX
                 JSR FN_WRITE
 
@@ -363,18 +360,15 @@ UNIT_OK5:
 
 ;************************************************************************
 ; &NCTRL UNIT,COMMAND, PAYLOAD$
+;
 ; Sends a specific control message to the network device 
 ; to do a special command. The payload for this command 
 ; is specified as the very last parameter.
 ;************************************************************************
 NCTRL:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE5
-                PRINT_STR NCTRL_STR_ADDR        ; "NCTRL"
-NO_TRACE5:
-.ENDIF
+                DISPLAY_TRACE NCTRL_STR_ADDR    ; #<LINNUM> NCTRL
+
                 JSR GETBYT     ; GET UNIT
                 STX BASIC_UNIT
 
@@ -398,6 +392,17 @@ NO_TRACE38:
                 BNE GETVAR3
 
                 JSR GETSTR     ; GET THE STATIC STRING
+
+                ; WE'RE GOING TO CREATE A NEW DESCRIPTION
+                ; THE SAME WAY APPLESOFT DOES
+
+                LDA STRLEN                      ; GETSTR STORES THE STRING LENGTH HERE
+                STA DSCTMP
+
+                LDA STRBUF_ADDR                 ; THE ADDRESS OF OUR STATIC STRING
+                STA DSCTMP+1
+                LDA STRBUF_ADDR+1
+                STA DSCTMP+2
                 CLC
                 BCC STORE3
 
@@ -407,6 +412,7 @@ GETVAR3:
 STORE3:
 
 ; MOVE STRING TO PAYLOAD
+
                 LDY DSCTMP
 CPY2BUF:
                 LDA (DSCTMP+1),Y
@@ -417,34 +423,30 @@ CPY2BUF:
                 LDA BASIC_UNIT
                 TAX
                 LDA OPEN_LIST,X
-                CMP #FN_NO_NETWORK
+                CMP #FN_ERR_NO_DEVICE
                 BNE UNIT_OK4
 
                 PRINT_STR NOT_OPENED_STR_ADDR
                 JMP SYNERR
                 
 UNIT_OK4:
-;****** TO DO *******
-; UNIT, COMMAND ARE STORED
-; AND PAYLOAD$ IS IN BASIC_PAYLOAD
-; CALL FUJINET
-;*******************
+
                 RTS
 
 ;************************************************************************
-; &NSTATUS UNIT,BW,CONNECTED,NERR
-; To get the status of network unit. BW = bytes waiting, 
-; CONNECTED equals 1 if connect and NERR returns 
-; the network error code
+; &NSTATUS UNIT,BW,CN,NERR
+;
+; To get the status of network unit.
+;
+; UNIT = 0-4 BASIC NETWORK (not Fujinet unit number)
+; BW   = Bytes waiting to be read
+; CN   = Connection status 
+; NERR = Last error generated by UNIT
 ;************************************************************************
 NSTATUS:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE6
-                PRINT_STR NSTATUS_STR_ADDR
-NO_TRACE6:                
-.ENDIF
+                DISPLAY_TRACE NSTATUS_STR_ADDR  ; #<LINNUM> NSTATUS
+
                 JSR GETBYT
                 STX BASIC_UNIT       ; STORE THE UNIT NUMBER
 
@@ -461,7 +463,7 @@ NO_TRACE39:
 
                 LDX BASIC_UNIT
                 LDA OPEN_LIST,X                
-                CMP #FN_NO_NETWORK
+                CMP #FN_ERR_NO_DEVICE
                 BNE INFO
 
                 LDA #$FF                        ; USER HASN'T OPENED THE
@@ -500,18 +502,14 @@ SAVE_INFO:
 
 ;************************************************************************
 ; &NEND
+;
 ; Remove the fujiapple vector and
 ; put the original vector back
 ; Restore HIMEM if it hasn't been changed since we set it
 ;************************************************************************
 NEND:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE7
-                PRINT_STR NEND_STR_ADDR
-NO_TRACE7:
-.ENDIF
+                DISPLAY_TRACE NEND_STR_ADDR    ; #<LINNUM> NEND
 
 .IF RELOCATE
 
@@ -552,16 +550,12 @@ RESTORE_VECT:
 ;************************************************************************
 ; &NLIST
 ; &NLIST A$
-; Display devices
+;
+; Display devices or store devices into A$ as comma separated
 ;************************************************************************
 NLIST:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE8
-                PRINT_STR NLIST_STR_ADDR
-NO_TRACE8:                
-.ENDIF
+                DISPLAY_TRACE NLIST_STR_ADDR    ; #<LINNUM> NLIST
 
                 JSR CHRGOT
                 BEQ NO_ARG
@@ -615,7 +609,7 @@ NTRACE:
 
 ;************************************************************************
 ; &NNOTRACE
-; Display debug messages
+; No longer display debug messages
 ;************************************************************************
 NNOTRACE:
 
@@ -627,16 +621,14 @@ NNOTRACE:
 
 ;************************************************************************
 ; &NACCEPT UNIT
+;
 ; Accept the incoming connection
-;************************************************************************
+;
+; UNIT = 0-4 BASIC NETWORK (not Fujinet unit number)
+;***********************************************
 NACCEPT:
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE43
-                PRINT_STR NACCEPT_STR_ADDR       ; "NACCEPT"
+                DISPLAY_TRACE NACCEPT_STR_ADDR  ; #<LINNUM> NACCEPT
 
-NO_TRACE43:                
-.ENDIF
                 JSR   GETBYT                    ; GET THE UNIT
                 STX   BASIC_UNIT
 
@@ -653,7 +645,7 @@ NO_TRACE45:
 
                 LDX BASIC_UNIT
                 LDA OPEN_LIST, X        ; THIS IS THE ACTUAL UNIT NUMBER
-                CMP #FN_NO_NETWORK      ; TRYING TO ACCEPT SOMETHING THAT IS NOT ACTUALLY OPEN  
+                CMP #FN_ERR_NO_DEVICE      ; TRYING TO ACCEPT SOMETHING THAT IS NOT ACTUALLY OPEN  
                 BEQ ACCEPT_FAILED
                 TAX
                 JSR FN_ACCEPT
@@ -663,17 +655,17 @@ ACCEPT_FAILED:
 
 ;************************************************************************
 ; &NINPUT UNIT,VAR$
-;   Reads until either Carriage Return is received or 255 characters
-; are received
+;
+;   Reads until either EOL character is received or 255 characters
+; are received (see NSETEOL)
+;
+; UNIT = 0-4 BASIC NETWORK (not Fujinet unit number)
+; VAR$ = Buffer to receive the data
 ;************************************************************************
 NINPUT:
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE44      
-                PRINT_STR NINPUT_STR_ADDR       ; "NINPUT"
-NO_TRACE44:
-.ENDIF
+                DISPLAY_TRACE NINPUT_STR_ADDR   ; #<LINNUM> NINPUT
+
                 JSR GETBYT                      ; GET UNIT
                 STX BASIC_UNIT
 
@@ -704,7 +696,7 @@ NO_TRACE46:
 
                 LDX BASIC_UNIT
                 LDA OPEN_LIST,X
-                CMP #FN_NO_NETWORK
+                CMP #FN_ERR_NO_DEVICE
                 BNE UNIT_OK6
 
                 PRINT_STR NOT_OPENED_STR_ADDR
@@ -721,7 +713,7 @@ UNIT_OK6:
                 LDA STR_DSC_HI
                 STA VARPTR+2
 
-                LDA FN_BUFFER_SIZE              ; THIS IS THE ACTUAL NUMBER OF CHARS WE READ
+                LDA STRLEN              ; THIS IS THE ACTUAL NUMBER OF CHARS WE READ
                 JSR STRINI                      ; CREATE NEW STRING OF LENGTH A
 
                 LDY #$00
@@ -734,9 +726,170 @@ UNIT_OK6:
                 LDA DSCTMP+2
                 STA (VARPTR),Y
 
-                LDA FN_BUFFER_SIZE              ; USE THE APPLESOFT ROUTINES TO
-                LDY FN_BUFFER_ADDR+1            ; MOVE THE PAYLOAD INTO THE
-                LDX FN_BUFFER_ADDR              ; ACTUAL STRING
+                LDA STRLEN                      ; USE THE APPLESOFT ROUTINES TO
+                LDY STRBUF_ADDR+1               ; MOVE THE PAYLOAD INTO THE
+                LDX STRBUF_ADDR                 ; ACTUAL STRING
                 JSR MOVSTR                      ; COPY BUFFER TO STRING (VAR$)
 
                 RTS
+
+;************************************************************************
+; &NPRINT UNIT,VAR$[;]
+; &NPRINT UNIT,"STRING"[;]
+;
+;  Writes the string to the unit
+;
+; UNIT = 0-4 BASIC NETWORK (not Fujinet unit number)
+; VAR$ = Data to be sent to the unit.  The data will be followed by the
+;        EOL character (see NSETEOL) if the semicolon is absent
+;************************************************************************
+NPRINT:
+
+                DISPLAY_TRACE NPRINT_STR_ADDR    ; #<LINNUM> NPRINT
+
+                JSR GETBYT                      ; GET UNIT
+                STX BASIC_UNIT
+
+.IF .NOT STRIP_TRACE
+                LDA TRACE_FLAG
+                BEQ NO_TRACE51
+                SAVE_REGS
+                JSR PRTX
+                JSR CROUT
+                RESTORE_REGS
+NO_TRACE51:
+.ENDIF
+
+                JSR CHKCOM
+                JSR CHRGOT                      ; WHAT ARE WE POINTING AT IN BASIC?
+                CMP #QUOTE                      ; IS IT A STATIC STRING?
+                BNE GETVAR2
+
+                JSR GETSTR                      ; GET THE STATIC STRING
+
+                ; WE'RE GOING TO CREATE A NEW DESCRIPTION
+                ; THE SAME WAY APPLESOFT DOES
+
+                LDA STRLEN                      ; GETSTR STORES THE STRING LENGTH HERE
+                STA STR_DSC_LEN
+
+                LDA STRBUF_ADDR                 ; THE ADDRESS OF OUR STATIC STRING
+                STA STR_DSC_LO
+                LDA STRBUF_ADDR+1
+                STA STR_DSC_HI
+
+                CLC
+                BCC STORE4
+
+GETVAR2:
+                JSR GETSTRVAR                   ; GET VAR$
+
+                LDA DSCTMP                      ; SAVE THE STRING DESCRIPTOR LOCATION 
+                STA STR_DSC_LEN                 ; FOR LATER
+                LDA DSCTMP+1
+                STA STR_DSC_LO
+                LDA DSCTMP+2
+                STA STR_DSC_HI
+
+STORE4:
+                LDA STR_DSC_LEN
+                STA BUFLEN
+
+                LDY #$00
+                LDA STR_DSC_LEN
+                STA DSCTMP,Y 
+                INY
+                LDA STR_DSC_LO
+                STA DSCTMP,Y  
+                INY
+                LDA STR_DSC_HI
+                STA DSCTMP,Y
+
+STORE2BUF:
+                LDY BUFLEN
+COPYBUF2:
+                LDA (DSCTMP+1),Y
+                STA BUF,Y
+                DEY
+                BPL COPYBUF2
+
+                LDX BASIC_UNIT
+                LDA OPEN_LIST,X
+                CMP #FN_ERR_NO_DEVICE
+                BNE UNIT_OK7
+
+                PRINT_STR NOT_OPENED_STR_ADDR
+                JMP SYNERR
+
+UNIT_OK7:
+                JSR CHRGOT          ; If a semicolon is present, don't send EOL
+                CMP #SEMICOLON 
+                BNE ADD_EOL
+                JSR CHRGET
+                CLC
+                BCC SEND_BUF
+
+
+ADD_EOL:
+                LDX BUFLEN          ; Add an EOL character to the end of the buffer
+                LDA EOL
+                STA BUF,X
+                INX
+                STX BUFLEN          
+SEND_BUF:
+                LDX BASIC_UNIT
+                LDA OPEN_LIST,X
+                TAX      
+                JSR FN_WRITE
+                RTS
+
+;************************************************************************
+; &NTIME YEAR, MONTH, DAY, HOUR, MINUTE, SECOND
+;
+;   Get the current time
+;
+;************************************************************************
+NTIME:
+                DISPLAY_TRACE NTIME_STR_ADDR  ; #<LINNUM> NTIME
+
+                JSR   FN_CLOCK
+
+                LDY YEAR
+                JSR BYTESAV    ; CONVERT TO FLOAT AND STORE IN YEAR VAR
+                JSR CHKCOM
+          
+                LDY MONTH
+                JSR BYTESAV    ; CONVERT TO FLOAT AND STORE IN MONTH VAR
+                JSR CHKCOM          
+
+                LDY DAY
+                JSR BYTESAV    ; CONVERT TO FLOAT AND STORE IN DAY VAR
+                JSR CHKCOM
+
+                LDY HOUR
+                JSR BYTESAV    ; CONVERT TO FLOAT AND STORE IN HOUR VAR
+                JSR CHKCOM
+
+                LDY MINUTE
+                JSR BYTESAV    ; CONVERT TO FLOAT AND STORE IN MINUTE VAR
+                JSR CHKCOM
+
+                LDY SECOND
+                JSR BYTESAV    ; CONVERT TO FLOAT AND STORE IN SECOND VAR
+                RTS
+
+;************************************************************************
+; &SETEOL EOL
+;   
+;   Set the End-of-line character used with the the NPRINT and NINPUT 
+; commands.  If not set the default is carriage return ($0D/13)
+;************************************************************************
+NSETEOL:
+                DISPLAY_TRACE NSETEOL_STR_ADDR  ; #<LINNUM> NSETEOL
+
+                JSR GETBYT                      ; GET UNIT
+                STX EOL
+                RTS
+
+
+

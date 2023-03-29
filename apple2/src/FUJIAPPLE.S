@@ -42,13 +42,14 @@ STRIP_TRACE= 1  ; Eliminate all tracing code and strings
 TRACE_ON   = 0  ; &NTRACE is on at the very start
 EXT_TRACE  = 0  ; Extended Trace, 1=display SMARTPORT internal debug messages 
 EXT2_TRACE = 0  ; Extended Trace 2, display SP_STATUS and SP_CONTROL
-RELOCATE   = 0  ; 1=relocate himem and put our code there
+EXT3_TRACE = 0  ; Extended Trace 3, display commands in the dispatch call
+RELOCATE   = 1  ; 1=relocate himem and put our code there
 PRODOS     = 1  ; 0=add dos 3.3 header
 APPLEII    = 1  ; always set to one, EQUs will be for apple zero page
 USE_SP     = 1  ; 1=USE ACTUAL SMARTPORT 0=EMULATE SMARTPORT FUNCTIONS
 WIPE_AFTER = 1  ; WIPE ORIGINAL LOCATION AFTER RELOCATING -- FORCES A CRASH
 
-START      = $2000
+START      = $4000
 
 .IF PRODOS
 
@@ -145,6 +146,20 @@ NEXT_NETWORK_CACHE:
 .ENDIF
 .ENDIF
 
+                ; FIND THE FN_CLOCK SO WE DON'T NEED TO
+                ; KEEP LOOKING FOR THE UNIT NUMBER
+
+                LDA #FN_ERR_NO_DEVICE
+                STA FN_CLOCK_CACHE
+
+                LDA CLOCK_STR_ADDR+1
+                LDY CLOCK_STR_ADDR
+    
+                JSR SP_FIND_DEVICE          ; LOOK FOR "NETWORK"
+                CPX #SP_ERR
+                BEQ @skip
+                STX FN_CLOCK_CACHE
+ @skip:               
 ; RELOCATE US TO WHERE IT'S SAFE
 
 .IF .NOT STRIP_TRACE
@@ -303,25 +318,24 @@ WIPE_IT_GOOD:
 .ENDIF
 
 RELOCATE_CODE_START:
-;****************************************
-; THIS IS USED TO DETERMINE IF THE
-; EXTENSIONS HAVE ALREADY BEEN INSTALLED
-; (R=1)
-;****************************************
-;10000 REM *************************
-;10010 REM DETERMINE IF FUJI EXTENSIONS
-;10015 REM HAVE BEEN INSTALLED (R=1)
-;10020 REM *************************
+
+;REM *******************************************
+;REM DETERMINE IF FUJI EXTENSIONS ARE INSTALLED
+;REM *******************************************
+;10000 GOSUB 10030: IF R=1 THEN PRINT "EXTENSIONS ALREADY INSTALLED.": RETURN
+;10010 PRINT "LOADING EXTENSIONS..."
+;10020 PRINT  CHR$ (4);"BRUN /FUJI.APPLE/FUJIAPPLE":RETURN
+;
 ;10030 X = PEEK(1014)+PEEK(1015)*256
 ;10040 X = X - 1
-;10050 C = PEEK(X): IF C = 0 OR C > 20 THEN 10080
-;10060 X = X - C - 1
-;10070 A$=""
-;10080 FOR Y = 1 TO C: A$=A$+CHR$(PEEK(X)):X=X+1:NEXT Y
-;10090 B$ = "FUJIAMP"
-;10100 PRINT A$;"--";B$;"?";
-;10130 IF A$=B$ THEN R=1: PRINT "YES":GOTO 10150
-;10140 R=0:PRINT "NO"
+;10050 C = PEEK(X)
+;10060 IF C = 0 OR C > 20 THEN 10140
+;10070 X = X - C
+;10080 A$=""
+;10090 FOR Y = 1 TO C: A$=A$+CHR$(PEEK(X)):X=X+1:NEXT Y
+;10100 B$ = "FUJIAMP"
+;10130 IF A$=B$ THEN R=1: GOTO 10150
+;10140 R=0
 ;10150 RETURN
 
 ;****************************************
@@ -662,6 +676,15 @@ relocate017:    .WORD   NACCEPT-1
                 .BYTE   "N", TOK_INPUT, 0       ; NINPUT
 relocate018:    .WORD   NINPUT-1
 
+                .BYTE   "N", TOK_PRINT, 0       ; NPRINT
+relocate019:    .WORD   NPRINT-1
+
+                .ASCIIZ "NTIME"                 ; NTIME
+relocate023:    .WORD   NTIME-1
+
+                .ASCIIZ "NSETEOL"               ; NSETEOL
+relocate024:    .WORD   NSETEOL-1
+
 .IF .NOT STRIP_TRACE
                 .BYTE   "N", TOK_TRACE, 0       ; NTRACE
 trace053:       .WORD   NTRACE-1
@@ -690,12 +713,9 @@ BASIC_UNIT:     .BYTE   0       ; BASIC UNIT 0-4 NOT FUJINET UNIT
 MODE:           .BYTE   4       ; 4=READ ONLY, 6=READ DIRECTORY, 8= WRITE ONLY, 12=READ/WRITE, 13= HTTP POST
 TRANSLATION:    .BYTE   0       ; 0 = NO TRANSLATION, 1=CR to ATASCII EOL, 2=LF to ATASCII EOL, 3=CR/LF to ATASCII EOL
 URL_LEN:        .BYTE   45
-URL:            
-.IF .NOT STRIP_TRACE
-                .ASCIIZ "N:HTTPS://www.gnu.org/licenses/gpl-3.0.txt"
-.ENDIF
-                .RES    255       
-relocate019:
+URL:            .RES    255 
+
+relocate020:
 URL_ADDR:       .WORD   URL
 COMMAND:        .BYTE   0       ; FUJINET COMMAND
 BASIC_PAYLOAD:  .RES    255     ; PAYLOAD TO SEND
@@ -703,20 +723,34 @@ BW:             .WORD   0       ; BYTES WAITING
 CONNECT:        .BYTE   0       ; 1=CONNECTED
 BUFLEN:         .BYTE   0
 BUF:            .RES    255     ; GENERIC BUFFER FOR READ/WRITE
-relocate020:
+
+relocate021:
 BUF_ADDR:       .WORD   BUF
 STRADDR:        .WORD   0
 STRLEN:         .BYTE   0
 STRBUF:         .RES    255
-relocate021:
+
+relocate022:
 STRBUF_ADDR:    .WORD   STRBUF
-NETWORK_CACHE:  .BYTE   FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK
-OPEN_LIST:      .BYTE   FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK, FN_NO_NETWORK      ; BASIC UNIT INDEX TO ACTUAL UNIT
+FN_CLOCK_CACHE: .BYTE   FN_ERR_NO_DEVICE
+NETWORK_CACHE:  .BYTE   FN_ERR_NO_DEVICE, FN_ERR_NO_DEVICE, FN_ERR_NO_DEVICE, FN_ERR_NO_DEVICE
+OPEN_LIST:      .BYTE   FN_ERR_NO_DEVICE, FN_ERR_NO_DEVICE, FN_ERR_NO_DEVICE, FN_ERR_NO_DEVICE      ; BASIC UNIT INDEX TO ACTUAL UNIT
 NERR:           .BYTE   FN_ERR, FN_ERR, FN_ERR, FN_ERR                                  ; LAST ERROR
 
 STR_DSC_LEN:    .BYTE   0
 STR_DSC_LO:     .BYTE   0
 STR_DSC_HI:     .BYTE   0
+
+CENTURY:        .BYTE   0
+YEAR:           .BYTE   0
+MONTH:          .BYTE   0
+DAY:            .BYTE   0
+HOUR:           .BYTE   0
+MINUTE:         .BYTE   0
+SECOND:         .BYTE   0
+
+EOL:            .BYTE   $0D
+
 
 .include "STRINGS.S"
 .include "REGS_DATA.S"

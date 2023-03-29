@@ -2,6 +2,10 @@
 
 SPACE                   =   $A0         ; SPACE CHARACTER FOR COUT
 COLON                   =   ':'+$80     ; COLON CHARACTER FOR COUT
+POUND                   =   '#'+$80     ; HASH SIGN FOR COUT
+SEMICOLON               =   ';'         ; ASCII SEMICOLON CHARACTER
+CR                      =   $0D         ; ASCII CARRIAGE RETURN
+QUOTE                   =   '"'         ; ASCII QUOTE CHARACTER
 
 FRESPC                  =   $71         ; Applesoft pointer at the string storage area, used when a new string is created.
 AMPVECT                 =   $03F5       ; AMPERSAND VECTOR FOR APPLESOFT
@@ -35,15 +39,22 @@ HIMEM                   =   $73         ; APPLESOFT HIMEM
 LOMEM                   =   $4A         ; INTEGER BASIC LOMEM
 KYBD                    =   $C000       ; KEYBOARD LOCATION
 STROBE                  =   $C010       ; 
+CURLIN                  =   $75         ; CURRENT APPLESOFT LINE NUMBER
+LINPRT                  =   $ED24       ; PRINT A X AS A DECIMAL NUMBER
+SETINV                  =   $FE80       ; SET INVERSE MODE
+SETNORM                 =   $FE84       ; SET NORMAL
+
+
 
 TOK_READ                =       135     ; APPLESOFT TOKEN FOR READ
 TOK_AT                  =       197     ; APPLESOFT TOKEN FOR AT
 TOK_END                 =       128     ; APPLESOFT TOKEN FOR END
-QUOTE                   =       $22     ; ASCII QUOTE CHARACTER
 TOK_LIST                =       188     ; APPLESOFT TOKEN FOR LIST                          
 TOK_TRACE               =       155     ; APPLESOFT TOKEN FOR TRACE       
 TOK_NOTRACE             =       156     ; APPLESOFT TOKEN FOR NOTRACE
 TOK_INPUT               =       132     ; APPLESOFT TOKEN FOR INPUT  
+TOK_PRINT               =       186     ; APPLESOFT TOKEN FOR PRINT
+
 
 
 NEXT_WITHOUT_FOR        =   0

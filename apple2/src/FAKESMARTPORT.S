@@ -3,7 +3,7 @@ FN_STATUS_FLAG_NOT_CONNECTED    = %11111101
 
 .IF .NOT USE_SP
 
-NUMBER_OF_FAKE_UNITS = 4
+NUMBER_OF_FAKE_UNITS = 11
 
 ;*******************************
 ; FIND_SMARTPORT_SLOT
@@ -59,6 +59,9 @@ GET_SMARTPORT_DISPATCH_ADDRESS:
 
 ; THIS IS JUST FOR TESTING WITH AN EMULATOR
 
+
+
+
 ;******************************************************************
 ; FAKE_DISPATCHER
 ;   Simulates dispatcher calls so we can test in an emulator
@@ -93,6 +96,7 @@ SRC_STR                 = ZP4
 SRC_STR_LO              = ZP4_LO
 SRC_STR_HI              = ZP4_HI
 
+UNIT_FN_CLOCK = 9
 
 FAKE_DISPATCHER:
                 LDX #$00
@@ -151,9 +155,16 @@ SAVE_ZP:
                 LDA (ZCMD_LIST),Y               ; NWD CONFIRMED CORRECT
                 STA ZPAYLOAD_HI                 ; WHERE TO STORE RESULT
 
+.IF EXT3_TRACE
+    LDA REQUESTED_UNIT
+    LDX REQUESTED_CMD
+    JSR PRTAX
+    JSR CROUT
+.ENDIF
+
                 LDA REQUESTED_CMD
                 CMP #SP_CMD_STATUS
-                BNE CHECK_READ_CMD
+                BNE CHECK_READ_CMD_
 
                 ; ***********************
                 ; SP_CMD_STATUS
@@ -172,7 +183,7 @@ SAVE_ZP:
                 LDY #4
                 LDA (ZCMD_LIST),Y
                 CMP #SP_STATUS_CODE
-                BNE COMPLETE_CMD_            ; DON'T KNOW WHAT TO DO...
+                BNE COMPLETE_CMD_            
 
                 LDY #$00
                 LDA #NUMBER_OF_FAKE_UNITS
@@ -180,40 +191,55 @@ SAVE_ZP:
                 CLC
                 BCC COMPLETE_CMD_
 
+
 NON_SMARTPORT_CTRLR:
 ;               LDA REQUESTED_UNIT
-                CMP #1
-                BNE NETWORK_DEV0
-FUJI_DISK1:                                     ; UNIT 1 - FUJINET DISK 0
+                CMP #5
+                BPL NETWORK_DEV0
+
+;---------------------------------------------------------------------------------
+FUJI_DISK1:                                     ; UNIT 1 - 4 FUJINET DISK 0-3
+                SEC
+                SBC #$01                        ; SUBSTRACT 1 FROM UNIT NUMBER
+                CLC
+                ADC #'0'                        ; CONVERT TO ASCII
+
+                LDX DISK_STR_WITH_NUMBER_INDEX
+                STA FUJI_DISK_0_STR,X
+
                 LDA FUJI_DISK_0_STR_ADDR
                 LDY FUJI_DISK_0_STR_ADDR+1
                 LDX FUJI_DISK_0_STR_LEN
                 CLC
-                BCC COPY_2_PAYLOAD_2
+                BCC COPY_2_PAYLOAD_3
+
+COMPLETE_CMD_:
+                BCC COMPLETE_CMD_4
 
 NETWORK_DEV0:                                   ; UNIT 2 - NETWORK 
 ;               LDA REQUESTED_UNIT
-                CMP #$02
+                CMP #$05
                 BNE NETWORK_1_AND_UP
+;---------------------------------------------------------------------------------
 
                 LDA NETWORK_STR_ADDR
                 LDY NETWORK_STR_ADDR+1
                 LDX NETWORK_STR_LEN
 
                 CLC
-                BCC COPY_2_PAYLOAD_2
+                BCC COPY_2_PAYLOAD_3
 
 NETWORK_1_AND_UP:
-;               LDA REQUESTED_UNIT
-                CMP #$05
-                BPL COMPLETE_CMD_
+;               LDA REQUESTED_UNIT 5,6,7
+                CMP #UNIT_FN_CLOCK
+                BPL FN_CLOCK_
 
-                TAX
-                DEX                             ; UNIT 3/4 = NETWORK_1/2
-                DEX
-                TXA
+;---------------------------------------------------------------------------------
+                SEC 
+                SBC #$05    ; SUBTRACT 6 FROM THE UNIT REQUESTED
                 CLC
-                ADC #'0'
+                ADC #'0'    ; CONVERT TO ASCII
+
                 LDX NETWORK_STR_WITH_NUMBER_INDEX
                 STA NETWORK_STR_WITH_NUMBER,X
 
@@ -221,12 +247,66 @@ NETWORK_1_AND_UP:
                 LDY NETWORK_STR_WITH_NUMBER_ADDR+1
                 LDX NETWORK_STR_WITH_NUMBER_LEN
                 CLC
+COPY_2_PAYLOAD_3:
                 BCC COPY_2_PAYLOAD_2
+CHECK_READ_CMD_:
+                BCC CHECK_READ_CMD
+FN_CLOCK_:
+                CMP #UNIT_FN_CLOCK
+                BNE FN_CPM
+
+;---------------------------------------------------------------------------------
+                LDY #4
+                LDA (ZCMD_LIST),Y
+                CMP #'T'
+                BNE CLOCK_NAME
+REQUEST_TIME:
+                LDY #$00                ; SET THE CLOCK TO 1/2/3 4:5.6
+SET_CLOCK:
+                TYA
+                STA (ZPAYLOAD),Y 
+                INY 
+                CPY #7
+                BNE SET_CLOCK
+                CLC
+                BCC COMPLETE_CMD_
+CLOCK_NAME:
+                LDA CLOCK_STR_ADDR
+                LDY CLOCK_STR_ADDR+1
+                LDX CLOCK_STR_LEN
+                CLC
+                BCC COPY_2_PAYLOAD_2
+COMPLETE_CMD_4:
+                BCC COMPLETE_CMD_3
+FN_CPM:
+                CMP #$0A
+                BNE FN_PRINTER
+
+;---------------------------------------------------------------------------------
+                LDA CPM_STR_ADDR
+                LDY CPM_STR_ADDR+1
+                LDX CPM_STR_LEN
+                CLC
+                BCC COPY_2_PAYLOAD_2
+
+FN_PRINTER:
+                CMP #$0B
+                BNE COMPLETE_CMD_3
+
+;---------------------------------------------------------------------------------
+                LDA PRINTER_STR_ADDR
+                LDY PRINTER_STR_ADDR+1
+                LDX PRINTER_STR_LEN
+                CLC
+                BCC COPY_2_PAYLOAD_2
+
 
 CHECK_READ_CMD:
                 LDA REQUESTED_CMD
                 CMP #SP_CMD_READ
                 BNE CHECK_WRITE_CMD
+
+;---------------------------------------------------------------------------------
 
                 ; ***********************
                 ; SP_CMD_READ
@@ -253,15 +333,17 @@ COPY_2_PAYLOAD_2:
                 CLC
                 BCC COPY_2_PAYLOAD
 
-
-COMPLETE_CMD_:
+                CLC
+ COMPLETE_CMD_3:
                 BCC COMPLETE_CMD_2
+
 
 CHECK_WRITE_CMD:
 ;               LDA REQUESTED_CMD
                 CMP #SP_CMD_WRITE
                 BNE CHECK_CONTROL
 
+;---------------------------------------------------------------------------------
                 ; ***********************
                 ; SP_CMD_WRITE
                 ; ***********************                
@@ -271,6 +353,11 @@ CHECK_WRITE_CMD:
                 ;2-3    data buffer pointer
                 ;4-5    byte count
                 ;6-7    address pointer
+
+.IF EXT3_TRACE
+                JSR DUMP_SP_PAYLOAD
+.ENDIF
+
                 CLC
                 BCC COMPLETE_CMD_2
 
@@ -317,15 +404,15 @@ NO_OPENED_FILES:
 
 NO_OPENED_FILES2:
                 ; TODO: SAVE FLAGS
+COMPLETE_CMD_2:
                 CLC
-                BCC COMPLETE_CMD_2
+                BCC COMPLETE_CMD
 
 
 CTRL_R:
                 CMP #'R'
                 BNE CTRL_W
 
-COMPLETE_CMD_2:
                 CLC
                 BCC COMPLETE_CMD
                 

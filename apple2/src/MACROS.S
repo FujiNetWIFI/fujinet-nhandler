@@ -38,5 +38,21 @@ MACROS=1
         RESTORE_REGS
 .ENDMACRO
 
+.MACRO DISPLAY_TRACE str_addr
+.IF .NOT STRIP_TRACE
+                LDA TRACE_FLAG
+                BEQ @no_trace
+                LDA #POUND
+                JSR COUT
+                LDA CURLIN+1
+                LDX CURLIN
+                JSR LINPRT
+                LDA #SPACE
+                JSR COUT
+                PRINT_STR str_addr 
+@no_trace:
+.ENDIF
+.ENDMACRO
+
 
 .ENDIF

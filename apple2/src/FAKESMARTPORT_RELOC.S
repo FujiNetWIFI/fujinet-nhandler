@@ -1,4 +1,4 @@
-.IF .NOT STRIP_TRACE
+.IF .NOT USE_SP
 
 		.WORD	trace050,trace051,trace052
 

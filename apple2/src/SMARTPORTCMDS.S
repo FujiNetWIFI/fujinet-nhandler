@@ -784,16 +784,6 @@ NO_TRACE15:
                 LDA #$00
                 STA CMD_LIST+5                  ; [5] LENGTH HI
 
-                ; *** Based on Smartport SCSI info below
-                ; *** Not sure if necessary
-                ; *** was not set in the example by Thom Cherryhomes
-
-;                LDA #00
-;                STA CMD_LIST+6                  ; [6] ???? BLOCK ADDRESS OF TARGET BLOCK
-;                LDA #00
-;                STA CMD_LIST+7                  ; [7] ????
-
-                ; ***
                 
                 JSR CALL_DISPATCHER
 
@@ -880,16 +870,6 @@ NO_TRACE40:
                 STA CMD_LIST+6                  ; ADDRESS POINTER LOW
                 STA CMD_LIST+7                  ; ADDRESS POINTER MID
                 STA CMD_LIST+8                  ; ADDRESS POINTER HI
-
-                ; *** Based on Smartport SCSI info below
-                ; *** Not sure if necessary
-                ; *** was not set in the example by Thom Cherryhomes
-                
-;                LDA #0                          ; DATA POINTER
-;                STA CMD_LIST+6                
-;                STA CMD_LIST+7
-
-                ; ***
    
                 JSR CALL_DISPATCHER
 
@@ -1136,6 +1116,13 @@ PRINTI_STOP:
 ;**********************************
 DISPLAY_SP_DEVICES:
 
+                JSR SETINV
+                PRINT_STR DEV_LIST_STR_ADDR
+                JSR SETNORM
+
+                JSR CROUT
+                JSR CROUT
+
                 LDX #$00
                 LDY #SP_CMD_STATUS
                 JSR SP_STATUS
@@ -1145,20 +1132,20 @@ DISPLAY_SP_DEVICES:
                 STX NUM_DEVICES
 
                 LDX #$01
+                STX BCD
 NEXT_DEV:               
                 TXA
                 PHA
 
                 PRINT_STR UNIT_STR_ADDR
 
-                PLA                     ; GET BACK OUR VALUE OF 
-                PHA                     ; X WE STORED ON THE STACK
+                LDA BCD
                 TAX
                 JSR PRTX
                 
                 PRINT_STR NAME_STR_ADDR
 
-                PLA                     ; ONCE AGAIN, GET OUR VALUE OF X
+                PLA                     ; GET BACK OUR VALUE OF X
                 PHA
                 TAX
 
@@ -1170,22 +1157,25 @@ NEXT_DEV:
 
                 JSR CROUT
 
+                LDA BCD                 ; WHEN DISPLAYING DEVICE UNITS
+                SED                     ; USE DECIMAL NOT HEX
+                CLC
+                ADC #$01
+                STA BCD
+                CLD 
+
                 PLA
                 TAX
                 INX
                 CPX NUM_DEVICES
                 BNE NEXT_DEV
+                CLC
                 RTS
 
 DISPLAY_ERROR_OUT:
-                JSR PRTX
-
-                PRINT_STR UNIT_STR_ADDR
 
                 PLA
-                TAX
-                JSR PRTX
-
+                SEC
                 RTS
 
 ;***************************************************************
@@ -1243,6 +1233,7 @@ NO_TRACE19:
                 LDX #$00
                 LDY #SP_CMD_STATUS                      ; ASK FOR SMARTPORT STATUS
                 JSR SP_STATUS
+                
  ;               BCC GOT_DEVICE_COUNT                    ; GOT AN ERROR
  ;               PRINT_STR SP_NO_DCOUNT_STR_ADDR
  ;               SEC

@@ -19,7 +19,7 @@ Boot with a ProDOS disk, have FUJIAPPLE.po in the secondary drive
 
 &NINPUT  - read until carriage return received or 255 characters
 
-BRUN FUJIAPPLE
+BRUN /FUJI.APPLE/FUJIAPPLE
 This will load the ampersand routines, relocate them to HIMEM, save the existing
 ampersand vector address to be called if an ampersand command does not match
 our current list of commands.
