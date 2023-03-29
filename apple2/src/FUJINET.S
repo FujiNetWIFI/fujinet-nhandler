@@ -810,10 +810,9 @@ FN_INPUT:
 
 .ENDIF
 
-                LDA #$FF
+                LDA #$00
                 STA STRLEN
 GET_NEXT_CHAR:
-                INC STRLEN
                 ; X = DEVICE
                 TXA                 ; SAVE THE DEVICE
                 PHA
@@ -827,15 +826,17 @@ INPUT_ERR:
 
 INPUT_OK:
                 PLA
-                TAX                 ; RESTORE THE DEVICE
+                TAX                     ; RESTORE THE DEVICE #
                 LDY STRLEN
                 LDA SP_PAYLOAD
-                STA STRLEN,Y
-                CPY #$FF
-                BEQ INPUT_STOP      ; MAX 255 CHARACTERS
+                STA STRBUF,Y
+                CMP EOL                 ; DON'T "SAVE" THE EOL IN THE BUFFER
+                BEQ INPUT_STOP          ; STOP IF WE RECEIVE A EOL
 
-                CMP EOL
-                BNE GET_NEXT_CHAR   ; STOP IF WE RECEIVE A CR
+                INC STRLEN
+                BNE GET_NEXT_CHAR       ; MAX 255 CHARACTERS
+
+
 INPUT_STOP:
                 LDX #FN_OK
                 RTS

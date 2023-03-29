@@ -297,6 +297,17 @@ NO_TRACE37:
                 BNE GETVAR
 
                 JSR GETSTR                      ; GET THE STATIC STRING
+
+                ; WE'RE GOING TO CREATE A NEW DESCRIPTION
+                ; THE SAME WAY APPLESOFT DOES
+
+                LDA STRLEN                      ; GETSTR STORES THE STRING LENGTH HERE
+                STA DSCTMP
+
+                LDA STRBUF_ADDR                 ; THE ADDRESS OF OUR STATIC STRING
+                STA DSCTMP+1
+                LDA STRBUF_ADDR+1
+                STA DSCTMP+2
                 CLC
                 BCC STORE2
 
@@ -381,6 +392,17 @@ NO_TRACE38:
                 BNE GETVAR3
 
                 JSR GETSTR     ; GET THE STATIC STRING
+
+                ; WE'RE GOING TO CREATE A NEW DESCRIPTION
+                ; THE SAME WAY APPLESOFT DOES
+
+                LDA STRLEN                      ; GETSTR STORES THE STRING LENGTH HERE
+                STA DSCTMP
+
+                LDA STRBUF_ADDR                 ; THE ADDRESS OF OUR STATIC STRING
+                STA DSCTMP+1
+                LDA STRBUF_ADDR+1
+                STA DSCTMP+2
                 CLC
                 BCC STORE3
 
@@ -744,6 +766,18 @@ NO_TRACE51:
                 BNE GETVAR2
 
                 JSR GETSTR                      ; GET THE STATIC STRING
+
+                ; WE'RE GOING TO CREATE A NEW DESCRIPTION
+                ; THE SAME WAY APPLESOFT DOES
+
+                LDA STRLEN                      ; GETSTR STORES THE STRING LENGTH HERE
+                STA STR_DSC_LEN
+
+                LDA STRBUF_ADDR                 ; THE ADDRESS OF OUR STATIC STRING
+                STA STR_DSC_LO
+                LDA STRBUF_ADDR+1
+                STA STR_DSC_HI
+
                 CLC
                 BCC STORE4
 
@@ -771,6 +805,7 @@ STORE4:
                 LDA STR_DSC_HI
                 STA DSCTMP,Y
 
+STORE2BUF:
                 LDY BUFLEN
 COPYBUF2:
                 LDA (DSCTMP+1),Y
@@ -797,11 +832,10 @@ UNIT_OK7:
 
 ADD_EOL:
                 LDX BUFLEN          ; Add an EOL character to the end of the buffer
-                INX
-                STX BUFLEN
                 LDA EOL
                 STA BUF,X
-          
+                INX
+                STX BUFLEN          
 SEND_BUF:
                 LDX BASIC_UNIT
                 LDA OPEN_LIST,X
