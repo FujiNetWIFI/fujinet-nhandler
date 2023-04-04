@@ -4,8 +4,7 @@
 ; THESE STRINGS ARE USED DURING INITIALIZATION AND
 ; WON'T BE USED AFTERWARDS SO DON'T NEED TO BE RELOCATED
 
-EXTADDED_STR:                               .BYTE   "FUJINET EXTENSIONS ADDED.", $0D, $00
-SP_NOT_FOUND_STR:                           .BYTE   "NO SMARTPORT! EXTENSIONS NOT LOADED", $0D, $00
+SP_NOT_FOUND_STR:                           .BYTE   $0D,"NO SMARTPORT! EXTENSIONS NOT LOADED", $0D, $00
 EXITING_STR:                                .BYTE   "EXITING...", $0D, $00
 HIMEM_IS_STR:                               .ASCIIZ "OLD HIMEM: "
 RELOC_SIZE_STR:                             .ASCIIZ "RELOCATION SIZE: "
