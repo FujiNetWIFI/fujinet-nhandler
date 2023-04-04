@@ -41,15 +41,18 @@ dist: $(TARGET_EXEC)
 	cp dist/FUJIAPPLE_clean.dsk dist/FUJIAPPLE.dsk
 	java -jar dist/ac.jar -p dist/FUJIAPPLE.po  FUJIAPPLE bin 0x4000 <FUJIAPPLE
 	java -jar dist/ac.jar -p dist/FUJIAPPLE.dsk FUJIAPPLE bin 0x4000 <FUJIAPPLE
+	dist/dsk2woz dist/FUJIAPPLE.dsk dist/FUJIAPPLE.woz
 
 
-tnfs: dist/FUJIAPPLE.po
+tnfs: dist/FUJIAPPLE.po dist/FUJIAPPLE.woz
 ifneq ('$(TNFS_SERVER)','')
 
 ifneq ('$(OS)','')
     cp dist/FUJIAPPLE.po //$(TNFS_SERVER)/$(TNFS_SHARE)
+	cp dist/FUJIAPPLE.woz //$(TNFS_SERVER)/$(TNFS_SHARE)
 else
 	cp dist/FUJIAPPLE.po /run/user/1000/gvfs/smb-share:server=$(TNFS_SERVER),share=$(TNFS_SHARE)
+	cp dist/FUJIAPPLE.woz /run/user/1000/gvfs/smb-share:server=$(TNFS_SERVER),share=$(TNFS_SHARE)
 endif
 
 else
