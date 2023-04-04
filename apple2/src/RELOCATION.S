@@ -410,8 +410,7 @@ TABLE_EXHAUSTED:
         STA SRC_SIZE_HI
         
         JSR MOVE_TO_TARGET
-
-    	RTS
+        RTS
 
 ; IF WE'RE HERE, WE'VE GOT AN ILLEGAL INSTRUCTION
 ; AND PROBABLY MIXED YOUR DATA WITH YOUR CODE
@@ -429,7 +428,7 @@ ILLEGAL_INSTRUCTION:
         BRK
 
 ;====================================
-; MOVE_TO_TARGET
+; MOVE_DOWN_TO_TARGET
 ;   Generic routine for moving memory
 ; SRC_ADDR - address to take data from
 ; TGT_ADDR - where you want to put data
@@ -441,7 +440,7 @@ ILLEGAL_INSTRUCTION:
 ;
 ; Generic routine for moving memory
 ; The size of the block is in
-; COPY_SIZE
+; SRC_SIZE_HI
 ; The Source is in SRC_ADDR
 ; The Target is in TGT_ADDR
 	
@@ -454,12 +453,12 @@ MOVE1:	LDA (SRC_ADDR),Y ; move a page at a time
         STA (TGT_ADDR),Y
         INY
         BNE MOVE1
-        INC SRC_ADDR+1
-        INC TGT_ADDR+1
+        INC SRC_ADDR_HI
+        INC TGT_ADDR_HI
         DEX
         BNE MOVE1
 MOVE2:	LDX SRC_SIZE_LO
-	    BEQ MOVE_COMPLETED
+	BEQ MOVE_COMPLETED
 MOVE3:	LDA (SRC_ADDR),Y ; move the remaining bytes
         STA (TGT_ADDR),Y
         INY
@@ -467,7 +466,56 @@ MOVE3:	LDA (SRC_ADDR),Y ; move the remaining bytes
         BNE MOVE3
 
 MOVE_COMPLETED:
-	    RTS
+	RTS
+
+;====================================
+; MOVE_UP_TO_TARGET
+;   Generic routine for moving memory
+; SRC_ADDR - address to take data from
+; TGT_ADDR - where you want to put data
+; SRC_SIZE - size in bytes of the block
+;
+; REGISTERS AFFECTED
+;   ALL
+;====================================
+;
+; Generic routine for moving memory
+; The size of the block is in
+; SRC_SIZE_HI
+; The Source is in SRC_ADDR
+; The Target is in TGT_ADDR
+MOVE_UP_TO_TARGET:	
+ 
+        LDY #$FF
+        LDX SRC_SIZE_HI
+        BEQ MU3
+
+MU1:    DEC SRC_ADDR_HI
+        DEC TGT_ADDR_HI
+
+MU2:    LDA (SRC_ADDR),Y ; move a page at a time
+        STA (TGT_ADDR),Y
+        DEY
+        BNE MU2
+
+        LDA (SRC_ADDR),Y ; handle Y = 0 separately
+        STA (TGT_ADDR),Y
+        DEY
+        DEX
+        BNE MU1
+
+MU3:    LDX SRC_SIZE_LO
+        BEQ MU5
+        DEC SRC_ADDR_HI
+        DEC TGT_ADDR_HI
+
+MU4:    LDA (SRC_ADDR),Y ; move the remaining bytes
+        STA (TGT_ADDR),Y
+        DEY
+        DEX
+        BNE MU4
+
+MU5:    RTS
 
 ;====================================
 ; ADJUST_HIMEM
@@ -771,4 +819,4 @@ MOVE_HIGHER:              .BYTE $00
 
 ILLEGAL_INSTRUCTION_STR: .ASCIIZ "RELOCATE ERROR, ILLEGAL INSTRUCTION AT: "
 
-
+RELOCATION_TABLE_FULL:   .ASCIIZ "RELOCATION TABLE FULL!"

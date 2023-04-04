@@ -83,7 +83,6 @@ GOT_LENGTH2:
 ;******************************************************************
 CPY_URL_TO_SP_PAYLOAD:
 
-
                 LDX URL_LEN
                 LDA #$00
                 STA SP_PAYLOAD+4,X  ; NULL TERMINATE STRING
@@ -143,6 +142,18 @@ KEEP_CALM:
 CPY_DONE2:
                 RTS
 
+;******************************************************************
+; CPY_BUF_TO_SP_PAYLOAD
+; Copies 'X' bytes to the Smartport buffer 
+;
+; INPUT
+;  BUF = source of the data
+;  X = bytes to copy
+;  A = high address
+;  Y = low address
+; RETURNS
+;
+;******************************************************************
 CPY_BUF_TO_WRITE_SP_PAYLOAD:
                 
                 STX ZP2
@@ -163,6 +174,70 @@ KEEP_CALM3:
 
 CPY_DONE3:
                 RTS
+
+;******************************************************************
+; CPY_BUF_TO_QUERY_SP_PAYLOAD
+; Copies 'X' bytes to the Smartport buffer+2
+; Set the initial 2 bytes of the buffer with the length of
+; the data; as $X $0 ; thus a maximum of 255 bytes of data
+;
+; INPUT
+;  BUF = source of the data
+;  X = bytes to copy
+;  A = high address
+;  Y = low address
+; RETURNS
+;
+;******************************************************************
+CPY_BUF_TO_QUERY_SP_PAYLOAD:
+                
+                JSR WIPE_PAYLOAD
+                STX ZP2
+                STA ZP1_LO
+                STY ZP1_HI
+                
+                STX SP_PAYLOAD      ; LOW BYTE OF LENGTH OF BUFFER
+                LDX #$00
+                STX SP_PAYLOAD+1    ; HIGH BYTE OF LENGTH OF BUFFER
+                LDY #$00
+KEEP_CALM4:
+                LDA (ZP1),Y
+                STA SP_PAYLOAD+2,X
+                CPX ZP2
+                BEQ CPY_DONE4
+                INY
+                INX
+                CLC
+                BCC KEEP_CALM4
+
+CPY_DONE4:
+                RTS
+
+
+;******************************************************************
+; CPY_SP_PAYLOAD_TO_BUF
+; Copies 'X' bytes from the Smartport buffer into BUF
+
+;
+; INPUT
+;  BUFLEN = number of bytes to transfer
+;
+; RETURNS
+;  BUF = smartport data
+;******************************************************************
+CPY_SP_PAYLOAD_TO_BUF:
+                
+                LDX BUFLEN
+                
+KEEP_CALM5:
+                LDA SP_PAYLOAD,X
+                STA BUF,X
+                DEX
+                BPL KEEP_CALM5
+
+CPY_DONE5:
+                RTS
+
 ;******************************************************************
 ; FN_OPEN
 ; Open the specified UNIT, gets it ready for reading or writing
@@ -201,17 +276,6 @@ NO_TRACE20:
                 BCC CONT2
 OPEN_ERR:
 
-.IF .NOT STRIP_TRACE
-.IF .NOT EXT_TRACE
-                LDA #<OPEN_ERR_STR
-                LDY #>OPEN_ERR_STR
-
-                JSR STROUT
-                LDX FN_LAST_ERR
-                JSR PRTX
-                JSR CROUT
-.ENDIF
-.ENDIF
                 PLA
                 SEC
                 LDX #FN_ERR
@@ -270,9 +334,8 @@ CONT2:
                 LDX TRANSLATION
                 JSR PRINT_X
                 
-                PRINT_STR PAYLOAD_STR_ADDR
-                ;JSR DUMP_SP_PAYLOAD        ; PRINT THE URL
-                JSR CROUT
+                JSR DUMP_SP_PAYLOAD        ; PRINT THE URL
+
 NO_TRACE21:              
                 RESTORE_REGS
 .ENDIF
@@ -289,14 +352,6 @@ NO_TRACE21:
                 BCC OPEN_OK2
 CTRL_ERR:
 
-.IF .NOT STRIP_TRACE
-                LDA #<CTRL_ERR_STR
-                LDY #>CTRL_ERR_STR
-                JSR STROUT
-                LDX FN_LAST_ERR
-                JSR PRTX
-                JSR CROUT
-.ENDIF
                 SEC
                 LDX #FN_ERR
                 LDA FN_LAST_ERR
@@ -336,6 +391,8 @@ OPEN_OK2:
 ; INPUT
 ; X = UNIT DESTINATION
 ; BUFLEN = NUMBER OF BYTES TO READ
+; OUTPUT:
+; SP_PAYLOAD
 ;******************************************************************
 FN_READ:
 
@@ -367,7 +424,7 @@ NO_TRACE22:
 READ_ERR:
 
 .IF .NOT STRIP_TRACE  
-.IF EXT2_TRACE              
+.IF EXT_TRACE              
                 PRINT_STR FN_READ_ERROR_STR_ADDR
                 JSR DUMP_SP_PAYLOAD
 .ENDIF
@@ -437,7 +494,7 @@ WRITE_ERR:
 
                 STA FN_LAST_ERR
 .IF .NOT STRIP_TRACE
-.IF EXT2_TRACE                
+.IF EXT_TRACE                
                 PRINT_STR FN_WRITE_ERROR_STR_ADDR
                 JSR DUMP_SP_PAYLOAD
 .ENDIF
@@ -521,6 +578,7 @@ CLOSE_DONE:
 ; RETURNS
 ; A = number of bytes waiting lo
 ; Y = number of bytes waiting hi
+; X = FN_OK or FN_ERR
 ;******************************************************************
 FN_STATUS:
 
@@ -532,7 +590,7 @@ FN_STATUS:
                 LDA TRACE_FLAG
                 BEQ NO_TRACE24
 
-                PRINT_STR FN_BYTES_WAITING_STR_ADDR
+                PRINT_STR FN_STATUS_STR_ADDR
                 PLA
                 PHA
                 TAX
@@ -544,12 +602,20 @@ NO_TRACE24:
 .ENDIF
 .ENDIF
 
+                LDA #FN_OK
+                STA FN_LAST_ERR
+
                 LDY #'S'
                 JSR SP_STATUS
                 STA FN_LAST_ERR
                 BCC BW_OK
 BW_ERROR:                
                 LDX #FN_ERR
+                BCC BW_OK
+                STA FN_LAST_ERR
+                LDX #FN_ERR
+                BCC BW_OK
+                STA FN_LAST_ERR
                 BCS BW_DONE
 BW_OK:
                 LDA SP_PAYLOAD      ; Bytes Waiting
@@ -560,9 +626,25 @@ BW_OK:
                 LDA SP_PAYLOAD+2 
                 STA CONNECT
 
-                LDX #FN_OK
+.IF EXT_TRACE
+    SAVE_REGS
+    PRINT_STR BYTES_WAITING_STR_ADDR
+    LDA BW+1
+    LDX BW
+    JSR PRTAX
+    PRINT_STR IS_CONNECTED_STR_ADDR
+    LDX CONNECT
+    JSR PRTX
+    JSR CROUT
+    RESTORE_REGS
+.ENDIF
 
 BW_DONE:
+                LDX #FN_OK
+                LDA FN_LAST_ERR
+                BEQ BW_COMPLETE
+                LDX #FN_ERR
+BW_COMPLETE:
                 RTS
         
 ;******************************************************************
@@ -874,6 +956,184 @@ FN_CLOCK:
 NO_CLOCK:
                 RTS
 
-  
+
+;******************************************************************
+; FN_JSON
+;   Set JSON mode
+;
+;******************************************************************
+FN_JSON:
+
+.IF .NOT STRIP_TRACE
+                SAVE_REGS
+                TXA
+                PHA
+                LDA TRACE_FLAG
+                BEQ @skip
+
+                PRINT_STR FN_JSON_STR_ADDR
+                PLA
+                PHA
+                TAX
+                JSR PRTX
+                JSR CROUT
+@skip:     
+                PLA          
+                RESTORE_REGS
+
+.ENDIF
+
+                TXA
+                PHA                         ; SAVE THE CHANNEL
+
+                LDA #FN_OK
+                STA FN_LAST_ERR
+
+                LDA #01 
+                STA SP_PAYLOAD      ; PAYLOAD LENGTH = 1
+                LDA #$00
+                STA SP_PAYLOAD+1
+
+                STY SP_PAYLOAD+2    ; SET TO JSON MODE = Y
+
+                PLA                 ; GET BACK OUR UNIT
+                PHA
+                TAX
+
+                LDY #$FC            
+                JSR SP_CONTROL
+                BCC JSON_OK1
+
+                STA FN_LAST_ERR
+                BCS JSON_DONE
+JSON_OK1:
+                PLA                 ; GET BACK OUR UNIT
+                TAX
+
+                LDY #'P'
+                JSR SP_CONTROL
+                BCC JSON_DONE
+
+                STA FN_LAST_ERR
+
+JSON_DONE:
+                LDX #FN_OK
+                LDA FN_LAST_ERR
+                BEQ JSON_COMPLETE
+                LDX #FN_ERR
+JSON_COMPLETE:
+                RTS
+
+;******************************************************************
+; FN_QUERY
+;   Set JSON mode
+;
+;******************************************************************
+FN_QUERY:
+
+.IF .NOT STRIP_TRACE
+                SAVE_REGS
+                TXA
+                PHA
+                LDA TRACE_FLAG
+                BEQ @skip
+
+                PRINT_STR FN_QUERY_STR_ADDR
+                PLA
+                PHA
+                TAX
+                JSR PRTX
+                JSR CROUT
+@skip:     
+                PLA          
+                RESTORE_REGS
+.ENDIF
+
+                TXA                     ; SAVE OUR CHANNEL
+                PHA
+
+                LDA #FN_OK
+                STA FN_LAST_ERR
+
+                ; FORMAT IS SP[0] = LEN
+                ;           SP[1] = LEN+1
+                ;           SP[2]... ITEM TO QUERY WITHOUT NULL
+
+                LDX BUFLEN
+                LDA BUF_ADDR 
+                LDY BUF_ADDR+1
+                JSR CPY_BUF_TO_QUERY_SP_PAYLOAD
+
+                PLA                     ; GET BACK OUR CHANNEL
+                PHA
+                TAX
+
+                ; X = DEVICE
+                LDY #'Q'              ; MAX PAYLOAD IS 255    
+                JSR SP_CONTROL
+                BCC QUERY_OK1
+
+                STA FN_LAST_ERR 
+                BNE QUERY_DONE               
+QUERY_OK1:
+                LDY #3
+                STY ZP5
+TRY_AGAIN:
+                PLA
+                PHA
+                TAX
+
+                JSR FN_STATUS
+                CPX #FN_OK
+                BEQ QUERY_OK2
+
+                STA FN_LAST_ERR 
+                BNE QUERY_DONE   
+
+QUERY_OK2:
+
+                LDA BW
+                ORA BW+1
+                BNE QUERY_CONTINUE
+
+                DEC ZP5
+                BNE TRY_AGAIN
+
+                LDA #FN_ERR_TIMED_OUT
+                STA FN_LAST_ERR
+                BNE QUERY_DONE
+
+QUERY_CONTINUE:
+
+                LDA BW
+                STA BUFLEN
+
+                PLA
+                PHA
+                TAX
+
+                JSR FN_READ
+                CPX #FN_OK
+                BEQ QUERY_OK3
+
+                STA FN_LAST_ERR
+                BNE QUERY_DONE
+QUERY_OK3: 
+      
+                JSR CPY_SP_PAYLOAD_TO_BUF
+
+QUERY_DONE:
+
+                PLA
+
+                LDX #FN_OK
+                LDA FN_LAST_ERR
+                BEQ QUERY_COMPLETE
+              
+                LDX #FN_ERR
+QUERY_COMPLETE:
+
+                RTS
+
 
 

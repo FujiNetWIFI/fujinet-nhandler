@@ -1,8 +1,9 @@
+NEW
 
 10 GOSUB 10000
 20 &NTIME YR,MO,DY,HR,MN,S
-30 PRINT "FUJI TIME:";Y;" ";MO;" ";D;"  ";
-40 PRINT H;":";M;".";S
+30 PRINT "FUJI DATE:";Y;" ";MO;" ";D;"  ";
+40 PRINT "FUJI TIME:";H;":";M;".";S
 50 END
 
 

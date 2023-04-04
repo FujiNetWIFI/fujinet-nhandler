@@ -26,8 +26,11 @@ INTERFACEVER:           .WORD   $FFFF           ; INTERFACE VERSION
                         .WORD   $0000           ; RESERVED (MUST BE $0000)
                         .RES    512             ; RESERVED FOR DATA
 
+PAYLOAD_SIZE = FIND_DEVICE_BUF_LEN - SP_PAYLOAD
+
 FIND_DEVICE_BUF_LEN:    .BYTE 0
 FIND_DEVICE_BUF:        .RES  255
+
 relocatesp03:
 FIND_DEVICE_BUF_ADDR:   .WORD FIND_DEVICE_BUF
 SMARTPORT_ID:           .BYTE $20, $00, $03, $00 
