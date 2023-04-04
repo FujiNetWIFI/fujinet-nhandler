@@ -17,9 +17,9 @@
 ;************************************************************************
 NOPEN:
 
-                DISPLAY_TRACE NOPEN_STR_ADDR    ; #<LINNUM> NOPEN
+                DISPLAY_TRACE NOPEN_STR_ADDR            ; #<LINNUM> NOPEN
 
-                JSR GETBYT                      ; GET THE BASIC UNIT
+                JSR GETBYT                              ; &NOPEN [UNIT],MODE,TRANS,URL$
                 STX BASIC_UNIT        
 
 .IF .NOT STRIP_TRACE
@@ -31,15 +31,15 @@ NOPEN:
                 RESTORE_REGS
 NO_TRACE32:
 .ENDIF
-                CPX #$04                        ; BASIC UNIT HAS TO BE BETWEEN 0-3
-                BMI UNIT_OK1                    ; OUT OF RANGE?
+                CPX #$04                                ; BASIC UNIT HAS TO BE BETWEEN 0-3
+                BMI UNIT_OK1                            ; OUT OF RANGE?
 
-                LDX #ILLEGAL_QUANTITY_ERROR     ; MUST BE BETWEEN 0 AND 3
+                LDX #ILLEGAL_QUANTITY_ERROR             ; MUST BE BETWEEN 0 AND 3
                 JMP APPLESOFT_ERROR
                
 UNIT_OK1:
                 LDX BASIC_UNIT
-                CPX #FN_ERR                     ; NETWORK WAS NOT FOUND!
+                CPX #FN_ERR                             ; NETWORK WAS NOT FOUND!
                 BNE NOPEN_NETWORK_FOUND
 
 NO_NETWORK_ERROR:
@@ -54,32 +54,32 @@ NOPEN_NETWORK_FOUND:
 
                 ; NETWORK_CACHE: WW XX YY ZZ - WHERE EACH BYTE IS THE ACTUAL UNIT NUMBER
 
-                LDX BASIC_UNIT                  ; LOAD THE "BASIC" UNIT NUMBER
+                LDX BASIC_UNIT                          ; LOAD THE "BASIC" UNIT NUMBER
                 LDA NETWORK_CACHE,X
-                STA OPEN_LIST, X                ; STORE THE ACTUAL UNIT NUMBER FOR LATER USE
+                STA OPEN_LIST, X                        ; STORE THE ACTUAL UNIT NUMBER FOR LATER USE
 
-                JSR CHKCOM
-                JSR GETBYT                      ; GET MODE
-                STX MODE
+                JSR CHKCOM                              ; &NOPEN UNIT[,]MODE,TRANS,URL$
+                JSR GETBYT                              ; GET MODE
+                STX MODE                                ; &NOPEN UNIT,[MODE],TRANS,URL$
 
-                JSR CHKCOM
-                JSR GETBYT                      ; GET TRANS
-                STX TRANSLATION
+                JSR CHKCOM                              ; &NOPEN UNIT,MODE[,]TRANS,URL$
+                JSR GETBYT                              ; GET TRANS
+                STX TRANSLATION                         ; &NOPEN UNIT,MODE,[TRANS],URL$
 
-                JSR CHKCOM
-                JSR CHRGOT                      ; WHAT ARE WE POINTING AT IN BASIC
-                CMP #QUOTE                      ; IS IT A STATIC STRING?
+                JSR CHKCOM                              ; &NOPEN UNIT,MODE,TRANS[,]URL$
+                JSR CHRGOT                              ; WHAT ARE WE POINTING AT IN BASIC
+                CMP #QUOTE                              ; IS IT A STATIC STRING?
                 BNE VARSTR
 
-                JSR GETSTR                      ; GETS THE STATIC STRING, STORED IN STRBUF
+                JSR GETSTR                              ; &NOPEN UNIT,MODE,TRANS,["string"]
 
 ; WE'RE GOING TO CREATE A NEW DESCRIPTION
 ; THE SAME WAY APPLESOFT DOES
 
-                LDA STRLEN                      ; GETSTR STORES THE STRING LENGTH HERE
+                LDA STRLEN                              ; GETSTR STORES THE STRING LENGTH HERE
                 STA DSCTMP
 
-                LDA STRBUF_ADDR                 ; THE ADDRESS OF OUR STATIC STRING
+                LDA STRBUF_ADDR                         ; THE ADDRESS OF OUR STATIC STRING
                 STA DSCTMP+1
                 LDA STRBUF_ADDR+1
                 STA DSCTMP+2
@@ -88,42 +88,43 @@ NOPEN_NETWORK_FOUND:
                 BCC STORE
 
 VARSTR:
-                JSR GETSTRVAR                   ; IT'S A STRING VARIABLE
+                JSR GETSTRVAR                           ; &NOPEN UNIT,MODE,TRANS,[URL$]
 STORE:
-                LDY DSCTMP                      ; GET THE STRING LENGTH
-                STY URL_LEN                     ; INCLUDE NULL AT END OF LENGTH
-                DEY
+                LDY DSCTMP                              ; GET THE STRING LENGTH
+                STY URL_LEN                             
 STORING:
-                LDA (DSCTMP+1),Y                ; TRANSER THE STRING TO THE URL BUFFER
+                LDA (DSCTMP+1),Y                        ; TRANSER THE STRING TO THE URL BUFFER
                 STA URL,Y
                 DEY
                 BPL STORING
 
-                ; MAKE THE STRING C COMPATIBLE
-
-                LDY URL_LEN
-                LDA #0                          ; NULL TERMINATE THE STRING
+                LDY URL_LEN                             ; C STYLE STRING
+                LDA #$00
                 STA URL,Y
+                INC URL_LEN
 
-                INY                             ; INCLUDE THE NULL TERMINATOR TO THE LENGTH
-                STY URL_LEN
-
-                LDX BASIC_UNIT                  ; BASIC UNIT 0-4
-                LDA OPEN_LIST,X                   ; FUJINET UNIT
+                LDX BASIC_UNIT                          ; BASIC UNIT 0-4
+                LDA OPEN_LIST,X                         ; FUJINET UNIT
                 TAX
                 JSR FN_OPEN
                 BCC NOPEN_COMPLETE
 
-                LDX BASIC_UNIT                  ; FAILED TO OPEN
-                LDA #FN_ERR_NO_DEVICE              ; INDICATE THE NETWORK IS 
-                STA OPEN_LIST,X                   ; NOT IN USE
+                LDX BASIC_UNIT                          ; FAILED TO OPEN
+                LDA #FN_ERR_NO_DEVICE                   ; INDICATE THE NETWORK IS 
+                STA OPEN_LIST,X                         ; NOT IN USE
                 LDA FN_LAST_ERR
                 STA NERR,X
+                RTS
 
 NOPEN_COMPLETE:
-                LDY #$00
-                STA BW
+
+                LDY #$00                                ; CLEAR BYTES WAITING
                 
+                STA BW
+                STA BW+1
+                LDX BASIC_UNIT
+                LDA #FN_OK
+                STA NERR,X
                 RTS
 
 
@@ -892,4 +893,169 @@ NSETEOL:
                 RTS
 
 
+;************************************************************************
+; &NJSON UNIT, ONOFF
+;   
+;   Set the channel to JSON mode
+;************************************************************************
+
+NJSON:
+                DISPLAY_TRACE NJSON_STR_ADDR  ; #<LINNUM> NSETEOL
+
+                JSR GETBYT                      ; &NJSON [UNIT], ONOFF
+                STX BASIC_UNIT
+
+                LDA OPEN_LIST,X
+                CMP #FN_ERR_NO_DEVICE
+                BNE UNIT_OK8
+
+                PRINT_STR NOT_OPENED_STR_ADDR
+                JMP SYNERR
+UNIT_OK8:
+                JSR CHKCOM                      ; &NJSON UNIT[,]ONOFF
+                JSR GETBYT                      ; &NJSON UNIT,[ONOFF]
+                TXA
+                TAY
+
+                LDX BASIC_UNIT
+                LDA OPEN_LIST,X 
+                TAX     
+
+                JSR FN_JSON
+
+                CPX #FN_ERR
+                BNE NJSON_DONE
+
+                LDX BASIC_UNIT
+                STA NERR,X
+
+NJSON_DONE:
+
+                RTS
+
+
+;************************************************************************
+; &NQUERY UNIT,QUERY$, VALUE$
+;
+;   From the open unit, get the value of query   
+;
+; UNIT = 0-4 BASIC NETWORK (not Fujinet unit number)
+; QUERY$ = The value to query
+; VALUE$ = The data retrieved
+;************************************************************************
+NQUERY:
+                DISPLAY_TRACE NQUERY_STR_ADDR    ; #<LINNUM> NREAD
+
+                JSR   GETBYT                    ; &NQUERY [UNIT],QUERY$, VALUE$
+                STX   BASIC_UNIT
+
+.IF .NOT STRIP_TRACE
+                LDA TRACE_FLAG
+                BEQ NO_TRACE47
+                SAVE_REGS
+                JSR PRTX
+                JSR CROUT
+                RESTORE_REGS
+NO_TRACE47:
+.ENDIF
+
+                LDX BASIC_UNIT                  ; CONVERT THE BASIC_UNIT TO THE FUJINET UNIT
+                LDA OPEN_LIST,X
+                CMP #FN_ERR_NO_DEVICE           ; $FF INDICATES IT WAS NEVER OPENED
+                BNE UNIT_OK9
+
+                LDA #FN_ERR_NO_DEVICE           ; RETURN ERROR THAT WE WERE NEVER CONNECTED
+                STA NERR,X
+                JSR IGNORE_TO_NEXT_BASIC_STATEMENT
+                RTS
+UNIT_OK9:
+
+                JSR CHKCOM                      ; &NQUERY UNIT[,]QUERY$, VALUE$
+
+                JSR GETSTRVAR                   ; &NQUERY UNIT,[QUERY$], VALUE$
+
+                LDA DSCTMP                      ; SAVE THE STRING DESCRIPTOR LOCATION 
+                STA STR_DSC_LEN                 ; FOR LATER
+                LDA DSCTMP+1
+                STA STR_DSC_LO
+                LDA DSCTMP+2
+                STA STR_DSC_HI
+
+                ; TRANSFER QUERY VARIABLE DATA TO BUF
+
+                LDA STR_DSC_LEN
+                STA BUFLEN
+
+                LDY #$00
+                LDA STR_DSC_LEN
+                STA DSCTMP,Y 
+                INY
+                LDA STR_DSC_LO
+                STA DSCTMP,Y  
+                INY
+                LDA STR_DSC_HI
+                STA DSCTMP,Y
+
+                LDY BUFLEN
+                INY
+COPYBUF3:
+                LDA (DSCTMP+1),Y
+                STA BUF,Y
+                DEY
+                BPL COPYBUF3
+
+                LDA #$00
+                LDY BUFLEN
+                STA BUF,Y
+
+                LDX BASIC_UNIT
+                LDA OPEN_LIST,X
+                TAX
+                JSR FN_QUERY                    ; REQUEST THE DATA FROM FUJINET
+
+                CPX #FN_ERR
+                BNE TRANSFER_VALUES2
+
+NQUERY_ERROR:
+                LDX BASIC_UNIT
+                STA NERR,X
+                JSR IGNORE_TO_NEXT_BASIC_STATEMENT
+                RTS
+
+TRANSFER_VALUES2:
+                JSR CHKCOM                      ; &NQUERY UNIT,QUERY$[,]VALUE$
+
+                JSR GETSTRVAR                   ; &NQUERY UNIT,QUERY$,[VALUE$]
+
+                LDA DSCTMP                      ; SAVE THE STRING DESCRIPTOR LOCATION 
+                STA STR_DSC_LEN                 ; FOR LATER
+                LDA DSCTMP+1
+                STA STR_DSC_LO
+                LDA DSCTMP+2
+                STA STR_DSC_HI
+                
+                LDA BUFLEN                      ; THIS IS NUMBER OF CHARACTERS OF THE RESPONSE
+                JSR STRINI                      ; CREATE NEW STRING OF LENGTH A
+
+                LDY #$00
+                LDA DSCTMP                      ; DESCRIPTOR FOR NEW STRING
+                STA (VARPTR),Y                  ; UPDATE THE LENGTH
+                INY
+                LDA DSCTMP+1                    ; UPDATE THE LOCATION OF THE STRING
+                STA (VARPTR),Y 
+                INY
+                LDA DSCTMP+2
+                STA (VARPTR),Y
+
+                ; MOVSTR
+                ; Source must be in Y(HI) and X(LO)
+                ; Destination must be in FRESPC ($71,$72)
+
+                LDA BUFLEN                      ; USE THE APPLESOFT ROUTINES TO
+                LDY SP_PAYLOAD_ADDR+1           ; MOVE THE PAYLOAD INTO THE
+                LDX SP_PAYLOAD_ADDR             ; ACTUAL STRING
+                JSR MOVSTR                      ; COPY BUFFER TO STRING (VAR$)
+
+                
+                RTS
 

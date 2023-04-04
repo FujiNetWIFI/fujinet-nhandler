@@ -1,6 +1,6 @@
 NEW
 
- 10 GOSUB 10000
+ 10 PRINT CHR$(4);"PR#3": HOME: GOSUB 10000
 
  100 PRINT "READ WEB": REM PR#3 = 80-column mode 
  110 F = 0

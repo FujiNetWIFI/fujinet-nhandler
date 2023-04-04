@@ -37,8 +37,10 @@ version: $(TARGET_EXEC)
 	python3 ver_update.py
 
 dist: $(TARGET_EXEC)
-	cp dist/FUJIAPPLE_clean.po dist/FUJIAPPLE.po
-	java -jar dist/ac.jar -p dist/FUJIAPPLE.po FUJIAPPLE bin 0x4000 <FUJIAPPLE
+	cp dist/FUJIAPPLE_clean.po  dist/FUJIAPPLE.po
+	cp dist/FUJIAPPLE_clean.dsk dist/FUJIAPPLE.dsk
+	java -jar dist/ac.jar -p dist/FUJIAPPLE.po  FUJIAPPLE bin 0x4000 <FUJIAPPLE
+	java -jar dist/ac.jar -p dist/FUJIAPPLE.dsk FUJIAPPLE bin 0x4000 <FUJIAPPLE
 
 
 tnfs: dist/FUJIAPPLE.po

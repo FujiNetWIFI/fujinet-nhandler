@@ -42,35 +42,18 @@ STRIP_TRACE= 1  ; Eliminate all tracing code and strings
 TRACE_ON   = 0  ; &NTRACE is on at the very start
 EXT_TRACE  = 0  ; Extended Trace, 1=display SMARTPORT internal debug messages 
 EXT2_TRACE = 0  ; Extended Trace 2, display SP_STATUS and SP_CONTROL
-EXT3_TRACE = 0  ; Extended Trace 3, display commands in the dispatch call
-RELOCATE   = 1  ; 1=relocate himem and put our code there
-PRODOS     = 1  ; 0=add dos 3.3 header
+EXT3_TRACE = 0  ; Extended Trace 3, display commands in the fake dispatch call
+RELOCATE   = 0  ; 1=relocate himem and put our code there
+PRODOS     = 1  ; 0=call doswarm at end of initialization
 APPLEII    = 1  ; always set to one, EQUs will be for apple zero page
 USE_SP     = 1  ; 1=USE ACTUAL SMARTPORT 0=EMULATE SMARTPORT FUNCTIONS
 WIPE_AFTER = 1  ; WIPE ORIGINAL LOCATION AFTER RELOCATING -- FORCES A CRASH
 
 START      = $4000
 
-.IF PRODOS
-
         .ORG START
 
-; NO HEADER FOR PRODOS
-
-.ELSE
-
-; WE SUBRACT 4 TO ALLOW ROOM FOR THE ADDRESS AND LENGTH FIELDS AT THE START OF THE FILE
-
-        .ORG START - 4 
-
-; HEADER FOR BINARY FILES ON DOS 3.3
-
-        .WORD NINIT                             ; Starting address
-        .WORD (ENDOFFILE - STARTOFFILE)         ; Length
-
-.ENDIF
 ; VARIOUS SYSTEM ROUTINES AND LOCATIONS 
-
 
         .include "APPLEEQU.S"
         .include "ZEROPAGE.S"
@@ -81,14 +64,6 @@ START      = $4000
 STARTOFFILE:
 
 NINIT:
-
-.IF .NOT STRIP_TRACE
-.IF TRACE_ON
-                JSR NTRACE
-.ELSE
-                JSR NNOTRACE
-.ENDIF
-.ENDIF
                 JSR FILL_CMD_LIST
 
                 JSR GET_SMARTPORT_DISPATCH_ADDRESS      ; FIND THE ADDRESS
@@ -163,6 +138,14 @@ NEXT_NETWORK_CACHE:
 ; RELOCATE US TO WHERE IT'S SAFE
 
 .IF .NOT STRIP_TRACE
+.IF TRACE_ON
+                JSR NTRACE
+.ELSE
+                JSR NNOTRACE
+.ENDIF
+.ENDIF
+
+.IF .NOT STRIP_TRACE
 .IF EXT_TRACE
                 JSR CROUT               ; CARRIAGE RETURN
                 LDA #<HIMEM_IS_STR          ; "OLD HIMEM:"
@@ -199,6 +182,17 @@ NEXT_NETWORK_CACHE:
 .ENDIF
 .ENDIF
 
+.IF .NOT STRIP_TRACE
+                LDA #<RELOC_SIZE_STR        ; "CODE SIZE:"
+                LDY #>RELOC_SIZE_STR
+                JSR STROUT
+
+                LDX #<(RELOCATE_DATA_END - RELOCATE_CODE_START)
+                LDA #>(RELOCATE_DATA_END - RELOCATE_CODE_START)
+                JSR PRTAX               ; PRINT SIZE
+                JSR CROUT
+.ENDIF
+
 .IF RELOCATE
                 JSR CLEAR_CMD_LIST      ; clear the data so we can relocate code/data together
                 JSR RELOCATE_TO_HIMEM   ; copy the code and data, adjust all absolute addresses
@@ -211,24 +205,7 @@ relocate000:    JSR FILL_CMD_LIST       ; let's fix all the smartport instructio
                 JSR GET_SMARTPORT_DISPATCH_ADDRESS      ; address would have changed during relocation
 .ENDIF
 
-.IF RELOCATE
 
-.IF .NOT STRIP_TRACE
-.IF EXT_TRACE
-                LDA #<RELOC_SIZE_STR        ; "CODE SIZE:"
-                LDY #>RELOC_SIZE_STR
-                JSR STROUT
-
-                LDX #<(RELOCATE_DATA_END - RELOCATE_CODE_START)
-                LDA #>(RELOCATE_DATA_END - RELOCATE_CODE_START)
-                JSR PRTAX               ; PRINT SIZE
-                JSR CROUT
-
-.ENDIF
-.ENDIF
-
-
-.ENDIF
 
 ; SAVE PREVIOUS VECTOR INFO
 
@@ -401,15 +378,6 @@ RMCMD:
 ; JUMP TO THE PREVIOUS VECTOR AND LET IT PROCESS IT
 
 NOMORECMDS:
-
-.IF .NOT STRIP_TRACE
-.IF EXT_TRACE
-
-                PRINT_STR NOT_FOUND_STR_ADDR  ; "COMMAND NOT FOUND"
-                JSR CROUT
-
-.ENDIF
-.ENDIF
 
                 JMP   PREVECT    ; WE DIDN'T FIND OUR COMAND SO GO TO OLD VECTOR
 
@@ -684,6 +652,12 @@ relocate023:    .WORD   NTIME-1
 
                 .ASCIIZ "NSETEOL"               ; NSETEOL
 relocate024:    .WORD   NSETEOL-1
+
+                .BYTE   "NJS", TOK_ON, 0        ; NJSON
+relocate025:    .WORD   NJSON-1
+
+                .ASCIIZ "NQUERY"                ; NQUERY
+relocate026:    .WORD   NQUERY-1
 
 .IF .NOT STRIP_TRACE
                 .BYTE   "N", TOK_TRACE, 0       ; NTRACE

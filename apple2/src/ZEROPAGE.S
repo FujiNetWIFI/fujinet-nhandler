@@ -50,7 +50,7 @@ ZP4             =	$A8
 ZP4_LO		    =	$A8
 ZP4_HI		    =	$A9
 
-ZP5		    =	$AA
+ZP5		        =	$AA
 .ENDIF
 
 

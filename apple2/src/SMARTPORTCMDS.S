@@ -145,13 +145,15 @@ FILL_CMD_LIST:
 WIPE_PAYLOAD:
                 SAVE_REGS
 
-                LDA #$A5
+                LDA #$00
 
-                LDX #$00
+                LDY #>PAYLOAD_SIZE
+                LDX #<PAYLOAD_SIZE
 CLR:                
-                STA SP_PAYLOAD+4,X 
-                INX
-                CPX #16
+                STA SP_PAYLOAD,X 
+                DEX
+                BNE CLR
+                DEY
                 BNE CLR
 
                 RESTORE_REGS
@@ -214,6 +216,8 @@ PPAYLOAD2:
 ; of the payload buffer
 ;**********************************
 
+DUMP_SIZE = 16
+
 DUMP_SP_PAYLOAD_HEX:
                 SAVE_REGS
 
@@ -232,7 +236,7 @@ PPAYLOAD4:
                 TAX
 
                 INX
-                CPX #10
+                CPX #DUMP_SIZE
                 BNE PPAYLOAD4
 
                 RESTORE_REGS
@@ -270,7 +274,7 @@ PRINT_IT:
                 PLA                     ; RESTORE OUR X
                 TAX
                 INX
-                CPX SP_PAYLOAD
+                CPX #DUMP_SIZE
                 BNE PPAYLOAD1
 
                 JSR CROUT
@@ -443,12 +447,14 @@ SLOT_FIND_DONE:
 GET_SMARTPORT_DISPATCH_ADDRESS:
 
 .IF .NOT STRIP_TRACE
+.IF EXT2_TRACE
                 SAVE_REGS
                 LDA TRACE_FLAG
                 BEQ NO_TRACE11
                 PRINT_STR GET_SMARTPORT_DISPATCH_ADDRESS_STR_ADDR
 NO_TRACE11:                
                 RESTORE_REGS
+.ENDIF
 .ENDIF
 
                 JSR FIND_SMARTPORT_SLOT 
@@ -722,11 +728,13 @@ CTRL_ERROR:
 
 .IF EXT_TRACE
                 PHA
+                PHA
                 PRINT_STR SP_ERROR_STR_ADDR
                 PLA
                 TAX
                 JSR PRTX
                 JSR CROUT
+                PLA
                 SEC
 .ENDIF
 
@@ -1195,7 +1203,7 @@ DISPLAY_ERROR_OUT:
 SP_FIND_DEVICE:
 
 .IF .NOT STRIP_TRACE
-.IF EXT_TRACE
+.IF EXT2_TRACE
                 SAVE_REGS
                 LDA TRACE_FLAG
                 BEQ NO_TRACE18
@@ -1221,7 +1229,7 @@ GOT_LENGTH:
                 STX FIND_DEVICE_BUF_LEN                 ; SAVE THE LENGTH INCLUDES NULL
 
 .IF .NOT STRIP_TRACE
-.IF EXT_TRACE
+.IF EXT2_TRACE
                 LDA TRACE_FLAG
                 BEQ NO_TRACE19
                 PRINT_STR FIND_DEVICE_BUF_ADDR          ; DISPLAY THE STRING WE COLLECTED
@@ -1243,14 +1251,7 @@ GOT_DEVICE_COUNT:
                 LDX DCOUNT                              ; THE NUMBER OF DEVICES
                 INX
                 STX NUM_DEVICES
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-                PRINT_STR SP_DCOUNT_STR_ADDR
-                DEX
-                JSR PRTX
-                JSR CROUT
-.ENDIF
-.ENDIF
+
                 LDX #$01                                ; START AT DEVICE #1
 
 NEXT_DEV2: 
@@ -1258,7 +1259,7 @@ NEXT_DEV2:
                 PHA 
 
 .IF .NOT STRIP_TRACE
-.IF EXT_TRACE
+.IF EXT2_TRACE
                 JSR PRTX
                 PLA
                 PHA
@@ -1317,25 +1318,10 @@ ERROR_OUT:
 ERROR_OUT2:
                 ; ERROR STRING HERE
 
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-                PRINT_STR SP_FIND_DEVICE_ERROR_STR_ADDR
-.ENDIF
-.ENDIF
-
-
                 LDX #SP_ERR                               ; ERROR
                 RTS
 
 FOUND_DEVICE:
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-                LDA #'F'
-                JSR COUT
-                JSR CROUT
-.ENDIF
-.ENDIF
-
                 PLA
                 TAX
 

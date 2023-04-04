@@ -34,14 +34,6 @@ trace052:
 TEST_BLOCK_STR_ADDR: .WORD TEST_BLOCK_STR
 .ENDIF
 
-.IF .NOT STRIP_TRACE
-
-; NOT NEEDED IF WE'RE NOT DEBUGGING
-
-OPEN_ERR_STR:                               .ASCIIZ "FN_OPEN: OPEN ERR:"
-CTRL_ERR_STR:                               .ASCIIZ "FN_OPEN: CTRL ERR:"
-
-.ENDIF
 
 ;*******************************************
 ; THESE STRING ARE USED AFTER RELOCATING
@@ -107,6 +99,14 @@ NTIME_STR:                                  .BYTE "NTIME", $0D, $00
 trace057:
 NTIME_STR_ADDR:                             .WORD NTIME_STR
 
+NQUERY_STR:                                 .BYTE "NQUERY", $0D, $00
+trace058:
+NQUERY_STR_ADDR:                            .WORD NQUERY_STR
+
+NJSON_STR:                                  .BYTE "NJSON", $0D, $00
+trace059:
+NJSON_STR_ADDR:                             .WORD NJSON_STR
+
 FIND_SMARTPORT_SLOT_STR:                    .BYTE "FIND_SMARTPORT_SLOT: ", $00
 trace011:
 FIND_SMARTPORT_SLOT_STR_ADDR:               .WORD FIND_SMARTPORT_SLOT_STR
@@ -155,21 +155,17 @@ SP_FIND_DEVICE_STR:                         .BYTE "SP_FIND_DEVICE:",    $00
 trace022:
 SP_FIND_DEVICE_STR_ADDR:                    .WORD SP_FIND_DEVICE_STR
 
-REAL_SMARTPORT_STR:                         .BYTE "REAL SMARTPORT", $0D, $00
-trace023:
-REAL_SMARTPORT_STR_ADDR:                    .WORD REAL_SMARTPORT_STR
-
 FN_FIND_NETWORK_STR:                        .BYTE "FN_FIND_NETWORK"    , $0D, $00
 trace024:
 FN_FIND_NETWORK_STR_ADDR:                   .WORD FN_FIND_NETWORK_STR
 
-FN_BYTES_WAITING_STR:                       .BYTE "FN_BYTES_WAITING:", $00
+BYTES_WAITING_STR:                          .BYTE "BYTES:", $00
 trace025:
-FN_BYTES_WAITING_STR_ADDR:                  .WORD FN_BYTES_WAITING_STR
+BYTES_WAITING_STR_ADDR:                     .WORD BYTES_WAITING_STR
 
-FN_IS_CONNECTED_STR:                        .BYTE "FN_IS_CONNECTED:" , $00
+IS_CONNECTED_STR:                           .BYTE "CONNECTED:" , $00
 trace026:
-FN_IS_CONNECTED_STR_ADDR:                   .WORD FN_IS_CONNECTED_STR
+IS_CONNECTED_STR_ADDR:                      .WORD IS_CONNECTED_STR
 
 FN_OPEN_STR:                                .BYTE "FN_OPEN:"         , $00
 trace027:
@@ -179,9 +175,10 @@ FN_CLOSE_STR:                               .BYTE "FN_CLOSE:"        , $00
 trace028:
 FN_CLOSE_STR_ADDR:                          .WORD FN_CLOSE_STR
 
-CPY_URL_TO_PAYLOAD_STR:                     .BYTE "CPY_URL_TO_PAYLOAD", $0D, $00
-trace029:
-CPY_URL_TO_PAYLOAD_STR_ADDR:                .WORD CPY_URL_TO_PAYLOAD_STR
+
+FN_STATUS_STR:                              .BYTE "FN_STATUS:"        , $00
+trace050:
+FN_STATUS_STR_ADDR:                          .WORD FN_STATUS_STR
 
 URL_STR:                                    .ASCIIZ "URL: "
 trace030:
@@ -207,9 +204,6 @@ CMD_LIST_STR:                               .BYTE $0D, "CMD_LIST: ", $00
 trace035:
 CMD_LIST_STR_ADDR:                          .WORD CMD_LIST_STR
 
-FOUND_DEVICE_STR:                           .BYTE "FOUND DEVICE!", $0D, $00
-trace036:
-FOUND_DEVICE_STR_ADDR:                      .WORD FOUND_DEVICE_STR
 
 CLOSE_ERROR_STR:                            .BYTE "CLOSE ERROR", $00
 trace037:
@@ -243,17 +237,9 @@ NREAD_ERROR_STR:                            .BYTE "NREAD_ERROR", $0D, $00
 trace044:
 NREAD_ERROR_STR_ADDR:                       .WORD NREAD_ERROR_STR
 
-SP_FIND_DEVICE_ERROR_STR:                   .BYTE $0D, "SP_FIND_DEVICE ERROR!", $00
-trace045:
-SP_FIND_DEVICE_ERROR_STR_ADDR:              .WORD SP_FIND_DEVICE_ERROR_STR
-
 SP_NO_DCOUNT_STR:                           .BYTE $0D, "COULD NOT GET DCOUNT", $00
 trace046:
 SP_NO_DCOUNT_STR_ADDR:                      .WORD SP_NO_DCOUNT_STR
-
-SP_DCOUNT_STR:                              .BYTE $0D, "DCOUNT: ", $00
-trace047:
-SP_DCOUNT_STR_ADDR:                         .WORD SP_DCOUNT_STR
 
 FN_INPUT_STR:                               .BYTE "FN_INPUT: ", $00
 trace048:
@@ -262,6 +248,14 @@ FN_INPUT_STR_ADDR:                          .WORD FN_INPUT_STR
 FN_ACCEPT_STR:                              .BYTE "FN_ACCEPT: ", $00
 trace049:
 FN_ACCEPT_STR_ADDR:                         .WORD FN_ACCEPT_STR
+
+FN_QUERY_STR:                               .BYTE "FN_QUERY: ", $00
+trace045:
+FN_QUERY_STR_ADDR:                          .WORD FN_QUERY_STR
+
+FN_JSON_STR:                                .BYTE "FN_JSON: ", $00
+trace060:
+FN_JSON_STR_ADDR:                           .WORD FN_JSON_STR
 .ENDIF
 
 FUJIAPPLE_VER_STR:                          .BYTE "FUJIAPPLE VERSION: YYYYMMDD.HHMM", $0D, $00
@@ -283,10 +277,6 @@ RESTORE_HIMEM_STR_ADDR:                     .WORD RESTORE_HIMEM_STR
 EXTREMOVED_STR:                             .BYTE   $0D, "FUJINET EXTENSIONS REMOVED.", $0D, $00
 str004:
 EXTREMOVED_STR_ADDR:                        .WORD EXTREMOVED_STR
-
-NOTFOUND_STR:                               .BYTE   $0D, "FUJINET COMMAND NOT FOUND -- FORWARDING TO NEXT AMPERSAND ROUTINE", $0D, $00
-str005:
-NOT_FOUND_STR_ADDR:                         .WORD NOTFOUND_STR
 
 DEV_LIST_STR:                               .ASCIIZ " SMARTPORT DEVICE LIST "
 str006:
@@ -315,10 +305,6 @@ COUNT_STR_ADDR:                             .WORD COUNT_STR
 SP_ERROR_STR:                               .ASCIIZ "SMARTPORT ERROR: "
 str012:
 SP_ERROR_STR_ADDR:                          .WORD SP_ERROR_STR
-
-SP_SUCCESS_STR:                             .ASCIIZ "SMARTPORT SUCCESS:  "
-str013:
-SP_SUCCESS_STR_ADDR:                        .WORD SP_SUCCESS_STR
 
 
 .IF .NOT USE_SP

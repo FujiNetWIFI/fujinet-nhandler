@@ -1,3 +1,5 @@
+NEW
+
 REM *************************
 REM DETERMINE IF FUJI EXTENSIONS ARE INSTALLED
 REM *************************
@@ -16,3 +18,4 @@ REM *************************
 10130 IF A$=B$ THEN R=1: GOTO 10150
 10140 R=0
 10150 RETURN
+
