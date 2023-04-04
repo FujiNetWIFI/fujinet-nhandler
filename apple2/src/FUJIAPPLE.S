@@ -43,10 +43,10 @@ TRACE_ON   = 0  ; &NTRACE is on at the very start
 EXT_TRACE  = 0  ; Extended Trace, 1=display SMARTPORT internal debug messages 
 EXT2_TRACE = 0  ; Extended Trace 2, display SP_STATUS and SP_CONTROL
 EXT3_TRACE = 0  ; Extended Trace 3, display commands in the fake dispatch call
-RELOCATE   = 0  ; 1=relocate himem and put our code there
+RELOCATE   = 1  ; 1=relocate himem and put our code there
 PRODOS     = 1  ; 0=call doswarm at end of initialization
 APPLEII    = 1  ; always set to one, EQUs will be for apple zero page
-USE_SP     = 0  ; 1=USE ACTUAL SMARTPORT 0=EMULATE SMARTPORT FUNCTIONS
+USE_SP     = 1  ; 1=USE ACTUAL SMARTPORT 0=EMULATE SMARTPORT FUNCTIONS
 WIPE_AFTER = 1  ; WIPE ORIGINAL LOCATION AFTER RELOCATING -- FORCES A CRASH
 
 START      = $4000
