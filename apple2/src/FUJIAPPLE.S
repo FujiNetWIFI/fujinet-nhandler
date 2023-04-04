@@ -46,7 +46,7 @@ EXT3_TRACE = 0  ; Extended Trace 3, display commands in the fake dispatch call
 RELOCATE   = 0  ; 1=relocate himem and put our code there
 PRODOS     = 1  ; 0=call doswarm at end of initialization
 APPLEII    = 1  ; always set to one, EQUs will be for apple zero page
-USE_SP     = 1  ; 1=USE ACTUAL SMARTPORT 0=EMULATE SMARTPORT FUNCTIONS
+USE_SP     = 0  ; 1=USE ACTUAL SMARTPORT 0=EMULATE SMARTPORT FUNCTIONS
 WIPE_AFTER = 1  ; WIPE ORIGINAL LOCATION AFTER RELOCATING -- FORCES A CRASH
 
 START      = $4000
@@ -92,7 +92,12 @@ NINIT:
 .ENDIF
 
 BYE:
+
+.IF PRODOS
                 RTS
+.ELSE
+                JMP DOSWARM             ; WARM START DOS-NEEDED FOR BRUN
+.ENDIF
 
 
 FOUND_SMARTPORT:
@@ -227,11 +232,6 @@ relocate004:    LDA RELOC_NSTART                        ; SET THE AMPERSAND VECT
 relocate005:    LDA RELOC_NSTART+1
                 STA AMPVECT+2
         
-; ANNOUNCE OUR SUCCESS
-
-                LDA #<EXTADDED_STR                      ; "FUJINET EXTENSION ADDED"
-                LDY #>EXTADDED_STR          
-                JSR STROUT
 
 .IF .NOT USE_SP
                 PRINT_STR FAKE_SMARTPORT_STR_ADDR
