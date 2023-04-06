@@ -44,7 +44,7 @@ EXT_TRACE  = 0  ; Extended Trace, 1=display SMARTPORT internal debug messages
 EXT2_TRACE = 0  ; Extended Trace 2, display SP_STATUS and SP_CONTROL
 EXT3_TRACE = 0  ; Extended Trace 3, display commands in the fake dispatch call
 RELOCATE   = 1  ; 1=relocate himem and put our code there
-PRODOS     = 1  ; 0=call doswarm at end of initialization
+EXIT_WARM  = 0  ; 0=call doswarm at end of initialization
 APPLEII    = 1  ; always set to one, EQUs will be for apple zero page
 USE_SP     = 1  ; 1=USE ACTUAL SMARTPORT 0=EMULATE SMARTPORT FUNCTIONS
 WIPE_AFTER = 1  ; WIPE ORIGINAL LOCATION AFTER RELOCATING -- FORCES A CRASH
@@ -93,10 +93,10 @@ NINIT:
 
 BYE:
 
-.IF PRODOS
+.IF .NOT EXIT_WARM
                 RTS
 .ELSE
-                JMP DOSWARM             ; WARM START DOS-NEEDED FOR BRUN
+                JMP DOSWARM             ; WARM START DOS-NEEDED FOR BRUN ON DOS3.3
 .ENDIF
 
 
@@ -288,20 +288,21 @@ WIPE_IT_GOOD:
 .ENDIF
 .ENDIF
 
-.IF PRODOS
+.IF .NOT EXIT_WARM
                 RTS
 .ELSE
-                JMP DOSWARM             ; WARM START DOS-NEEDED FOR BRUN
+                JMP DOSWARM             ; WARM START DOS-NEEDED FOR BRUN ON DOS3.3
 .ENDIF
 
 RELOCATE_CODE_START:
 
-;REM *******************************************
+;REM *************************
 ;REM DETERMINE IF FUJI EXTENSIONS ARE INSTALLED
-;REM *******************************************
+;REM *************************
 ;10000 GOSUB 10030: IF R=1 THEN PRINT "EXTENSIONS ALREADY INSTALLED.": RETURN
 ;10010 PRINT "LOADING EXTENSIONS..."
-;10020 PRINT  CHR$ (4);"BRUN /FUJI.APPLE/FUJIAPPLE":RETURN
+;
+;10020 PRINT  CHR$ (4);"BLOAD /FUJI.APPLE/FUJIAPPLE":CALL 16384:RETURN
 ;
 ;10030 X = PEEK(1014)+PEEK(1015)*256
 ;10040 X = X - 1
@@ -659,6 +660,9 @@ relocate025:    .WORD   NJSON-1
                 .ASCIIZ "NQUERY"                ; NQUERY
 relocate026:    .WORD   NQUERY-1
 
+                .BYTE   "N", TOK_LET, 0         ; NLET
+relocate027:    .WORD   NLET-1
+
 .IF .NOT STRIP_TRACE
                 .BYTE   "N", TOK_TRACE, 0       ; NTRACE
 trace053:       .WORD   NTRACE-1
@@ -725,6 +729,12 @@ SECOND:         .BYTE   0
 
 EOL:            .BYTE   $0D
 
+HEADER_SIZE:     .BYTE   $00
+START_OF_ARRAY:  .WORD   $0000
+END_OF_ARRAY:    .WORD   $0000
+ARRAY_BYTES_LEFT:.WORD   $0000
+ELEMENT_SIZE:    .BYTE   $00
+ELEMENT:         .BYTE   $00,$00,$00,$00,$000
 
 .include "STRINGS.S"
 .include "REGS_DATA.S"
