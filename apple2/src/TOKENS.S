@@ -448,8 +448,8 @@ NSTATUS:
 
                 DISPLAY_TRACE NSTATUS_STR_ADDR  ; #<LINNUM> NSTATUS
 
-                JSR GETBYT
-                STX BASIC_UNIT       ; STORE THE UNIT NUMBER
+                JSR GETBYT                      ; &NSTATUS [UNIT],BW,CN,NERR
+                STX BASIC_UNIT                  ; STORE THE UNIT NUMBER
 
 .IF .NOT STRIP_TRACE
                 LDA TRACE_FLAG
@@ -460,7 +460,7 @@ NSTATUS:
                 RESTORE_REGS
 NO_TRACE39:
 .ENDIF
-                JSR CHKCOM
+                JSR CHKCOM                      ; &NSTATUS UNIT[,]BW,CN,NERR
 
                 LDX BASIC_UNIT
                 LDA OPEN_LIST,X                
@@ -480,25 +480,25 @@ NO_TRACE39:
 
 INFO:
                 TAX                
-                JSR FN_STATUS           ; THIS SETS BW AND CONNECT              
+                JSR FN_STATUS                   ; THIS SETS BW AND CONNECT              
 
 SAVE_INFO:
                 ; SEND TO BASIC
-                LDA BW+1       ; NUMBER OF BYTES WAITING
-                LDY BW
-                JSR WORDSAV    ; CONVERT TO FLOAT AND STORE IN BW VAR
+                LDA BW+1                        ; NUMBER OF BYTES WAITING
+                LDY BW                          ; &NSTATUS UNIT,[BW],CN,NERR
+                JSR WORDSAV                     ; CONVERT TO FLOAT AND STORE IN BW VAR
 
-                JSR CHKCOM
+                JSR CHKCOM                      ; &NSTATUS UNIT,BW[,]CN,NERR
 
-                LDY CONNECT
-                JSR BYTESAV    ; CONVERT TO FLOAT AND STORE IN CONNECT VAR
+                LDY CONNECT                     ; &NSTATUS UNIT,BW,[CN],NERR
+                JSR BYTESAV                     ; CONVERT TO FLOAT AND STORE IN CONNECT VAR
 
-                JSR CHKCOM
+                JSR CHKCOM                      ; &NSTATUS UNIT,BW,CN[,]NERR
 
-                LDX BASIC_UNIT  ; "BASIC" UNIT, NOT THE ACTUAL UNIT              
-                LDA NERR,X      ; GET THE ERROR FOR THIS BASIC UNIT
+                LDX BASIC_UNIT                  ; "BASIC" UNIT, NOT THE ACTUAL UNIT              
+                LDA NERR,X                      ; GET THE ERROR FOR THIS BASIC UNIT
                 TAY
-                JSR BYTESAV    ; CONVERT TO FLOAT AND STORE IN NERR VAR
+                JSR BYTESAV                     ; &NSTATUS UNIT,BW,CN,[NERR]
                 RTS
 
 ;************************************************************************
@@ -1059,3 +1059,188 @@ TRANSFER_VALUES2:
                 
                 RTS
 
+;************************************************************************
+; &NLET VAR%=VALUE
+;
+;   Sets an array/matrix to a specific value.  VAR cannot be a string   
+;
+; VAR   = array to alter
+; VALUE = value to set each element in the integer array to
+;************************************************************************
+
+ARRAY_HEADER   = ZP2
+ELEMENT_ADDRESS= ZP3
+
+NLET:
+                JSR GETARYPT                    ; &NLET [VAR%],VALUE
+
+                LDA LOWTR
+                STA ARRAY_HEADER
+                LDA LOWTR+1
+                STA ARRAY_HEADER+1
+                ;--------------------------------
+                ;   NOW $9B,9C HAVE ADDRESS OF START OF ARRAY
+                ;   NEED TO MOVE POINTER UP TO FIRST ELEMENT
+                ;
+                ; DIM LO%(47,79)
+                ;   HEADER IS:
+                ; CC CF  L O  - Both with high bit set   = integer array
+                ;             - Both with high bit clear = real array
+                ;             - first high bit clear, second high bit set = string array
+                ; 09 1E  Offset to next array
+                ; 02 00  # of dimensions
+                ; 30 00  48
+                ; 50 00  80
+                ; DATA
+                ;--------------------------------
+                LDY #0
+                LDA (ARRAY_HEADER),Y 
+                INY
+                EOR (ARRAY_HEADER),Y
+                AND #$80        ; IS BITS DIFFERENT THEN STRING ARRAY
+                BEQ NUMERIC_ARRAY
+                JMP SYNERR
+
+NUMERIC_ARRAY:
+                JSR CHKCOM      ; &NLET VAR%[,]VALUE
+                LDY #0
+                LDA (ARRAY_HEADER),Y 
+                INY
+                AND (ARRAY_HEADER),Y
+                AND #$80        ; IS HIGH BITS CLEAR THEN INTEGER ARRAY
+                BEQ FLOAT_ARRAY
+
+ INTEGER_ARRAY:
+                LDA #2
+                STA ELEMENT_SIZE
+
+                JSR FRMNUM      ; &NLET VAR%,[VALUE]
+                JSR GETADR      ; RESULT STORED IN LINNUM
+
+                LDA LINNUM+1
+                STA ELEMENT
+                LDA LINNUM
+                STA ELEMENT+1
+                CLC
+                BCC GET_START_OF_DATA
+
+FLOAT_ARRAY:
+                LDA #5
+                STA ELEMENT_SIZE
+
+                JSR FRMNUM      ; &NLET VAR%,[VALUE]
+                LDY #$00
+@loop:
+                LDA FAC,Y 
+                STA ELEMENT,Y 
+                INY
+                CPY ELEMENT_SIZE
+                BNE @loop
+
+GET_START_OF_DATA:
+
+                ; Z2 POINTS TO HEADER
+                ;
+                ;    CC CF  L O  - Both with high bit set   = integer array
+                ;                 - Both with high bit clear = real array
+                ;                 - first high bit clear, second high bit set = string array
+                ;    09 1E  Offset to next array
+                ;--> 02 00  # of dimensions
+                ;    30 00  48 DIM 1
+                ;    50 00  80 DIM 2
+                ;
+
+                ; calculate how much header to skip
+                ; before we get to data
+
+                LDY #4                      ; POINT AT LSB OF # DIMENSIONS
+                LDA (ARRAY_HEADER),Y
+                ASL                         ; DOUBLE IT (IGNORE MSB, #<120) 
+                ADC #5                      ; POINT AT FIRST ELEMENT
+                STA HEADER_SIZE             ; NUMBER OF BYTES IN HEADER TO SKIP
+
+
+                ;--------------------------------
+                ;      NOW COMPUTE FULL ADDRESS OF FIRST ELEMENT
+                ;--------------------------------
+                CLC
+                LDA HEADER_SIZE             ; SIZE OF HEADER
+                ADC ARRAY_HEADER
+                STA START_OF_ARRAY          ; ARRAY_START_LO
+                LDA ARRAY_HEADER+1
+                ADC #0
+                STA START_OF_ARRAY+1        ; ARRAY_START_HI
+
+
+                ;--------------------------------
+                ;      NOW COMPUTE FULL ADDRESS OF LAST ELEMENT
+                ;--------------------------------
+                LDY #2                      ; POINT AT LSB OF OFFSET TO NEXT ARRAY
+                CLC                         ; COMPUTE ADDRESS JUST PAST END OF THE HEADER
+                LDA ARRAY_HEADER
+                ADC (ARRAY_HEADER),Y
+                STA END_OF_ARRAY
+                INY
+                LDA ARRAY_HEADER+1
+                ADC (ARRAY_HEADER),Y
+                STA END_OF_ARRAY+1           
+
+                ;--------------------------------
+                ; COMPUTE THE NUMBER OF BYTES IN THE ARRAY
+                ;--------------------------------
+
+                SEC
+                LDA END_OF_ARRAY
+                SBC START_OF_ARRAY
+                STA ARRAY_BYTES_LEFT
+
+                LDA END_OF_ARRAY+1
+                SBC START_OF_ARRAY+1
+                STA ARRAY_BYTES_LEFT+1
+
+
+                LDA START_OF_ARRAY
+                STA ELEMENT_ADDRESS
+                LDA START_OF_ARRAY+1
+                STA ELEMENT_ADDRESS+1
+
+@are_we_done:
+                LDA ARRAY_BYTES_LEFT        ; WHEN BOTH ARE ZERO WE ARE DONE
+                ORA ARRAY_BYTES_LEFT+1
+                BEQ WE_ARE_DONE 
+
+
+                LDY #$00
+@loop:
+                ; COPY 1 ELEMENT
+                LDA ELEMENT,Y 
+                STA (ELEMENT_ADDRESS),Y 
+                INY
+                CPY ELEMENT_SIZE
+                BNE @loop
+
+                ; INCREASE THE ADDRESS
+
+                CLC
+                LDA ELEMENT_ADDRESS
+                ADC ELEMENT_SIZE
+                STA ELEMENT_ADDRESS
+                LDA ELEMENT_ADDRESS+1
+                ADC #$00
+                STA ELEMENT_ADDRESS+1
+
+                ; DECREASE THE COUNT
+
+                SEC 
+                LDA ARRAY_BYTES_LEFT
+                SBC ELEMENT_SIZE
+                STA ARRAY_BYTES_LEFT
+                LDA ARRAY_BYTES_LEFT+1
+                SBC #$00
+                STA ARRAY_BYTES_LEFT+1
+                CLC 
+                BCC @are_we_done
+
+                
+WE_ARE_DONE:
+                RTS

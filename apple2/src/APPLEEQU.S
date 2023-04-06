@@ -8,12 +8,14 @@ CR                      =   $0D         ; ASCII CARRIAGE RETURN
 QUOTE                   =   '"'         ; ASCII QUOTE CHARACTER
 
 FRESPC                  =   $71         ; Applesoft pointer at the string storage area, used when a new string is created.
+FAC                     =   $9D         ; FLOATING POINT ACCUMULATOR FOR APPLESOFT
 AMPVECT                 =   $03F5       ; AMPERSAND VECTOR FOR APPLESOFT
 GETBYT                  =   $E6F8       ; EVAL BYTE -> X
 CHKCOM                  =   $DEBE       ; CHECK FOR COMMA
 FRMNUM                  =   $DD67       ; EVALUATE NUMERIC EXPRESSION
 GETADR                  =   $E752       ; CONVERT FAC TO INT (MAX 65535)
 PTRGET                  =   $DFE3       ; FIND NAMED VARIABLE (ADDRESS IN VARPTR)
+GETARYPT                =   $F7D9       ; 
 STRINI                  =   $E3D5       ; CREATE NEW STRING SPACE
 MOVSTR                  =   $E5E2       ; MOVE STRING INTO NEW SPACE A=LEN Y-HI SRC X=LO SRC, DESC in FRESPC
 MOVFM                   =   $EAF9       ; UNPACK (Y,A) TO FAC
@@ -30,6 +32,9 @@ PRTYX                   =   $F940       ; PRINT Y AND X AS HEX
 PRTAX                   =   $F941       ; PRINT A AND X AS HEX
 PRTX                    =   $F944       ; PRINT X AS HEX
 DOSWARM                 =   $03D0       ; CALL TO EXIT BRUN'D PROGRAM
+PRINTFAC                =   $ED2E       ; PRINT FAC TO SCREEN
+LINNUM                  =   $50
+LOWTR                   =   $9B
 TXTPTR                  =   $B8         ; WHERE WE ARE IN THE BASIC FILE
 VARPTR                  =   $83         ; POINTER TO OUR VARIABLE
 DSCTMP                  =   $9D         ; TEMPORARY DESCRIPTION STORAGE
@@ -55,8 +60,8 @@ TOK_NOTRACE             =       156     ; APPLESOFT TOKEN FOR NOTRACE
 TOK_INPUT               =       132     ; APPLESOFT TOKEN FOR INPUT  
 TOK_PRINT               =       186     ; APPLESOFT TOKEN FOR PRINT
 TOK_ON                  =       180     ; APPLESOFT TOKEN FOR ON
-
-
+TOK_LET                 =       170     ; APPLESOFT TOKEN FOR LET 
+TOK_EQUAL               =       208     ; APPLESOFT TOKEN FOR =
 
 NEXT_WITHOUT_FOR        =   0
 SYNTAX_ERROR            =  16
