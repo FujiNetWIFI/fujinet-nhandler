@@ -22,22 +22,15 @@ NOPEN:
                 JSR GETBYT                              ; &NOPEN [UNIT],MODE,TRANS,URL$
                 STX BASIC_UNIT        
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE32
-                SAVE_REGS
-                JSR PRTX
-                JSR CROUT
-                RESTORE_REGS
-NO_TRACE32:
-.ENDIF
+                DISPLAY_TRACE_UNIT
+
                 CPX #$04                                ; BASIC UNIT HAS TO BE BETWEEN 0-3
-                BMI UNIT_OK1                            ; OUT OF RANGE?
+                BMI @unit_ok                            ; OUT OF RANGE?
 
                 LDX #ILLEGAL_QUANTITY_ERROR             ; MUST BE BETWEEN 0 AND 3
                 JMP APPLESOFT_ERROR
                
-UNIT_OK1:
+@unit_ok:
                 LDX BASIC_UNIT
                 CPX #FN_ERR                             ; NETWORK WAS NOT FOUND!
                 BNE NOPEN_NETWORK_FOUND
@@ -142,18 +135,8 @@ NCLOSE:
                 JSR   GETBYT                    ; GET THE UNIT
                 STX   BASIC_UNIT
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE34
-
-                SAVE_REGS
-                JSR PRTX
-                JSR CROUT
-                RESTORE_REGS
-NO_TRACE34:
-.ENDIF               
-
-
+                DISPLAY_TRACE_UNIT
+                
                 LDX BASIC_UNIT
                 LDA OPEN_LIST, X          ; THIS IS THE ACTUAL UNIT NUMBER
                 CMP #FN_ERR_NO_DEVICE   ; CLOSING SOMETHING THAT IS NOT ACTUALLY OPEN  
@@ -180,16 +163,8 @@ NREAD:
                 JSR   GETBYT                    ; GET THE UNIT
                 STX   BASIC_UNIT
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE36
-                SAVE_REGS
-                JSR PRTX
-                JSR CROUT
-                RESTORE_REGS
-NO_TRACE36:
-.ENDIF
-
+                DISPLAY_TRACE_UNIT
+                
                 JSR CHKCOM
                 JSR PTRGET                      ; GET THE STRING TO RECEIVED OUR DATA
 
@@ -213,13 +188,13 @@ NO_TRACE36:
                 LDX BASIC_UNIT                  ; CONVERT THE BASIC_UNIT TO THE FUJINET UNIT
                 LDA OPEN_LIST,X
                 CMP #FN_ERR_NO_DEVICE              ; $FF INDICATES IT WAS NEVER OPENED
-                BNE UNIT_OK2
+                BNE @unit_ok
 
                 LDA #FN_ERR_NO_DEVICE              ; RETURN ERROR THAT WE WERE NEVER CONNECTED
                 STA NERR,X
                 RTS
 
-UNIT_OK2:
+@unit_ok:
                 TAX
                 JSR FN_READ                     ; REQUEST THE DATA FROM FUJINET
                 CPX #FN_ERR
@@ -282,16 +257,8 @@ NWRITE:
                 JSR GETBYT                      ; GET UNIT
                 STX BASIC_UNIT
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE37
-                SAVE_REGS
-                JSR PRTX
-                JSR CROUT
-                RESTORE_REGS
-NO_TRACE37:
-.ENDIF
-
+                DISPLAY_TRACE_UNIT
+                
                 JSR CHKCOM
                 JSR CHRGOT                      ; WHAT ARE WE POINTING AT IN BASIC?
                 CMP #QUOTE                      ; IS IT A STATIC STRING?
@@ -347,12 +314,12 @@ COPYBUF:
                 LDX BASIC_UNIT
                 LDA OPEN_LIST,X
                 CMP #FN_ERR_NO_DEVICE
-                BNE UNIT_OK5
+                BNE @unit_ok
 
                 PRINT_STR NOT_OPENED_STR_ADDR
                 JMP SYNERR
 
-UNIT_OK5:
+@unit_ok:
 
                 TAX
                 JSR FN_WRITE
@@ -373,16 +340,8 @@ NCTRL:
                 JSR GETBYT     ; GET UNIT
                 STX BASIC_UNIT
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE38
-                SAVE_REGS
-                JSR PRTX
-                JSR CROUT
-                RESTORE_REGS
-NO_TRACE38:
-.ENDIF
-
+                DISPLAY_TRACE_UNIT
+                
                 JSR CHKCOM
                 JSR GETBYT     ; GET COMMAND
                 STX COMMAND
@@ -425,12 +384,12 @@ CPY2BUF:
                 TAX
                 LDA OPEN_LIST,X
                 CMP #FN_ERR_NO_DEVICE
-                BNE UNIT_OK4
+                BNE @unit_ok
 
                 PRINT_STR NOT_OPENED_STR_ADDR
                 JMP SYNERR
                 
-UNIT_OK4:
+@unit_ok:
 
                 RTS
 
@@ -451,15 +410,8 @@ NSTATUS:
                 JSR GETBYT                      ; &NSTATUS [UNIT],BW,CN,NERR
                 STX BASIC_UNIT                  ; STORE THE UNIT NUMBER
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE39
-                SAVE_REGS
-                JSR PRTX
-                JSR CROUT
-                RESTORE_REGS
-NO_TRACE39:
-.ENDIF
+                DISPLAY_TRACE_UNIT
+                
                 JSR CHKCOM                      ; &NSTATUS UNIT[,]BW,CN,NERR
 
                 LDX BASIC_UNIT
@@ -633,17 +585,8 @@ NACCEPT:
                 JSR   GETBYT                    ; GET THE UNIT
                 STX   BASIC_UNIT
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE45
-
-                SAVE_REGS
-                JSR PRTX
-                JSR CROUT
-                RESTORE_REGS
-NO_TRACE45:
-.ENDIF               
-
+                DISPLAY_TRACE_UNIT
+                
                 LDX BASIC_UNIT
                 LDA OPEN_LIST, X        ; THIS IS THE ACTUAL UNIT NUMBER
                 CMP #FN_ERR_NO_DEVICE      ; TRYING TO ACCEPT SOMETHING THAT IS NOT ACTUALLY OPEN  
@@ -670,16 +613,8 @@ NINPUT:
                 JSR GETBYT                      ; GET UNIT
                 STX BASIC_UNIT
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE46
-                SAVE_REGS
-                JSR PRTX
-                JSR CROUT
-                RESTORE_REGS
-NO_TRACE46:
-.ENDIF
-
+                DISPLAY_TRACE_UNIT
+                
                 JSR CHKCOM
 
                 JSR PTRGET                      ; GET THE STRING TO RECEIVED OUR DATA
@@ -698,12 +633,12 @@ NO_TRACE46:
                 LDX BASIC_UNIT
                 LDA OPEN_LIST,X
                 CMP #FN_ERR_NO_DEVICE
-                BNE UNIT_OK6
+                BNE @unit_ok
 
                 PRINT_STR NOT_OPENED_STR_ADDR
                 JMP SYNERR
 
-UNIT_OK6:
+@unit_ok:
                 TAX
                 JSR FN_INPUT
 
@@ -751,16 +686,8 @@ NPRINT:
                 JSR GETBYT                      ; GET UNIT
                 STX BASIC_UNIT
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE51
-                SAVE_REGS
-                JSR PRTX
-                JSR CROUT
-                RESTORE_REGS
-NO_TRACE51:
-.ENDIF
-
+                DISPLAY_TRACE_UNIT
+                
                 JSR CHKCOM
                 JSR CHRGOT                      ; WHAT ARE WE POINTING AT IN BASIC?
                 CMP #QUOTE                      ; IS IT A STATIC STRING?
@@ -817,12 +744,12 @@ COPYBUF2:
                 LDX BASIC_UNIT
                 LDA OPEN_LIST,X
                 CMP #FN_ERR_NO_DEVICE
-                BNE UNIT_OK7
+                BNE @unit_ok
 
                 PRINT_STR NOT_OPENED_STR_ADDR
                 JMP SYNERR
 
-UNIT_OK7:
+@unit_ok:
                 JSR CHRGOT          ; If a semicolon is present, don't send EOL
                 CMP #SEMICOLON 
                 BNE ADD_EOL
@@ -905,13 +832,15 @@ NJSON:
                 JSR GETBYT                      ; &NJSON [UNIT], ONOFF
                 STX BASIC_UNIT
 
+                DISPLAY_TRACE_UNIT
+                
                 LDA OPEN_LIST,X
                 CMP #FN_ERR_NO_DEVICE
-                BNE UNIT_OK8
+                BNE @unit_ok
 
                 PRINT_STR NOT_OPENED_STR_ADDR
                 JMP SYNERR
-UNIT_OK8:
+@unit_ok:
                 JSR CHKCOM                      ; &NJSON UNIT[,]ONOFF
                 JSR GETBYT                      ; &NJSON UNIT,[ONOFF]
                 TXA
@@ -949,26 +878,18 @@ NQUERY:
                 JSR   GETBYT                    ; &NQUERY [UNIT],QUERY$, VALUE$
                 STX   BASIC_UNIT
 
-.IF .NOT STRIP_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE47
-                SAVE_REGS
-                JSR PRTX
-                JSR CROUT
-                RESTORE_REGS
-NO_TRACE47:
-.ENDIF
-
+                DISPLAY_TRACE_UNIT
+                
                 LDX BASIC_UNIT                  ; CONVERT THE BASIC_UNIT TO THE FUJINET UNIT
                 LDA OPEN_LIST,X
                 CMP #FN_ERR_NO_DEVICE           ; $FF INDICATES IT WAS NEVER OPENED
-                BNE UNIT_OK9
+                BNE @unit_ok
 
                 LDA #FN_ERR_NO_DEVICE           ; RETURN ERROR THAT WE WERE NEVER CONNECTED
                 STA NERR,X
                 JSR IGNORE_TO_NEXT_BASIC_STATEMENT
                 RTS
-UNIT_OK9:
+@unit_ok:
 
                 JSR CHKCOM                      ; &NQUERY UNIT[,]QUERY$, VALUE$
 
@@ -1244,3 +1165,5 @@ GET_START_OF_DATA:
                 
 WE_ARE_DONE:
                 RTS
+
+

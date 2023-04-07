@@ -320,27 +320,6 @@ CONT2:
                 ; FILL PAYLOAD - Transfer BASIC URL to payload
                 JSR CPY_URL_TO_SP_PAYLOAD   ; TRANSFER THE URL
 
-.IF .NOT STRIP_TRACE
-.IF EXT_TRACE
-                SAVE_REGS
-                LDA TRACE_FLAG
-                BEQ NO_TRACE21
-
-                PRINT_STR MODE_STR_ADDR
-                LDX MODE
-                JSR PRINT_X
-
-                PRINT_STR TRANS_STR_ADDR
-                LDX TRANSLATION
-                JSR PRINT_X
-                
-                JSR DUMP_SP_PAYLOAD        ; PRINT THE URL
-
-NO_TRACE21:              
-                RESTORE_REGS
-.ENDIF
-.ENDIF
-
                 PLA                         ; GET BACK OUR DEVICE NUMBER
                 TAX
 
@@ -423,13 +402,6 @@ NO_TRACE22:
 
 READ_ERR:
 
-.IF .NOT STRIP_TRACE  
-.IF EXT_TRACE              
-                PRINT_STR FN_READ_ERROR_STR_ADDR
-                JSR DUMP_SP_PAYLOAD
-.ENDIF
-.ENDIF
-
                 LDX #FN_ERR
                 LDA FN_LAST_ERR
                 CLC
@@ -493,12 +465,6 @@ NO_TRACE41:
 WRITE_ERR:
 
                 STA FN_LAST_ERR
-.IF .NOT STRIP_TRACE
-.IF EXT_TRACE                
-                PRINT_STR FN_WRITE_ERROR_STR_ADDR
-                JSR DUMP_SP_PAYLOAD
-.ENDIF
-.ENDIF
 
                 LDX #FN_ERR
                 LDA FN_LAST_ERR
@@ -553,10 +519,6 @@ NO_TRACE33:
                 PLA
                 LDX #FN_ERR
 
-.IF .NOT STRIP_TRACE                
-                PRINT_STR CLOSE_ERROR_STR_ADDR
-.ENDIF
-
                 CLC
                 BCC CLOSE_DONE
 CLOSE_OK:
@@ -582,25 +544,7 @@ CLOSE_DONE:
 ;******************************************************************
 FN_STATUS:
 
-.IF .NOT STRIP_TRACE
-.IF EXT_TRACE
-                SAVE_REGS
-                TXA
-                PHA
-                LDA TRACE_FLAG
-                BEQ NO_TRACE24
-
-                PRINT_STR FN_STATUS_STR_ADDR
-                PLA
-                PHA
-                TAX
-                JSR PRTX
-
-NO_TRACE24:     
-                PLA           
-                RESTORE_REGS
-.ENDIF
-.ENDIF
+                DISPLAY_FN_TRACE FN_STATUS_STR_ADDR
 
                 LDA #FN_OK
                 STA FN_LAST_ERR
@@ -626,19 +570,6 @@ BW_OK:
                 LDA SP_PAYLOAD+2 
                 STA CONNECT
 
-.IF EXT_TRACE
-    SAVE_REGS
-    PRINT_STR BYTES_WAITING_STR_ADDR
-    LDA BW+1
-    LDX BW
-    JSR PRTAX
-    PRINT_STR IS_CONNECTED_STR_ADDR
-    LDX CONNECT
-    JSR PRTX
-    JSR CROUT
-    RESTORE_REGS
-.ENDIF
-
 BW_DONE:
                 LDX #FN_OK
                 LDA FN_LAST_ERR
@@ -659,7 +590,6 @@ BW_COMPLETE:
 FN_FIND_NETWORK:
 
 .IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
                 LDA TRACE_FLAG
                 BEQ NO_TRACE25
                 PRINT_STR FN_FIND_NETWORK_STR_ADDR
@@ -672,7 +602,6 @@ FN_FIND_NETWORK:
 
 NO_TRACE25:                
 .ENDIF
-.ENDIF
 
                 LDA BASIC_UNIT
                 CMP #$01
@@ -681,16 +610,6 @@ NO_TRACE25:
                 ; LOOK FOR "NETWORK"
                 LDA NETWORK_STR_ADDR+1
                 LDY NETWORK_STR_ADDR
-
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-                PRINT_STR NETWORK_STR_ADDR
-                LDA #SPACE
-                JSR COUT
-                LDA NETWORK_STR_ADDR+1
-                LDY NETWORK_STR_ADDR
-.ENDIF
-.ENDIF
     
                 JSR SP_FIND_DEVICE          ; LOOK FOR "NETWORK"
                 CPX #SP_ERR
@@ -712,25 +631,10 @@ MULTI_NETWORK:
                 LDA NETWORK_STR_WITH_NUMBER_ADDR+1
                 LDY NETWORK_STR_WITH_NUMBER_ADDR 
 
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-                PRINT_STR NETWORK_STR_WITH_NUMBER_ADDR
-                LDA #SPACE
-                JSR COUT
-                LDA NETWORK_STR_WITH_NUMBER_ADDR+1
-                LDY NETWORK_STR_WITH_NUMBER_ADDR 
-.ENDIF
-.ENDIF
                 JSR SP_FIND_DEVICE              ; LOOK FOR "NETWORK_X" WHERE X IS 0-3
                 CPX #SP_ERR
                 BNE FOUND_IT
-FIND_ERROR:
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-                PRINT_STR DEVICE_NOT_FOUND_STR_ADDR
-                JSR CROUT
-.ENDIF        
-.ENDIF        
+FIND_ERROR:       
                 LDX #FN_ERR
                 RTS
 FOUND_IT:
@@ -822,21 +726,7 @@ FN_LIST_ERROR_OUT:
 ;******************************************************************
 FN_ACCEPT:
 
-.IF .NOT STRIP_TRACE
-                SAVE_REGS
-                LDA TRACE_FLAG
-                BEQ NO_TRACE42
-                TXA
-                PHA
-                PRINT_STR FN_ACCEPT_STR_ADDR
-                PLA
-                TAX
-                JSR PRTX
-                JSR CROUT
-NO_TRACE42:                
-                RESTORE_REGS
-.ENDIF
-
+                DISPLAY_FN_TRACE FN_ACCEPT_STR_ADDR
                 
                 LDY #$03                ; PAYLOAD SIZE = ZERO
                 STY SP_PAYLOAD
@@ -849,10 +739,6 @@ NO_TRACE42:
                 BCC ACCEPT_OK
 
                 LDX #FN_ERR
-
-.IF .NOT STRIP_TRACE                
-                PRINT_STR FN_ACCEPT_ERROR_STR_ADDR
-.ENDIF
 
                 CLC
                 BCC ACCEPT_DONE
@@ -873,24 +759,7 @@ ACCEPT_DONE:
 ;******************************************************************
 FN_INPUT:
 
-.IF .NOT STRIP_TRACE
-                SAVE_REGS
-                TXA
-                PHA
-                LDA TRACE_FLAG
-                BEQ @skip
-
-                PRINT_STR FN_INPUT_STR_ADDR
-                PLA
-                PHA
-                TAX
-                JSR PRTX
-                JSR CROUT
-@skip:     
-                PLA          
-                RESTORE_REGS
-
-.ENDIF
+                DISPLAY_FN_TRACE FN_INPUT_STR_ADDR
 
                 LDA #$00
                 STA STRLEN
@@ -964,24 +833,7 @@ NO_CLOCK:
 ;******************************************************************
 FN_JSON:
 
-.IF .NOT STRIP_TRACE
-                SAVE_REGS
-                TXA
-                PHA
-                LDA TRACE_FLAG
-                BEQ @skip
-
-                PRINT_STR FN_JSON_STR_ADDR
-                PLA
-                PHA
-                TAX
-                JSR PRTX
-                JSR CROUT
-@skip:     
-                PLA          
-                RESTORE_REGS
-
-.ENDIF
+                DISPLAY_FN_TRACE FN_JSON_STR_ADDR
 
                 TXA
                 PHA                         ; SAVE THE CHANNEL
@@ -1031,23 +883,7 @@ JSON_COMPLETE:
 ;******************************************************************
 FN_QUERY:
 
-.IF .NOT STRIP_TRACE
-                SAVE_REGS
-                TXA
-                PHA
-                LDA TRACE_FLAG
-                BEQ @skip
-
-                PRINT_STR FN_QUERY_STR_ADDR
-                PLA
-                PHA
-                TAX
-                JSR PRTX
-                JSR CROUT
-@skip:     
-                PLA          
-                RESTORE_REGS
-.ENDIF
+                DISPLAY_FN_TRACE FN_QUERY_STR_ADDR
 
                 TXA                     ; SAVE OUR CHANNEL
                 PHA
