@@ -54,5 +54,74 @@ MACROS=1
 .ENDIF
 .ENDMACRO
 
+.MACRO DISPLAY_TRACE_UNIT 
+.IF .NOT STRIP_TRACE
+                LDA TRACE_FLAG
+                BEQ @no_trace
+                SAVE_REGS
+                JSR PRTX
+                JSR CROUT
+                RESTORE_REGS
+@no_trace:
+.ENDIF
+.ENDMACRO
+
+
+.MACRO DISPLAY_EXT2_TRACE str_addr
+.IF .NOT STRIP_TRACE
+.IF EXT2_TRACE
+                SAVE_REGS
+                TXA
+                PHA
+                LDA TRACE_FLAG
+                BEQ @no_trace
+                
+                PRINT_STR str_addr
+                PLA
+                PHA
+                TAX
+                JSR PRTX
+                JSR CROUT
+@no_trace:       
+                PLA         
+                RESTORE_REGS
+.ENDIF
+.ENDIF
+.ENDMACRO
+
+.MACRO DISPLAY_EXT2_TRACE_NO_UNIT str_addr
+.IF .NOT STRIP_TRACE
+.IF EXT2_TRACE
+                SAVE_REGS
+
+                LDA TRACE_FLAG
+                BEQ @no_trace
+                
+                PRINT_STR str_addr
+@no_trace:       
+                RESTORE_REGS
+.ENDIF
+.ENDIF
+.ENDMACRO
+
+.MACRO DISPLAY_FN_TRACE str_addr
+.IF .NOT STRIP_TRACE
+                SAVE_REGS
+                TXA
+                PHA
+                LDA TRACE_FLAG
+                BEQ @no_trace
+
+                PRINT_STR str_addr
+                PLA
+                PHA
+                TAX
+                JSR PRTX
+
+@no_trace:     
+                PLA           
+                RESTORE_REGS
+.ENDIF
+.ENDMACRO
 
 .ENDIF

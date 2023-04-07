@@ -38,10 +38,10 @@
 ;
 ; EXT_TRACE and EXT2_TRACE includes calls into the SMARTPORT routines
 
-STRIP_TRACE= 1  ; Eliminate all tracing code and strings
-TRACE_ON   = 0  ; &NTRACE is on at the very start
+STRIP_TRACE= 1  ; Eliminate all tracing code and strings - greatly reduces footprint
+TRACE_ON   = 1  ; &NTRACE is on at the very start
 EXT_TRACE  = 0  ; Extended Trace, 1=display SMARTPORT internal debug messages 
-EXT2_TRACE = 0  ; Extended Trace 2, display SP_STATUS and SP_CONTROL
+EXT2_TRACE = 0  ; Extended Trace 2, display SMARTPORT STATUS and SMARTPORT CONTROL
 EXT3_TRACE = 0  ; Extended Trace 3, display commands in the fake dispatch call
 RELOCATE   = 1  ; 1=relocate himem and put our code there
 EXIT_WARM  = 0  ; 0=call doswarm at end of initialization
@@ -662,6 +662,7 @@ relocate026:    .WORD   NQUERY-1
 
                 .BYTE   "N", TOK_LET, 0         ; NLET
 relocate027:    .WORD   NLET-1
+
 
 .IF .NOT STRIP_TRACE
                 .BYTE   "N", TOK_TRACE, 0       ; NTRACE

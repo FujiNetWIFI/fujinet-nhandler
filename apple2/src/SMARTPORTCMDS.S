@@ -364,17 +364,7 @@ PPAYLOAD3:
 
 FIND_SMARTPORT_SLOT:
 
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-                SAVE_REGS
-                LDA TRACE_FLAG
-                BEQ NO_TRACE10
-                PRINT_STR FIND_SMARTPORT_SLOT_STR_ADDR
-
- NO_TRACE10:               
-                RESTORE_REGS
-.ENDIF
-.ENDIF
+                DISPLAY_EXT2_TRACE_NO_UNIT FIND_SMARTPORT_SLOT_STR_ADDR
 
                 LDA     #$C7            ; START AT SLOT 7 ($C700)
                 STA     SLOT_ADDR_HI
@@ -446,16 +436,7 @@ SLOT_FIND_DONE:
 ;**********************************
 GET_SMARTPORT_DISPATCH_ADDRESS:
 
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-                SAVE_REGS
-                LDA TRACE_FLAG
-                BEQ NO_TRACE11
-                PRINT_STR GET_SMARTPORT_DISPATCH_ADDRESS_STR_ADDR
-NO_TRACE11:                
-                RESTORE_REGS
-.ENDIF
-.ENDIF
+                DISPLAY_EXT2_TRACE_NO_UNIT GET_SMARTPORT_DISPATCH_ADDRESS_STR_ADDR
 
                 JSR FIND_SMARTPORT_SLOT 
                 CMP #$FF                ; IF A == $FF THEN NOT FOUND
@@ -514,32 +495,7 @@ DONE:
 ;******************************************************************
 SP_OPEN:
 
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-                SAVE_REGS
-                TXA
-                PHA                                     ; STACK +1
-
-                LDA TRACE_FLAG
-                BEQ NO_TRACE12
-
-                JSR CROUT
-                PRINT_STR SP_OPEN_STR_ADDR              ; "SP_OPEN:"
-
-                PLA                                     ; STACK -1
-                PHA                                     ; STACK +1
-                TAX
-                JSR PRTX
-                JSR CROUT
-                JSR DUMP_SP_PAYLOAD_STR
-                JSR CROUT
-NO_TRACE12:          
-                PLA                                     ; STACK -1
-
-                RESTORE_REGS
-
-.ENDIF
-.ENDIF
+                DISPLAY_EXT2_TRACE PRINT_STR SP_OPEN_STR_ADDR              ; "SP_OPEN:"
 
                 LDA #SP_OPEN_PARAM_COUNT        ; 3
                 STA CMD_LIST                    ; PARAMETER COUNT
@@ -577,24 +533,7 @@ SP_OPEN_DONE:
 ;******************************************************************
 SP_CLOSE:
 
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-                SAVE_REGS
-                TXA
-                PHA
-                LDA TRACE_FLAG
-                BEQ NO_TRACE13
-                PRINT_STR SP_CLOSE_STR_ADDR
-                PLA
-                PHA
-                TAX
-                JSR PRTX
-
-NO_TRACE13:     
-                PLA           
-                RESTORE_REGS
-.ENDIF
-.ENDIF
+                DISPLAY_EXT2_TRACE SP_CLOSE_STR_ADDR
 
                 LDA #SP_CLOSE_PARAM_COUNT       ; 3
                 STA CMD_LIST                    ; PARAMETER COUNT
@@ -763,23 +702,7 @@ SP_CTRL_DONE:
 ;address pointer: This parameter contains the block address of the target block.
 ;******************************************************************
 SP_READ:
-
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-                SAVE_REGS
-                LDA TRACE_FLAG
-                BEQ NO_TRACE15
-                TXA
-                PHA
-                PRINT_STR SP_READ_STR_ADDR
-                PLA
-                TAX
-                JSR PRTX
-                JSR CROUT
-NO_TRACE15:                
-                RESTORE_REGS
-.ENDIF
-.ENDIF
+                DISPLAY_EXT2_TRACE SP_READ_STR_ADDR
 
                 LDA #SP_READ_PARAM_COUNT
                 STA CMD_LIST                    ; [0] PARAMETER COUNT
@@ -845,26 +768,7 @@ SP_READ_DONE:
 ;    SP_PAYLOAD - CONTAINS DATA
 ;******************************************************************
 SP_WRITE:
-
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-                SAVE_REGS
-                TXA
-                PHA
-                LDA TRACE_FLAG
-                BEQ NO_TRACE40
-                
-                PRINT_STR SP_WRITE_STR_ADDR
-                PLA
-                PHA
-                TAX
-                JSR PRTX
-                JSR CROUT
-NO_TRACE40:       
-                PLA         
-                RESTORE_REGS
-.ENDIF
-.ENDIF
+                DISPLAY_EXT2_TRACE SP_WRITE_STR_ADDR
 
                 LDA #SP_WRITE_PARAM_COUNT
                 STA CMD_LIST                    ; PARAMETER COUNT
@@ -955,25 +859,7 @@ SP_WRITE_DONE:
 
 SP_STATUS:
 
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-
-                SAVE_REGS
-                TXA
-                PHA
-                LDA TRACE_FLAG
-                BEQ NO_TRACE35
-                PRINT_STR SP_STATUS_STR_ADDR
-                PLA
-                PHA
-                TAX
-                JSR PRTX
-
-NO_TRACE35:     
-                PLA
-                RESTORE_REGS
-.ENDIF
-.ENDIF
+                DISPLAY_EXT2_TRACE SP_STATUS_STR_ADDR
 
                 LDA #SP_STATUS_PARAM_COUNT
                 STA CMD_LIST                    ; PARAMETER COUNT
@@ -995,48 +881,12 @@ cmd_list5:      .WORD $EAEA     ; CMD_LIST
                 STX SP_COUNT
                 STY SP_COUNT+1
                 STA LAST_SP_ERR
-                
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-        SAVE_REGS
-        PHA
-        PRINT_STR SP_ERROR_STR_ADDR
-        PLA
-        TAX 
-        JSR PRTX
-        JSR DUMP_CMD_LIST
-        JSR DUMP_SP_PAYLOAD_HEX
-        RESTORE_REGS
-.ENDIF
-.ENDIF
 
                 BCC SP_STATUS_DONE
 
 ERROR3:
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-                SAVE_REGS
-                PHA
-                PRINT_STR SP_ERROR_STR_ADDR
-                PLA
-                TAX
-                JSR PRTX
-                RESTORE_REGS
-                SEC
-.ENDIF
-.ENDIF
 
-                RTS
 SP_STATUS_DONE:
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-                SAVE_REGS
-                JSR CROUT
-                RESTORE_REGS
-                
-                CLC
-.ENDIF
-.ENDIF
                 RTS
 
 
@@ -1060,14 +910,7 @@ CALL_DISPATCHER:
 ;**********************************
 DISPLAY_SP_STATUS:
 
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-                LDA TRACE_FLAG
-                BEQ NO_TRACE17
-                PRINT_STR DISPLAY_SP_STATUS_STR_ADDR
-NO_TRACE17:                
-.ENDIF
-.ENDIF
+                DISPLAY_EXT2_TRACE DISPLAY_SP_STATUS_STR_ADDR
 
                 LDX #$00                                ; SMARTPORT DEVICE ZERO
                 LDY #$00
@@ -1094,28 +937,7 @@ NO_TRACE17:
                 RTS
 
 
-.IF .NOT STRIP_TRACE
-;*******************************
-; ISTROUT
-;   Display string in Fsp_D
-;**********************************
-ISTROUT:
-                STA ZP1_LO
-                STY ZP1_HI
-                LDY #$00
-PRINTI:
-                LDA (ZP1),Y
-                BEQ PRINTI_STOP
-                AND #$3F        ; INVERSE
-;               ORA #$80        ; NORMAL
-;               ORA #$40        ; FLASHING
-                JSR COUT
-                INY
-                CLC
-                BCC PRINTI
-PRINTI_STOP:
-                RTS
-.ENDIF
+
 
 ;*******************************
 ; DISPLAY_SP_DEVICES
@@ -1202,16 +1024,8 @@ DISPLAY_ERROR_OUT:
 
 SP_FIND_DEVICE:
 
-.IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
-                SAVE_REGS
-                LDA TRACE_FLAG
-                BEQ NO_TRACE18
-                PRINT_STR SP_FIND_DEVICE_STR_ADDR       ; "SP_FIND_DEVICE:"
-NO_TRACE18:    
-                RESTORE_REGS            
-.ENDIF
-.ENDIF
+                DISPLAY_EXT2_TRACE_NO_UNIT SP_FIND_DEVICE_STR_ADDR       ; "SP_FIND_DEVICE:"
+
                 STA ZP1_HI                              ; STORE THE STRING ADDRESS
                 STY ZP1_LO
                 
@@ -1326,7 +1140,6 @@ FOUND_DEVICE:
                 TAX
 
 FOUND_DONE:    
-
                 RTS
 
 
