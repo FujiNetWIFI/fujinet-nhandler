@@ -38,12 +38,12 @@
 ;
 ; EXT_TRACE and EXT2_TRACE includes calls into the SMARTPORT routines
 
-STRIP_TRACE= 1  ; Eliminate all tracing code and strings - greatly reduces footprint
-TRACE_ON   = 1  ; &NTRACE is on at the very start
-EXT_TRACE  = 0  ; Extended Trace, 1=display SMARTPORT internal debug messages 
+STRIP_TRACE= 0  ; Eliminate all tracing code and strings - greatly reduces footprint
+TRACE_ON   = 0  ; &NTRACE is on at the very start
+EXT_TRACE  = 1  ; Extended Trace, 1=display SMARTPORT internal debug messages 
 EXT2_TRACE = 0  ; Extended Trace 2, display SMARTPORT STATUS and SMARTPORT CONTROL
 EXT3_TRACE = 0  ; Extended Trace 3, display commands in the fake dispatch call
-RELOCATE   = 1  ; 1=relocate himem and put our code there
+RELOCATE   = 0  ; 1=relocate himem and put our code there
 EXIT_WARM  = 0  ; 0=call doswarm at end of initialization
 APPLEII    = 1  ; always set to one, EQUs will be for apple zero page
 USE_SP     = 1  ; 1=USE ACTUAL SMARTPORT 0=EMULATE SMARTPORT FUNCTIONS
@@ -121,7 +121,7 @@ NEXT_NETWORK_CACHE:
                 BNE NEXT_NETWORK_CACHE
 
 .IF .NOT STRIP_TRACE
-.IF EXT2_TRACE
+.IF EXT_TRACE
                 JSR DISPLAY_NETS
 .ENDIF
 .ENDIF
