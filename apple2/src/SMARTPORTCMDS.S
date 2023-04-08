@@ -495,7 +495,7 @@ DONE:
 ;******************************************************************
 SP_OPEN:
 
-                DISPLAY_EXT2_TRACE PRINT_STR SP_OPEN_STR_ADDR              ; "SP_OPEN:"
+                DISPLAY_EXT2_TRACE SP_OPEN_STR_ADDR
 
                 LDA #SP_OPEN_PARAM_COUNT        ; 3
                 STA CMD_LIST                    ; PARAMETER COUNT
