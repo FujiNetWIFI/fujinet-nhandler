@@ -99,7 +99,8 @@ ROWCRS  =   $0054
 SCRFLG  =   $02BB       ; Scroll flag
 CH      =   $02FC       ; Hardware code for last key pressed
 CH1     =   $02F2       ; Prior keyboard character code
-LNBUF   =   $0582       ; Line Buffer (128 bytes)
+;LNBUF   =   $0582       ; Line Buffer (128 bytes)
+LNBUF   =   $1880       ; Line Buffer (128 bytes)
 
 ;---------------------------------------
 ; HARDWARE REGISTERS
@@ -148,40 +149,41 @@ SPC_KEY =   $21         ; Hardware code for SPACE
 
 OINPUT  =   $04         ; CIO/SIO direction
 OOUTPUT =   $08         ; CIO/SIO direction
+BOGUS   =   $F0         ; Bogus FujiNet SIO command byte
 
-; FujiNet SIO command bytes
+; FujiNet SIO command bytes.
 CMD_DRIVE_CHG       = $01
 CMD_CD              = $2C
-CMD_COPY            = $A1
+;CMD_COPY            = $A1
 CMD_DIR             = $02
 CMD_DEL             = $21
 CMD_LOAD            = $28
-CMD_LOCK            = $23
+;CMD_LOCK            = $23
 CMD_LOGIN           = $FD
-CMD_LPR             = $F0
+CMD_LPR             = BOGUS
 CMD_MKDIR           = $2A
 CMD_NPWD            = $30
 CMD_NTRANS          = 'T'
 CMD_PASSWD          = $FE
 CMD_RENAME          = $20
 CMD_RMDIR           = $2B
-CMD_SUBMIT          = $F0
-CMD_TYPE            = $F0
-CMD_UNLOCK          = $24
-CMD_CAR             = $F0
-CMD_CLS             = $F0
-CMD_COLD            = $F0
-CMD_HELP            = $F0
-CMD_NOBASIC         = $F0
-CMD_NOSCREEN        = $F0
-CMD_PRINT           = $F0
-CMD_REENTER         = $F0
-CMD_REM             = $F0
-CMD_RUN             = $F0
-CMD_SCREEN          = $F0
-CMD_WARM            = $F0
-CMD_XEP             = $F0
-CMD_AUTORUN         = $F0
+CMD_SUBMIT          = BOGUS
+CMD_TYPE            = BOGUS
+;CMD_UNLOCK          = $24
+CMD_CAR             = BOGUS
+CMD_CLS             = BOGUS
+CMD_COLD            = BOGUS
+CMD_HELP            = BOGUS
+CMD_NOBASIC         = BOGUS
+CMD_NOSCREEN        = BOGUS
+CMD_PRINT           = BOGUS
+CMD_REENTER         = BOGUS
+CMD_REM             = BOGUS
+CMD_RUN             = BOGUS
+CMD_SCREEN          = BOGUS
+CMD_WARM            = BOGUS
+CMD_XEP             = BOGUS
+CMD_AUTORUN         = BOGUS
 
 ;;; Macros ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -196,7 +198,6 @@ CMD_AUTORUN         = $F0
         .ENDM
 
 ; ATR Header
-;        ORG     $0700
 	    ORG	    $06f0
         OPT     h-
 	    DTA	    $96,$02,$80,$16,$80
@@ -204,21 +205,12 @@ CMD_AUTORUN         = $F0
 
 ;;; Initialization ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;        ORG     $0700
-;        OPT     h-
-
 HDR:    .BYTE   $00                 ; BLFAG: Boot flag equals zero (unused)
         .BYTE   [BOOTEND-HDR]/128   ; BRCNT: Number of consecutive sectors to read
         .WORD   HDR                 ; BLDADR: Boot sector load address ($700).
         .WORD   $E4C0               ; BIWTARR: Init addr (addr of RTS in ROM)
 
-;HDR:    .BYTE   $00                 ; BLFAG: Boot flag equals zero (unused)
-;        .BYTE   [PGEND-HDR]/128-2   ; BRCNT: Number of consecutive sectors to read
-;        .WORD   $0700               ; BLDADR: Boot sector load address ($700).
-;        .WORD   $E4C0               ; BIWTARR: Init addr (addr of RTS in ROM)
-
 	    JMP	    START
-;	ORG	*+$64
 
 START:  LDA     DOSINI
         STA     RESET+1
@@ -267,8 +259,7 @@ IHTBS:
         LDY     #$00
 IH1     LDA     HATABS,Y
         BEQ     HFND
-        ;CMP     #'N'
-        CMP     RBUF
+        CMP     RBUF        ; RBUF contains 'N' or 'D'
         BEQ     HFND
         INY
         INY
@@ -279,11 +270,8 @@ IH1     LDA     HATABS,Y
         ;; Found a slot
 
 HFND:
-        ;LDA     #'N'
-;--
-        LDA     RBUF
+        LDA     RBUF        ; RBUF contains 'N' or 'D'
         TAX
-;--
         STA     HATABS,Y
         LDA     #<CIOHND
         STA     HATABS+1,Y
@@ -852,6 +840,7 @@ CIOOPEN:
         LDA     #$00
         STA     ICAX2,X         ; Unused
         JSR     CIOV            ; Call CIO
+        JSR     PRINT_ERROR
 
 CIOOPEN_DONE:
         RTS
@@ -973,6 +962,15 @@ GDIDX:  LDX     ZICDNO      ; IOCB UNIT #
         DEX                 ; - 1
         RTS
 
+    ; Convert char in A from upper-case to lower-case
+TOUPPER:
+        CMP     #'a'        ; SKip if < 'a'
+        BCC     @+
+        CMP     #'z'+1      ; Skip if > 'z'
+        BCS     @+
+        AND     #$5F        ; Disable high-bit and convert to lower
+ @:     RTS
+
 ;---------------------------------------
 ; Proceed Vector
 ;---------------------------------------
@@ -993,10 +991,14 @@ PRCVEC: LDA     #$01
 ; that portion of ROM to RAM
 ;---------------------------------------
 
-LDBUFA: LDA     #$05
+;LDBUFA: LDA     #$05
+;        STA     INBUFF+1
+;        LDA     #$82        ; Normally $80. 2 for headroom
+;        STA     INBUFF
+;        RTS
+LDBUFA: LDA     #$18
         STA     INBUFF+1
-;        LDA     #$80
-        LDA     #$82
+        LDA     #$80        ; Normally $80. 2 for headroom
         STA     INBUFF
         RTS
 
@@ -1285,12 +1287,15 @@ DELIM:  .BYTE ' '
 ;---------------------------------------
 PARSECMD:
 ;---------------------------------------
-        LDA     LNBUF
+        ;LDA     LNBUF
+        LDY     #$00
+        LDA     (INBUFF),Y
         CMP     #EOL        ; Quit immediately if no cmd
         BEQ     PARSECMD_DONE
 
         JSR     PARSE_INTRINSIC_COMMAND
         JSR     PARSE_DRIVE_CHANGE
+        JSR     PARSE_EXTRINSIC_COMMAND
         JSR     PRINT_UNK_CMD
 PARSECMD_DONE:
         RTS
@@ -1314,12 +1319,13 @@ PARSE_INTRINSIC_COMMAND:
         LDX     #$00        ; Initialize X for command code indexing
         LDY     #$00
         STY     CIX
-        JSR     LDBUFA      ; Set INBUFF to $0580
-        JSR     SKPSPC      ; Skip whitespace
+        JSR     LDBUFA      ; Set INBUFF to $0580, er make that TBUF
+
+@:      JSR     SKPSPC      ; Skip whitespace
 
 PARSE_INTRINSIC_NEXT_CHAR:
         LDA     (INBUFF),Y
-        AND     #$7F
+        AND     #$5F        ; Disable high-bit and convert to upper
         EOR     COMMAND,X   ; X initialized to 0 in caller
         INY
         ASL
@@ -1373,16 +1379,77 @@ PARSE_DRIVE_CHANGE_DONE:
         RTS
 
 ;---------------------------------------
+PARSE_EXTRINSIC_COMMAND:
+;---------------------------------------
+    ; Quit if CMD has been found earlier
+        LDX     CMD         ; Undefined CMD = $FF
+        INX                 ; now 0 if undefined
+        BNE     PARSE_DRIVE_CHANGE_DONE ; Exit if defined CMD
+
+    ; Here if  CMD is undefined.
+    ; From here we'll assume it's a filename for a executable
+    ; and attempt to LOAD it. But first append a ".COM"
+    ; and shift the filename to the right
+
+    ; Find offset to EOL
+        LDY     #$FF
+@       INY
+        LDA     (INBUFF),Y
+        CMP     #EOL
+        BNE     @-
+
+    ; Y contains offset to last char & stash it
+        TYA
+        PHA
+
+    ; Advance Y to allow the 5 chars of '.COM',EOL
+        CLC
+        ADC     #$05
+        TAY
+
+    ; Append .COM, EOL
+        LDX     #$04
+@:      LDA     CMDEXT,X
+        STA     (INBUFF),Y
+        DEY
+        DEX                     ; 
+        BPL     @-
+
+    ; Shift executable name to the right to allow room for PREPEND_DRIVE
+    ; Stack contains offset to last char
+    ; Y is still counting down from where '.COM' was appended.
+        PLA                 ; Get offset to last char of executable
+        TAX                 ; It'll be used for indexing
+        DEX                 ; Skip original EOF
+SHIFT_LOOP:
+        LDA     LNBUF,X     ; Get source ch
+@:      STA     (INBUFF),Y  ; Copy ch to new location
+        DEY                 ; Point to next dest ch
+        DEX                 ; Point to next source ch
+        BPL     SHIFT_LOOP  ; Until X = 0
+
+    ; Let DO_LOAD attempt to execute the file
+        LDA     #$01        ; Point to start of filename
+        STA     CMDSEP      ; so DO_LOAD will treat it like
+        JMP     DO_LOAD     ; 'LOAD filename'
+
+CMDEXT:
+        .BYTE   '.COM',EOL
+
+; End of PARSE_EXTRINSIC_COMMAND
+;---------------------------------------
+
+;---------------------------------------
 DOCMD:
 ;---------------------------------------
         LDX     CMD
-        BMI     DOCMD_DONE      ; Unassigned command = $FF
-        LDA     CMD_TAB_H,X     ; Get hi-byte of subroutine's addr
-        PHA                     ; Push it to the stack
-        LDA     CMD_TAB_L,X     ; Get lo-byte of subroutine's addr
-        PHA                     ; Push it to the stack
+        BMI     DOCMD_DONE  ; Unassigned command = $FF
+        LDA     CMD_TAB_H,X ; Get hi-byte of subroutine's addr
+        PHA                 ; Push it to the stack
+        LDA     CMD_TAB_L,X ; Get lo-byte of subroutine's addr
+        PHA                 ; Push it to the stack
 DOCMD_DONE:
-        RTS                     ; Use stack & RTS to jump to subroutine
+        RTS                 ; Use stack & RTS to jump to subroutine
 
 ; End of DOCMD
 ;---------------------------------------
@@ -1393,9 +1460,9 @@ DO_DRIVE_CHG:
         LDA     LNBUF
         STA     PRMPT+1
         LDA     LNBUF+1
-        CMP     #'1'        ; Skip if '0' or less
+        CMP     #'1'        ; Skip if < '1'
         BCC     DO_DRIVE_CHG_ERROR
-        CMP     #'9'        ; Skip if '9' or more
+        CMP     #'9'        ; Skip if >= '9'
         BCS     DO_DRIVE_CHG_ERROR
         AND     #$0F        ; Convert, say, to 1-8
         STA     DOSDR
@@ -1584,12 +1651,12 @@ GENDCB:
 ;COPYSPEC:
 ;        .BYTE 'iss.po|iss.po',$00
 
-;---------------------------------------
-DO_COPY:
-;---------------------------------------
-        LDA     #$B0
-        STA     COLOR2
-        RTS
+;;---------------------------------------
+;DO_COPY:
+;;---------------------------------------
+;        LDA     #$B0
+;        STA     COLOR2
+;        RTS
 
 ;        JSR     COPY_PARSE_FILES    ; locate comma, replace with EOL
 ;        BMI     COPY_DONE
@@ -1989,12 +2056,7 @@ LOAD_NEXT1:
         INC     INBUFF+1
 
 LOAD_NEXT2:
-        LDA     #$91          ; Feable attempt to point cmd line
-        STA     DOSVEC          ; to DOSVEC for use by other 
-        LDA     #$05            ; cmd line executables
-        STA     DOSVEC+1
-
-        JSR     LOAD_NTRANS     ; Disable any EOL transation
+        JSR     LOAD_NTRANS     ; Disable any EOL translation
         JSR     LOAD_SETUP      ; Set up run and init to RTS
         LDA     #OINPUT         ; A arg needed in LOAD_OPEN
         JSR     LOAD_OPEN       ; Open the file
@@ -2050,7 +2112,7 @@ LOAD_INIT:
 ;---------------------------------------
 LOAD_OPEN:
 ;---------------------------------------
-        PHA                     ; A = data direction (4=in, 8=out)
+        PHA                     ; Save data direction passed in A
         JSR     GET_DOSDR       ; Get DUNIT
         STX     OPNDCB+1        ; Set DUNIT
         STX     GETDCB+1        ; Set DUNIT FOR READ
@@ -2068,13 +2130,14 @@ LOAD_OPEN:
 
         LDA     #<OPNDCB
         LDY     #>OPNDCB
-
         JSR     DOSIOV
+
         PHA
         JSR     PRINT_ERROR
         PLA
         TAY
 
+        JSR     DIPRCD
         RTS
 
 ;---------------------------------------
@@ -2216,6 +2279,77 @@ LOAD_BUFLEN:
         STA     BLH
 
         RTS
+
+;;---------------------------------------
+;LOAD_GETDAT:
+;;---------------------------------------
+;
+;    ;---------------------------------------
+;    ; Fill out the DCB
+;    ;---------------------------------------
+;        JSR     GET_DOSDR
+;        STX     BINDCB+1        ; DUNIT
+;
+;        LDA     STL
+;        STA     BINDCB+4        ; DBUFL 
+;        LDA     STH
+;        STA     BINDCB+5        ; DBUFH
+;        LDA     BLL
+;        STA     BINDCB+8        ; DBYTL
+;        STA     BINDCB+10
+;        LDA     BLH
+;        STA     BINDCB+9        ; DBYTH
+;        STA     BINDCB+11
+;
+;    ;---------------------------------------
+;    ; Send Read request to SIO
+;    ;---------------------------------------
+;        LDA     #<BINDCB
+;        LDY     #>BINDCB
+;        JSR     DOSIOV
+;        JSR     PRINT_ERROR     ; Show any errors
+;
+;    ;---------------------------------------
+;    ; Get status (updates DVSTAT, DSTATS)
+;    ;---------------------------------------
+;        LDA     BINDCB+1
+;        STA     STADCB+1
+;        LDA     #<STADCB
+;        LDY     #>STADCB
+;        JSR     DOSIOV
+;
+;    ; Check if EOF (current requested chunk completed?)
+;        LDA     #EOF
+;        CMP     DVSTAT+3
+;        BEQ     LOAD_GETDAT_DONE
+;        JMP     PRINT_ERROR
+;
+;LOAD_GETDAT_DONE:
+;    ; Check if 0 bytes remaining
+;        LDA     DVSTAT
+;        BNE     LOAD_GETDAT_DONE2
+;        LDA     DVSTAT+1
+;        BNE     LOAD_GETDAT_DONE2
+;        LDY     #$FF
+;        RTS
+;
+;LOAD_GETDAT_DONE2:
+;        LDY     #$01            ; Return success
+;        RTS
+;        
+;BINDCB:
+;       .BYTE    DEVIDN      ; DDEVIC
+;       .BYTE    $FF         ; DUNIT
+;       .BYTE    'R'         ; DCOMND
+;       .BYTE    $40         ; DSTATS
+;       .BYTE    $FF         ; DBUFL
+;       .BYTE    $FF         ; DBUFH
+;       .BYTE    $0F         ; DTIMLO
+;       .BYTE    $00         ; DRESVD
+;       .BYTE    $FF         ; DBYTL
+;       .BYTE    $FF         ; DBYTH
+;       .BYTE    $FF         ; DAUX1
+;       .BYTE    $FF         ; DAUX2
 
 ;---------------------------------------
 LOAD_GETDAT:
@@ -2458,12 +2592,12 @@ LOAD_ERROR:
         LDY     #>MISSING_FILE_STR
         JMP     PRINT_STRING
 
-;---------------------------------------
-DO_LOCK:
-;---------------------------------------
-        LDA     #$60
-        STA     COLOR2
-        RTS
+;;---------------------------------------
+;DO_LOCK:
+;;---------------------------------------
+;        LDA     #$60
+;        STA     COLOR2
+;        RTS
 
 ;---------------------------------------
 DO_LOGIN:
@@ -3031,12 +3165,12 @@ TYPE_DONE:
 TYPE_OPEN_ERR_STR:
         .BYTE   'UNABLE TO OPEN FILE',EOL
 
-;---------------------------------------
-DO_UNLOCK:
-;---------------------------------------
-        LDA     #$90
-        STA     COLOR2
-        RTS
+;;---------------------------------------
+;DO_UNLOCK:
+;;---------------------------------------
+;        LDA     #$90
+;        STA     COLOR2
+;        RTS
 
 ;---------------------------------------
 DO_CAR:
@@ -3094,6 +3228,15 @@ HELP_LOOP1:
         BEQ     HELP_NEXT1  ; Exit loop at end of arg
         CPX     #22
         BPL     HELP_DONE   ; Exit if arg is too long
+
+    ; Convert lower-case to upper-case
+        JSR     TOUPPER
+;        CMP     #'a'        ; SKip if < 'a'
+;        BCC     @+
+;        CMP     #'z'+1      ; Skip if > 'z'
+;        BCS     @+
+;        AND     #$5F        ; Convert to lower to upper
+
         STA     HELP_ARTICLE,X
         INX
         INY
@@ -3448,11 +3591,11 @@ PRMPT:
         .ENUM   CMD_IDX
         ;---------------
                 NCD                 ;  0
-                COPY                ;  1
+;                COPY                ;  1
                 DIR                 ;  2
                 DEL                 ;  3
                 LOAD                ;  4
-                LOCK                ;  5
+;                LOCK                ;  5
                 LOGIN               ;  6
                 LPR                 ;  7
                 MKDIR               ;  8
@@ -3462,7 +3605,7 @@ PRMPT:
                 RMDIR               ; 12
                 SUBMIT              ; 13
                 TYPE                ; 14
-                UNLOCK              ; 15
+;                UNLOCK              ; 15
                 AUTORUN             ; 16
                 CAR                 ; 17
                 CLS                 ; 18
@@ -3482,11 +3625,11 @@ PRMPT:
 
 CMD_DCOMND:
         .BYTE   CMD_CD              ;  0 NCD
-        .BYTE   CMD_COPY            ;  1 COPY
+;        .BYTE   CMD_COPY            ;  1 COPY
         .BYTE   CMD_DIR             ;  2 DIR
         .BYTE   CMD_DEL             ;  3 DEL
         .BYTE   CMD_LOAD            ;  4 LOAD
-        .BYTE   CMD_LOCK            ;  5 LOCK
+;        .BYTE   CMD_LOCK            ;  5 LOCK
         .BYTE   CMD_LOGIN           ;  6 LOGIN
         .BYTE   CMD_LPR             ;  7 LPR
         .BYTE   CMD_MKDIR           ;  8 MKDIR
@@ -3496,7 +3639,7 @@ CMD_DCOMND:
         .BYTE   CMD_RMDIR           ; 12 RMDIR
         .BYTE   CMD_SUBMIT          ; 13 SUBMIT
         .BYTE   CMD_TYPE            ; 14 TYPE
-        .BYTE   CMD_UNLOCK          ; 15 UNLOCK
+;        .BYTE   CMD_UNLOCK          ; 15 UNLOCK
         .BYTE   CMD_AUTORUN         ; 16 AUTORUN
         .BYTE   CMD_CAR             ; 17 CAR
         .BYTE   CMD_CLS             ; 18 CLS
@@ -3517,8 +3660,8 @@ COMMAND:
         .CB     "NCD"               ;  0 NCD
         .BYTE   CMD_IDX.NCD            
 
-        .CB     "COPY"              ;  1 COPY
-        .BYTE   CMD_IDX.COPY           
+;        .CB     "COPY"              ;  1 COPY
+;        .BYTE   CMD_IDX.COPY           
 
         .CB     "DIR"               ;  2 DIR
         .BYTE   CMD_IDX.DIR              
@@ -3529,8 +3672,8 @@ COMMAND:
         .CB     "LOAD"              ;  4 LOAD
         .BYTE   CMD_IDX.LOAD             
 
-        .CB     "LOCK"              ;  5 LOCK
-        .BYTE   CMD_IDX.LOCK             
+;        .CB     "LOCK"              ;  5 LOCK
+;        .BYTE   CMD_IDX.LOCK             
 
         .CB     "LOGIN"             ;  6 LOGIN
         .BYTE   CMD_IDX.LOGIN              
@@ -3559,8 +3702,8 @@ COMMAND:
         .CB     "TYPE"              ; 14 SUBMIT
         .BYTE   CMD_IDX.TYPE              
                                         
-        .CB     "UNLOCK"            ; 15 UNLOCK
-        .BYTE   CMD_IDX.UNLOCK            
+;        .CB     "UNLOCK"            ; 15 UNLOCK
+;        .BYTE   CMD_IDX.UNLOCK            
                                         
         .CB     "AUTORUN"           ; 16 AUTORUN
         .BYTE   CMD_IDX.AUTORUN           
@@ -3648,11 +3791,11 @@ COMMAND_SIZE = * - COMMAND - 1
 
 CMD_TAB_L:
         .BYTE   <(DO_GENERIC-1)     ;  0 NCD
-        .BYTE   <(DO_COPY-1)        ;  1 COPY
+;        .BYTE   <(DO_COPY-1)        ;  1 COPY
         .BYTE   <(DO_DIR-1)         ;  2 DIR
         .BYTE   <(DO_GENERIC-1)     ;  3 DEL
         .BYTE   <(DO_LOAD-1)        ;  4 LOAD
-        .BYTE   <(DO_LOCK-1)        ;  5 LOCK
+;        .BYTE   <(DO_LOCK-1)        ;  5 LOCK
         .BYTE   <(DO_LOGIN-1)       ;  6 LOGIN
         .BYTE   <(DO_LPR-1)         ;  7 LPR
         .BYTE   <(DO_GENERIC-1)     ;  8 MKDIR
@@ -3662,7 +3805,7 @@ CMD_TAB_L:
         .BYTE   <(DO_GENERIC-1)     ; 12 RMDIR
         .BYTE   <(DO_SUBMIT-1)      ; 13 SUBMIT
         .BYTE   <(DO_TYPE-1)        ; 14 TYPE
-        .BYTE   <(DO_UNLOCK-1)      ; 15 UNLOCK
+;        .BYTE   <(DO_UNLOCK-1)      ; 15 UNLOCK
         .BYTE   <(DO_AUTORUN-1)     ; 16 AUTORUN
         .BYTE   <(DO_CAR-1)         ; 17 CAR
         .BYTE   <(DO_CLS-1)         ; 18 CLS
@@ -3681,11 +3824,11 @@ CMD_TAB_L:
 
 CMD_TAB_H:
         .BYTE   >(DO_GENERIC-1)     ;  0 NCD
-        .BYTE   >(DO_COPY-1)        ;  1 COPY
+;        .BYTE   >(DO_COPY-1)        ;  1 COPY
         .BYTE   >(DO_DIR-1)         ;  2 DIR
         .BYTE   >(DO_GENERIC-1)     ;  3 DEL
         .BYTE   >(DO_LOAD-1)        ;  4 LOAD
-        .BYTE   >(DO_LOCK-1)        ;  5 LOCK
+;        .BYTE   >(DO_LOCK-1)        ;  5 LOCK
         .BYTE   >(DO_LOGIN-1)       ;  6 LOGIN
         .BYTE   >(DO_LPR-1)         ;  7 LPR
         .BYTE   >(DO_GENERIC-1)     ;  8 MKDIR
@@ -3695,7 +3838,7 @@ CMD_TAB_H:
         .BYTE   >(DO_GENERIC-1)     ; 12 RMDIR
         .BYTE   >(DO_SUBMIT-1)      ; 13 SUBMIT
         .BYTE   >(DO_TYPE-1)        ; 14 TYPE
-        .BYTE   >(DO_UNLOCK-1)      ; 15 UNLOCK
+;        .BYTE   >(DO_UNLOCK-1)      ; 15 UNLOCK
         .BYTE   >(DO_AUTORUN-1)     ; 16 AUTORUN
         .BYTE   >(DO_CAR-1)         ; 17 CAR
         .BYTE   >(DO_CLS-1)         ; 18 CLS
@@ -3723,7 +3866,7 @@ CIOHND  .WORD   OPEN-1
 
        ; BANNERS
 
-BREADY  .BYTE   '#FUJINET NOS v0.4.2-alpha',EOL
+BREADY  .BYTE   '#FUJINET NOS v0.5.0-alpha',EOL
 BERROR  .BYTE   '#FUJINET ERROR',EOL
 
         ; MESSAGES
@@ -3802,7 +3945,7 @@ DIRSTA:
     DTA $60,$C3,$02,$04,$00,C"2 Network  "
     DTA $60,$C3,$02,$04,$00,C"3   OS     "
     DTA $60,$C3,$02,$04,$00,C"4          "
-    DTA $60,$C3,$02,$04,$00,C"5 v0.4.2   "
+    DTA $60,$C3,$02,$04,$00,C"5 v0.5.0   "
     DTA $60,$C3,$02,$04,$00,C"6  alpha   "
     DTA $60,$C3,$02,$04,$00,C"7**********"
     DTA $C0
