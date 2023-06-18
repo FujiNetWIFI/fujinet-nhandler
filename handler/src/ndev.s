@@ -301,7 +301,7 @@ CLRBUF:	LDA	#$00
 
 DOSIOV: STA	DODCBL+1	; Set source address
 	STY	DODCBL+2
-	LDY	#$0C		; 12 bytes
+	LDY	#$0B		; 12 bytes
 DODCBL	LDA	$FFFF,Y		; Changed above.
 	STA	DCB,Y		; To DCB table
 	DEY			; Count down
