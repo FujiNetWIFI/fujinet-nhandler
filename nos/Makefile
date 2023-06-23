@@ -15,4 +15,3 @@ nos.atr: src/nos.s
 
 clean:
 	rm -rf nos* dist/nos* 
-
