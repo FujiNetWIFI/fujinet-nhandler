@@ -23,13 +23,21 @@ newline ($0A).
 Mode Description      Host <--> ATARI
 ---- -----------      ---------------
 0    No translation    $9B <--> $9B
-1    Carriage Return   $0D ---> $9B
-2    Newline           $0A ---> $9B
+1    Carriage Return   $0D <--> $9B
+2    Newline           $0A <--> $9B
 3    CRLF          $0D,$0A <--> $9B
 
-Notice that only mode 3 offers two
-way translation. Modes 1 and 2 will
-translate data read into the ATARI
-but will not translate files written
-to the remote host.
+FujiNet firmware versions after
+2023-07-04 enable bi-directional
+translation for all modes.
+
+Beware that having EOL translation
+enabled may corrupt binary data. One
+suggestion is to mount an N: device 
+dedicated for accessing text 
+documents. Nothing prevents two N: 
+devices from pointing to the same
+mount point. So one could be used to
+launch programs and the other to load
+and save text documents.
 
