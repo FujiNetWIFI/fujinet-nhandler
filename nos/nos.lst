@@ -1126,7 +1126,7 @@ Source: nos.s
   1124 0AE1 F0 0D		        BEQ     CPLOOP
   1125 				        ; Autorun injection
   1126 0AE3 A9 0E		        LDA     #CMD_IDX.AUTORUN    ; Check for AUTORUN
-  1127 0AE5 CD 54 17		        CMP     AUTORUN_FLG         ; True only on 1st entry
+  1127 0AE5 CD 54 17		        CMP     AUTORUN_FLG         ; True only on 1st entry (TODO Is this working?)
   1128 0AE8 F0 06		        BEQ     CPLOOP              ; Skip to Command Processor
   1129 0AEA 8D 54 17		        STA     AUTORUN_FLG         ; Change flag
   1130 0AED 20 EF 11		        JSR     SUBMIT_AUTORUN      ; Attempt to execute autorun file
@@ -3819,27 +3819,27 @@ Source: nos.s
   3817 16FA 10			        .BYTE   >(DO_NPWD-1)        ;  8 NPWD
   3818 16FB 10			        .BYTE   >(DO_NTRANS-1)      ;  9 NTRANS
   3819 16FC 0C			        .BYTE   >(DO_GENERIC-1)     ; 10 PASS
-  3820 16FD 0C			        .BYTE   >(DO_GENERIC-1)     ; 10 RENAME
-  3821 16FE 0C			        .BYTE   >(DO_GENERIC-1)     ; 11 RMDIR
-  3822 16FF 12			        .BYTE   >(DO_SUBMIT-1)      ; 12 SUBMIT
-  3823 1700 12			        .BYTE   >(DO_TYPE-1)        ; 13 TYPE
-  3824 1701 0C			        .BYTE   >(DO_GENERIC-1)     ; 14 USER
-  3825 				;       .BYTE   >(DO_UNLOCK-1)      ; 15 UNLOCK
-  3826 1702 11			        .BYTE   >(DO_AUTORUN-1)     ; 16 AUTORUN
-  3827 1703 13			        .BYTE   >(DO_CAR-1)         ; 17 CAR
-  3828 1704 13			        .BYTE   >(DO_CLS-1)         ; 18 CLS
-  3829 1705 13			        .BYTE   >(DO_COLD-1)        ; 19 COLD
-  3830 1706 13			        .BYTE   >(DO_HELP-1)        ; 20 HELP
-  3831 1707 14			        .BYTE   >(DO_NOBASIC-1)     ; 21 NOBASIC
-  3832 1708 14			        .BYTE   >(DO_NOSCREEN-1)    ; 22 NOSCREEN
-  3833 1709 14			        .BYTE   >(DO_PRINT-1)       ; 23 PRINT
-  3834 170A 14			        .BYTE   >(DO_REENTER-1)     ; 24 REENTER
-  3835 170B 14			        .BYTE   >(DO_REM-1)         ; 25 REM
-  3836 170C 14			        .BYTE   >(DO_RUN-1)         ; 26 RUN
-  3837 170D 14			        .BYTE   >(DO_SCREEN-1)      ; 27 SCREEN
-  3838 170E 15			        .BYTE   >(DO_WARM-1)        ; 28 WARM
-  3839 170F 15			        .BYTE   >(DO_XEP-1)         ; 29 XEP
-  3840 1710 0C			        .BYTE   >(DO_DRIVE_CHG-1)   ; 30
+  3820 16FD 0C			        .BYTE   >(DO_GENERIC-1)     ; 11 RENAME
+  3821 16FE 0C			        .BYTE   >(DO_GENERIC-1)     ; 12 RMDIR
+  3822 16FF 12			        .BYTE   >(DO_SUBMIT-1)      ; 13 SUBMIT
+  3823 1700 12			        .BYTE   >(DO_TYPE-1)        ; 14 TYPE
+  3824 1701 0C			        .BYTE   >(DO_GENERIC-1)     ; 15 USER
+  3825 				;       .BYTE   >(DO_UNLOCK-1)      ; 16 UNLOCK
+  3826 1702 11			        .BYTE   >(DO_AUTORUN-1)     ; 17 AUTORUN
+  3827 1703 13			        .BYTE   >(DO_CAR-1)         ; 18 CAR
+  3828 1704 13			        .BYTE   >(DO_CLS-1)         ; 19 CLS
+  3829 1705 13			        .BYTE   >(DO_COLD-1)        ; 20 COLD
+  3830 1706 13			        .BYTE   >(DO_HELP-1)        ; 21 HELP
+  3831 1707 14			        .BYTE   >(DO_NOBASIC-1)     ; 22 NOBASIC
+  3832 1708 14			        .BYTE   >(DO_NOSCREEN-1)    ; 23 NOSCREEN
+  3833 1709 14			        .BYTE   >(DO_PRINT-1)       ; 24 PRINT
+  3834 170A 14			        .BYTE   >(DO_REENTER-1)     ; 25 REENTER
+  3835 170B 14			        .BYTE   >(DO_REM-1)         ; 26 REM
+  3836 170C 14			        .BYTE   >(DO_RUN-1)         ; 27 RUN
+  3837 170D 14			        .BYTE   >(DO_SCREEN-1)      ; 28 SCREEN
+  3838 170E 15			        .BYTE   >(DO_WARM-1)        ; 29 WARM
+  3839 170F 15			        .BYTE   >(DO_XEP-1)         ; 30 XEP
+  3840 1710 0C			        .BYTE   >(DO_DRIVE_CHG-1)   ; 31
   3841
   3842 				        ; DEVHDL TABLE FOR N:
   3843

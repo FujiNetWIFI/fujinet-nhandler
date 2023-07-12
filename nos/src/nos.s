@@ -1124,7 +1124,7 @@ DOS:
         BEQ     CPLOOP
         ; Autorun injection
         LDA     #CMD_IDX.AUTORUN    ; Check for AUTORUN
-        CMP     AUTORUN_FLG         ; True only on 1st entry
+        CMP     AUTORUN_FLG         ; True only on 1st entry (TODO Is this working?)
         BEQ     CPLOOP              ; Skip to Command Processor
         STA     AUTORUN_FLG         ; Change flag
         JSR     SUBMIT_AUTORUN      ; Attempt to execute autorun file
@@ -3817,27 +3817,27 @@ CMD_TAB_H:
         .BYTE   >(DO_NPWD-1)        ;  8 NPWD
         .BYTE   >(DO_NTRANS-1)      ;  9 NTRANS
         .BYTE   >(DO_GENERIC-1)     ; 10 PASS
-        .BYTE   >(DO_GENERIC-1)     ; 10 RENAME
-        .BYTE   >(DO_GENERIC-1)     ; 11 RMDIR
-        .BYTE   >(DO_SUBMIT-1)      ; 12 SUBMIT
-        .BYTE   >(DO_TYPE-1)        ; 13 TYPE
-        .BYTE   >(DO_GENERIC-1)     ; 14 USER
-;       .BYTE   >(DO_UNLOCK-1)      ; 15 UNLOCK
-        .BYTE   >(DO_AUTORUN-1)     ; 16 AUTORUN
-        .BYTE   >(DO_CAR-1)         ; 17 CAR
-        .BYTE   >(DO_CLS-1)         ; 18 CLS
-        .BYTE   >(DO_COLD-1)        ; 19 COLD
-        .BYTE   >(DO_HELP-1)        ; 20 HELP
-        .BYTE   >(DO_NOBASIC-1)     ; 21 NOBASIC
-        .BYTE   >(DO_NOSCREEN-1)    ; 22 NOSCREEN
-        .BYTE   >(DO_PRINT-1)       ; 23 PRINT
-        .BYTE   >(DO_REENTER-1)     ; 24 REENTER
-        .BYTE   >(DO_REM-1)         ; 25 REM
-        .BYTE   >(DO_RUN-1)         ; 26 RUN
-        .BYTE   >(DO_SCREEN-1)      ; 27 SCREEN
-        .BYTE   >(DO_WARM-1)        ; 28 WARM
-        .BYTE   >(DO_XEP-1)         ; 29 XEP
-        .BYTE   >(DO_DRIVE_CHG-1)   ; 30
+        .BYTE   >(DO_GENERIC-1)     ; 11 RENAME
+        .BYTE   >(DO_GENERIC-1)     ; 12 RMDIR
+        .BYTE   >(DO_SUBMIT-1)      ; 13 SUBMIT
+        .BYTE   >(DO_TYPE-1)        ; 14 TYPE
+        .BYTE   >(DO_GENERIC-1)     ; 15 USER
+;       .BYTE   >(DO_UNLOCK-1)      ; 16 UNLOCK
+        .BYTE   >(DO_AUTORUN-1)     ; 17 AUTORUN
+        .BYTE   >(DO_CAR-1)         ; 18 CAR
+        .BYTE   >(DO_CLS-1)         ; 19 CLS
+        .BYTE   >(DO_COLD-1)        ; 20 COLD
+        .BYTE   >(DO_HELP-1)        ; 21 HELP
+        .BYTE   >(DO_NOBASIC-1)     ; 22 NOBASIC
+        .BYTE   >(DO_NOSCREEN-1)    ; 23 NOSCREEN
+        .BYTE   >(DO_PRINT-1)       ; 24 PRINT
+        .BYTE   >(DO_REENTER-1)     ; 25 REENTER
+        .BYTE   >(DO_REM-1)         ; 26 REM
+        .BYTE   >(DO_RUN-1)         ; 27 RUN
+        .BYTE   >(DO_SCREEN-1)      ; 28 SCREEN
+        .BYTE   >(DO_WARM-1)        ; 29 WARM
+        .BYTE   >(DO_XEP-1)         ; 30 XEP
+        .BYTE   >(DO_DRIVE_CHG-1)   ; 31
 
         ; DEVHDL TABLE FOR N:
 
