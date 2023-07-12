@@ -1,0 +1,35 @@
+10 DIM D$(255),Q$(255),O$(255)
+20 GOSUB 200:GOSUB 100
+30 GOSUB 300:GOSUB 100
+40 GOSUB 500:GOSUB 100
+50 GOSUB 400:GOSUB 100
+90 END 
+100 OPEN #1,12,3,D$
+110 XIO 252,#1,12,1,"N:"
+120 PRINT "PARSE JSON"
+130 XIO ASC("P"),#1,12,3,"N:"
+140 PRINT "QUERY ";Q$
+150 XIO ASC("Q"),#1,12,3,Q$
+155 IF S=0 THEN 173
+160 INPUT #1,O$
+170 PRINT O$
+171 GOTO 180
+173 INPUT #1,O:PRINT O
+180 CLOSE #1
+190 RETURN 
+200 D$="N:HTTP://api.open-notify.org/iss-now.json"
+210 Q$="N:/MESSAGE"
+220 S=1
+230 RETURN 
+300 D$="N:HTTPS://JSONPLACEHOLDER.TYPICODE.COM/todos/1"
+310 Q$="N:/TITLE"
+320 S=1
+330 RETURN 
+400 D$="N:https://api.open-meteo.com/v1/forecast?latitude=46.26&longitude=-63.67&current_weather=true&timezone=aut"
+410 Q$="N://latitude"
+420 S=0
+430 RETURN 
+500 D$="N:HTTP://api.open-notify.org/iss-now.json"
+510 Q$="N:/TIMESTAMP"
+520 S=0
+530 RETURN 
