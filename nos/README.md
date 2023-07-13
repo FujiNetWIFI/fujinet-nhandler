@@ -329,15 +329,11 @@ Where mode is required and either 0, 1, 2, or 3
 | n  |Translation Mode|
 |:--:|--------|
 |0|No translation of ATARI EOL ($9B)|
-|1|Convert CR --> ATARI EOL ($9B) (Incoming-only)|
-|2|Convert LF --> ATARI EOL ($9B) (Incoming-only)|
-|3|Convert CR/LF <--> ATARI EOL ($9B) (Both directions)|
+|1|Convert CR <--> ATARI EOL ($9B)|
+|2|Convert LF <--> ATARI EOL ($9B)|
+|3|Convert CR/LF <--> ATARI EOL ($9B)|
 
-The translation mode is assigned on the current default network drive.
-
-Best results seem to arrive from using mode 3 and a text editor on the host machine that supports CR/LF.
-
-Having translation enabled when working with binary files may result in corruption.
+Note: Having translation enabled when working with binary files may result in corruption. The `LOAD` command will disable translation for the N: device used for reading in the binary executable.
 
 `SUBMIT`
 ---
