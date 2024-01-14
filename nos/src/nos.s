@@ -1122,6 +1122,8 @@ PRINT_ERROR_NEXT:
         STA     INBUFF
         LDA     #>PRINT_ERROR_HELP
         STA     INBUFF+1
+        LDA     #$FF
+        STA     PRINT_ERR_FLG  ; Set flag that arrived from PRINT_ERROR. This will skip the CLS
         JMP     DO_HELP
 
 PRINT_ERROR_DONE:
@@ -1289,8 +1291,12 @@ CPLOOP:
 ; Main loop
 ;---------------------------------------
 CP:
-        LDA     #$FF        ; Clear command
-        STA     CMD
+        LDX     #$FF        ; Clear command
+        STX     CMD
+    ; NOTE Testing for PRINT_ERROR
+    INX
+    STX     PRINT_ERR_FLG
+        
 
         JSR     SHOWPROMPT
         JSR     GETCMD
@@ -3233,6 +3239,8 @@ TYPE_SKIP:
 TYPE_NEXT:
 
     ; Initialize pagination
+    INC PRINT_ERR_FLG         ; Are we here from PRINT_ERROR (CMD will now be $00)
+    BEQ TYPE_READ
         JSR     DO_CLS
         LDA     #21
         STA     SCRFLG
@@ -4161,6 +4169,8 @@ INQDS       .BYTE   $01     ; DSTATS INQ
 
 DVS2    :MAXDEV .BYTE $00   ; DVSTAT+2 SAVE
 DVS3    :MAXDEV .BYTE $00   ; DVSTAT+3 SAVE
+
+PRINT_ERR_FLG   .BYTE $00
 
 COLOR4_ORIG .BYTE   $00     ; Hold prev border color
 
