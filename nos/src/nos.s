@@ -3229,6 +3229,8 @@ TYPE_SKIP:
         JSR     CIOCLOSE        ; Assert file #1 is closed
 
     ; Open input file
+        LDA     #$FF
+        STA     CH
         LDX     #$10            ; File #1
         LDY     #$04            ; Open for input
         JSR     CIOOPEN         ; Open filename @ (INBUFF)
