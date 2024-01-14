@@ -8,6 +8,9 @@ Usage:
 
 XEP [40]
 
+Requires an XEP or compatible device
+and an XEP handler loaded in memory.
+
 Executing the XEP command without
 any arguments will switch to the 
 XEP80 screen.

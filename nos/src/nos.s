@@ -46,7 +46,11 @@ MAX_APPKEY_LEN = $40    ; Used with appkey files
 ;---------------------------------------
 
 VPRCED  =   $0202       ; PROCEED VCTR
+COLOR0  =   $02C4       ; 
+COLOR1  =   $02C5       ; 
 COLOR2  =   $02C6       ; MODEF BKG C
+COLOR3  =   $02C7       ; 
+COLOR4  =   $02C8       ; 
 RUNAD   =   $02E0       ; RUN ADDRESS
 INITAD  =   $02E2       ; INIT ADDRESS
 MEMLO   =   $02E7       ; MEM LO
@@ -96,9 +100,11 @@ ICAX5   =   IOCB+14     ; AUX 5
 ICAX6   =   IOCB+15     ; AUX 6
 
 ROWCRS  =   $0054
+RAMTOP  =   $006A
 SCRFLG  =   $02BB       ; Scroll flag
 CH      =   $02FC       ; Hardware code for last key pressed
 CH1     =   $02F2       ; Prior keyboard character code
+BASICF  =   $03F8
 LNBUF   =   $0582       ; Line Buffer (128 bytes)
 ;LNBUF   =   $1880       ; Line Buffer (128 bytes)
 
@@ -151,6 +157,9 @@ OINPUT  =   $04         ; CIO/SIO direction
 OOUTPUT =   $08         ; CIO/SIO direction
 BOGUS   =   $F0         ; Bogus FujiNet SIO command byte
 
+;ROM_BORDER = $92        ; Border color when program in ROM
+ROM_BORDER = $06        ; Border color when program in ROM
+
 ; FujiNet SIO command bytes.
 CMD_DRIVE_CHG       = $01
 CMD_CD              = $2C
@@ -158,7 +167,7 @@ CMD_CD              = $2C
 CMD_DIR             = $02
 CMD_DEL             = $21
 CMD_LOAD            = $28
-;CMD_LOCK            = $23
+CMD_LOCK            = $23
 CMD_LPR             = BOGUS
 CMD_MKDIR           = $2A
 CMD_NPWD            = $30
@@ -166,15 +175,16 @@ CMD_NTRANS          = 'T'
 CMD_PASS            = $FE
 CMD_RENAME          = $20
 CMD_RMDIR           = $2B
+CMD_SAVE            = BOGUS
 CMD_SUBMIT          = BOGUS
 CMD_TYPE            = BOGUS
 CMD_USER            = $FD
-;CMD_UNLOCK          = $24
+CMD_UNLOCK          = $24
 CMD_CAR             = BOGUS
 CMD_CLS             = BOGUS
 CMD_COLD            = BOGUS
 CMD_HELP            = BOGUS
-CMD_NOBASIC         = BOGUS
+CMD_BASIC           = BOGUS
 CMD_NOSCREEN        = BOGUS
 CMD_PRINT           = BOGUS
 CMD_REENTER         = BOGUS
@@ -1074,6 +1084,8 @@ PRINT_ERROR_NEXT:
     ;-----------------------------------
     ; Convert error code to ASCII
     ;-----------------------------------
+
+    ; Call subroutines in ROM to convert error into to ascii
         STY     FR0
         LDA     #$00
         STA     FR0+1
@@ -1085,28 +1097,157 @@ PRINT_ERROR_NEXT:
     ; Unset high bit & append EOL
     ;---------------------------------------
         LDY     #$FF        ; Init counter = 0
-
+        LDX     #14
 @       INY
+        INX
         LDA     (INBUFF),Y
+    STA     PRINT_ERROR_HELP,X
         CMP     #$80
         BCC     @-
 
         AND     #$7F        ; Clear high bit
         STA     (INBUFF),Y
+   STA     PRINT_ERROR_HELP,X
         INY
         LDA     #EOL        ; Append EOL
         STA     (INBUFF),Y
 
         LDA     INBUFF
         LDY     INBUFF+1
-        JMP     PRINT_STRING
+;        JMP     PRINT_STRING
+
+        LDA     #$05        ; Point to 
+        STA     CMDSEP
+        LDA     #<PRINT_ERROR_HELP
+        STA     INBUFF
+        LDA     #>PRINT_ERROR_HELP
+        STA     INBUFF+1
+        JMP     DO_HELP
 
 PRINT_ERROR_DONE:
         RTS
 
+PRINT_ERROR_HELP:
+        .BYTE   'HELP REF/ERROR/XXX',EOL
+
 ; End PRINTSCR
 ;---------------------------------------
 
+ASCII2ADDR:
+    ;---------------------------------------
+    ; Convert 4-char ASCII string found in LNBUF
+    ; to bytes found at INBUFF. 
+    ; Ex: "0F1A" --> $1A, $0F
+    ;
+    ; Input:
+    ; LNBUF contains 4-char ASCII string
+    ; Y contains offset from LNBUF to start 
+    ; of ASCII string
+    ;
+    ; Output:
+    ; INBUFF contains 2 bytes
+    ;---------------------------------------
+    
+    ;---------------------------------------
+    ; ASCII hex char to integer conversion
+    ; algorithm borrowed from Apple II Monitor
+    ;---------------------------------------
+        LDA     #$00
+        STA     INBUFF      ; L
+        STA     INBUFF+1    ; H
+NEXTHEX:
+        LDA     LNBUF,Y     ; Get character for hex test.
+        EOR     #%00110000  ; Maps digits to $0-$9
+        CMP     #$0A        ; Digit?
+        BCC     DIG         ; Yes.
+        ADC     #$88        ; Map letter "A"-"F" to $FA-FF.
+        CMP     #$FA        ; Hex letter?
+        BCC     NOTHEX      ; No, character not hex.
+
+DIG:    ASL
+        ASL
+        ASL
+        ASL
+        LDX     #$04        ; Shift count.
+
+HEXSHIFT:
+        ASL
+        ROL     INBUFF      ; Rotate into LSD.
+        ROL     INBUFF+1    ; Rotate into MSD's.
+        DEX                 ; Done 4 shifts?
+        BNE     HEXSHIFT    ; No, loop.
+        INY                 ; Advance text index
+        CPY     RBUF        ; Processed 4 characters?
+        BNE     NEXTHEX     ; No, get next character.
+
+        CLC                 ;
+        RTS                 ; INBUFF contains bytes
+
+NOTHEX:
+        LDA     #<RUN_ERROR_STR
+        LDY     #>RUN_ERROR_STR
+        JSR     PRINT_STRING
+        SEC
+        RTS
+
+RUN_ERROR_STR:
+        .BYTE   'ADDR? 0000..FFFF',EOL
+
+;---------------------------------------
+CHECK_INTERNAL_BASIC:
+;---------------------------------------
+    ; Check for internal BASIC found in XL/XEs
+    ; On return:
+    ;   CARRY is clear if not found
+    ;   CARRY is set if found
+    ;-----------------------------------
+        CLC 
+        LDA     $FFF7
+        CMP     #$FF        ; ????
+        BEQ     NOBASIC_ERROR
+        CMP     #$DD        ; OSA NTSC
+        BEQ     NOBASIC_ERROR
+        CMP     #$F3        ; OSB NTSC
+        BEQ     NOBASIC_ERROR
+        CMP     #$D6        ; OSA PAL
+        BEQ     NOBASIC_ERROR
+        CMP     #$22        ; OSB PAL
+        BEQ     NOBASIC_ERROR
+        CMP     #$0A        ; OSA 1200XL
+        BEQ     NOBASIC_ERROR
+        CMP     #$0B        ; OSB 1200XL
+        BEQ     NOBASIC_ERROR
+        RTS
+
+;---------------------------------------
+NOBASIC_ERROR:
+;---------------------------------------
+        LDA     #<NOBASIC_ERROR_STR
+        LDY     #>NOBASIC_ERROR_STR
+        JSR     PRINT_STRING
+        SEC
+        RTS
+
+NOBASIC_ERROR_STR:
+        .BYTE   'NO BUILT-IN BASIC',EOL
+
+;---------------------------------------
+CHECK_IF_ROM:
+;---------------------------------------
+    ; Checks if cart space is ROM or RAM
+    ;-----------------------------------
+    ; On return 
+    ; If A000 = ROM then Y = 1
+    ; If A000 = RAM then Y = 0
+    ;-----------------------------------
+        LDY     #$01        ; Assume ROM -> Y=1
+        LDA     $A000       ; Try altering A000
+        INC     $A000       ; 
+        CMP     $A000       ; If A <> A000 then RAM
+        BEQ     @+          ; If A = A000 then ROM (Y=FF)
+        DEY                 ; RAM -> Y=0
+        STA     $A000       ; Restore altered RAM
+@:      RTS
 
 ;#######################################
 ;#                                     #
@@ -1118,16 +1259,27 @@ PRINT_ERROR_DONE:
 ; DOS Entry point (DOSVEC points here)
 ;---------------------------------------
 DOS:
+        ; Change border if BASIC (or something else) in ROM
+        LDA     COLOR4
+        STA     COLOR4_ORIG          ; Preserve border
+        JSR     CHECK_IF_ROM
+        TYA                         ; Y = 1 if ROM
+        BEQ     @+                  ; Skip ahead if A000 is RAM
+        LDA     #ROM_BORDER         ; Change border
+        STA     COLOR4
+
         ; Bypass Autorun if OPTION switch held
-        LDA     CONSOL
+@:      LDA     CONSOL
         CMP     #OPTION
         BEQ     CPLOOP
+
         ; Autorun injection
         LDA     #CMD_IDX.AUTORUN    ; Check for AUTORUN
         CMP     AUTORUN_FLG         ; True only on 1st entry
         BEQ     CPLOOP              ; Skip to Command Processor
         STA     AUTORUN_FLG         ; Change flag
         JSR     SUBMIT_AUTORUN      ; Attempt to execute autorun file
+
        
 CPLOOP:
         JSR     CP          ; Command Processor
@@ -1210,7 +1362,7 @@ GETLOOP:
         DEX
         BPL     GETLOOP     ; next X
 
-    ; Initial Delimiter to space
+    ; Initialize Delimiter to space
         LDA     #' '
         STA     DELIM
 
@@ -1274,7 +1426,7 @@ GETCMD_WR_OFFSET:
 GETCMD_DONE:
         RTS
 
-CMDSEP: .BYTE $FF,$FF,$FF
+CMDSEP: .BYTE $FF,$FF,$FF,$FF,$FF
 DELIM:  .BYTE ' '
 
 ;---------------------------------------
@@ -1451,6 +1603,9 @@ DOCMD_DONE:
 DO_DRIVE_CHG:
 ;---------------------------------------
         LDA     LNBUF
+        AND     #%11011111  ; Convert lower to upper
+        CMP     #'N'
+        BNE     DO_DRIVE_CHG_ERROR
         STA     PRMPT+1
         LDA     LNBUF+1
         CMP     #'1'        ; Skip if < '1'
@@ -2589,12 +2744,12 @@ LOAD_ERROR:
         LDY     #>MISSING_FILE_STR
         JMP     PRINT_STRING
 
-;;---------------------------------------
-;DO_LOCK:
-;;---------------------------------------
-;        LDA     #$60
-;        STA     COLOR2
-;        RTS
+;---------------------------------------
+DO_LOCK:
+;---------------------------------------
+        LDA     #$60
+        STA     COLOR2
+        RTS
 
 
 ;---------------------------------------
@@ -2620,7 +2775,7 @@ DO_NPWD:
 
     ;---------------------------------------
     ; If we entered DO_NPWD from REMOUNT_DRIVE
-    ; then scipt printing output
+    ; then skip printing output
     ;---------------------------------------
         LDA     CMDPRV
         CMP     #CMD_IDX.DEL
@@ -3040,6 +3195,11 @@ SUBMIT_DONE
 ; End of DO_SUBMIT
 ;---------------------------------------
 
+; Open Nn: for read
+; Open E: or P: for write
+; Read byte
+; Write byte
+
 ;---------------------------------------
 DO_TYPE:
 ;---------------------------------------
@@ -3148,12 +3308,12 @@ TYPE_DONE:
 TYPE_OPEN_ERR_STR:
         .BYTE   'UNABLE TO OPEN FILE',EOL
 
-;;---------------------------------------
-;DO_UNLOCK:
-;;---------------------------------------
-;        LDA     #$90
-;        STA     COLOR2
-;        RTS
+;---------------------------------------
+DO_UNLOCK:
+;---------------------------------------
+        LDA     #$90
+        STA     COLOR2
+        RTS
 
 ;---------------------------------------
 DO_CAR:
@@ -3162,23 +3322,31 @@ DO_CAR:
     ;---------------------------------------
     ; Is cart address space RAM or ROM?
     ;---------------------------------------
-        LDA     $A000
-        INC     $A000
-        CMP     $A000
-        BEQ     DO_CAR_NEXT
+        JSR     CHECK_IF_ROM    ; returns Y=1 -> ROM. Y=0 -> RAM.
+        TYA                     ; Xfer affects Z flag
+        BNE     DO_CAR_NEXT     ; if Y=1 (ROM) skip ahead
 
     ;---------------------------------------
     ; RAM found
     ;---------------------------------------
-        STA     $A000
         LDA     #<DO_CAR_ERR
         LDY     #>DO_CAR_ERR
-        JMP     PRINT_STRING
+        JMP     PRINT_STRING    ; Print error and bail
 
 DO_CAR_NEXT:
+    ;---------------------------------------
+    ; Border used to indicate program in ROM
+    ; Revert border before returning to ROM
+    ;---------------------------------------
+        LDA     COLOR4_ORIG     
+        STA     COLOR4          ; Reset border to orig color
+
+    ;---------------------------------------
+    ; Warmstart
+    ;---------------------------------------
         LDA     #$FF
-        STA     $08         ; Warmstart
-        JMP     ($BFFA)
+        STA     $08
+        JMP     ($BFFA)         ; Bye
 
 DO_CAR_ERR:
         .BYTE   'NO CARTRIDGE',EOL
@@ -3259,40 +3427,89 @@ HELP_ARTICLE:
     :24 .BYTE   $00
 
 ;---------------------------------------
-DO_NOBASIC:
+DO_BASIC:
 ;---------------------------------------
-    ; Quit if 400/800
-        LDA     $FFF7
-        CMP     #$FF        ; ????
-        BEQ     NOBASIC_ERROR
-        CMP     #$DD        ; OSA NTSC
-        BEQ     NOBASIC_ERROR
-        CMP     #$F3        ; OSB NTSC
-        BEQ     NOBASIC_ERROR
-        CMP     #$D6        ; OSA PAL
-        BEQ     NOBASIC_ERROR
-        CMP     #$22        ; OSB PAL
-        BEQ     NOBASIC_ERROR
-        CMP     #$0A        ; OSA 1200XL
-        BEQ     NOBASIC_ERROR
-        CMP     #$0B        ; OSB 1200XL
-        BEQ     NOBASIC_ERROR
-        
-    ; Disable BASIC
+    ; Enable or disable BASIC (or, say, U1MB ROM)
+    ; Usage: [BASIC|ROM] [ON|OFF]
+    
+    ; Quit if no internal BASIC
+        JSR     CHECK_INTERNAL_BASIC
+        BCS     BASIC_QUIT
+
+    ; Check for usage. arg (BASIC ON|OFF)
+        LDX     CMDSEP
+        LDA     LNBUF,X
+        AND     #%11011111  ; Convert lower to upper
+        CMP     #'O'        ; Is 1st char O? as in ON|OFF
+        BNE     BASIC_USAGE
+        INX
+        LDA     LNBUF,X
+        AND     #%11011111  ; Convert lower to upper
+        CMP     #'F'        ; Is 2nd char F? as in OFF?
+        BEQ     BASIC_OFF
+        CMP     #'N'        ; Is 2nd char N? as in ON?
+        BNE     BASIC_USAGE
+
+    ;---------------------------------------
+    ; We are here if BASIC ON or ROM ON was the command. 
+    ; Do a favor and jump to CAR if ROM is already enabled
+    ;---------------------------------------
         LDA     PORTB
-        ORA     #%00000010  ; if Bit 1 = 1 then BASIC is disabled
-        STA     PORTB
+        AND     #%00000010
+        BNE     BASIC_ON
+        JMP     DO_CAR
+
+BASIC_ON:
+    ;---------------------------------------
+    ; Source: ANTIC Volume 4 #10 Feb 1986
+    ; BASIC ON/OFF Switcher [Chadwick]
+
+    ;---------------------------------------
+    ; Enable BASIC in XL/XE
+    ;---------------------------------------
+        LDA     #$00
+        STA     BASICF      ; BASIC RAM FLAG
+        LDA     #$52
+        STA     $03EB       ; CARTRIDGE CHECKSUM
+
+        LDA     PORTB
+        AND     #%11111101  ; If Bit 1 = 0 then BASIC is enabled
+        STA     PORTB       ; BASIC ROM FLAG
+        BNE     BASIC_WARM  ; Always jump
+
+BASIC_OFF:
+    ;---------------------------------------
+    ; Disable BASIC in XL/XE
+    ;---------------------------------------
+        LDA     #$01
+        STA     BASICF
+    ;---------------------------------------
+    ; Change border color as reminder that
+    ; we're working with limited addr space
+    ;---------------------------------------
+        LDA     COLOR4_ORIG
+        STA     COLOR4      
+
+BASIC_WARM:
+        JMP     WARMSV  ; XL/XE WARMSTART
+
+BASIC_QUIT:
         RTS
 
-;---------------------------------------
-NOBASIC_ERROR:
-;---------------------------------------
-        LDA     #<NOBASIC_ERROR_STR
-        LDY     #>NOBASIC_ERROR_STR
+BASIC_USAGE:
+        LDA     #<BASIC_ERROR
+        LDY     #>BASIC_ERROR
         JMP     PRINT_STRING
 
-NOBASIC_ERROR_STR:
-        .BYTE   'NO BUILT-IN BASIC',EOL
+BASIC_ERROR:
+        .BYTE   '[BASIC|ROM] [ON|OFF]',EOL
+
+;;---------------------------------------
+;DO_NOBASIC:
+;;---------------------------------------
+;        JSR     CHECK_INTERNAL_BASIC
+;        BCS     NOBASIC_QUIT
+
 
 ;---------------------------------------
 DO_NOSCREEN:
@@ -3373,47 +3590,99 @@ DO_RUN:
         ADC     #$04
         STA     RBUF
 
-    ;---------------------------------------
-    ; ASCII hex char to integer conversion
-    ; algorithm borrowed from Apple II Monitor
-    ;---------------------------------------
-        LDA     #$00
-        STA     INBUFF      ; L
-        STA     INBUFF+1    ; H
-NEXTHEX:
-        LDA     LNBUF,Y     ; Get character for hex test.
-        EOR     #%00110000  ; Maps digits to $0-$9
-        CMP     #$0A        ; Digit?
-        BCC     DIG         ; Yes.
-        ADC     #$88        ; Map letter "A"-"F" to $FA-FF.
-        CMP     #$FA        ; Hex letter?
-        BCC     NOTHEX      ; No, character not hex.
+        JSR     ASCII2ADDR  ; Convert text to an addr
+        BCS     DO_REM      ; Re-use nearby RTS
+        
+        JMP     (INBUFF)    ;
 
-DIG:    ASL
-        ASL
-        ASL
-        ASL
-        LDX     #$04        ; Shift count.
+;---------------------------------------
+DO_SAVE:
+;---------------------------------------
+    ; INBUFF points to Filename
+    ; LNBUF,Y is start of 4 char ASCII hex string
 
-HEXSHIFT:
-        ASL
-        ROL     INBUFF      ; Rotate into LSD.
-        ROL     INBUFF+1    ; Rotate into MSD's.
-        DEX                 ; Done 4 shifts?
-        BNE     HEXSHIFT    ; No, loop.
-        INY                 ; Advance text index
-        CPY     RBUF        ; Processed 4 characters?
-        BNE     NEXTHEX     ; No, get next character.
+        LDA     #$B0
+        STA     COLOR2
 
-        JMP     (INBUFF)    ; Goto requested address. Godspeed.
+    ; Store address of INBUFF + CMDSEP in STL, STH
+        CLC
+        LDA     INBUFF
+        ADC     CMDSEP
+        STA     STL
+        LDA     INBUFF+1
+        ADC     #$00
+        STA     STH
 
-NOTHEX:
-        LDA     #<RUN_ERROR_STR
-        LDY     #>RUN_ERROR_STR
+        RTS
+    ; Loop until comma found, replace it with EOL,
+    ; and store address in STL, STH
+
+;        LDY     CMDSEP
+;        DEY
+;@:      INY
+;        LDA     #EOL
+;        INY
+;        CMP     (INBUFF),Y
+;        BEQ     SAVE_USAGE
+;        BNE     @-
+;        STA
+;        RTS
+;
+;    ; Loop until EOL is found
+;    ; Move addr args to STL, STH, ..
+;        LDX     #$00        ; X will hold number of addr args
+;        LDY     CMDSEP
+;        CLC
+;SAVE_LOOP0:
+;        LDA     (INBUFF),Y
+;
+;        CMP     #EOL        ; If EOL then skip ahead
+;        BEQ     @++
+;
+;        CMP     #','
+;        BNE     @+
+;        
+;        INX
+;        CPX     #$05        ; If number of commas >= 5
+;        BCS     SAVE_USAGE  ; Then quit
+;       
+;        INY
+;        TYA
+;        STA     CMPSEP,X
+;@:      BNE     SAVE_LOOP0  ; Always true
+;
+;
+;    ; Check # of args
+;@:      CPX     #$03
+;
+;    ; Save addresses to TBUF 
+;    ; Save lo bytes in 1st list
+;    ; Save hi bytes in 2nd list
+;SAVE_LOOP1:
+;        INX
+;        LDA     CMDSEP,X
+;        BEQ     SAVE_SKIP1
+;        JSR     ASCII2ADDR
+;        LDA     INBUFF          ; Lo byte
+;        STA     TBUF,X
+;        LDA     INBUFF+1        ; Hi byte
+;        STA     TBUF+4,X
+;SAVE_SKIP1:
+;        DEX
+;        DEX
+;        BNE     SAVE_LOOP1
+;
+;        RTS
+SAVE_USAGE:
+        LDA     #<SAVE_ERROR_STR
+        LDY     #>SAVE_ERROR_STR
         JMP     PRINT_STRING
 
-RUN_ERROR_STR:
-        .BYTE   'ADDR? 0000..FFFF',EOL
+SAVE_ERROR_STR:
+        .BYTE   'SAVE Nn:FILE,START,END(,INIT)(,RUN)',EOL
+;
+; End of DO_SAVE
+;---------------------------------------
 
 ;---------------------------------------
 DO_WARM:
@@ -3572,7 +3841,7 @@ PRMPT:
                 DIR                 ;  2
                 DEL                 ;  3
                 LOAD                ;  4
-;               LOCK                ;  5
+                LOCK                ;  5
                 LPR                 ;  6
                 MKDIR               ;  7
                 NPWD                ;  8
@@ -3580,25 +3849,26 @@ PRMPT:
                 PASS                ; 10
                 RENAME              ; 11
                 RMDIR               ; 12
-                SUBMIT              ; 13
-                TYPE                ; 14
-                USER                ; 15
-;               UNLOCK              ; 16
-                AUTORUN             ; 17
-                CAR                 ; 18
-                CLS                 ; 19
-                COLD                ; 10
-                HELP                ; 21
-                NOBASIC             ; 22
-                NOSCREEN            ; 23
-                PRINT               ; 24
-                REENTER             ; 25
-                REM                 ; 26
-                RUN                 ; 27
-                SCREEN              ; 28
-                WARM                ; 29
-                XEP                 ; 30
-                DRIVE_CHG           ; 31
+                SAVE                ; 13
+                SUBMIT              ; 14
+                TYPE                ; 15
+                USER                ; 16
+                UNLOCK              ; 17
+                AUTORUN             ; 18
+                CAR                 ; 19
+                CLS                 ; 20
+                COLD                ; 21
+                HELP                ; 22
+                BASIC               ; 23
+                NOSCREEN            ; 24
+                PRINT               ; 25
+                REENTER             ; 26
+                REM                 ; 27
+                RUN                 ; 28
+                SCREEN              ; 29
+                WARM                ; 20
+                XEP                 ; 31
+                DRIVE_CHG           ; 32
         .ENDE
 
 CMD_DCOMND:
@@ -3607,7 +3877,7 @@ CMD_DCOMND:
         .BYTE   CMD_DIR             ;  2 DIR
         .BYTE   CMD_DEL             ;  3 DEL
         .BYTE   CMD_LOAD            ;  4 LOAD
-;       .BYTE   CMD_LOCK            ;  5 LOCK
+        .BYTE   CMD_LOCK            ;  5 LOCK
         .BYTE   CMD_LPR             ;  6 LPR
         .BYTE   CMD_MKDIR           ;  7 MKDIR
         .BYTE   CMD_NPWD            ;  8 NPWD
@@ -3615,25 +3885,26 @@ CMD_DCOMND:
         .BYTE   CMD_PASS            ; 10 PASS
         .BYTE   CMD_RENAME          ; 11 RENAME
         .BYTE   CMD_RMDIR           ; 12 RMDIR
-        .BYTE   CMD_SUBMIT          ; 13 SUBMIT
-        .BYTE   CMD_TYPE            ; 14 TYPE
-        .BYTE   CMD_USER            ; 15 USER
-;       .BYTE   CMD_UNLOCK          ; 16 UNLOCK
-        .BYTE   CMD_AUTORUN         ; 17 AUTORUN
-        .BYTE   CMD_CAR             ; 18 CAR
-        .BYTE   CMD_CLS             ; 19 CLS
-        .BYTE   CMD_COLD            ; 10 COLD
-        .BYTE   CMD_HELP            ; 21 HELP
-        .BYTE   CMD_NOBASIC         ; 22 NOBASIC
-        .BYTE   CMD_NOSCREEN        ; 23 NOSCREEN
-        .BYTE   CMD_PRINT           ; 24 PRINT
-        .BYTE   CMD_REENTER         ; 25 REENTER
-        .BYTE   CMD_REM             ; 26 REM
-        .BYTE   CMD_RUN             ; 27 RUN
-        .BYTE   CMD_SCREEN          ; 28 SCREEN
-        .BYTE   CMD_WARM            ; 29 WARM
-        .BYTE   CMD_XEP             ; 30 XEP
-        .BYTE   CMD_DRIVE_CHG       ; 31
+        .BYTE   CMD_SAVE            ; 13 SAVE
+        .BYTE   CMD_SUBMIT          ; 14 SUBMIT
+        .BYTE   CMD_TYPE            ; 15 TYPE
+        .BYTE   CMD_USER            ; 16 USER
+        .BYTE   CMD_UNLOCK          ; 17 UNLOCK
+        .BYTE   CMD_AUTORUN         ; 18 AUTORUN
+        .BYTE   CMD_CAR             ; 19 CAR
+        .BYTE   CMD_CLS             ; 20 CLS
+        .BYTE   CMD_COLD            ; 21 COLD
+        .BYTE   CMD_HELP            ; 22 HELP
+        .BYTE   CMD_BASIC           ; 23 BASIC
+        .BYTE   CMD_NOSCREEN        ; 24 NOSCREEN
+        .BYTE   CMD_PRINT           ; 25 PRINT
+        .BYTE   CMD_REENTER         ; 26 REENTER
+        .BYTE   CMD_REM             ; 27 REM
+        .BYTE   CMD_RUN             ; 28 RUN
+        .BYTE   CMD_SCREEN          ; 29 SCREEN
+        .BYTE   CMD_WARM            ; 20 WARM
+        .BYTE   CMD_XEP             ; 31 XEP
+        .BYTE   CMD_DRIVE_CHG       ; 32
 
 COMMAND:
         .CB     "NCD"               ;  0 NCD
@@ -3651,8 +3922,8 @@ COMMAND:
         .CB     "LOAD"              ;  4 LOAD
         .BYTE   CMD_IDX.LOAD             
 
-;       .CB     "LOCK"              ;  5 LOCK
-;       .BYTE   CMD_IDX.LOCK             
+        .CB     "LOCK"              ;  5 LOCK
+        .BYTE   CMD_IDX.LOCK             
 
         .CB     "LPR"               ;  6 LPR
         .BYTE   CMD_IDX.LPR              
@@ -3675,60 +3946,65 @@ COMMAND:
         .CB     "RMDIR"             ; 12 RMDIR
         .BYTE   CMD_IDX.RMDIR           
                                         
-        .CB     "SUBMIT"            ; 13 SUBMIT
+        .CB     "SAVE"              ; 13 SAVE
+        .BYTE   CMD_IDX.SAVE            
+                                         
+        .CB     "SUBMIT"            ; 14 SUBMIT
         .BYTE   CMD_IDX.SUBMIT             
                                         
-        .CB     "TYPE"              ; 14 TYPE
+        .CB     "TYPE"              ; 15 TYPE
         .BYTE   CMD_IDX.TYPE                
                                           
-        .CB     "USER"             ;  15 USER
+        .CB     "USER"              ;  16 USER
         .BYTE   CMD_IDX.USER              
                                         
-;       .CB     "UNLOCK"            ; 16 UNLOCK
-;       .BYTE   CMD_IDX.UNLOCK            
+        .CB     "UNLOCK"            ; 17 UNLOCK
+        .BYTE   CMD_IDX.UNLOCK            
                                         
-        .CB     "AUTORUN"           ; 17 AUTORUN
+        .CB     "AUTORUN"           ; 18 AUTORUN
         .BYTE   CMD_IDX.AUTORUN           
                                           
-        .CB     "CAR"               ; 18 CAR
+        .CB     "CAR"               ; 19 CAR
         .BYTE   CMD_IDX.CAR             
-                                       
-        .CB     "CLS"               ; 19 CLS
+                                        
+        .CB     "CLS"               ; 20 CLS
         .BYTE   CMD_IDX.CLS             
                                         
-        .CB     "COLD"              ; 10 COLD
+        .CB     "COLD"              ; 21 COLD
         .BYTE   CMD_IDX.COLD              
                                         
-        .CB     "HELP"              ; 21 HELP
+        .CB     "HELP"              ; 22 HELP
         .BYTE   CMD_IDX.HELP               
+
+        .CB     "BASIC"             ; 23 NOBASIC
+        .BYTE   CMD_IDX.BASIC           
                                         
-        .CB     "NOBASIC"           ; 22 NOBASIC
-        .BYTE   CMD_IDX.NOBASIC           
-                                          
-        .CB     "@NOSCREEN"         ; 23 @NOSCREEN
-        .BYTE   CMD_IDX.NOSCREEN         
-                                        
-        .CB     "PRINT"             ; 24 PRINT
+        .CB     "@NOSCREEN"         ; 24 @NOSCREEN
+        .BYTE   CMD_IDX.NOSCREEN       
+                                      
+        .CB     "PRINT"             ; 25 PRINT
         .BYTE   CMD_IDX.PRINT           
                                         
-        .CB     "REENTER"           ; 25 REENTER
+        .CB     "REENTER"           ; 26 REENTER
         .BYTE   CMD_IDX.REENTER         
                                         
-        .CB     "REM"               ; 26 REM
+        .CB     "REM"               ; 27 REM
         .BYTE   CMD_IDX.REM             
                                         
-        .CB     "RUN"               ; 27 RUN
+        .CB     "RUN"               ; 28 RUN
         .BYTE   CMD_IDX.RUN             
                                         
-        .CB     "@SCREEN"           ; 28 @SCREEN
+        .CB     "@SCREEN"           ; 29 @SCREEN
         .BYTE   CMD_IDX.SCREEN          
                                         
-        .CB     "WARM"              ; 29 WARM
-        .BYTE   CMD_IDX.WARM          
-                                      
-        .CB     "XEP"               ; 30 XEP
+        .CB     "WARM"              ; 30 WARM
+        .BYTE   CMD_IDX.WARM           
+                                       
+        .CB     "XEP"               ; 31 XEP
         .BYTE   CMD_IDX.XEP            
                                         
+        ; Drive Change intentionally omitted
+
 ; Aliases
         .CB     "CD"                ; CD = NCD
         .BYTE   CMD_IDX.NCD           
@@ -3766,7 +4042,12 @@ COMMAND:
         .CB     "'"                 ; ' = REM
         .BYTE   CMD_IDX.REM
 
-        ; Drive Change intentionally omitted
+        ; With U1MB, a non-BASIC program might reside
+        ; in ROM, then BASIC and NOBASIC feel awkward.
+        ; So, ROMON and ROMOFF. (I know. Inconsistent.)
+
+        .CB     "ROM"               ; ROMON = BASIC
+        .BYTE   CMD_IDX.BASIC      
 
 COMMAND_SIZE = * - COMMAND - 1
         .BYTE   $FF
@@ -3777,7 +4058,7 @@ CMD_TAB_L:
         .BYTE   <(DO_DIR-1)         ;  2 DIR
         .BYTE   <(DO_GENERIC-1)     ;  3 DEL
         .BYTE   <(DO_LOAD-1)        ;  4 LOAD
-;       .BYTE   <(DO_LOCK-1)        ;  5 LOCK
+        .BYTE   <(DO_GENERIC-1)     ;  5 LOCK
         .BYTE   <(DO_LPR-1)         ;  6 LPR
         .BYTE   <(DO_GENERIC-1)     ;  7 MKDIR
         .BYTE   <(DO_NPWD-1)        ;  8 NPWD
@@ -3785,25 +4066,26 @@ CMD_TAB_L:
         .BYTE   <(DO_GENERIC-1)     ; 10 PASS
         .BYTE   <(DO_GENERIC-1)     ; 11 RENAME
         .BYTE   <(DO_GENERIC-1)     ; 12 RMDIR
-        .BYTE   <(DO_SUBMIT-1)      ; 13 SUBMIT
-        .BYTE   <(DO_TYPE-1)        ; 14 TYPE
-        .BYTE   <(DO_GENERIC-1)     ; 15 USER
-;       .BYTE   <(DO_UNLOCK-1)      ; 16 UNLOCK
-        .BYTE   <(DO_AUTORUN-1)     ; 17 AUTORUN
-        .BYTE   <(DO_CAR-1)         ; 18 CAR
-        .BYTE   <(DO_CLS-1)         ; 19 CLS
-        .BYTE   <(DO_COLD-1)        ; 10 COLD
-        .BYTE   <(DO_HELP-1)        ; 21 HELP
-        .BYTE   <(DO_NOBASIC-1)     ; 22 NOBASIC
-        .BYTE   <(DO_NOSCREEN-1)    ; 23 NOSCREEN
-        .BYTE   <(DO_PRINT-1)       ; 24 PRINT
-        .BYTE   <(DO_REENTER-1)     ; 25 REENTER
-        .BYTE   <(DO_REM-1)         ; 26 REM
-        .BYTE   <(DO_RUN-1)         ; 27 RUN
-        .BYTE   <(DO_SCREEN-1)      ; 28 SCREEN
-        .BYTE   <(DO_WARM-1)        ; 29 WARM
-        .BYTE   <(DO_XEP-1)         ; 30 XEP
-        .BYTE   <(DO_DRIVE_CHG-1)   ; 31
+        .BYTE   <(DO_SAVE-1)        ; 13 SAVE
+        .BYTE   <(DO_SUBMIT-1)      ; 14 SUBMIT
+        .BYTE   <(DO_TYPE-1)        ; 15 TYPE
+        .BYTE   <(DO_GENERIC-1)     ; 16 USER
+        .BYTE   <(DO_GENERIC-1)     ; 17 UNLOCK
+        .BYTE   <(DO_AUTORUN-1)     ; 18 AUTORUN
+        .BYTE   <(DO_CAR-1)         ; 19 CAR
+        .BYTE   <(DO_CLS-1)         ; 20 CLS
+        .BYTE   <(DO_COLD-1)        ; 21 COLD
+        .BYTE   <(DO_HELP-1)        ; 22 HELP
+        .BYTE   <(DO_BASIC-1)       ; 23 BASIC
+        .BYTE   <(DO_NOSCREEN-1)    ; 24 NOSCREEN
+        .BYTE   <(DO_PRINT-1)       ; 25 PRINT
+        .BYTE   <(DO_REENTER-1)     ; 26 REENTER
+        .BYTE   <(DO_REM-1)         ; 27 REM
+        .BYTE   <(DO_RUN-1)         ; 28 RUN
+        .BYTE   <(DO_SCREEN-1)      ; 29 SCREEN
+        .BYTE   <(DO_WARM-1)        ; 20 WARM
+        .BYTE   <(DO_XEP-1)         ; 31 XEP
+        .BYTE   <(DO_DRIVE_CHG-1)   ; 32
 
 CMD_TAB_H:
         .BYTE   >(DO_GENERIC-1)     ;  0 NCD
@@ -3811,33 +4093,34 @@ CMD_TAB_H:
         .BYTE   >(DO_DIR-1)         ;  2 DIR
         .BYTE   >(DO_GENERIC-1)     ;  3 DEL
         .BYTE   >(DO_LOAD-1)        ;  4 LOAD
-;       .BYTE   >(DO_LOCK-1)        ;  5 LOCK
+        .BYTE   >(DO_GENERIC-1)     ;  5 LOCK
         .BYTE   >(DO_LPR-1)         ;  6 LPR
         .BYTE   >(DO_GENERIC-1)     ;  7 MKDIR
         .BYTE   >(DO_NPWD-1)        ;  8 NPWD
         .BYTE   >(DO_NTRANS-1)      ;  9 NTRANS
         .BYTE   >(DO_GENERIC-1)     ; 10 PASS
-        .BYTE   >(DO_GENERIC-1)     ; 10 RENAME
-        .BYTE   >(DO_GENERIC-1)     ; 11 RMDIR
-        .BYTE   >(DO_SUBMIT-1)      ; 12 SUBMIT
-        .BYTE   >(DO_TYPE-1)        ; 13 TYPE
-        .BYTE   >(DO_GENERIC-1)     ; 14 USER
-;       .BYTE   >(DO_UNLOCK-1)      ; 15 UNLOCK
-        .BYTE   >(DO_AUTORUN-1)     ; 16 AUTORUN
-        .BYTE   >(DO_CAR-1)         ; 17 CAR
-        .BYTE   >(DO_CLS-1)         ; 18 CLS
-        .BYTE   >(DO_COLD-1)        ; 19 COLD
-        .BYTE   >(DO_HELP-1)        ; 20 HELP
-        .BYTE   >(DO_NOBASIC-1)     ; 21 NOBASIC
-        .BYTE   >(DO_NOSCREEN-1)    ; 22 NOSCREEN
-        .BYTE   >(DO_PRINT-1)       ; 23 PRINT
-        .BYTE   >(DO_REENTER-1)     ; 24 REENTER
-        .BYTE   >(DO_REM-1)         ; 25 REM
-        .BYTE   >(DO_RUN-1)         ; 26 RUN
-        .BYTE   >(DO_SCREEN-1)      ; 27 SCREEN
-        .BYTE   >(DO_WARM-1)        ; 28 WARM
-        .BYTE   >(DO_XEP-1)         ; 29 XEP
-        .BYTE   >(DO_DRIVE_CHG-1)   ; 30
+        .BYTE   >(DO_GENERIC-1)     ; 11 RENAME
+        .BYTE   >(DO_GENERIC-1)     ; 12 RMDIR
+        .BYTE   >(DO_SAVE-1)        ; 13 SAVE
+        .BYTE   >(DO_SUBMIT-1)      ; 14 SUBMIT
+        .BYTE   >(DO_TYPE-1)        ; 15 TYPE
+        .BYTE   >(DO_GENERIC-1)     ; 16 USER
+        .BYTE   >(DO_GENERIC-1)     ; 17 UNLOCK
+        .BYTE   >(DO_AUTORUN-1)     ; 18 AUTORUN
+        .BYTE   >(DO_CAR-1)         ; 19 CAR
+        .BYTE   >(DO_CLS-1)         ; 20 CLS
+        .BYTE   >(DO_COLD-1)        ; 21 COLD
+        .BYTE   >(DO_HELP-1)        ; 22 HELP
+        .BYTE   >(DO_BASIC-1)       ; 23 BASIC
+        .BYTE   >(DO_NOSCREEN-1)    ; 24 NOSCREEN
+        .BYTE   >(DO_PRINT-1)       ; 25 PRINT
+        .BYTE   >(DO_REENTER-1)     ; 26 REENTER
+        .BYTE   >(DO_REM-1)         ; 27 REM
+        .BYTE   >(DO_RUN-1)         ; 28 RUN
+        .BYTE   >(DO_SCREEN-1)      ; 29 SCREEN
+        .BYTE   >(DO_WARM-1)        ; 20 WARM
+        .BYTE   >(DO_XEP-1)         ; 31 XEP
+        .BYTE   >(DO_DRIVE_CHG-1)   ; 32
 
         ; DEVHDL TABLE FOR N:
 
@@ -3850,12 +4133,12 @@ CIOHND  .WORD   OPEN-1
 
        ; BANNERS
 
-BREADY  .BYTE   '#FUJINET NOS v0.5.0-alpha',EOL
+BREADY  .BYTE   '#FUJINET NOS v0.5.1-alpha',EOL
 BERROR  .BYTE   '#FUJINET ERROR',EOL
 
         ; MESSAGES
 
-CDERR   .BYTE   'N#?',EOL
+CDERR   .BYTE   'Nn?',EOL
 
         ; STRING CONSTANTS
 
@@ -3870,14 +4153,16 @@ CMDPRV      .BYTE   $01
 ECHO_FLG    .BYTE   $01     ; Echo batch cmds (1=enabled,0=disabled)
 AUTORUN_FLG .BYTE   $00     ; Checked at DOS entry. Runs only on first pass
 
-TRIP    .BYTE   $01         ; INTR FLAG
+TRIP        .BYTE   $01     ; INTR FLAG
 RLEN    :MAXDEV .BYTE $00   ; RCV LEN
 ROFF    :MAXDEV .BYTE $00   ; RCV OFFSET
 TOFF    :MAXDEV .BYTE $00   ; TRX OFFSET
-INQDS   .BYTE   $01         ; DSTATS INQ
+INQDS       .BYTE   $01     ; DSTATS INQ
 
 DVS2    :MAXDEV .BYTE $00   ; DVSTAT+2 SAVE
 DVS3    :MAXDEV .BYTE $00   ; DVSTAT+3 SAVE
+
+COLOR4_ORIG .BYTE   $00     ; Hold prev border color
 
        ; BUFFERS (PAGE ALIGNED)
         .ALIGN  $100, $00
@@ -3929,7 +4214,7 @@ DIRSTA:
     DTA $60,$C3,$02,$04,$00,C"2 Network  "
     DTA $60,$C3,$02,$04,$00,C"3   OS     "
     DTA $60,$C3,$02,$04,$00,C"4          "
-    DTA $60,$C3,$02,$04,$00,C"5 v0.5.0   "
+    DTA $60,$C3,$02,$04,$00,C"5 v0.5.1   "
     DTA $60,$C3,$02,$04,$00,C"6  alpha   "
     DTA $60,$C3,$02,$04,$00,C"7**********"
     DTA $C0

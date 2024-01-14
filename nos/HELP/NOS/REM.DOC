@@ -1,0 +1,18 @@
+
+Topic: REM
+
+REM - Denote comment line.
+
+Usage:
+REM <comment>
+or
+' <comment>
+
+Intended for use within a batch file.
+Comment lines are ignored by the
+command processor.
+
+Examples:
+
+    REM Clear existing mounts
+    ' Clear existing mounts
