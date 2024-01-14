@@ -3765,6 +3765,7 @@ Source: nos.s
   3763 16B0			REMOUNT_DONE:
   3764 16B0 60			        RTS
   3765
+<<<<<<< HEAD
   3766 				;---------------------------------------
   3767 16B1			PREPEND_DRIVE:
   3768 				;---------------------------------------
@@ -3840,6 +3841,83 @@ Source: nos.s
   3838
   3839 1705			PRMPT:
   3840 1705 9B 4E 20 3A		        .BYTE   EOL,'N :'
+=======
+  3766 16D4 A7			        .CB     "'"                 ; ' = REM
+  3767 16D5 17			        .BYTE   CMD_IDX.REM
+  3768
+  3769 				        ; Drive Change intentionally omitted
+  3770
+  3771 = 00C8			COMMAND_SIZE = * - COMMAND - 1
+  3772 16D6 FF			        .BYTE   $FF
+  3773
+  3774 16D7			CMD_TAB_L:
+  3775 16D7 9F			        .BYTE   <(DO_GENERIC-1)     ;  0 NCD
+  3776 				;       .BYTE   <(DO_COPY-1)        ;  1 COPY
+  3777 16D8 14			        .BYTE   <(DO_DIR-1)         ;  2 DIR
+  3778 16D9 9F			        .BYTE   <(DO_GENERIC-1)     ;  3 DEL
+  3779 16DA FE			        .BYTE   <(DO_LOAD-1)        ;  4 LOAD
+  3780 				;       .BYTE   <(DO_LOCK-1)        ;  5 LOCK
+  3781 16DB 99			        .BYTE   <(DO_LPR-1)         ;  6 LPR
+  3782 16DC 9F			        .BYTE   <(DO_GENERIC-1)     ;  7 MKDIR
+  3783 16DD 9F			        .BYTE   <(DO_NPWD-1)        ;  8 NPWD
+  3784 16DE E2			        .BYTE   <(DO_NTRANS-1)      ;  9 NTRANS
+  3785 16DF 9F			        .BYTE   <(DO_GENERIC-1)     ; 10 PASS
+  3786 16E0 9F			        .BYTE   <(DO_GENERIC-1)     ; 11 RENAME
+  3787 16E1 9F			        .BYTE   <(DO_GENERIC-1)     ; 12 RMDIR
+  3788 16E2 34			        .BYTE   <(DO_SUBMIT-1)      ; 13 SUBMIT
+  3789 16E3 B9			        .BYTE   <(DO_TYPE-1)        ; 14 TYPE
+  3790 16E4 9F			        .BYTE   <(DO_GENERIC-1)     ; 15 USER
+  3791 				;       .BYTE   <(DO_UNLOCK-1)      ; 16 UNLOCK
+  3792 16E5 65			        .BYTE   <(DO_AUTORUN-1)     ; 17 AUTORUN
+  3793 16E6 57			        .BYTE   <(DO_CAR-1)         ; 18 CAR
+  3794 16E7 80			        .BYTE   <(DO_CLS-1)         ; 19 CLS
+  3795 16E8 89			        .BYTE   <(DO_COLD-1)        ; 10 COLD
+  3796 16E9 8C			        .BYTE   <(DO_HELP-1)        ; 21 HELP
+  3797 16EA 3D			        .BYTE   <(DO_NOBASIC-1)     ; 22 NOBASIC
+  3798 16EB 7E			        .BYTE   <(DO_NOSCREEN-1)    ; 23 NOSCREEN
+  3799 16EC 8A			        .BYTE   <(DO_PRINT-1)       ; 24 PRINT
+  3800 16ED 98			        .BYTE   <(DO_REENTER-1)     ; 25 REENTER
+  3801 16EE E2			        .BYTE   <(DO_REM-1)         ; 26 REM
+  3802 16EF E3			        .BYTE   <(DO_RUN-1)         ; 27 RUN
+  3803 16F0 84			        .BYTE   <(DO_SCREEN-1)      ; 28 SCREEN
+  3804 16F1 31			        .BYTE   <(DO_WARM-1)        ; 29 WARM
+  3805 16F2 34			        .BYTE   <(DO_XEP-1)         ; 30 XEP
+  3806 16F3 5E			        .BYTE   <(DO_DRIVE_CHG-1)   ; 31
+  3807
+  3808 16F4			CMD_TAB_H:
+  3809 16F4 0C			        .BYTE   >(DO_GENERIC-1)     ;  0 NCD
+  3810 				;       .BYTE   >(DO_COPY-1)        ;  1 COPY
+  3811 16F5 0D			        .BYTE   >(DO_DIR-1)         ;  2 DIR
+  3812 16F6 0C			        .BYTE   >(DO_GENERIC-1)     ;  3 DEL
+  3813 16F7 0D			        .BYTE   >(DO_LOAD-1)        ;  4 LOAD
+  3814 				;       .BYTE   >(DO_LOCK-1)        ;  5 LOCK
+  3815 16F8 10			        .BYTE   >(DO_LPR-1)         ;  6 LPR
+  3816 16F9 0C			        .BYTE   >(DO_GENERIC-1)     ;  7 MKDIR
+  3817 16FA 10			        .BYTE   >(DO_NPWD-1)        ;  8 NPWD
+  3818 16FB 10			        .BYTE   >(DO_NTRANS-1)      ;  9 NTRANS
+  3819 16FC 0C			        .BYTE   >(DO_GENERIC-1)     ; 10 PASS
+  3820 16FD 0C			        .BYTE   >(DO_GENERIC-1)     ; 11 RENAME
+  3821 16FE 0C			        .BYTE   >(DO_GENERIC-1)     ; 12 RMDIR
+  3822 16FF 12			        .BYTE   >(DO_SUBMIT-1)      ; 13 SUBMIT
+  3823 1700 12			        .BYTE   >(DO_TYPE-1)        ; 14 TYPE
+  3824 1701 0C			        .BYTE   >(DO_GENERIC-1)     ; 15 USER
+  3825 				;       .BYTE   >(DO_UNLOCK-1)      ; 16 UNLOCK
+  3826 1702 11			        .BYTE   >(DO_AUTORUN-1)     ; 17 AUTORUN
+  3827 1703 13			        .BYTE   >(DO_CAR-1)         ; 18 CAR
+  3828 1704 13			        .BYTE   >(DO_CLS-1)         ; 19 CLS
+  3829 1705 13			        .BYTE   >(DO_COLD-1)        ; 20 COLD
+  3830 1706 13			        .BYTE   >(DO_HELP-1)        ; 21 HELP
+  3831 1707 14			        .BYTE   >(DO_NOBASIC-1)     ; 22 NOBASIC
+  3832 1708 14			        .BYTE   >(DO_NOSCREEN-1)    ; 23 NOSCREEN
+  3833 1709 14			        .BYTE   >(DO_PRINT-1)       ; 24 PRINT
+  3834 170A 14			        .BYTE   >(DO_REENTER-1)     ; 25 REENTER
+  3835 170B 14			        .BYTE   >(DO_REM-1)         ; 26 REM
+  3836 170C 14			        .BYTE   >(DO_RUN-1)         ; 27 RUN
+  3837 170D 14			        .BYTE   >(DO_SCREEN-1)      ; 28 SCREEN
+  3838 170E 15			        .BYTE   >(DO_WARM-1)        ; 29 WARM
+  3839 170F 15			        .BYTE   >(DO_XEP-1)         ; 30 XEP
+  3840 1710 0C			        .BYTE   >(DO_DRIVE_CHG-1)   ; 31
+>>>>>>> master
   3841
   3842 				;;; End CP ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   3843 				;;; Variables

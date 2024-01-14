@@ -1277,7 +1277,7 @@ DOS:
 
         ; Autorun injection
         LDA     #CMD_IDX.AUTORUN    ; Check for AUTORUN
-        CMP     AUTORUN_FLG         ; True only on 1st entry
+        CMP     AUTORUN_FLG         ; True only on 1st entry (TODO Is this working?)
         BEQ     CPLOOP              ; Skip to Command Processor
         STA     AUTORUN_FLG         ; Change flag
         JSR     SUBMIT_AUTORUN      ; Attempt to execute autorun file
