@@ -1097,26 +1097,28 @@ PRINT_ERROR_NEXT:
     ; Unset high bit & append EOL
     ;---------------------------------------
         LDY     #$FF        ; Init counter = 0
-        LDX     #14
+        LDX     #$0E        ; Offset (-1) to XXX in PRINT_ERROR_HELP
 @       INY
-        INX
+        INX                 ; Now pointing to XXX
         LDA     (INBUFF),Y
-    STA     PRINT_ERROR_HELP,X
+        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
         CMP     #$80
         BCC     @-
 
         AND     #$7F        ; Clear high bit
         STA     (INBUFF),Y
-   STA     PRINT_ERROR_HELP,X
+        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
         INY
+        INX
         LDA     #EOL        ; Append EOL
         STA     (INBUFF),Y
+        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
 
         LDA     INBUFF
         LDY     INBUFF+1
 ;        JMP     PRINT_STRING
 
-        LDA     #$05        ; Point to 
+        LDA     #$05        ; Point to start of path (the 1st 'R' in REF/ERR...)
         STA     CMDSEP
         LDA     #<PRINT_ERROR_HELP
         STA     INBUFF
@@ -1124,13 +1126,14 @@ PRINT_ERROR_NEXT:
         STA     INBUFF+1
         LDA     #$FF
         STA     PRINT_ERR_FLG  ; Set flag that arrived from PRINT_ERROR. This will skip the CLS
-        JMP     DO_HELP
+        JSR     DO_HELP
+        LDY     #$FF
 
 PRINT_ERROR_DONE:
         RTS
 
 PRINT_ERROR_HELP:
-        .BYTE   'HELP REF/ERROR/XXX',EOL
+        .BYTE   'HELP REF/ERROR/XXX'
 
 ; End PRINTSCR
 ;---------------------------------------
@@ -1293,7 +1296,7 @@ CPLOOP:
 CP:
         LDX     #$FF        ; Clear command
         STX     CMD
-    ; NOTE Testing for PRINT_ERROR
+    ; NOTE Experiment with PRINT_ERROR
     INX
     STX     PRINT_ERR_FLG
         
@@ -3275,9 +3278,9 @@ TYPE_WAIT:
 
 TYPE_READ:
     ; Read from file
-        LDX     #$10
-        LDA     #$01
-        LDY     #$00
+        LDX     #$10            ; IOCB offset (channel)
+        LDA     #$01            ; ICBLL (buffer length lo) Request 1 byte
+        LDY     #$00            ; ICBLH (buffer length hi)
         JSR     CIOGET
 
     ; Quit if EOF
