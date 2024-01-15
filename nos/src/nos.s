@@ -823,7 +823,6 @@ SPEDCB  .BYTE   DEVIDN      ; DDEVIC
 ;#                                     #
 ;#######################################
 
-
 ;---------------------------------------
 CIOCLOSE:
 ;---------------------------------------
@@ -838,7 +837,7 @@ CIOOPEN:
     ; Input: 
     ; X = IOCB offset ($10,$20,..)
     ; Y = data direction (4=inp,8=out,12=i/o)
-    ; INBUFF contains ICBAL/H
+    ; INBUFF contains ICBAL/H (filename)
         LDA     #$03            ; 3 = CIO 'OPEN FILE'
         STA     ICCOM,X
         LDA     INBUFF          ; Pointer to filename
@@ -1096,27 +1095,48 @@ PRINT_ERROR_NEXT:
     ; Unset high bit & append EOL
     ;---------------------------------------
         LDY     #$FF        ; Init counter = 0
-;        LDX     #$0A        ; Offset (-1) to XXX in PRINT_ERROR_HELP
+        LDX     #93        ; Offset (-1) to XXX in PRINT_ERROR_HELP
 @       INY
-;        INX                 ; Pointing to XXX in template URL
+        INX                 ; Pointing to XXX in template URL
         LDA     (INBUFF),Y
-;        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
-        CMP     #$80
+        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
+        CMP     #$80        ; Loop until high bit is set
         BCC     @-
 
         AND     #$7F        ; Clear high bit
-        STA     (INBUFF),Y
-;        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
-        INY
-;        INX
+;        STA     (INBUFF),Y
+        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
+;        INY
+        INX
         LDA     #EOL        ; Append EOL
-        STA     (INBUFF),Y
-;        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
+;        STA     (INBUFF),Y
+        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
 
-        LDA     INBUFF
-        LDY     INBUFF+1
-        JMP     PRINT_STRING
+;        LDA     INBUFF
+;        LDY     INBUFF+1
+;        JMP     PRINT_STRING
 
+        LDX     #$10
+        JSR     CIOCLOSE
+
+
+        LDA     #<PRINT_ERROR_HELP
+        STA     INBUFF
+        LDA     #>PRINT_ERROR_HELP
+        STA     INBUFF+1
+        LDX     #$10        ; Channel
+        LDY     #$04        ; Input
+        JSR     CIOOPEN
+
+        LDX     #$10
+        LDA     #<RBUF
+        LDY     #>RBUF
+        JSR     CIOGETREC
+
+        LDA     #<RBUF
+        LDY     #>RBUF
+        JSR     PRINT_STRING
+        
 ;        LDA     #$01                ; Point to start of path (the 1st 'R' in REF/ERR...)
 ;        STA     CMDSEP
 ;        LDA     #<PRINT_ERROR_HELP
@@ -1131,8 +1151,8 @@ PRINT_ERROR_NEXT:
 PRINT_ERROR_DONE:
         RTS
 
-;PRINT_ERROR_HELP:
-;        .BYTE   ' REF/ERROR/XXX'
+PRINT_ERROR_HELP:
+        .BYTE   'N8:HTTPS://raw.githubusercontent.com/michaelsternberg/fujinet-nhandler/nos/nos/HELP/REF/ERROR/XXX.DOC',EOL
 
 ; End PRINTSCR
 ;---------------------------------------
