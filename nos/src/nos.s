@@ -1084,8 +1084,7 @@ PRINT_ERROR_NEXT:
     ;-----------------------------------
     ; Convert error code to ASCII
     ;-----------------------------------
-
-    ; Call subroutines in ROM to convert error into to ascii
+    ; Call subroutines in ROM to convert error from int to ascii
         STY     FR0
         LDA     #$00
         STA     FR0+1
@@ -1097,43 +1096,43 @@ PRINT_ERROR_NEXT:
     ; Unset high bit & append EOL
     ;---------------------------------------
         LDY     #$FF        ; Init counter = 0
-        LDX     #$0E        ; Offset (-1) to XXX in PRINT_ERROR_HELP
+;        LDX     #$0A        ; Offset (-1) to XXX in PRINT_ERROR_HELP
 @       INY
-        INX                 ; Now pointing to XXX
+;        INX                 ; Pointing to XXX in template URL
         LDA     (INBUFF),Y
-        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
+;        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
         CMP     #$80
         BCC     @-
 
         AND     #$7F        ; Clear high bit
         STA     (INBUFF),Y
-        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
+;        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
         INY
-        INX
+;        INX
         LDA     #EOL        ; Append EOL
         STA     (INBUFF),Y
-        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
+;        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
 
         LDA     INBUFF
         LDY     INBUFF+1
-;        JMP     PRINT_STRING
+        JMP     PRINT_STRING
 
-        LDA     #$05        ; Point to start of path (the 1st 'R' in REF/ERR...)
-        STA     CMDSEP
-        LDA     #<PRINT_ERROR_HELP
-        STA     INBUFF
-        LDA     #>PRINT_ERROR_HELP
-        STA     INBUFF+1
-        LDA     #$FF
-        STA     PRINT_ERR_FLG  ; Set flag that arrived from PRINT_ERROR. This will skip the CLS
-        JSR     DO_HELP
-        LDY     #$FF
+;        LDA     #$01                ; Point to start of path (the 1st 'R' in REF/ERR...)
+;        STA     CMDSEP
+;        LDA     #<PRINT_ERROR_HELP
+;        STA     INBUFF
+;        LDA     #>PRINT_ERROR_HELP
+;        STA     INBUFF+1
+;        LDA     #$FF
+;        STA     PRINT_ERR_FLG       ; Set flag that arrived from PRINT_ERROR. This will skip the CLS
+;        JSR     DO_HELP
+;        LDY     #$FF                ; Return error to caller
 
 PRINT_ERROR_DONE:
         RTS
 
-PRINT_ERROR_HELP:
-        .BYTE   'HELP REF/ERROR/XXX'
+;PRINT_ERROR_HELP:
+;        .BYTE   ' REF/ERROR/XXX'
 
 ; End PRINTSCR
 ;---------------------------------------
@@ -1294,12 +1293,11 @@ CPLOOP:
 ; Main loop
 ;---------------------------------------
 CP:
-        LDX     #$FF        ; Clear command
-        STX     CMD
-    ; NOTE Experiment with PRINT_ERROR
-    INX
-    STX     PRINT_ERR_FLG
-        
+        LDA     #$FF        ; Clear command
+        STA     CMD
+; NOTE Experiment with PRINT_ERROR
+;    INX
+;    STX     PRINT_ERR_FLG
 
         JSR     SHOWPROMPT
         JSR     GETCMD
@@ -3229,8 +3227,8 @@ TYPE_SKIP:
         JSR     CIOCLOSE        ; Assert file #1 is closed
 
     ; Open input file
-        LDA     #$FF
-        STA     CH
+;        LDA     #$FF
+;        STA     CH
         LDX     #$10            ; File #1
         LDY     #$04            ; Open for input
         JSR     CIOOPEN         ; Open filename @ (INBUFF)
@@ -3244,8 +3242,9 @@ TYPE_SKIP:
 TYPE_NEXT:
 
     ; Initialize pagination
-    INC PRINT_ERR_FLG         ; Are we here from PRINT_ERROR (CMD will now be $00)
-    BEQ TYPE_READ
+; NOTE Experiment with PRINT_ERROR
+;    INC PRINT_ERR_FLG         ; Are we here from PRINT_ERROR (CMD will now be $00)
+;    BEQ TYPE_READ
         JSR     DO_CLS
         LDA     #21
         STA     SCRFLG
@@ -4175,8 +4174,7 @@ INQDS       .BYTE   $01     ; DSTATS INQ
 DVS2    :MAXDEV .BYTE $00   ; DVSTAT+2 SAVE
 DVS3    :MAXDEV .BYTE $00   ; DVSTAT+3 SAVE
 
-PRINT_ERR_FLG   .BYTE $00
-
+;PRINT_ERR_FLG   .BYTE $00
 COLOR4_ORIG .BYTE   $00     ; Hold prev border color
 
        ; BUFFERS (PAGE ALIGNED)
