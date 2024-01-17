@@ -1,13 +1,13 @@
 nos
 ===
 
-An experimental and still-in-development implementation of a network operating system for the ATARI 8-bit computer and FujiNet device that accesses file system resources for up to eight remote mount points via the N: device. There is no support provided for traditional physical or emulated magnetic floppy drives (D: devices), though the N: device will respond to calls made software to the D: device. This allows software created with the expectation of transferring data with floppy disks to work with NOS.
+An experimental and nearly feature-complete network operating system for the ATARI 8-bit computer and FujiNet device that accesses file system resources for up to eight remote mount points via the N: device. There is no support provided for traditional physical or emulated magnetic floppy drives (D: devices), though the N: device will respond to calls made software to the D: device. This allows software created with the expectation of transferring data with floppy disks to work with NOS.
 
 The operating system is well-suited for workflows where integration between a modern computer and an ATARI computer would be convenient.
 
-After mounting a folder under, say, a TNFS server, files can be listed, renamed, deleted, etc using the command processor supplied by the operating system.
+After mounting a folder under, say, a TNFS server, files can be listed, renamed, deleted, etc using the command-line interface (command processor) supplied by the operating system.
 
-At least two critical features are still being developed:
+At least two critical features not implemented:
 
 1. A `COPY` file utility
 2. Integration of the latest n-handler code
@@ -303,10 +303,31 @@ For binary program filenames ending with `.COM`, the command `LOAD` and the exte
 
     ATARIWRITER
 
+`SAVE`
+---
+Save a range of memory to an ATARI binary format file.
+
+Usage:
+
+    SAVE [N[n]:][path/]filename,START,END[,INITAD][,RUNAD]
+
+where the arguments after the filename are 4-character hexadecimal addresses and
+
+* `START` is the lower boundary of memory range
+* `END` is the upper boundary of memory range (inclusive)
+* `INITAD` is an optional entry point for initialization during file load
+* `RUNAD` is an optional entry point for execution after the load has completed
+
+Example:
+
+    SAVE N1:BASIC.BIN,A000,BFFF
+    SAVE MYPROG,2000,2FFF,2F21,2000
+    SAVE MYPROG,2000,2FFF,,2000
+
 `RUN`
 ---
 
-Jump to a specified memory address.
+Begin executing machine code at a specified memory address.
 
 Usage:
 

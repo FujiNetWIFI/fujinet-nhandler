@@ -1095,64 +1095,23 @@ PRINT_ERROR_NEXT:
     ; Unset high bit & append EOL
     ;---------------------------------------
         LDY     #$FF        ; Init counter = 0
-        LDX     #93        ; Offset (-1) to XXX in PRINT_ERROR_HELP
 @       INY
-        INX                 ; Pointing to XXX in template URL
         LDA     (INBUFF),Y
-        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
         CMP     #$80        ; Loop until high bit is set
         BCC     @-
 
         AND     #$7F        ; Clear high bit
-;        STA     (INBUFF),Y
-        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
-;        INY
-        INX
+        STA     (INBUFF),Y
+        INY
         LDA     #EOL        ; Append EOL
-;        STA     (INBUFF),Y
-        STA     PRINT_ERROR_HELP,X  ; Stuff error number into HELP command
+        STA     (INBUFF),Y
 
-;        LDA     INBUFF
-;        LDY     INBUFF+1
-;        JMP     PRINT_STRING
-
-        LDX     #$10
-        JSR     CIOCLOSE
-
-
-        LDA     #<PRINT_ERROR_HELP
-        STA     INBUFF
-        LDA     #>PRINT_ERROR_HELP
-        STA     INBUFF+1
-        LDX     #$10        ; Channel
-        LDY     #$04        ; Input
-        JSR     CIOOPEN
-
-        LDX     #$10
-        LDA     #<RBUF
-        LDY     #>RBUF
-        JSR     CIOGETREC
-
-        LDA     #<RBUF
-        LDY     #>RBUF
-        JSR     PRINT_STRING
-        
-;        LDA     #$01                ; Point to start of path (the 1st 'R' in REF/ERR...)
-;        STA     CMDSEP
-;        LDA     #<PRINT_ERROR_HELP
-;        STA     INBUFF
-;        LDA     #>PRINT_ERROR_HELP
-;        STA     INBUFF+1
-;        LDA     #$FF
-;        STA     PRINT_ERR_FLG       ; Set flag that arrived from PRINT_ERROR. This will skip the CLS
-;        JSR     DO_HELP
-;        LDY     #$FF                ; Return error to caller
+        LDA     INBUFF
+        LDY     INBUFF+1
+        JMP     PRINT_STRING
 
 PRINT_ERROR_DONE:
         RTS
-
-PRINT_ERROR_HELP:
-        .BYTE   'N8:HTTPS://raw.githubusercontent.com/michaelsternberg/fujinet-nhandler/nos/nos/HELP/REF/ERROR/XXX.DOC',EOL
 
 ; End PRINTSCR
 ;---------------------------------------
@@ -1171,12 +1130,12 @@ ASCII2ADDR:
     ; Output:
     ; INBUFF contains 2 bytes
     ;---------------------------------------
-    
+
     ;---------------------------------------
     ; ASCII hex char to integer conversion
     ; algorithm borrowed from Apple II Monitor
     ;---------------------------------------
-        LDA     #$00
+        LDA     #$00        ; Initialize output to zero
         STA     INBUFF      ; L
         STA     INBUFF+1    ; H
 NEXTHEX:
@@ -1216,6 +1175,102 @@ NOTHEX:
 
 RUN_ERROR_STR:
         .BYTE   'ADDR? 0000..FFFF',EOL
+
+;---------------------------------------
+PARSE_COMMAS:
+;---------------------------------------
+    ; On entry, 
+    ; LNBUF contains command line such as: 
+    ; SAVE.N1:ABC,1234,2345,,6789
+    ; CMDSEP contain offset to beginning of comma-delimited arg
+    ;
+    ; In the example above CMDSEP = 5 (start of 'N1:ABC')
+    ;
+    ; On exit, CMDSEP[0..n] contains a sequence of
+    ; offsets to each of the comma-delimited
+    ; args.  And COMMA_ARGS_BITFIELD has for each bit:
+    ; bit=1 if the comma-delimited arg was non-null
+    ; bit=0 if the comma-delimited arg was null.
+    ; 
+    ; In the example above, 
+    ; CMPSEP[0..n] = {5,12,17,22,23}
+    ; where 5 -> N1:ABC
+    ;      12 -> 1234
+    ;      17 -> 2345
+    ;      22 -> null
+    ;      23 -> 6789
+    ;
+    ; COMMA_ARGS_BITFIELD = 
+    ; bit#: 7 6 5 4  3 2 1 0
+    ;       0 0 0 1  0 1 1 1
+    ; where bit 0 -> arg 1 (N1:ABC -> 1)
+    ;       bit 1 -> arg 2 (1234   -> 1)
+    ;       bit 2 -> arg 3 (2345   -> 1)
+    ;       bit 3 -> arg 4 (null   -> 0)
+    ;       bit 4 -> arg 5 (6789   -> 1)
+    ;---------------------------------------
+
+    ;---------------------------------------------
+    ; Initialize bit field. Each comma-delimited
+    ; arg successfully provided will set a bit to 1
+    ;---------------------------------------------
+        LDA     #%00000001
+        STA     COMMA_ARGS_BITFIELD
+
+    ; Replace commas with EOL
+    ; Keep offsets to spaces in CMDSEP
+        LDX     #$01                ; X is arg counter, incrs with each comma
+;        STX     COMMA_ARGS_BITFIELD ; Set bit field for 1st arg
+        LDY     CMDSEP
+
+PARSE_COMMAS_LOOP:
+        LDA     LNBUF,Y             ; Get char from cmd line
+        CMP     #EOL                ; Quit if reached end of cmd line
+        BEQ     PARSE_COMMAS_DONE
+        CMP     #','                ; Is curr char a comma?
+        BNE     PARSE_COMMAS_NEXT2  ; Not a comma, skip next
+
+    ; Peek at next char. If next char is comma or EOL
+    ; then this arg is null
+        LDA     LNBUF+1,Y           ; Here if comma, peek at next char
+        CMP     #','                ; Skip ahead if peek at next char = comma 
+        BEQ     PARSE_COMMAS_NEXT1                    ;
+        CMP     #EOL                ; Skip ahead if peek at next char = EOL 
+        BEQ     PARSE_COMMAS_NEXT1  ;
+    
+    ; if char is comma and arg is non-null
+    ; then set flag in bitfield at bit #Y
+        TXA                         ; About to clobber X, stash it
+        PHA
+
+        INX
+        LDA     #%00000000          ; Initialize
+        SEC                         ; Inject a 1
+
+@:      ROL                         ; Move flag into position
+        DEX
+        BNE     @-
+
+        ORA     COMMA_ARGS_BITFIELD ; Set flag in bitfield
+        STA     COMMA_ARGS_BITFIELD ; 
+
+        PLA                         ; Restore X
+        TAX
+
+PARSE_COMMAS_NEXT1:        
+        LDA     #EOL                ; Here if comma
+        STA     LNBUF,Y             ; Replace with EOL
+        TYA
+        CLC
+        ADC     #$01
+        STA     CMDSEP,X            ; Store offset to delimiter
+        INX                         ; Advance CMDSEP index
+PARSE_COMMAS_NEXT2:
+        INY                         ; Advance to next char from cmdline
+        BNE     PARSE_COMMAS_LOOP   ; Do next char
+PARSE_COMMAS_DONE:
+        RTS
+        
 
 ;---------------------------------------
 CHECK_INTERNAL_BASIC:
@@ -1315,10 +1370,6 @@ CPLOOP:
 CP:
         LDA     #$FF        ; Clear command
         STA     CMD
-; NOTE Experiment with PRINT_ERROR
-;    INX
-;    STX     PRINT_ERR_FLG
-
         JSR     SHOWPROMPT
         JSR     GETCMD
 AUTORUN_DO:
@@ -1383,7 +1434,9 @@ GETCMDTEST:
     ; Iterate to clear CMDSEP bytes
     ;---------------------------------------
         TYA                 ; A = 0
-        LDX     #$02        ; for X = 2 to 0 step -1
+;NOTE DO_SAVE Experiment
+;        LDX     #$02        ; for X = 2 to 0 step -1
+        LDX     #$04        ; for X = 2 to 0 step -1
 GETLOOP:
         STA     CMDSEP,X
         DEX
@@ -3222,11 +3275,6 @@ SUBMIT_DONE
 ; End of DO_SUBMIT
 ;---------------------------------------
 
-; Open Nn: for read
-; Open E: or P: for write
-; Read byte
-; Write byte
-
 ;---------------------------------------
 DO_TYPE:
 ;---------------------------------------
@@ -3247,8 +3295,6 @@ TYPE_SKIP:
         JSR     CIOCLOSE        ; Assert file #1 is closed
 
     ; Open input file
-;        LDA     #$FF
-;        STA     CH
         LDX     #$10            ; File #1
         LDY     #$04            ; Open for input
         JSR     CIOOPEN         ; Open filename @ (INBUFF)
@@ -3262,9 +3308,6 @@ TYPE_SKIP:
 TYPE_NEXT:
 
     ; Initialize pagination
-; NOTE Experiment with PRINT_ERROR
-;    INC PRINT_ERR_FLG         ; Are we here from PRINT_ERROR (CMD will now be $00)
-;    BEQ TYPE_READ
         JSR     DO_CLS
         LDA     #21
         STA     SCRFLG
@@ -3632,86 +3675,190 @@ DO_SAVE:
 ;---------------------------------------
     ; INBUFF points to Filename
     ; LNBUF,Y is start of 4 char ASCII hex string
+    ;---------------------------------------
 
-        LDA     #$B0
-        STA     COLOR2
-
-    ; Store address of INBUFF + CMDSEP in STL, STH
+    ;---------------------------------------------
+    ; Convert commas to EOLs & store offsets in CMDSEP[I]
+    ;---------------------------------------------
+        JSR     PARSE_COMMAS
+    ;---------------------------------------------
+    ; Convert hex strings in arg list to lo/hi pairs
+    ;---------------------------------------------
+        LDX     #$00            ; Index to TBUF,X for output
+        LDY     #$01            ; Index to CMDSEP for list of addr strings
+    ;---------------------------------------------
+    ; Prep 'ascii to addr' subroutine inputs
+    ;---------------------------------------------
+SAVE_LOOP:
+        LDA     SAVE_ADDR_FLG,Y
+        AND     COMMA_ARGS_BITFIELD
+        BEQ     SAVE_SKIP       ; If arg is null then skip
+        TYA
+        PHA
+        LDA     CMDSEP,Y
+        TAY                     ; Y -> offset into CMDSEP
         CLC
-        LDA     INBUFF
-        ADC     CMDSEP
-        STA     STL
-        LDA     INBUFF+1
-        ADC     #$00
-        STA     STH
+        ADC     #$04            ; offset to end of arg
+        STA     RBUF
+    ;---------------------------------------------
+    ; Call 'ascii to addr' subroutine
+    ;---------------------------------------------
+        TXA
+        PHA
+        JSR     ASCII2ADDR      ; Y contains offset into LNBUF
+        PLA
+        TAX
+        PLA
+        TAY
+        BCS     SAVE_USAGE      ; Quit if invalid addr
+    ;---------------------------------------------
+    ; Save conversion function outputs (lo/hi)
+    ;---------------------------------------------
+        LDA     INBUFF          ; Get lo byte
+        STA     STL,X           ; Store output of ASCII2ADDR (STL = Start Addr Lo)
+        LDA     INBUFF+1        ; Get hi byte
+        STA     STL+1,X         ; Store output of ASCII2ADDR
+SAVE_SKIP:
+        INX
+        INX
+        INY
+        CPY     #$05
+        BNE     SAVE_LOOP
 
-        RTS
-    ; Loop until comma found, replace it with EOL,
-    ; and store address in STL, STH
+    ;---------------------------------------------
+    ; Quit if required filename, start, end addr not provided
+    ;---------------------------------------------
+        LDA     #%00000111      ; bit 0->filename bit 1->start bit 2->end
+        AND     COMMA_ARGS_BITFIELD
+        CMP     #%00000111      ; Quit if not all 3 provided
+        BEQ     SAVE_SKIP2
 
-;        LDY     CMDSEP
-;        DEY
-;@:      INY
-;        LDA     #EOL
-;        INY
-;        CMP     (INBUFF),Y
-;        BEQ     SAVE_USAGE
-;        BNE     @-
-;        STA
-;        RTS
-;
-;    ; Loop until EOL is found
-;    ; Move addr args to STL, STH, ..
-;        LDX     #$00        ; X will hold number of addr args
-;        LDY     CMDSEP
-;        CLC
-;SAVE_LOOP0:
-;        LDA     (INBUFF),Y
-;
-;        CMP     #EOL        ; If EOL then skip ahead
-;        BEQ     @++
-;
-;        CMP     #','
-;        BNE     @+
-;        
-;        INX
-;        CPX     #$05        ; If number of commas >= 5
-;        BCS     SAVE_USAGE  ; Then quit
-;       
-;        INY
-;        TYA
-;        STA     CMPSEP,X
-;@:      BNE     SAVE_LOOP0  ; Always true
-;
-;
-;    ; Check # of args
-;@:      CPX     #$03
-;
-;    ; Save addresses to TBUF 
-;    ; Save lo bytes in 1st list
-;    ; Save hi bytes in 2nd list
-;SAVE_LOOP1:
-;        INX
-;        LDA     CMDSEP,X
-;        BEQ     SAVE_SKIP1
-;        JSR     ASCII2ADDR
-;        LDA     INBUFF          ; Lo byte
-;        STA     TBUF,X
-;        LDA     INBUFF+1        ; Hi byte
-;        STA     TBUF+4,X
-;SAVE_SKIP1:
-;        DEX
-;        DEX
-;        BNE     SAVE_LOOP1
-;
-;        RTS
 SAVE_USAGE:
         LDA     #<SAVE_ERROR_STR
         LDY     #>SAVE_ERROR_STR
         JMP     PRINT_STRING
 
+SAVE_SKIP2:
+    ; Calc header (Result in BLL,BLH)
+        JSR     LOAD_BUFLEN
+
+        LDX     #$04
+@:      LDA     STL,X
+        STA     SAVE_HEADER+2,X
+        DEX
+        BNE     @-
+
+        LDA     BLL
+        STA     SAVE_HEADER+6
+        LDA     BLH
+        STA     SAVE_HEADER+7
+
+   ; Save initad (this may contain garbage but will be skipped if unnecessary)
+        LDA     INITADL
+        STA     SAVE_INIT+4
+        LDA     INITADH
+        STA     SAVE_INIT+5
+
+    ; Save runad (this may contain garbage but will be skipped if unnecessary)
+        LDA     RUNADL
+        STA     SAVE_RUN+4
+        LDA     RUNADH
+        STA     SAVE_RUN+5
+
+    ;---------------------------------------------
+    ; Get filename
+    ;---------------------------------------------
+        JSR     GET_DOSDR
+        JSR     PREPEND_DRIVE
+
+;        LDA     INBUFF
+;        LDY     INBUFF+1
+;        JSR     PRINT_STRING
+
+    ; Open file for write
+        LDX     #$10
+        JSR     CIOCLOSE
+
+    ; Inbuff already contains filename
+        LDX     #$10
+        LDY     #OOUTPUT
+        JSR     CIOOPEN
+
+    ; Save binary file header
+        LDX     #$10
+        LDA     #<SAVE_HEADER
+        STA     INBUFF
+        LDA     #>SAVE_HEADER
+        STA     INBUFF+1
+        LDA     #$06            ; A = ICBLL
+        LDY     #$00            ; Y = ICBLH
+        JSR     CIOPUT
+        JSR     PRINT_ERROR
+        
+    ; Save binary payload
+        LDX     #$10
+        LDA     SAVE_HEADER+2   ; Start Address (Lo)
+        STA     INBUFF
+        LDA     SAVE_HEADER+3   ; Start Address (Hi)
+        STA     INBUFF+1
+        LDA     SAVE_HEADER+6   ; BLL
+        LDY     SAVE_HEADER+7   ; BLH
+        JSR     CIOPUT
+        JSR     PRINT_ERROR
+
+    ; Optionally save init address block
+        LDA     #%00001000
+        AND     COMMA_ARGS_BITFIELD
+        BEQ     DO_SAVE_RUNAD
+
+        LDX     #$10
+        LDA     #<SAVE_INIT
+        STA     INBUFF
+        LDA     #>SAVE_INIT
+        STA     INBUFF+1
+        LDA     #$06        ; Writing 6 bytes
+        LDY     #$00
+        JSR     CIOPUT
+        JSR     PRINT_ERROR
+
+    ; Optionally save run address block
+DO_SAVE_RUNAD:
+        LDA     #%00010000
+        AND     COMMA_ARGS_BITFIELD
+        BEQ     DO_SAVE_QUIT
+
+        LDX     #$10
+        LDA     #<SAVE_RUN
+        STA     INBUFF
+        LDA     #>SAVE_RUN
+        STA     INBUFF+1
+        LDA     #$06        ; Writing 6 bytes
+        LDY     #$00
+        JSR     CIOPUT
+        JSR     PRINT_ERROR
+
+DO_SAVE_QUIT:
+        LDX     #$10
+        JSR     CIOCLOSE
+
+        RTS
+
 SAVE_ERROR_STR:
         .BYTE   'SAVE Nn:FILE,START,END(,INIT)(,RUN)',EOL
+
+SAVE_ADDR_FLG:
+        .BYTE   %00000001
+        .BYTE   %00000010
+        .BYTE   %00000100
+        .BYTE   %00001000
+        .BYTE   %00010000
+
+SAVE_HEADER:
+        .BYTE   $FF,$FF,$00,$00,$00,$00,$00,$00
+SAVE_INIT:
+        .BYTE   $E2,$02,$E3,$02,$00,$00
+SAVE_RUN:
+        .BYTE   $E0,$02,$E1,$02,$00,$00
 ;
 ; End of DO_SAVE
 ;---------------------------------------
@@ -4194,7 +4341,6 @@ INQDS       .BYTE   $01     ; DSTATS INQ
 DVS2    :MAXDEV .BYTE $00   ; DVSTAT+2 SAVE
 DVS3    :MAXDEV .BYTE $00   ; DVSTAT+3 SAVE
 
-;PRINT_ERR_FLG   .BYTE $00
 COLOR4_ORIG .BYTE   $00     ; Hold prev border color
 
        ; BUFFERS (PAGE ALIGNED)
@@ -4211,12 +4357,12 @@ STL     = TBUF      ; Payload Start address
 STH     = TBUF+1
 ENL     = TBUF+2    ; Payload End address
 ENH     = TBUF+3
-BLL     = TBUF+4    ; Payload Buffer Length
-BLH     = TBUF+5
-HEADL   = TBUF+6    ; Bytes read from existing cache
-HEADH   = TBUF+7
-BODYL   = TBUF+8    ; Total bytes read in contiguous 512-byte blocks
-BODYH   = TBUF+9
+HEADL   = TBUF+4    ; Bytes read from existing cache
+HEADH   = TBUF+5
+BODYL   = TBUF+6    ; Total bytes read in contiguous 512-byte blocks
+BODYH   = TBUF+7
+BLL     = TBUF+8    ; Payload Buffer Length
+BLH     = TBUF+9
 TAILL   = TBUF+10   ; Bytes read from last cache
 TAILH   = TBUF+11
 BODYSZL = TBUF+12   ; # Bytes to read at a time in Body
@@ -4224,7 +4370,15 @@ BODYSZH = TBUF+13
 STL2    = TBUF+14   ; Payload Start address (working var)
 STH2    = TBUF+15
 BIN_1ST = TBUF+16   ; Flag for binary loader signature (FF -> 1st pass)
-AUTORUN_QUERY_FLG = TBUF+17   ; Flag for printing contents of autorun appkey
+
+; Following used in DO_SAVE
+INITADL = TBUF+4    ; Init Addr (lo)
+INITADH = TBUF+5    ; Init Addr (hi)
+RUNADL  = TBUF+6    ; Run Addr (lo)
+RUNADH  = TBUF+7    ; Run Addr (hi)
+COMMA_ARGS_BITFIELD = RBUF+10    ; Bit field for which addrs provided
+
+AUTORUN_QUERY_FLG   = TBUF+17   ; Flag for printing contents of autorun appkey
 
 PGEND   = *
 

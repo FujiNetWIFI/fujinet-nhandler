@@ -17,6 +17,7 @@ MKDIR     Create directory
 RMDIR     Delete directory
 CAR       Jump to cartridge
 LOAD      Load & execute binary file
+SAVE      Save mem range to binary file
 REENTER   Jump to last LOADed program
 RUN       Execute machine code @ addr
 TYPE      Show contents of text file
