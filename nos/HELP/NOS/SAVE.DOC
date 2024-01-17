@@ -30,3 +30,9 @@ SAVE MYPROG,2000,2FFF,2F21   [2]
 
 [1] RUNAD....2000, no INITAD
 [2] INITAD...2F21, no RUNAD
+
+Warning: If saving to a device with
+end-of-line translation enabled
+via the NTRANS command, then the
+binary file may become corrupted.
+
