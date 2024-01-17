@@ -3771,10 +3771,6 @@ SAVE_SKIP2:
         JSR     GET_DOSDR
         JSR     PREPEND_DRIVE
 
-;        LDA     INBUFF
-;        LDY     INBUFF+1
-;        JSR     PRINT_STRING
-
     ; Open file for write
         LDX     #$10
         JSR     CIOCLOSE
@@ -4312,7 +4308,7 @@ CIOHND  .WORD   OPEN-1
 
        ; BANNERS
 
-BREADY  .BYTE   '#FUJINET NOS v0.5.1-alpha',EOL
+BREADY  .BYTE   '#FUJINET NOS v0.6.0-alpha',EOL
 BERROR  .BYTE   '#FUJINET ERROR',EOL
 
         ; MESSAGES
@@ -4401,7 +4397,7 @@ DIRSTA:
     DTA $60,$C3,$02,$04,$00,C"2 Network  "
     DTA $60,$C3,$02,$04,$00,C"3   OS     "
     DTA $60,$C3,$02,$04,$00,C"4          "
-    DTA $60,$C3,$02,$04,$00,C"5 v0.5.1   "
+    DTA $60,$C3,$02,$04,$00,C"5 v0.6.0   "
     DTA $60,$C3,$02,$04,$00,C"6  alpha   "
     DTA $60,$C3,$02,$04,$00,C"7**********"
     DTA $C0
