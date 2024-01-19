@@ -1,0 +1,32 @@
+
+Topic: Nn:
+
+Nn: Change the current default network
+    drive.
+
+Usage:
+
+N<n>:
+
+where 'n' is required and denotes a
+device number 1-8.
+
+After changing the default network
+drive, the command prompt is updated
+reflect the new default network drive.
+
+Note: No check is made regarding the
+status of the mount point for the new
+default network drive. That is, it is
+possible to switch to a network drive
+that has no assigned mount point.
+
+The N: device will also respond to
+calls from software to the D: device.
+This allows software created with the
+expectation of transferring data with
+floppy disks to work with NOS.
+Example:
+
+N2:
+

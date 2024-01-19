@@ -1,24 +1,24 @@
 nos
 ===
 
-An experimental and still-in-development implementation of a network operating system for the ATARI 8-bit computer and FujiNet device that accesses file system resources for up to eight remote mount points via the N: device. There is no support provided for traditional physical or emulated magnetic floppy drives (D: devices).
+An experimental and nearly feature-complete network operating system for the ATARI 8-bit computer and FujiNet device that accesses file system resources for up to eight remote mount points via the N: device. There is no support provided for traditional physical or emulated magnetic floppy drives (D: devices), though the N: device will respond to calls made software to the D: device. This allows software created with the expectation of transferring data with floppy disks to work with NOS.
 
 The operating system is well-suited for workflows where integration between a modern computer and an ATARI computer would be convenient.
 
-After mounting a folder under, say, a TNFS server, files can be listed, renamed, deleted, etc using the command processor supplied by the operating system.
+After mounting a folder under, say, a TNFS server, files can be listed, renamed, deleted, etc using the command-line interface (command processor) supplied by the operating system.
 
-At least two critical features are still being developed:
+At least two critical features not implemented:
 
 1. A `COPY` file utility
 2. Integration of the latest n-handler code
 
 Other features on the wish-list:
 
-1. Support for extrensic commands
 1. A `MOVE` command to relocate files between directories
-1. A `HELP` command
 1. Wildcard support for `DEL`, `COPY`, `MOVE`
 1. Date/time stamps in the listings produced by `DIR`
+1. A `PATH` command that provides a subdirectory where extrinsic commands are stored.
+2. A way to send text files to one of the virtual printers on the FujiNet.
 
 Command Processor
 ====================
@@ -29,7 +29,7 @@ Prompt:
 
 	Nn:[] <-- cursor
 
-where `n` is the current default device number (1-4).
+where `n` is the current default device number (1-8).
 
 The ATARI's full-screen editor can be used to correct or cobble a command using text snippets found elsewhere on the screen.
 
@@ -64,11 +64,15 @@ Command Summary
 |XEP      |Toggle 40/80 column display with XEP-80 peripheral|
 |HELP     |Online help system|
 
+Extrinsic Commands
+===
+Entering a 
+
 Commands in Detail
 ==================
 
 `NCD`|`CD`
-====
+---
 
 Mount or unmount a remote directory to a network device (N1: through N4:). The remote directory must be hosted using one of the supported FujiNet protocols (primarily TNFS).
 
@@ -164,7 +168,7 @@ Usage:
 
 	Nn:
 
-Where `n` is required and `n` denotes a device number 1-4.
+Where `n` is required and `n` denotes a device number 1-8.
 
 After changing the default network drive, the command prompt is updated to reflect the new default network drive. 
 
@@ -262,24 +266,68 @@ Usage:
 
 Control is yielded to the warmstart vector defined within the cartridge. This should allow switching between the cartridge and DOS without destroying the cartridge's working memory. For example, if you are typing a BASIC program, you can switch between DOS and BASIC without losing work.
 
-`LOAD`
+`BASIC`
+---
+Enable or disable XL/XE BASIC-in-ROM (or other ROM-resident programs).
+
+Usage:
+
+    BASIC [ON|OFF]
+    ROM [ON|OFF]
+
+The `BASIC` command is used to swap the 8K address space at $A000-$BFFF between RAM and ROM on the ATARI XL/XE machines (excluding the 1200XL). This allows you to switch from working in BASIC to, say, loading a machine-language game without having to restart the computer while holding the `OPTION` console switch.
+
+This command also works for computers with upgrades like the Ultimate 1MB or Incognito, where alternative ROMs can be selected in place of ATARI BASIC. Therefore, the alias `ROM [ON|OFF]` exists in case it seems more sensible to use it instead.
+
+As a hopefully helpful reminder, when $A000-$BFFF is pointing to ROM, the border color (register COLOR4) will be set to gray while in the NOS command processor. The border color will revert to its previous state when the session is returned to BASIC using the `CAR` command.
+
+If `BASIC ON` or `ROM ON` is executed when the address space is already pointing to ROM, the command will instead perform the `CAR` command. This avoids a warm start.
+
+`LOAD|X`
 ---
 Load a binary file into memory.
 
 Usage:
 
     LOAD [N[n]:][path/]filename
+    X [N[n]:][path/]filename
 
 The `LOAD` command is used to execute a binary programs. Machine code vectored from INITAD ($02E2) is executed as encountered. Machine code vectored from RUNAD ($02E0) is executed when the end-of-file is encountered.
 
-	LOAD JUMPMANJR.XEX
-	LOAD N2:ATARIWRITER.COM
+	LOAD ATARIWRITER.COM
+	LOAD N2:JUMPMANJR.XEX
 	LOAD "N2:Atari Writer.xex"
+	X JUMPMAN.XEX
+
+For binary program filenames ending with `.COM`, the command `LOAD` and the extension `.COM` are assumed. So, using the example above for `ATARIWRITER.COM`, you only have to enter:  
+
+    ATARIWRITER
+
+`SAVE`
+---
+Save a range of memory to an ATARI binary format file.
+
+Usage:
+
+    SAVE [N[n]:][path/]filename,START,END[,INITAD][,RUNAD]
+
+where the arguments after the filename are 4-character hexadecimal addresses and
+
+* `START` is the lower boundary of memory range
+* `END` is the upper boundary of memory range (inclusive)
+* `INITAD` is an optional entry point for initialization during file load
+* `RUNAD` is an optional entry point for execution after the load has completed
+
+Example:
+
+    SAVE N1:BASIC.BIN,A000,BFFF
+    SAVE MYPROG,2000,2FFF,2F21,2000
+    SAVE MYPROG,2000,2FFF,,2000
 
 `RUN`
 ---
 
-Jump to a specified memory address.
+Begin executing machine code at a specified memory address.
 
 Usage:
 
@@ -353,7 +401,7 @@ Several NOS commands were created to help batch files be more useful. See `@SCRE
 
 `PRINT`
 ---
-Echo text strings to the screen.
+Display a message on the screen.
 
 Usage:
 
@@ -389,7 +437,7 @@ Usage:
 
     @NOSCREEN
 
-Intended for use within a batch file. The default for batch processing is to echo commands as executed.
+Intended for use within a batch file. The default for batch processing is to echo commands as executed. Commands after an @SCREEN will not be echoed.
 
 `@SCREEN`
 ---
@@ -509,3 +557,5 @@ Examples:
     HELP REF/ATASCII
 
 The help articles are hosted by github.com. If a help command returns a HTTP 404 error, ensure a TOPIC was entered if one was required. For example, `HELP MKDIR` is incorrect and `HELP NOS/MKDIR` is correct.
+
+Note: The HELP articles are read from device N8:. Therefore, if you have mounted a network resource to device N8:, then the `HELP` command will cease to function properly.

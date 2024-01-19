@@ -3,7 +3,7 @@ HELP SYSTEM
 
 Type HELP <TOPIC> for more details.
 
-Topics  Description
+TOPIC   DESCRIPTION
 ------  -----------
 NOS     FujiNet NOS commands
 MAP     Memory map

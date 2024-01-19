@@ -17,6 +17,7 @@ MKDIR     Create directory
 RMDIR     Delete directory
 CAR       Jump to cartridge
 LOAD      Load & execute binary file
+SAVE      Save addr range to bin file
 REENTER   Jump to last LOADed program
 RUN       Execute machine code @ addr
 TYPE      Show contents of text file
@@ -24,10 +25,11 @@ SUBMIT    Execute batch file
 REM       Comment in batch file
 @NOSCREEN Disable echo in batch file
 @SCREEN   Enable echo in batch file
+PRINT     Print message to the screen
 AUTORUN   Set boot time batch file
 NTRANS    Translate end-of-line chars
 CLS       Clear/erase screen
-NOBASIC   Disable BASIC in ROM (XLXE)
+BASIC     Enable/Disable XLXE BASIC
 COLD      Execute coldstart
 WARM      Execute warmstart
 XEP       Toggle 40/80 col with XEP80

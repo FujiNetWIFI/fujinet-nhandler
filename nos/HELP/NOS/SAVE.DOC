@@ -1,0 +1,38 @@
+
+Topic: NOS/SAVE
+
+SAVE - Save a range of memory to an
+       ATARI binary format file.
+
+Usage:
+
+SAVE [N[n:]][path/]file,S,E[,I][,R]
+
+where arguments after file are 4-char
+hexadecimal addresses, and:
+
+   
+  |S|Start |Lower bound of range   |
+  
+  |E|End   |Upper bound (inclusive)|
+  
+  |I|Init  |See HELP MAP/INITAD    |
+  
+  |R|Run   |See HELP MAP/RUNAD     |
+  
+
+Examples:
+
+SAVE N1:BASIC.BIN,A000,BFFF
+SAVE MYPROG,2000,2FFF,2F21,2000
+SAVE MYPROG,2000,2FFF,,2000  [1]
+SAVE MYPROG,2000,2FFF,2F21   [2]
+
+[1] RUNAD....2000, no INITAD
+[2] INITAD...2F21, no RUNAD
+
+Warning: If saving to a device with
+end-of-line translation enabled
+via the NTRANS command, then the
+binary file may become corrupted.
+

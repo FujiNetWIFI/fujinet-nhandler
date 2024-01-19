@@ -1,0 +1,22 @@
+
+Topic: @SCREEN
+
+@SCREEN - Enable the display of command
+          lines being executed during
+          batch processing.
+
+Usage:
+
+@SCREEN
+
+Intended for use within a batch file. The default for batch processing is to echo commands as executed. Therefore, this command would be used sometime after a call to @NOSCREEN.
+
+Example:
+@NOSCREEN
+REM Unmount drives
+NCD N1:
+NCD N2:
+REM Mount drives
+@SCREEN
+NCD N1:TNFS://192.168.1.77/
+NCD N2:FTP://ftp.pigwa.net/stuff/
