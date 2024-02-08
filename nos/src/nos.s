@@ -38,7 +38,7 @@ LMARGN  =   $52         ; Left margin
 FR0     =   $D4         ; Floating Point register 0 (used during Hex->ASCII conversion)
 CIX     =   $F2         ; Inbuff cursor
 INBUFF  =   $F3         ; Ptr to input buffer ($0580)
-MAX_APPKEY_LEN = $40    ; Used with appkey files
+MAX_APPKEY_LEN = $42    ; Used with appkey files (2 byte len + 64 bytes)
 
 ;---------------------------------------
 ; INTERRUPT VECTORS
@@ -1656,6 +1656,8 @@ SHIFT_LOOP:
     ; Let DO_LOAD attempt to execute the file
         LDA     #$01        ; Point to start of filename
         STA     CMDSEP      ; so DO_LOAD will treat it like
+        PLA                 ; Strip the last return addr off the stack.
+        PLA                 ; Othwerwise unknown cmd error later.
         JMP     DO_LOAD     ; 'LOAD filename'
 
 CMDEXT:
@@ -4308,7 +4310,7 @@ CIOHND  .WORD   OPEN-1
 
        ; BANNERS
 
-BREADY  .BYTE   '#FUJINET NOS v0.6.0-alpha',EOL
+BREADY  .BYTE   '#FUJINET NOS v0.6.1-alpha',EOL
 BERROR  .BYTE   '#FUJINET ERROR',EOL
 
         ; MESSAGES
@@ -4397,16 +4399,18 @@ DIRSTA:
     DTA $60,$C3,$02,$04,$00,C"2 Network  "
     DTA $60,$C3,$02,$04,$00,C"3   OS     "
     DTA $60,$C3,$02,$04,$00,C"4          "
-    DTA $60,$C3,$02,$04,$00,C"5 v0.6.0   "
+    DTA $60,$C3,$02,$04,$00,C"5 v0.6.1   "
     DTA $60,$C3,$02,$04,$00,C"6  alpha   "
     DTA $60,$C3,$02,$04,$00,C"7**********"
     DTA $C0
 DIREND:
 
 ; Fill the remaining sectors of the directory
-    :($400+DIRSTA-DIREND) DTA $00
+;    :($400+DIRSTA-DIREND) DTA $00
+    :($400+DIRSTA-DIREND) DTA $A0
 
 ; Sectors behind directory
-    :($80*352) DTA $00
+;    :($80*352) DTA $00
+    :($80*352) DTA $C0
 
        END

@@ -1,0 +1,65 @@
+
+Topic: ASM/MATH1
+
+Examples of Addition (ATARI ASM/ED)
+
+‘’’’’’’’’’’’’’’’’’’’’…
+ü Áää Ô÷ï ¸­âéô Éîôó ü
+š’’’’’’’’’’’’’’’’’’’’ƒ
+
+SUM = OP1 + OP2
+
+0100   *=$0600
+0110   CLC
+0120   LDA OP1
+0130   ADC OP2
+0140   STA SUM
+0150   RTS
+0160 OP1 .BYTE $1A
+0170 OP2 .BYTE $2B
+0180 SUM .BYTE $00
+
+Note: Carry set if OP1 + OP2 > $FF
+
+‘’’’’’’’’’’’’’’’’’’’’’’’’’’’’’…
+ü Áää ¸­âéô Éîô ôï ±¶­âéô Éîô ü
+š’’’’’’’’’’’’’’’’’’’’’’’’’’’’’ƒ
+
+OP2 = OP2 + OP1
+
+0100   *=$0600
+0110   CLC
+0120   LDA OP1
+0130   ADC OP2
+0140   STA OP2
+0150   BCC SKIP
+0160   INC OP2+1
+0170 SKIP
+0180   RTS
+0190 OP1 .BYTE $C3
+0200 OP2 .WORD $89D4
+
+
+
+
+
+
+‘’’’’’’’’’’’’’’’’’’’’’’’’’…
+ü Áää Ô÷ï ±¶­âéô Éîôåçåòó ü
+š’’’’’’’’’’’’’’’’’’’’’’’’’ƒ
+
+SUM = OP1 + OP2
+
+0100   *=$0600
+0110   CLC
+0120   LDA OP1
+0130   ADC OP2
+0140   STA SUM
+0150   ADC OP2+1
+0160   STA SUM+1
+0170   RTS
+0180 OP1 .WORD $0A01
+0190 OP2 .WORD $0B34
+0200 SUM .WORD $0000
+
+Note: Carry set if OP1 + OP2 > $FFFF

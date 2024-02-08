@@ -7,6 +7,8 @@ TOPIC   DESCRIPTION
 ------  -----------
 NOS     FujiNet NOS commands
 MAP     Memory map
-REF     Reference material
+REF     ATARI System Reference
+ASM     6502 Assembly Reference
+DEV     Developer Tool Reference
 BUGS    List of some known bugs
 

@@ -9,38 +9,40 @@ BASIC [ON OFF]
 or
 ROM [ON OFF]
 
-The BASIC command is used to swap the
-8K address space at $A000-$BFFF between
-RAM and ROM on the ATARI XL/XE machines
-(excluding the 1200XL). This allows you
-to switch from working in BASIC to,
-say, loading a machine-language game
-without having to restart the computer
-while holding the OPTION console
-switch.
+The BASIC command is used to swap
+the 8K address space at $A000-$BFFF
+between RAM and ROM on the ATARI
+XL/XE machines (excluding the
+1200XL). This allows you to switch
+from working in BASIC to, say,
+loading a machine-language game
+without having to restart the
+computer while holding the OPTION
+console switch.
 
 This command also works for computers
-with upgrades like the Ultimate 1MB or
-Incognito, where alternative ROMs can
-be selected in place of ATARI BASIC.
-Therefore, the alias ROM [ONOFF] exists
-in case it seems more sensible to use
-it instead.
+with upgrades like the Ultimate 1MB
+or Incognito, where alternative ROMs
+can be selected in place of ATARI
+BASIC. Therefore, the alias
+ROM [ONOFF] exists in case it seems
+more sensible to use it instead.
 
 As a hopefully helpful reminder, when
 $A000-$BFFF is pointing to ROM, the
-border color (register COLOR4) will be
-set to gray while in the NOS command
-processor. The border color will revert
-to its previous state when the session
-is returned to BASIC using the CAR
-command or when BASIC is disabled.
+border color (register COLOR4) will
+be set to gray while in the NOS
+command processor. The border color
+will revert to its previous state
+when the session is returned to BASIC
+using the CAR command or when BASIC
+is disabled.
 
-If BASIC ON or ROM ON is executed when
-the address space is already pointing
-to ROM, the command will instead
-perform the CAR command. This avoids
-a warm start.
+If BASIC ON or ROM ON is executed
+when the address space is already
+pointing to ROM, the command will
+instead perform the CAR command.
+This avoids a warm start.
 
 Example:
 
@@ -48,3 +50,4 @@ BASIC ON
 BASIC OFF
 ROM ON
 ROM OFF
+
