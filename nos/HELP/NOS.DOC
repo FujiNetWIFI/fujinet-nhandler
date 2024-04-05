@@ -13,6 +13,7 @@ Nn:       Change default drive
 DIR       Show directory listing
 DEL       Delete file
 RENAME    Rename file or directory
+COPY      Copy file
 MKDIR     Create directory
 RMDIR     Delete directory
 CAR       Jump to cartridge
