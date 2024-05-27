@@ -10,14 +10,14 @@ computer is on but no keyboard input
 is read for a long time (seven to
 nine minutes).  This helps to save
 your TV screen from "burn-out"
-damage suf- fered from being left on
+damage suffered from being left on
 and not used. It is set to zero by
 IRQ whenever a key is pressed,
 otherwise incremented every four
-seconds by VBLANK (see locations 18
-- 20; $12 - $14). When the value in
-ATRACT reaches 127 ($7F), it is then
-set to 254 ($FE) un- til attract
+seconds by VBLANK (see locations
+18 - 20; $12 - $14). When the value
+in ATRACT reaches 127 ($7F), it is
+then set to 254 ($FE) until attract
 mode is terminated. This sets the
 flag to reduce the luminance and
 rotate the colors when the Atari is

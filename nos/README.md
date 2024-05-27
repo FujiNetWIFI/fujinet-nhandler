@@ -7,18 +7,12 @@ The operating system is well-suited for workflows where integration between a mo
 
 After mounting a folder under, say, a TNFS server, files can be listed, renamed, deleted, etc using the command-line interface (command processor) supplied by the operating system.
 
-At least two critical features not implemented:
-
-1. A `COPY` file utility
-2. Integration of the latest n-handler code
-
-Other features on the wish-list:
+Features on the wish-list:
 
 1. A `MOVE` command to relocate files between directories
 1. Wildcard support for `DEL`, `COPY`, `MOVE`
 1. Date/time stamps in the listings produced by `DIR`
 1. A `PATH` command that provides a subdirectory where extrinsic commands are stored.
-2. A way to send text files to one of the virtual printers on the FujiNet.
 
 Command Processor
 ====================
@@ -44,6 +38,7 @@ Command Summary
 |DIR      |Display a list of files/directories found on a mounted network drive|
 |DEL      |Delete a file found on a mount point|
 |RENAME   |Rename a file or directory on a mount point|
+|NCOPY    |Copy a file between mount points or to a standard device, such as printer.|
 |MKDIR    |Create a directory on a mount point|
 |RMDIR    |Delete an empty directory on a mount point|
 |RUN      |Execute machine code at a specified memory address|
@@ -235,6 +230,22 @@ Examples:
     RENAME "Atari Writer.xex,ATARIWRITER.COM"
     RENAME "N2:APPS/Atari Writer.exe,ATARIWRITER.COM"
 
+`NCOPY`
+---
+Copy a single file between mount points (or a new file on the same mount).
+
+Usage:
+
+	NCOPY|COPY [N[n]:][/][path/]filename,[N[n]:][path/]filename
+	NCOPY|COPY [N[n]:][/][path/]filename,Pn:
+	NCOPY|COPY [N[n]:][/][path/]filename,E:
+
+Notes: 
+- A filename is required in the destination. That is, `NCOPY N1:filename,N2:` is not currently supported.
+- Wildcards are not supported. 
+- Beware of the use of `NTRANS` may alter the data being copied.
+- Specifying `Pn:` as a destination will send the file to the current printer.
+- Specifying `E:` as a destination will send the file to the console.
 
 `MKDIR`
 ---

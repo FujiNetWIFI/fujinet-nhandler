@@ -7,5 +7,6 @@ Type HELP REF/<TOPIC> for more.
 TOPIC    DESCRIPTION
 -----    -----------
 ATASCII  Character codes
+COLORS   Color register values
 KEYCODES Hardware keyboard codes
 ERRORS   DOS,BASIC error codes

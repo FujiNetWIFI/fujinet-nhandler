@@ -1,0 +1,1 @@
+›Topic: NOS/FILL››FILL - Populate a range of memory›with a specified byte value.››Usage:››FILL STARTADDR ENDADDR VALUE››Where STARTADDR and ENDADDR are›4-char hexadecimal addresses.››And VALUE is a 2-char hexidecimal›value.››Examples:››FILL 0600 060F 00›FILL 02C6 02C6 D2›FILL 8000 8FFF 00››

@@ -1,0 +1,36 @@
+
+Topic: NOS/COPY
+
+COPY - Copy a single file between
+mount points, or to a new file on
+the same mount point, or a printer.
+
+There is an append option to
+concatenate two files.
+
+Usage:
+
+NCOPY|COPY
+[N[n]:][path/]FILE,[N[n]:][path/]FILE
+[,A]
+
+Examples:
+
+NCOPY N1:file,N2:file
+NCOPY N1:file,N1:file_new
+NCOPY N1:file,N2:
+COPY N1:f1,N2:f2,A (Appends f1 to f2)
+COPY N1:file,P1:
+COPY N1:file,E:
+COPY "N1:my file,N2:my file"
+
+Notes:
+
+A filename is required in the target.
+(e.g, COPY N1:file,N2: is illegal.
+Wildcards are not supported.
+Beware of the use of NTRANS.
+Standard devices such as P1:, E: are
+allowed as targets.
+Enclose with quotes if a space exists.
+
