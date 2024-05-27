@@ -7,7 +7,6 @@
         ;; Michael Sternberg
         ;;   <mhsternberg@gmail.com>
 
-
         ;; Optimizations being done by djaybee!
         ;; Thank you so much!
 
@@ -168,9 +167,9 @@ CMD_DRIVE_CHG       = $01
 CMD_CD              = $2C
 CMD_DIR             = $02
 CMD_DEL             = $21
+CMD_DUMP            = BOGUS
+CMD_FILL            = BOGUS
 CMD_LOAD            = $28
-CMD_LOCK            = $23
-CMD_LPR             = BOGUS
 CMD_MKDIR           = $2A
 CMD_NCOPY           = BOGUS
 CMD_NPWD            = $30
@@ -841,11 +840,11 @@ CIOOPEN:
         STA     ICAX1,X         ; Data direction
         LDA     #$00
         STA     ICAX2,X         ; Unused
-        JSR     CIOV            ; Call CIO
-        JSR     PRINT_ERROR
-
-CIOOPEN_DONE:
-        RTS
+        JMP     CIOV            ; Call CIO
+;        JSR     PRINT_ERROR
+;
+;CIOOPEN_DONE:
+;        RTS
 
 ;---------------------------------------
 CIOSTATUS:
@@ -912,32 +911,32 @@ CIOPUT:
 CIOPUT_DONE:
         RTS
 
-;---------------------------------------
-CIOGETREC:
-;---------------------------------------
-    ; Input:
-    ; X = IOCB offset ($10,$20,..)
-    ; A = ICBLL
-    ; Y = ICBLH
-    ; INBUFF contains ICBAL/H
-        PHA                 ; Stash Buffer length Lo
-        LDA     #$05        ; GET RECORD command
-        STA     ICCOM,X
-        LDA     INBUFF      ; Get buffer addr from pointer
-        STA     ICBAL,X
-        LDA     INBUFF+1
-        STA     ICBAH,X
-        PLA                 ; Retrieve Buffer length Lo
-        STA     ICBLL,X
-        TYA                 ; Get Buffer length Hi
-        STA     ICBLH,X
-
-        JSR     CIOV        ; Bon voyage
-        BPL     CIOGETREC_DONE
-;        JMP     PRINT_ERROR
-
-CIOGETREC_DONE:
-        RTS
+;;---------------------------------------
+;CIOGETREC:
+;;---------------------------------------
+;    ; Input:
+;    ; X = IOCB offset ($10,$20,..)
+;    ; A = ICBLL
+;    ; Y = ICBLH
+;    ; INBUFF contains ICBAL/H
+;        PHA                 ; Stash Buffer length Lo
+;        LDA     #$05        ; GET RECORD command
+;        STA     ICCOM,X
+;        LDA     INBUFF      ; Get buffer addr from pointer
+;        STA     ICBAL,X
+;        LDA     INBUFF+1
+;        STA     ICBAH,X
+;        PLA                 ; Retrieve Buffer length Lo
+;        STA     ICBLL,X
+;        TYA                 ; Get Buffer length Hi
+;        STA     ICBLH,X
+;
+;        JSR     CIOV        ; Bon voyage
+;        BPL     CIOGETREC_DONE
+;;        JMP     PRINT_ERROR
+;
+;CIOGETREC_DONE:
+;        RTS
 
 ;#######################################
 ;#                                     #
@@ -964,13 +963,13 @@ GDIDX:  LDX     ZICDNO      ; IOCB UNIT #
         DEX                 ; - 1
         RTS
 
-    ; Convert char in A from upper-case to lower-case
+    ; Convert char in A from lower-case to upper
 TOUPPER:
         CMP     #'a'        ; SKip if < 'a'
         BCC     @+
         CMP     #'z'+1      ; Skip if > 'z'
         BCS     @+
-        AND     #$5F        ; Disable high-bit and convert to lower
+        AND     #$5F        ; Disable high-bit and convert to upper
  @:     RTS
 
 ;---------------------------------------
@@ -1022,6 +1021,43 @@ SKPSPC: LDY     CIX
 ; End SKPSPC
 ;---------------------------------------
 
+
+;---------------------------------------
+; Return next free IOCB channel
+; On return X contains IOCB channel
+; such as $10, $20, .. $70
+; On return:
+; - Carry clear -> success
+; - Carry set -> failure 
+;---------------------------------------
+NEXT_IOCB:
+        CLC                     ; Default to success 
+        LDX     #$10
+NEXT_IOCB_LOOP:
+        LDA     IOCB,X
+        BMI     NEXT_IOCB_DONE  ; Found $FF = Free channel
+        TXA
+        ADC     #$10            ; Point to the next channel
+        BMI     NEXT_IOCB_ERROR ; If $80, no more and it sets N flag
+        TAX
+        BNE     NEXT_IOCB_LOOP  ; Try next channel
+
+NEXT_IOCB_ERROR:
+        LDA     #<NEXT_IOCB_ERROR_STR
+        LDY     #>NEXT_IOCB_ERROR_STR
+        JSR     PRINT_STRING
+        SEC
+
+NEXT_IOCB_DONE:
+        RTS
+    
+NEXT_IOCB_ERROR_STR:
+       .BYTE    'TOO MANY FILES OPEN',EOL
+
+; End NEXT_IOCB
+;---------------------------------------
+
+    
 ;---------------------------------------
 ; Print EOL-terminated string
 ; A: String Buffer Lo
@@ -1267,44 +1303,6 @@ PARSE_COMMAS_NEXT2:
 PARSE_COMMAS_DONE:
         RTS
 
-
-;---------------------------------------
-CHECK_INTERNAL_BASIC:
-;---------------------------------------
-    ; Check for internal BASIC found in XL/XEs
-    ; On return:
-    ;   CARRY is clear if not found
-    ;   CARRY is set if found
-    ;-----------------------------------
-        CLC
-        LDA     $FFF7
-        CMP     #$FF        ; ????
-        BEQ     NOBASIC_ERROR
-        CMP     #$DD        ; OSA NTSC
-        BEQ     NOBASIC_ERROR
-        CMP     #$F3        ; OSB NTSC
-        BEQ     NOBASIC_ERROR
-        CMP     #$D6        ; OSA PAL
-        BEQ     NOBASIC_ERROR
-        CMP     #$22        ; OSB PAL
-        BEQ     NOBASIC_ERROR
-        CMP     #$0A        ; OSA 1200XL
-        BEQ     NOBASIC_ERROR
-        CMP     #$0B        ; OSB 1200XL
-        BEQ     NOBASIC_ERROR
-        RTS
-
-;---------------------------------------
-NOBASIC_ERROR:
-;---------------------------------------
-        LDA     #<NOBASIC_ERROR_STR
-        LDY     #>NOBASIC_ERROR_STR
-        JSR     PRINT_STRING
-        SEC
-        RTS
-
-NOBASIC_ERROR_STR:
-        .BYTE   'NO BUILT-IN BASIC',EOL
 
 ;---------------------------------------
 CHECK_IF_ROM:
@@ -1720,6 +1718,7 @@ GET_DOSDR:
         LDA     CMDSEP              ; arg offset
         BEQ     GET_DOSDR_DONE      ; first, if arg1 not pop, leave X as-is & quit
 
+GET_DOSDR_ALT_ENTRY:
         CLC                         ; Advance pointer to LNBUF
         ADC     INBUFF
         STA     INBUFF
@@ -1969,7 +1968,7 @@ LOAD_NTRANS:
 ;---------------------------------------
 LOAD_READ2:
 ;---------------------------------------
-    ; Load 2 bytes into Buffer (BAL/H).
+
     ;---------------------------------------
     ; This is accomplished by abusing the LOAD_GETDAT
     ; routine by stuffing the buffer addr (BAL/H)
@@ -2409,13 +2408,6 @@ LOAD_ERROR:
         JMP     PRINT_STRING
 
 ;---------------------------------------
-DO_LPR:
-;---------------------------------------
-    ; Load sector from NOS ATR into RAM and jump to it.
-        LDX     #OVL_IDX.LPR
-        JMP     DO_OVERLAY
-
-;---------------------------------------
 DO_AUTORUN:
 ;---------------------------------------
     ; Load sector from NOS ATR into RAM and jump to it.
@@ -2427,21 +2419,35 @@ DO_BASIC:
 ;---------------------------------------
     ; Load sector from NOS ATR into RAM and jump to it.
         LDX     #OVL_IDX.BASIC
-        JMP     DO_OVERLAY
+        BNE     JMP_OVERLAY
 
 ;---------------------------------------
 DO_DIR:
 ;---------------------------------------
     ; Load sector from NOS ATR into RAM and jump to it.
         LDX     #OVL_IDX.DIR
-        JMP     DO_OVERLAY
+        BNE     JMP_OVERLAY
+
+;---------------------------------------
+DO_DUMP:
+;---------------------------------------
+    ; Load sector from NOS ATR into RAM and jump to it.
+        LDX     #OVL_IDX.DUMP
+        BNE     JMP_OVERLAY
+
+;---------------------------------------
+DO_FILL:
+;---------------------------------------
+    ; Load sector from NOS ATR into RAM and jump to it.
+        LDX     #OVL_IDX.FILL
+        BNE     JMP_OVERLAY
 
 ;---------------------------------------
 DO_HELP:
 ;---------------------------------------
     ; Load sector from NOS ATR into RAM and jump to it.
         LDX     #OVL_IDX.HELP
-        JMP     DO_OVERLAY
+        BNE     JMP_OVERLAY
 
 ;---------------------------------------
 DO_NCOPY:
@@ -2449,39 +2455,48 @@ DO_NCOPY:
         LDA     #$FF        ; Force DO_OVERLAY to always re-read
         STA     OVLPRV      ; code from ATR sector (cache confusion)
         LDX     #OVL_IDX.NCOPY
-        JMP     DO_OVERLAY
+        BNE     JMP_OVERLAY
+
+;---------------------------------------
+DO_NCOPY1:
+;---------------------------------------
+        LDA     #$FF        ; Force DO_OVERLAY to always re-read
+        STA     OVLPRV      ; code from ATR sector (cache confusion)
+        LDX     #OVL_IDX.NCOPY1
+        BNE     JMP_OVERLAY
 
 ;---------------------------------------
 DO_NCOPY2:
 ;---------------------------------------
         LDX     #OVL_IDX.NCOPY2
-        JMP     DO_OVERLAY
+        BNE     JMP_OVERLAY
 
 ;---------------------------------------
 DO_NTRANS:
 ;---------------------------------------
     ; Load sector from NOS ATR into RAM and jump to it.
         LDX     #OVL_IDX.NTRANS
-        JMP     DO_OVERLAY
+        BNE     JMP_OVERLAY
 
 ;---------------------------------------
 DO_REENTER:
 ;---------------------------------------
     ; Load sector from NOS ATR into RAM and jump to it.
         LDX     #OVL_IDX.REENTER
-        JMP     DO_OVERLAY
+        BNE     JMP_OVERLAY
 
 ;---------------------------------------
 DO_SAVE:
 ;---------------------------------------
     ; Load sector from NOS ATR into RAM and jump to it.
         LDX     #OVL_IDX.SAVE
-        JMP     DO_OVERLAY
+        BNE     JMP_OVERLAY
 
 ;---------------------------------------
 DO_XEP:
 ;---------------------------------------
         LDX     #OVL_IDX.XEP
+JMP_OVERLAY:
         JMP     DO_OVERLAY
 
 ;---------------------------------------
@@ -2748,7 +2763,6 @@ DO_SUBMIT:
         JMP     PRINT_STRING
 
 SUBMIT_NEXT1:
-
     ; Default to NOSCREEN
         LDA     #$00
         STA     ECHO_FLG
@@ -2757,13 +2771,13 @@ SUBMIT_NEXT1:
         JSR     GET_DOSDR       ; Get DUNIT
         JSR     PREPEND_DRIVE
 
-    ; Assert FILE #1 is closed
-        LDX     #$10
-        JSR     CIOCLOSE
-
     ; OPEN #1, 4, 0, file path
-        LDX     #$10            ; File #1
-        LDY     #$04            ; Open for input
+        JSR     NEXT_IOCB       ; X will be like $10
+        BCC     @+              ; Skip ahead if success
+        RTS                     ; Quit if no available channels
+
+@:      STX     SUBMIT_IOCB
+        LDY     #OINPUT         ; Open for input
         JSR     CIOOPEN         ; Open filename @ (INBUFF)
         BPL     SUBMIT_NEXT2
         JMP     PRINT_ERROR
@@ -2773,7 +2787,7 @@ SUBMIT_NEXT1:
     ; Branch forward when an end-of-line is interpretted.
 
 SUBMIT_NEXT2:
-        JSR     LDBUFA      ; Reset INBUFF to $0580
+        JSR     LDBUFA      ; Reset INBUFF to $0582
         DEC     INBUFF      ; Init 1 byte before buffer
         LDA     #$FF        ; Clear command
         STA     CMD
@@ -2784,7 +2798,7 @@ SUBMIT_GETCH:
         INC     INBUFF+1
 
 SUBMIT_NEXT3:
-        LDX     #$10            ; OPEN #1
+        LDX     SUBMIT_IOCB     ; X will be like $10
         LDA     #$01            ; Get 1 byte
         LDY     #$00            ; ditto
 
@@ -2806,7 +2820,7 @@ SUBMIT_EOL:
 
     ; Here if we've reached the end of a command line.
     ; At end of file?
-        LDX     #$10            ; Channel #1
+        LDX     SUBMIT_IOCB     ; X will be like $10
         LDA     ICSTA,X         ; Inspect return code
         CMP     #EOF
         BEQ     SUBMIT_DONE     ; No error, try parsing cmd
@@ -2830,9 +2844,12 @@ SUBMIT_NEXT4:
         SEC
         BCS     SUBMIT_NEXT2
 
-SUBMIT_DONE
+SUBMIT_DONE:
         LDX     #$10
         JMP     CIOCLOSE
+
+SUBMIT_IOCB:
+        .BYTE   $00             ; Place to store channel
 
 ; End of DO_SUBMIT
 ;---------------------------------------
@@ -2852,12 +2869,12 @@ TYPE_SKIP:
         JSR     GET_DOSDR       ; Get DUNIT
         JSR     PREPEND_DRIVE
 
-    ; Assert input file closed
-        LDX     #$10            ; File #1
-        JSR     CIOCLOSE        ; Assert file #1 is closed
-
     ; Open input file
-        LDX     #$10            ; File #1
+        JSR     NEXT_IOCB       ; Get next available IOCB channel
+        BCC     @+              ; Carry is set on failure
+        RTS                     ; Unable to find available channel
+
+@:      STX     TYPE_IOCB       ; X will be like $10
         LDY     #$04            ; Open for input
         JSR     CIOOPEN         ; Open filename @ (INBUFF)
         BPL     TYPE_NEXT
@@ -2868,7 +2885,6 @@ TYPE_SKIP:
         JMP     PRINT_ERROR
 
 TYPE_NEXT:
-
     ; Initialize pagination
         JSR     DO_CLS
         LDA     #21
@@ -2904,13 +2920,15 @@ TYPE_WAIT:
 
 TYPE_READ:
     ; Read from file
-        LDX     #$10            ; IOCB offset (channel)
+;        LDX     #$10            ; IOCB offset (channel)
+        LDX     TYPE_IOCB
         LDA     #$01            ; ICBLL (buffer length lo) Request 1 byte
         LDY     #$00            ; ICBLH (buffer length hi)
         JSR     CIOGET
 
     ; Quit if EOF
-        LDX     #$10
+;        LDX     #$10
+        LDX     TYPE_IOCB
         LDA     ICSTA,X
         CMP     #EOF
         BEQ     TYPE_DONE
@@ -2939,11 +2957,15 @@ TYPE_NEXT3:
 TYPE_DONE:
         LDA     #$FF
         STA     CH
-        LDX     #$10            ; Close File #1
+;        LDX     #$10            ; Close File #1
+        LDX     TYPE_IOCB
         JMP     CIOCLOSE        ;
 
 TYPE_OPEN_ERR_STR:
         .BYTE   'UNABLE TO OPEN FILE',EOL
+
+TYPE_IOCB:
+        .BYTE   $00             ; IOCB Channel for open file
 
 ;---------------------------------------
 DO_CAR:
@@ -3096,16 +3118,36 @@ PREPEND_DRIVE:
         LDY     #$00
         LDA     #'N'
         CMP     (INBUFF),Y  ; Does arg1 already begin with N?
+        BNE     PREPEND_DRIVE_DONE_NEXT_2
 
-        LDY     #$02
+    ; Check if 2nd char is : as in N:
+        INY
         LDA     #':'
         CMP     (INBUFF),Y
-        BEQ     PREPEND_DRIVE_DONE
-        DEY
-        CMP     (INBUFF),Y
-        BEQ     PREPEND_DRIVE_DONE
+        BNE     PREPEND_DRIVE_DONE_NEXT_1
 
-        ; Move input buffer pointer back 3 bytes
+    ; Here if N: 
+    ; Change to Nn: where n is prompt digit char such as 2 in N2:
+        DEC     INBUFF
+        LDY     #$00
+        LDA     #'N'
+        STA     (INBUFF),Y
+
+        INY
+        LDA     PRMPT+2
+        STA     (INBUFF),Y
+        JMP     PREPEND_DRIVE_DONE
+
+    ; Here if 2nd char is not :
+    ; Check if 3rd char is :
+PREPEND_DRIVE_DONE_NEXT_1:
+        INY
+        CMP     (INBUFF),Y
+        BEQ     PREPEND_DRIVE_DONE  ; Done if 3rd char is :
+
+    ; Otherwise inject Nn: into filename
+    ; Move input buffer pointer back 3 bytes
+PREPEND_DRIVE_DONE_NEXT_2:
         SEC
         LDA     INBUFF
         SBC     #$03
@@ -3125,6 +3167,44 @@ PREPEND_DRIVE_LOOP:
 PREPEND_DRIVE_DONE:
         LDY     #$01
         RTS             ; Y = $00 here
+
+;;---------------------------------------
+;PREPEND_DRIVE:
+;;---------------------------------------
+;        ; Inject "Nn:" in front of a plain filename
+;        ; before passing it to the FujiNet
+;        LDY     #$00
+;        LDA     #'N'
+;        CMP     (INBUFF),Y  ; Does arg1 already begin with N?
+;
+;        LDY     #$02
+;        LDA     #':'
+;        CMP     (INBUFF),Y
+;        BEQ     PREPEND_DRIVE_DONE
+;        DEY
+;        CMP     (INBUFF),Y
+;        BEQ     PREPEND_DRIVE_DONE
+;
+;        ; Move input buffer pointer back 3 bytes
+;        SEC
+;        LDA     INBUFF
+;        SBC     #$03
+;        STA     INBUFF
+;        LDA     INBUFF+1
+;        SBC     #$00
+;        STA     INBUFF+1
+;
+;        ; Inject PRMPT to front of arg1
+;        LDY     #$03
+;PREPEND_DRIVE_LOOP:
+;        LDA     PRMPT,Y
+;        DEY
+;        STA     (INBUFF),Y
+;        BNE     PREPEND_DRIVE_LOOP
+;
+;PREPEND_DRIVE_DONE:
+;        LDY     #$01
+;        RTS             ; Y = $00 here
 
 ;;---------------------------------------
 ;APPEND_SLASH:
@@ -3203,35 +3283,34 @@ NTRDCB:
                 DIR                 ;  1
                 DEL                 ;  2
                 LOAD                ;  3
-                LOCK                ;  4
-                LPR                 ;  5
-                MKDIR               ;  6
-                NCOPY               ;  7
-                NPWD                ;  8
-                NTRANS              ;  9
-                PASS                ; 10
-                RENAME              ; 11
-                RMDIR               ; 12
-                SAVE                ; 13
-                SUBMIT              ; 14
-                TYPE                ; 15
-                USER                ; 16
-                UNLOCK              ; 17
-                AUTORUN             ; 18
-                CAR                 ; 19
-                CLS                 ; 20
-                COLD                ; 21
+                MKDIR               ;  4
+                NCOPY               ;  5
+                NPWD                ;  6
+                NTRANS              ;  7
+                PASS                ;  8
+                RENAME              ;  9
+                RMDIR               ; 10
+                SAVE                ; 11
+                SUBMIT              ; 12
+                TYPE                ; 13
+                USER                ; 14
+                AUTORUN             ; 15
+                BASIC               ; 16
+                CAR                 ; 17
+                CLS                 ; 18
+                COLD                ; 19
+                DUMP                ; 20
+                FILL                ; 21
                 HELP                ; 22
-                BASIC               ; 23
-                NOSCREEN            ; 24
-                PRINT               ; 25
-                REENTER             ; 26
-                REM                 ; 27
-                RUN                 ; 28
-                SCREEN              ; 29
-                WARM                ; 20
-                XEP                 ; 31
-                DRIVE_CHG           ; 32
+                NOSCREEN            ; 23
+                PRINT               ; 24
+                REENTER             ; 25
+                REM                 ; 26
+                RUN                 ; 27
+                SCREEN              ; 28
+                WARM                ; 29
+                XEP                 ; 30
+                DRIVE_CHG           ; 31
         .ENDE
 
 CMD_DCOMND:
@@ -3239,133 +3318,129 @@ CMD_DCOMND:
         .BYTE   CMD_DIR             ;  1 DIR
         .BYTE   CMD_DEL             ;  2 DEL
         .BYTE   CMD_LOAD            ;  3 LOAD
-        .BYTE   CMD_LOCK            ;  4 LOCK
-        .BYTE   CMD_LPR             ;  5 LPR
-        .BYTE   CMD_MKDIR           ;  6 MKDIR
-        .BYTE   CMD_NCOPY           ;  7 NCOPY
-        .BYTE   CMD_NPWD            ;  8 NPWD
-        .BYTE   CMD_NTRANS          ;  9 NTRANS
-        .BYTE   CMD_PASS            ; 10 PASS
-        .BYTE   CMD_RENAME          ; 11 RENAME
-        .BYTE   CMD_RMDIR           ; 12 RMDIR
-        .BYTE   CMD_SAVE            ; 13 SAVE
-        .BYTE   CMD_SUBMIT          ; 14 SUBMIT
-        .BYTE   CMD_TYPE            ; 15 TYPE
-        .BYTE   CMD_USER            ; 16 USER
-        .BYTE   CMD_UNLOCK          ; 17 UNLOCK
-        .BYTE   CMD_AUTORUN         ; 18 AUTORUN
-        .BYTE   CMD_CAR             ; 19 CAR
-        .BYTE   CMD_CLS             ; 20 CLS
-        .BYTE   CMD_COLD            ; 21 COLD
+        .BYTE   CMD_MKDIR           ;  4 MKDIR
+        .BYTE   CMD_NCOPY           ;  5 NCOPY
+        .BYTE   CMD_NPWD            ;  6 NPWD
+        .BYTE   CMD_NTRANS          ;  7 NTRANS
+        .BYTE   CMD_PASS            ;  8 PASS
+        .BYTE   CMD_RENAME          ;  9 RENAME
+        .BYTE   CMD_RMDIR           ; 10 RMDIR
+        .BYTE   CMD_SAVE            ; 11 SAVE
+        .BYTE   CMD_SUBMIT          ; 12 SUBMIT
+        .BYTE   CMD_TYPE            ; 13 TYPE
+        .BYTE   CMD_USER            ; 14 USER
+        .BYTE   CMD_AUTORUN         ; 15 AUTORUN
+        .BYTE   CMD_BASIC           ; 16 BASIC
+        .BYTE   CMD_CAR             ; 17 CAR
+        .BYTE   CMD_CLS             ; 18 CLS
+        .BYTE   CMD_COLD            ; 19 COLD
+        .BYTE   CMD_DUMP            ; 20 DUMP
+        .BYTE   CMD_FILL            ; 21 FILL
         .BYTE   CMD_HELP            ; 22 HELP
-        .BYTE   CMD_BASIC           ; 23 BASIC
-        .BYTE   CMD_NOSCREEN        ; 24 NOSCREEN
-        .BYTE   CMD_PRINT           ; 25 PRINT
-        .BYTE   CMD_REENTER         ; 26 REENTER
-        .BYTE   CMD_REM             ; 27 REM
-        .BYTE   CMD_RUN             ; 28 RUN
-        .BYTE   CMD_SCREEN          ; 29 SCREEN
-        .BYTE   CMD_WARM            ; 20 WARM
-        .BYTE   CMD_XEP             ; 31 XEP
-        .BYTE   CMD_DRIVE_CHG       ; 32
+        .BYTE   CMD_NOSCREEN        ; 23 NOSCREEN
+        .BYTE   CMD_PRINT           ; 24 PRINT
+        .BYTE   CMD_REENTER         ; 25 REENTER
+        .BYTE   CMD_REM             ; 26 REM
+        .BYTE   CMD_RUN             ; 27 RUN
+        .BYTE   CMD_SCREEN          ; 28 SCREEN
+        .BYTE   CMD_WARM            ; 29 WARM
+        .BYTE   CMD_XEP             ; 30 XEP
+        .BYTE   CMD_DRIVE_CHG       ; 31
 
 COMMAND:
         .CB     "NCD"               ;  0 NCD
         .BYTE   CMD_IDX.NCD
 
-        .CB     "DIR"               ;  2 DIR
+        .CB     "DIR"               ;  1 DIR
         .BYTE   CMD_IDX.DIR
 
-        .CB     "DEL"               ;  3 DEL
-        .BYTE   CMD_IDX.DEL
-
-        .CB     "LOAD"              ;  4 LOAD
-        .BYTE   CMD_IDX.LOAD
-
-        .CB     "LOCK"              ;  5 LOCK
-        .BYTE   CMD_IDX.LOCK
-
-        .CB     "LPR"               ;  6 LPR
-        .BYTE   CMD_IDX.LPR
-
-        .CB     "MKDIR"             ;  7 MKDIR
-        .BYTE   CMD_IDX.MKDIR
-
-        .CB     "NCOPY"             ;  8 NCOPY
-        .BYTE   CMD_IDX.NCOPY
-
-        .CB     "NPWD"              ;  9 NPWD
-        .BYTE   CMD_IDX.NPWD
-
-        .CB     "NTRANS"            ; 10 NTRANS
-        .BYTE   CMD_IDX.NTRANS
-
-        .CB     "PASS"              ; 11 PASS
-        .BYTE   CMD_IDX.PASS
-
-        .CB     "RENAME"            ; 12 RENAME
-        .BYTE   CMD_IDX.RENAME
-
-        .CB     "RMDIR"             ; 13 RMDIR
-        .BYTE   CMD_IDX.RMDIR
-
-        .CB     "SAVE"              ; 14 SAVE
-        .BYTE   CMD_IDX.SAVE
-
-        .CB     "SUBMIT"            ; 15 SUBMIT
-        .BYTE   CMD_IDX.SUBMIT
-
-        .CB     "TYPE"              ; 16 TYPE
-        .BYTE   CMD_IDX.TYPE
-
-        .CB     "USER"              ; 17 USER
-        .BYTE   CMD_IDX.USER
-
-        .CB     "UNLOCK"            ; 18 UNLOCK
-        .BYTE   CMD_IDX.UNLOCK
-
-        .CB     "AUTORUN"           ; 19 AUTORUN
-        .BYTE   CMD_IDX.AUTORUN
-
-        .CB     "CAR"               ; 20 CAR
-        .BYTE   CMD_IDX.CAR
-
-        .CB     "CLS"               ; 21 CLS
-        .BYTE   CMD_IDX.CLS
-
-        .CB     "COLD"              ; 22 COLD
-        .BYTE   CMD_IDX.COLD
-
+        .CB     "DEL"               ;  2 DEL
+        .BYTE   CMD_IDX.DEL             
+                                        
+        .CB     "LOAD"              ;  3 LOAD
+        .BYTE   CMD_IDX.LOAD            
+                                        
+        .CB     "MKDIR"             ;  4 MKDIR
+        .BYTE   CMD_IDX.MKDIR           
+                                        
+        .CB     "NCOPY"             ;  5 NCOPY
+        .BYTE   CMD_IDX.NCOPY         
+                                      
+        .CB     "NPWD"              ;  6 NPWD
+        .BYTE   CMD_IDX.NPWD            
+                                        
+        .CB     "NTRANS"            ;  7 NTRANS
+        .BYTE   CMD_IDX.NTRANS          
+                                        
+        .CB     "PASS"              ;  8 PASS
+        .BYTE   CMD_IDX.PASS            
+                                        
+        .CB     "RENAME"            ;  9 RENAME
+        .BYTE   CMD_IDX.RENAME          
+                                        
+        .CB     "RMDIR"             ; 10 RMDIR
+        .BYTE   CMD_IDX.RMDIR           
+                                        
+        .CB     "SAVE"              ; 11 SAVE
+        .BYTE   CMD_IDX.SAVE            
+                                        
+        .CB     "SUBMIT"            ; 12 SUBMIT
+        .BYTE   CMD_IDX.SUBMIT          
+                                        
+        .CB     "TYPE"              ; 13 TYPE
+        .BYTE   CMD_IDX.TYPE            
+                                        
+        .CB     "USER"              ; 14 USER
+        .BYTE   CMD_IDX.USER            
+                                        
+        .CB     "AUTORUN"           ; 15 AUTORUN
+        .BYTE   CMD_IDX.AUTORUN         
+                                        
+        .CB     "BASIC"             ; 16 NOBASIC
+        .BYTE   CMD_IDX.BASIC             
+                                          
+        .CB     "CAR"               ; 17 CAR
+        .BYTE   CMD_IDX.CAR             
+                                        
+        .CB     "CLS"               ; 18 CLS
+        .BYTE   CMD_IDX.CLS             
+                                        
+        .CB     "COLD"              ; 19 COLD
+        .BYTE   CMD_IDX.COLD            
+                                        
+        .CB     "DUMP"              ; 20 DUMP
+        .BYTE   CMD_IDX.DUMP            
+                                        
+        .CB     "FILL"              ; 21 FILL
+        .BYTE   CMD_IDX.FILL              
+                                          
         .CB     "HELP"              ; 23 HELP
-        .BYTE   CMD_IDX.HELP
-
-        .CB     "BASIC"             ; 24 NOBASIC
-        .BYTE   CMD_IDX.BASIC
-
-        .CB     "@NOSCREEN"         ; 25 @NOSCREEN
-        .BYTE   CMD_IDX.NOSCREEN
-
-        .CB     "PRINT"             ; 26 PRINT
-        .BYTE   CMD_IDX.PRINT
-
-        .CB     "REENTER"           ; 27 REENTER
-        .BYTE   CMD_IDX.REENTER
-
-        .CB     "REM"               ; 28 REM
-        .BYTE   CMD_IDX.REM
-
-        .CB     "RUN"               ; 29 RUN
-        .BYTE   CMD_IDX.RUN
-
-        .CB     "@SCREEN"           ; 30 @SCREEN
-        .BYTE   CMD_IDX.SCREEN
-
-        .CB     "WARM"              ; 31 WARM
-        .BYTE   CMD_IDX.WARM
-
-        .CB     "XEP"               ;  XEP
-        .BYTE   CMD_IDX.XEP
-
+        .BYTE   CMD_IDX.HELP            
+                                        
+        .CB     "@NOSCREEN"         ; 24 @NOSCREEN
+        .BYTE   CMD_IDX.NOSCREEN        
+                                        
+        .CB     "PRINT"             ; 25 PRINT
+        .BYTE   CMD_IDX.PRINT           
+                                        
+        .CB     "REENTER"           ; 26 REENTER
+        .BYTE   CMD_IDX.REENTER         
+                                        
+        .CB     "REM"               ; 27 REM
+        .BYTE   CMD_IDX.REM             
+                                        
+        .CB     "RUN"               ; 28 RUN
+        .BYTE   CMD_IDX.RUN             
+                                        
+        .CB     "@SCREEN"           ; 29 @SCREEN
+        .BYTE   CMD_IDX.SCREEN          
+                                        
+        .CB     "WARM"              ; 30 WARM
+        .BYTE   CMD_IDX.WARM          
+                                      
+        .CB     "XEP"               ; 31 XEP
+        .BYTE   CMD_IDX.XEP             
+                                        
         ; Drive Change intentionally omitted
 
 ; Aliases
@@ -3396,9 +3471,6 @@ COMMAND:
         .CB     "REN"               ; REN = RENAME
         .BYTE   CMD_IDX.RENAME
 
-        .CB     "SOURCE"            ; SOURCE = SUBMIT
-        .BYTE   CMD_IDX.SUBMIT
-
         .CB     "@"                 ; @ = SUBMIT
         .BYTE   CMD_IDX.SUBMIT
 
@@ -3423,80 +3495,80 @@ CMD_TAB_L:
         .BYTE   <(DO_DIR-1)         ;  1 DIR
         .BYTE   <(DO_GENERIC-1)     ;  2 DEL
         .BYTE   <(DO_LOAD-1)        ;  3 LOAD
-        .BYTE   <(DO_GENERIC-1)     ;  4 LOCK
-        .BYTE   <(DO_LPR-1)         ;  5 LPR
-        .BYTE   <(DO_GENERIC-1)     ;  6 MKDIR
-        .BYTE   <(DO_NCOPY-1)       ;  7 NCOPY
-        .BYTE   <(DO_NPWD-1)        ;  8 NPWD
-        .BYTE   <(DO_NTRANS-1)      ;  9 NTRANS
-        .BYTE   <(DO_GENERIC-1)     ; 10 PASS
-        .BYTE   <(DO_GENERIC-1)     ; 11 RENAME
-        .BYTE   <(DO_GENERIC-1)     ; 12 RMDIR
-        .BYTE   <(DO_SAVE-1)        ; 13 SAVE
-        .BYTE   <(DO_SUBMIT-1)      ; 14 SUBMIT
-        .BYTE   <(DO_TYPE-1)        ; 15 TYPE
-        .BYTE   <(DO_GENERIC-1)     ; 16 USER
-        .BYTE   <(DO_GENERIC-1)     ; 17 UNLOCK
-        .BYTE   <(DO_AUTORUN-1)     ; 18 AUTORUN
-        .BYTE   <(DO_CAR-1)         ; 19 CAR
-        .BYTE   <(DO_CLS-1)         ; 20 CLS
-        .BYTE   <(DO_COLD-1)        ; 21 COLD
+        .BYTE   <(DO_GENERIC-1)     ;  4 MKDIR
+        .BYTE   <(DO_NCOPY-1)       ;  5 NCOPY
+        .BYTE   <(DO_NPWD-1)        ;  6 NPWD
+        .BYTE   <(DO_NTRANS-1)      ;  7 NTRANS
+        .BYTE   <(DO_GENERIC-1)     ;  8 PASS
+        .BYTE   <(DO_GENERIC-1)     ;  9 RENAME
+        .BYTE   <(DO_GENERIC-1)     ; 10 RMDIR
+        .BYTE   <(DO_SAVE-1)        ; 11 SAVE
+        .BYTE   <(DO_SUBMIT-1)      ; 12 SUBMIT
+        .BYTE   <(DO_TYPE-1)        ; 13 TYPE
+        .BYTE   <(DO_GENERIC-1)     ; 14 USER
+        .BYTE   <(DO_AUTORUN-1)     ; 15 AUTORUN
+        .BYTE   <(DO_BASIC-1)       ; 16 BASIC
+        .BYTE   <(DO_CAR-1)         ; 17 CAR
+        .BYTE   <(DO_CLS-1)         ; 18 CLS
+        .BYTE   <(DO_COLD-1)        ; 19 COLD
+        .BYTE   <(DO_DUMP-1)        ; 20 DUMP
+        .BYTE   <(DO_FILL-1)        ; 21 FILL
         .BYTE   <(DO_HELP-1)        ; 22 HELP
-        .BYTE   <(DO_BASIC-1)       ; 23 BASIC
-        .BYTE   <(DO_NOSCREEN-1)    ; 24 NOSCREEN
-        .BYTE   <(DO_PRINT-1)       ; 25 PRINT
-        .BYTE   <(DO_REENTER-1)     ; 26 REENTER
-        .BYTE   <(DO_REM-1)         ; 27 REM
-        .BYTE   <(DO_RUN-1)         ; 28 RUN
-        .BYTE   <(DO_SCREEN-1)      ; 29 SCREEN
-        .BYTE   <(DO_WARM-1)        ; 20 WARM
-        .BYTE   <(DO_XEP-1)         ; 31 XEP
-        .BYTE   <(DO_DRIVE_CHG-1)   ; 32
+        .BYTE   <(DO_NOSCREEN-1)    ; 23 NOSCREEN
+        .BYTE   <(DO_PRINT-1)       ; 24 PRINT
+        .BYTE   <(DO_REENTER-1)     ; 25 REENTER
+        .BYTE   <(DO_REM-1)         ; 26 REM
+        .BYTE   <(DO_RUN-1)         ; 27 RUN
+        .BYTE   <(DO_SCREEN-1)      ; 28 SCREEN
+        .BYTE   <(DO_WARM-1)        ; 29 WARM
+        .BYTE   <(DO_XEP-1)         ; 30 XEP
+        .BYTE   <(DO_DRIVE_CHG-1)   ; 31
 
 CMD_TAB_H:
         .BYTE   >(DO_GENERIC-1)     ;  0 NCD
         .BYTE   >(DO_DIR-1)         ;  1 DIR
         .BYTE   >(DO_GENERIC-1)     ;  2 DEL
         .BYTE   >(DO_LOAD-1)        ;  3 LOAD
-        .BYTE   >(DO_GENERIC-1)     ;  4 LOCK
-        .BYTE   >(DO_LPR-1)         ;  5 LPR
-        .BYTE   >(DO_GENERIC-1)     ;  6 MKDIR
-        .BYTE   >(DO_NCOPY-1)       ;  7 NCOPY
-        .BYTE   >(DO_NPWD-1)        ;  8 NPWD
-        .BYTE   >(DO_NTRANS-1)      ;  9 NTRANS
-        .BYTE   >(DO_GENERIC-1)     ; 10 PASS
-        .BYTE   >(DO_GENERIC-1)     ; 11 RENAME
-        .BYTE   >(DO_GENERIC-1)     ; 12 RMDIR
-        .BYTE   >(DO_SAVE-1)        ; 13 SAVE
-        .BYTE   >(DO_SUBMIT-1)      ; 14 SUBMIT
-        .BYTE   >(DO_TYPE-1)        ; 15 TYPE
-        .BYTE   >(DO_GENERIC-1)     ; 16 USER
-        .BYTE   >(DO_GENERIC-1)     ; 17 UNLOCK
-        .BYTE   >(DO_AUTORUN-1)     ; 18 AUTORUN
-        .BYTE   >(DO_CAR-1)         ; 19 CAR
-        .BYTE   >(DO_CLS-1)         ; 20 CLS
-        .BYTE   >(DO_COLD-1)        ; 21 COLD
+        .BYTE   >(DO_GENERIC-1)     ;  4 MKDIR
+        .BYTE   >(DO_NCOPY-1)       ;  5 NCOPY
+        .BYTE   >(DO_NPWD-1)        ;  6 NPWD
+        .BYTE   >(DO_NTRANS-1)      ;  7 NTRANS
+        .BYTE   >(DO_GENERIC-1)     ;  8 PASS
+        .BYTE   >(DO_GENERIC-1)     ;  9 RENAME
+        .BYTE   >(DO_GENERIC-1)     ; 10 RMDIR
+        .BYTE   >(DO_SAVE-1)        ; 11 SAVE
+        .BYTE   >(DO_SUBMIT-1)      ; 12 SUBMIT
+        .BYTE   >(DO_TYPE-1)        ; 13 TYPE
+        .BYTE   >(DO_GENERIC-1)     ; 14 USER
+        .BYTE   >(DO_AUTORUN-1)     ; 15 AUTORUN
+        .BYTE   >(DO_BASIC-1)       ; 16 BASIC
+        .BYTE   >(DO_CAR-1)         ; 17 CAR
+        .BYTE   >(DO_CLS-1)         ; 18 CLS
+        .BYTE   >(DO_COLD-1)        ; 19 COLD
+        .BYTE   >(DO_DUMP-1)        ; 20 DUMP
+        .BYTE   >(DO_FILL-1)        ; 21 FILL
         .BYTE   >(DO_HELP-1)        ; 22 HELP
-        .BYTE   >(DO_BASIC-1)       ; 23 BASIC
-        .BYTE   >(DO_NOSCREEN-1)    ; 24 NOSCREEN
-        .BYTE   >(DO_PRINT-1)       ; 25 PRINT
-        .BYTE   >(DO_REENTER-1)     ; 26 REENTER
-        .BYTE   >(DO_REM-1)         ; 27 REM
-        .BYTE   >(DO_RUN-1)         ; 28 RUN
-        .BYTE   >(DO_SCREEN-1)      ; 29 SCREEN
-        .BYTE   >(DO_WARM-1)        ; 20 WARM
-        .BYTE   >(DO_XEP-1)         ; 31 XEP
-        .BYTE   >(DO_DRIVE_CHG-1)   ; 32
+        .BYTE   >(DO_NOSCREEN-1)    ; 23 NOSCREEN
+        .BYTE   >(DO_PRINT-1)       ; 24 PRINT
+        .BYTE   >(DO_REENTER-1)     ; 25 REENTER
+        .BYTE   >(DO_REM-1)         ; 26 REM
+        .BYTE   >(DO_RUN-1)         ; 27 RUN
+        .BYTE   >(DO_SCREEN-1)      ; 28 SCREEN
+        .BYTE   >(DO_WARM-1)        ; 29 WARM
+        .BYTE   >(DO_XEP-1)         ; 30 XEP
+        .BYTE   >(DO_DRIVE_CHG-1)   ; 31
 
         ; Overlay tables
 
         .ENUM   OVL_IDX
-                LPR
                 AUTORUN
                 BASIC
                 DIR
+                DUMP
+                FILL
                 HELP
                 NCOPY
+                NCOPY1
                 NCOPY2
                 NTRANS
                 REENTER
@@ -3506,12 +3578,14 @@ CMD_TAB_H:
 
         ; Derive ATR Sector where code is stored
 OVL_SECT_TAB_L:
-        .BYTE   <(OVL_LPR/SECTOR_SIZE-$0D)
         .BYTE   <(OVL_AUTORUN/SECTOR_SIZE-$0D)
         .BYTE   <(OVL_BASIC/SECTOR_SIZE-$0D)
         .BYTE   <(OVL_DIR/SECTOR_SIZE-$0D)
+        .BYTE   <(OVL_DUMP/SECTOR_SIZE-$0D)
+        .BYTE   <(OVL_FILL/SECTOR_SIZE-$0D)
         .BYTE   <(OVL_HELP/SECTOR_SIZE-$0D)
         .BYTE   <(OVL_NCOPY/SECTOR_SIZE-$0D)
+        .BYTE   <(OVL_NCOPY1/SECTOR_SIZE-$0D)
         .BYTE   <(OVL_NCOPY2/SECTOR_SIZE-$0D)
         .BYTE   <(OVL_NTRANS/SECTOR_SIZE-$0D)
         .BYTE   <(OVL_REENTER/SECTOR_SIZE-$0D)
@@ -3519,12 +3593,14 @@ OVL_SECT_TAB_L:
         .BYTE   <(OVL_XEP/SECTOR_SIZE-$0D)
 
 OVL_SECT_TAB_H:
-        .BYTE   >(OVL_LPR/SECTOR_SIZE-$0D)
         .BYTE   >(OVL_AUTORUN/SECTOR_SIZE-$0D)
         .BYTE   >(OVL_BASIC/SECTOR_SIZE-$0D)
         .BYTE   >(OVL_DIR/SECTOR_SIZE-$0D)
+        .BYTE   >(OVL_DUMP/SECTOR_SIZE-$0D)
+        .BYTE   >(OVL_FILL/SECTOR_SIZE-$0D)
         .BYTE   >(OVL_HELP/SECTOR_SIZE-$0D)
         .BYTE   >(OVL_NCOPY/SECTOR_SIZE-$0D)
+        .BYTE   >(OVL_NCOPY1/SECTOR_SIZE-$0D)
         .BYTE   >(OVL_NCOPY2/SECTOR_SIZE-$0D)
         .BYTE   >(OVL_NTRANS/SECTOR_SIZE-$0D)
         .BYTE   >(OVL_REENTER/SECTOR_SIZE-$0D)
@@ -3533,12 +3609,14 @@ OVL_SECT_TAB_H:
 
         ; Derive number of ATR sectors used to store code
 OVL_SECT_CNT_TAB:
-        .BYTE   [END_OVL_LPR-OVL_LPR]/SECTOR_SIZE
         .BYTE   [END_OVL_AUTORUN-OVL_AUTORUN]/SECTOR_SIZE
         .BYTE   [END_OVL_BASIC-OVL_BASIC]/SECTOR_SIZE
         .BYTE   [END_OVL_DIR-OVL_DIR]/SECTOR_SIZE
+        .BYTE   [END_OVL_DUMP-OVL_DUMP]/SECTOR_SIZE
+        .BYTE   [END_OVL_FILL-OVL_FILL]/SECTOR_SIZE
         .BYTE   [END_OVL_HELP-OVL_HELP]/SECTOR_SIZE
         .BYTE   [END_OVL_NCOPY-OVL_NCOPY]/SECTOR_SIZE
+        .BYTE   [END_OVL_NCOPY1-OVL_NCOPY1]/SECTOR_SIZE
         .BYTE   [END_OVL_NCOPY2-OVL_NCOPY2]/SECTOR_SIZE
         .BYTE   [END_OVL_NTRANS-OVL_NTRANS]/SECTOR_SIZE
         .BYTE   [END_OVL_REENTER-OVL_REENTER]/SECTOR_SIZE
@@ -3555,7 +3633,7 @@ CIOHND  .WORD   OPEN-1
 
        ; BANNERS
 
-BREADY  .BYTE   '#FUJINET NOS v0.7.0-alpha',EOL
+BREADY  .BYTE   '#FUJINET NOS v0.7.0',EOL
 BERROR  .BYTE   '#FUJINET ERROR',EOL
 
         ; MESSAGES
@@ -3593,6 +3671,9 @@ CMDPRV          .BYTE   $01
 OVLPRV          .BYTE   $FF ; Previous Overlay Command
 ECHO_FLG        .BYTE   $01 ; Echo batch cmds (1=enabled,0=disabled)
 AUTORUN_FLG     .BYTE   $00 ; Checked at DOS entry. Runs only on first pass
+WRITEMODE       .BYTE   $00 ; Used for open, truncate or open, append
+SOURCE_IOCB     .BYTE   $00 ; Used in NCOPY
+TARGET_IOCB     .BYTE   $00 ; Used in NCOPY
 
 TRIP            .BYTE   $01 ; INTR FLAG
 RLEN    :MAXDEV .BYTE   $00 ; RCV LEN
@@ -3636,6 +3717,16 @@ STL2    = TBUF+14   ; Payload Start address (working var)
 STH2    = TBUF+15
 BIN_1ST = TBUF+16   ; Flag for binary loader signature (FF -> 1st pass)
 
+; Following for DUMP
+DUMP_START = TBUF
+DUMP_END   = TBUF+2
+
+; Following for FILL
+FILL_START = TBUF
+FILL_END   = TBUF+2
+FILL_BYTE  = TBUF+4
+FILL_DIST  = TBUF+5
+
 ; Following used in DO_SAVE
 INITADL = TBUF+4    ; Init Addr (lo)
 INITADH = TBUF+5    ; Init Addr (hi)
@@ -3662,15 +3753,6 @@ PGEND   = *
 ; loaded into OVLBUF, so you will see some assembler math used to
 ; derive the address needed at runtime.
 ; =================================================================
-
-;---------------------------------------
-OVL_LPR:
-;---------------------------------------
-        LDA     #$B0
-        STA     COLOR2
-        RTS
-        .ALIGN SECTOR_SIZE, $00     ; Align to next ATR sector
-END_OVL_LPR:
 
 ;---------------------------------------
 OVL_AUTORUN:
@@ -3746,7 +3828,7 @@ OVL_BASIC:
     ; Usage: [BASIC|ROM] [ON|OFF]
 
     ; Quit if no internal BASIC
-        JSR     CHECK_INTERNAL_BASIC
+        JSR     OVLBUF-OVL_BASIC+CHECK_INTERNAL_BASIC
         BCS     BASIC_QUIT
 
     ; Check for usage. arg (BASIC ON|OFF)
@@ -3816,6 +3898,45 @@ BASIC_USAGE:
 
 BASIC_ERROR:
         .BYTE   '[BASIC|ROM] [ON|OFF]',EOL
+
+;---------------------------------------
+CHECK_INTERNAL_BASIC:
+;---------------------------------------
+    ; Check for internal BASIC found in XL/XEs
+    ; On return:
+    ;   CARRY is clear if not found
+    ;   CARRY is set if found
+    ;-----------------------------------
+        CLC
+        LDA     $FFF7
+        CMP     #$FF        ; ????
+        BEQ     NOBASIC_ERROR
+        CMP     #$DD        ; OSA NTSC
+        BEQ     NOBASIC_ERROR
+        CMP     #$F3        ; OSB NTSC
+        BEQ     NOBASIC_ERROR
+        CMP     #$D6        ; OSA PAL
+        BEQ     NOBASIC_ERROR
+        CMP     #$22        ; OSB PAL
+        BEQ     NOBASIC_ERROR
+        CMP     #$0A        ; OSA 1200XL
+        BEQ     NOBASIC_ERROR
+        CMP     #$0B        ; OSB 1200XL
+        BEQ     NOBASIC_ERROR
+        RTS
+
+;---------------------------------------
+NOBASIC_ERROR:
+;---------------------------------------
+        LDA     #<(OVLBUF-OVL_BASIC+NOBASIC_ERROR_STR)
+        LDY     #>(OVLBUF-OVL_BASIC+NOBASIC_ERROR_STR)
+        JSR     PRINT_STRING
+        SEC
+        RTS
+
+NOBASIC_ERROR_STR:
+        .BYTE   'NO BUILT-IN BASIC',EOL
+
         .ALIGN SECTOR_SIZE, $00     ; Align to ATR sector
 END_OVL_BASIC:
 
@@ -4025,6 +4146,295 @@ DIR_CLOSE:
 END_OVL_DIR:
 
 ;---------------------------------------
+OVL_DUMP:
+;---------------------------------------
+    ; Dump a range of memory to the screen
+
+    ; Convert comma-delimiters to offsets
+        JSR     PARSE_COMMAS
+
+    ; Quit if no args
+        LDA     CMDSEP      ; Will contain zero if no arg 1
+        BNE     DUMP_NEXT0  ; Skip ahead if args are present
+
+    ; Otherwise show usage
+        LDA     #<(OVLBUF-OVL_DUMP+DUMP_ERROR_STR)
+        LDY     #>(OVLBUF-OVL_DUMP+DUMP_ERROR_STR)
+        JMP     PRINT_STRING
+
+DUMP_NEXT0:
+    ; Convert arg1 (start address) from hex string to word
+        TAY                 ; Y will hold offset to hex string
+        CLC
+        ADC     #$04        ; Expected length of hex string
+        STA     RBUF        ; RBUF is used by ASCII2ADDR
+        JSR     ASCII2ADDR
+        BCC     @+
+        RTS                 ; Quit if bad ascii 2 addr conversion
+
+    ; Save start address as variable
+    ; Also, initialize end address = start address + 7
+    ; (I suspect I have an off-by-one error here or at the
+    ; bound check, but it's working the way I want as it is).
+@:      LDA     INBUFF
+        STA     DUMP_START
+        CLC
+        ADC     #$07
+        STA     DUMP_END
+        LDA     INBUFF+1
+        STA     DUMP_START+1
+        STA     DUMP_END+1
+        BCC     @+
+        INC     DUMP_END+1
+
+    ; Check for arg 2
+@:      LDY     CMDSEP+1    ; Offset needed in Y for ASCII2ADDR
+        BEQ     DUMP_NEXT2  ; Skip ahead if arg 2 (end address) is not given
+
+DUMP_NEXT1:
+    ; Arg 2 given, convert string to address
+        ; Convert hex string to int
+        TYA                 ; Y = CMDSEP+1 - needed for ASCII2ADDR
+        CLC                 ; Offset + 4 needed needed for ASCII2ADDR
+        ADC     #$04
+        STA     RBUF
+        JSR     ASCII2ADDR  ; LNBUF,Y contains 4-char addr
+        BCC     @+
+        RTS                 ; Quit if bad ascii 2 addr conv
+
+@:      LDA     INBUFF
+        STA     DUMP_END
+        LDA     INBUFF+1
+        STA     DUMP_END+1
+
+DUMP_NEXT2:
+    ; Initalize index into memory being dumped
+        LDY     #$00
+
+    ; Get address
+        LDA     DUMP_START
+        STA     INBUFF
+        PHA                                 ; Push DUMP_START (Lo byte)
+
+        LDA     DUMP_START+1
+        STA     INBUFF+1
+
+    ; Print address
+        JSR     OVLBUF-OVL_DUMP+INT2ASCII   ; Print Hi byte. Re-use X = 0
+
+        PLA                                 ; Pull DUMP_START (Lo byte)
+        JSR     OVLBUF-OVL_DUMP+INT2ASCII   ; Print Lo byte
+
+    ; Loop for 8 bytes
+DUMP_LOOP0:
+        LDA     #' '            ; Put a space between hex bytes
+        STA     RBUF,X
+        INX
+
+    ; Fetch byte from memory
+        LDA     (INBUFF),Y
+    ; and convert/put hex string into RBUF
+        JSR     OVLBUF-OVL_DUMP+INT2ASCII   
+
+    ; Advance to next position
+    ; Loop until 8 bytes displayed
+        INY
+        CPX     #$1A
+        BCC     DUMP_LOOP0
+
+    ; Here if done fetching, converting, displaying 8 bytes
+        LDA     #EOL
+        STA     RBUF,X
+        
+    ; Print the whole line of addr + bytes
+        LDA     #<RBUF
+        LDY     #>RBUF
+        JSR     PRINT_STRING
+
+    ; Increment address
+        CLC
+        LDA     #$08
+        ADC     DUMP_START      ; Start += 8
+        STA     DUMP_START
+        BCC     @+
+
+        CLC
+        LDA     #$01            ; Use ADC to catch carry
+        ADC     DUMP_START+1
+        STA     DUMP_START+1
+        BCS     DUMP_DONE       ; Quit if we went from FFxx to 00xx
+
+    ; Are we done yet? Is START <= END?
+@:      LDA     DUMP_END
+        CMP     DUMP_START
+        LDA     DUMP_END+1
+        SBC     DUMP_START+1
+        BCS     @+
+        
+DUMP_DONE:
+        RTS
+
+@:  ; Check for keypress
+        LDA     CH              ; Will be $FF if no keypress
+        CMP     #ESC_KEY        ; Leave if ESC key pressed
+        BEQ     DUMP_DONE
+    ; Process next line
+        JMP     OVLBUF-OVL_DUMP+DUMP_NEXT2
+
+;--------------
+INT2ASCII:
+;--------------
+    ; Input A contains byte, X contains offset to output string
+    ; Output RBUF+X contains string
+    ; Stolen from WOZMON disassembly by Jeff Tranter
+        PHA                 ; Save A for LSD
+        LSR
+        LSR
+        LSR
+        LSR                 ; MSD to LSD position.
+        JSR     OVLBUF-OVL_DUMP+PRHEX
+        PLA
+PRHEX:  AND     #$0F        ; Mask LSD for hex print
+        ORA     #'0'        ; Add "0".
+        CMP     #$3A        ; Digit?
+        BCC     ECHO        ; Yes, skip ahead
+        ADC     #$06        ; Add offset for letter
+ECHO:   STA     RBUF,X
+        INX
+        RTS
+
+DUMP_ERROR_STR:
+        .BYTE   'DUMP START [END]',EOL
+
+        .ALIGN SECTOR_SIZE, $00     ; Align to ATR sector
+END_OVL_DUMP:
+
+;---------------------------------------
+OVL_FILL:
+;---------------------------------------
+    ; Fill a range of memory with a given byte
+    
+    ; Convert comma-delimiters to offsets
+        JSR     PARSE_COMMAS
+
+    ; Quit if 3 args not given
+        LDA     CMDSEP      ; Will contain zero if no arg 1
+        BNE     FILL_NEXT0
+
+    ; Otherwise show usage
+FILL_ERROR:
+        LDA     #<(OVLBUF-OVL_FILL+FILL_ERROR_STR)
+        LDY     #>(OVLBUF-OVL_FILL+FILL_ERROR_STR)
+        JMP     PRINT_STRING
+
+FILL_NEXT0:
+    ; Convert arg1 (start address) from hex string to word
+        JSR     OVLBUF-OVL_FILL+FILL_ASCII2ADDR
+        BCS     FILL_HOP0
+
+    ; Save start address as variable
+        LDA     INBUFF
+        STA     FILL_START
+        LDA     INBUFF+1
+        STA     FILL_START+1
+
+        LDA     CMDSEP+1
+        BEQ     FILL_ERROR
+
+    ; Convert arg2 (end address) from hex string to word
+        JSR     OVLBUF-OVL_FILL+FILL_ASCII2ADDR
+FILL_HOP0:
+        BCS     FILL_QUIT
+
+    ; Save end address as variable
+        LDA     INBUFF
+        STA     FILL_END
+        LDA     INBUFF+1
+        STA     FILL_END+1
+
+    ; Convert arg3 (fill byte) from hex string to byte
+        LDY     CMDSEP+2
+        BEQ     FILL_ERROR
+
+        LDA     LNBUF+2,Y
+        CMP     #EOL
+        BNE     FILL_ERROR
+
+        LDA     #'0'
+        STA     LNBUF+2,Y
+        STA     LNBUF+3,Y
+        LDA     #EOL
+        STA     LNBUF+4,Y
+        TYA
+        JSR     OVLBUF-OVL_FILL+FILL_ASCII2ADDR
+        BCS     FILL_ERROR
+      
+    ; Save fill byte
+        LDA     INBUFF
+        STA     FILL_BYTE
+        LDA     INBUFF+1
+        STA     FILL_BYTE
+
+    ; Find distance between start and end addresses
+    ; fill_dist = end - start + 1
+        SEC
+        LDA     FILL_END
+        SBC     FILL_START 
+        STA     FILL_DIST
+        LDA     FILL_END+1
+        SBC     FILL_START+1
+        STA     FILL_DIST+1
+    
+    ; Quit if fill_end < fill_start
+        BMI     FILL_ERROR
+
+    ; Ready to start filling
+    ; Initialize to start address
+        LDA     FILL_START
+        STA     INBUFF
+        LDA     FILL_START+1
+        STA     INBUFF+1
+
+    ; Loop to fill 
+@:      LDA     FILL_BYTE
+        LDY     #$00
+FILL_LOOP01:
+        LDA     FILL_BYTE
+        STA     (INBUFF),Y
+
+    ; Exit loop if inbuff >= fill_end
+        LDA     INBUFF
+        CMP     FILL_END
+        LDA     INBUFF+1
+        SBC     FILL_END+1
+        BCS     FILL_QUIT
+
+    ; Increment address
+        CLC
+        LDA     #$01
+        ADC     INBUFF
+        STA     INBUFF
+        BCC     @+
+        INC     INBUFF+1
+
+    ; Do again
+@:      JMP     OVLBUF-OVL_FILL+FILL_LOOP01
+
+FILL_ASCII2ADDR:
+        TAY
+        CLC
+        ADC     #$04
+        STA     RBUF
+        JSR     ASCII2ADDR
+FILL_QUIT:
+        RTS
+
+FILL_ERROR_STR:
+        .BYTE   'FILL START END XX',EOL
+
+        .ALIGN SECTOR_SIZE, $00     ; Align to ATR sector
+END_OVL_FILL:
+;---------------------------------------
 OVL_HELP:
 ;---------------------------------------
     ; Append either "HELP" or arg1 to URL
@@ -4083,54 +4493,159 @@ HELP_URL:
 
 HELP_ARTICLE:
     :24 .BYTE   $00
+
         .ALIGN SECTOR_SIZE, $00     ; Align to ATR sector
 END_OVL_HELP:
 
 ;---------------------------------------
 OVL_NCOPY:
 ;---------------------------------------
-        ; Check if an arg exists
-        LDX     CMDSEP          ; Check if there's any args
+    ; Check if an arg exists
+        LDY     CMDSEP          ; Check if there's any args
         BEQ     NCOPY_ERROR     ; No. Show usage and quit
 
-        ; Find comma, convert comma to EOL
+    ; Default to Open with Truncate
+    ; Later, if we find 'A' as 3rd arg
+    ; Then we'll change the mode to Append
+        LDA     #$08            ; Open with Truncate mode
+        STA     WRITEMODE
+
+    ; Find comma, convert comma to EOL
         JSR     PARSE_COMMAS
 
-        ; Check if 2nd arg exists
-        LDX     CMDSEP+1        ; Check if there's any args
-        BNE     NCOPY_NEXT0     ; No. Show usage and quit
+    ; Check if 3rd arg exists
+        LDY     CMDSEP+2
+        BEQ     NCOPY_ARG2
+
+    ; Here if 3rd arg found
+    ; Is it an A (for APPEND option)?
+        LDA     (INBUFF),Y
+        JSR     TOUPPER
+        CMP     #'A'
+        BNE     NCOPY_ARG2
+        INY
+        LDA     (INBUFF),Y
+        CMP     #EOL
+        BNE     NCOPY_ARG2
+        LDA     #$09            ; Open with Append mode
+        STA     WRITEMODE
+
+NCOPY_ARG2:
+    ; Check if 2nd arg exists
+        LDX     #$02            ; Used later for counting colon test passes 
+        LDY     CMDSEP+1        ; Check if there's any args
+        BEQ     NCOPY_ERROR     ; No. Show usage and quit
+        LDA     (INBUFF),Y
+        CMP     #EOL            ; Check if arg2 is empty
+        BNE     NCOPY_NEXT0
 
 NCOPY_ERROR:
         LDA     #<(OVLBUF-OVL_NCOPY+NCOPY_ERROR_STR)
         LDY     #>(OVLBUF-OVL_NCOPY+NCOPY_ERROR_STR)
         JMP     PRINT_STRING
 
+NCOPY_ERROR_STR:
+        .BYTE   'NCOPY FROM,TO[,A]',EOL
+
 NCOPY_NEXT0:
-;    ; Check if 3rd arg exists
-;        LDY     CMDSEP+2
-;        BEQ     NCOPY_NEXT_A
-;
-;    ; Here if 3rd arg (is it ",A"?)
-;        LDA     (INBUFF),Y
-;        AND     #$5F        ; Convert to upper case
-;        CMP     #'A'        ; Asking for Append?
-;        BNE     NCOPY_ERROR
-;
-;    ; Is 3rd arg A and EOL?
-;        INY
-;        LDA     (INBUFF),Y
-;        CMP     #EOL
-;        BNE     NCOPY_ERROR
-;
-;        LDA     #$0C        ; Change to OPEN APPEND
-;        STA     OVLBUF-OVL_NCOPY+NCOPY_OUTPUT_MODE
-;
-;NCOPY_NEXT_A:
+    ; Check if 2nd arg ends in '/'
+    ; First find end of 2nd arg
+        DEY
+NCOPY_LOOP:
+        INY     
+        LDA     (INBUFF),Y
+        CMP     #EOL
+        BNE     NCOPY_LOOP
+
+    ; Check if prev char is '/'
+        DEY
+        LDA     (INBUFF),Y
+        CMP     #'/'
+        BNE     NCOPY_IS_NEOL
+        INY
+        BNE     NCOPY_JUMP
+
+NCOPY_IS_NEOL:
+    ; Check if 2nd arg is in the form of N:<EOL> or Nn:<EOL>
+        LDY     CMDSEP+1
+        LDA     (INBUFF),Y      ; First, does arg start with "N"?
+        CMP     #'N'            ;
+        BNE     NCOPY_NEXT_A    ; No. Give up and skip ahead.
+
+    ; Is next char :?
+NCOPY_IS_COLON:
+        INY                     ; Advance to next char in arg
+        LDA     (INBUFF),Y      ; 
+        CMP     #':'            ; 
+        BEQ     NCOPY_NEXT01    ; Yes, it's a ":", skip ahead 
+
+        DEX                     ; Test this only 2 times
+        BEQ     NCOPY_NEXT_A    ; No. Give up and skip ahead
+        
+    ; Is char digit (0-4)?
+        CMP     #'0'
+        BCC     NCOPY_NEXT_A
+        CMP     #'4'
+        BCS     NCOPY_NEXT_A
+
+    ; Here if Nn. Jump back to check if next char is ':'
+        BCC     NCOPY_IS_COLON
+        
+    ; Here if Nn: or N: 
+    ; Is next char EOL?
+NCOPY_NEXT01:
+        INY                     ; Advance to next char in arg
+        LDA     (INBUFF),Y      ;
+        CMP     #EOL            ; Is the arg just Nn:<EOL> / N:<EOL>?
+        BNE     NCOPY_NEXT_A    ; No. Give up and skip ahead.
+
+    ; Here if Nn:<EOL> or N:<EOL>
+    ; Copy source filename to target
+    ; So, say, N1:<EOL> becomes N1:MYFILE<EOL>
+NCOPY_JUMP:
+        STY     OVLBUF-OVL_NCOPY+NCOPY_POS       ; Current target file offset
+        LDX     CMDSEP          ; Get offset to beginning of filename
+
+NCOPY_LOOP0:
+        LDA     $0582,X
+        CMP     #'/'            ; if '/' or
+        BEQ     NCOPY_RESET_OFFSET
+        CMP     #':'            ; if ':' then erase path so far
+        BNE     NCOPY_CONTINUE
+NCOPY_RESET_OFFSET:
+        LDY     OVLBUF-OVL_NCOPY+NCOPY_POS
+;        DEY
+    BNE     @+
+NCOPY_CONTINUE:
+        STA     (INBUFF),Y
+        INY
+@:
+        INX
+        CMP     #EOL
+        BNE     NCOPY_LOOP0
+        
+NCOPY_NEXT_A:
+        CLC
+        LDA     CMDSEP
+        ADC     INBUFF
+        STA     INBUFF
+        BCC     NCOPY_NEXT_B
+        INC     INBUFF+1
 
     ; Prepend Drive to source file (if necessary)
-        JSR     GET_DOSDR
+NCOPY_NEXT_B:
         JSR     PREPEND_DRIVE
+        JMP     DO_NCOPY1           ; Load next portion of code and run it
 
+NCOPY_POS:
+        .BYTE   $00
+
+        .ALIGN SECTOR_SIZE, $00     ; Align to ATR sector
+END_OVL_NCOPY:
+
+;---------------------------------------
+OVL_NCOPY1:
+;---------------------------------------
     ; Save copy source to TBUF.
     ; Needed for string comparison later between source and target
     ; Parsing target may clobber part of source string 
@@ -4143,48 +4658,69 @@ NCOPY_LOOP1:
         CMP     #EOL
         BNE     NCOPY_LOOP1
 
-    ; Check if Channel 1 should be closed prior to opening
-        LDX     #$10            ; Channel 1
-        LDA     IOCB,X          ; Will be $FF if closed
-        BMI     NCOPY_NEXT1     ; Skip if already closed
-        JSR     CIOCLOSE
+;    ; Check if Channel 1 should be closed prior to opening
+;        LDX     #$10            ; Channel 1
+;        LDA     IOCB,X          ; Will be $FF if closed
+;        BMI     NCOPY_NEXT1     ; Skip if already closed
+;        JSR     CIOCLOSE
 
     ; Open source file for read
 NCOPY_NEXT1:
-        LDX     #$10            ; Channel 1
+;        LDX     #$10            ; Channel 1
+        JSR     NEXT_IOCB
+        BCC     @+
+        RTS
+
+@:      STX     SOURCE_IOCB
         LDY     #$04            ; Open for read
         JSR     CIOOPEN
-        BPL     NCOPY_NEXT2
+        CPY     #$80
+        BCC     NCOPY_NEXT2
         JSR     PRINT_ERROR
-        JMP     OVLBUF-OVL_NCOPY+NCOPY_CLOSE
+        JMP     OVLBUF-OVL_NCOPY1+NCOPY_CLOSE
 
 NCOPY_NEXT2:
-    ; Assert channel 2 is free
-        LDX     #$20
-        LDA     IOCB,X      ; Will be $FF if closed
-        BMI     NCOPY_NEXT3 ; Skip if already closed
-        JSR     CIOCLOSE
-
-NCOPY_NEXT3:
-    ; X will contain n-1 in Nn:
-    ; Do this before changing 
-    ; Because DOSDR resets INBUFF
-@:      JSR     GET_DOSDR
-
     ; Change INBUFF to point to target filename
         CLC
-        LDA     #$82
-        ADC     CMDSEP+1
-        STA     INBUFF
+        LDA     #<LNBUF         ; Low byte of line buffer
+        ADC     CMDSEP+1        ; Offset to start of arg 2
+        STA     INBUFF          ; Store it in pointer address
+        BCC     NCOPY_NEXT3A
+        INC     INBUFF+1
 
     ; Prepend Drive to target file
-        JSR     PREPEND_DRIVE   ; X set above in GET_DOSDR
+NCOPY_NEXT3A:
+    ; Do no prepend drive if another device is specified
+    ; such as P:, P1:, E:
         LDY     #$00
         LDA     (INBUFF),Y
         CMP     #'N'
-        BNE     NCOPY_OPEN_20
+        BEQ     NCOPY_NEXT3B    ; If 1st char is N, proceed, stop checking
+        INY
+        LDA     (INBUFF),Y      ; If 2nd char is :, skip filename processing
+        CMP     #':'
+        BEQ     NCOPY_OPEN_20
+        INY
+        LDA     (INBUFF),Y
+        CMP     #':'            ; If 3rd char is :, skip filename procssing
+        BEQ     NCOPY_OPEN_20
+
+NCOPY_NEXT3B:
+        JSR     PREPEND_DRIVE 
+        LDY     #$00            ; Check if N: device
+        LDA     (INBUFF),Y
+        CMP     #'N'
+        BNE     NCOPY_OPEN_20   ; No? Skip ahead.
 
     ; Compare source and target. Quit if the same.
+    ; Note: this is a very limited comparison. If
+    ; the source and target have different paths
+    ; but point to the same file then the source will
+    ; get clobbered when the target is opened for write.
+    ; A work-around would to open the target for read and
+    ; fail if successful, that is, the target already 
+    ; exists when it shouldn't. An exception would be needed
+    ; for append mode.
         LDY     #$FF
 NCOPY_LOOP2:
         INY
@@ -4197,10 +4733,10 @@ NCOPY_LOOP2:
 
     ; Source and target are the same file. Quit
 NCOPY_SAME_ERR:
-        LDA     #<(OVLBUF-OVL_NCOPY+NCOPY_SAME_TXT)
-        LDY     #>(OVLBUF-OVL_NCOPY+NCOPY_SAME_TXT)
+        LDA     #<(OVLBUF-OVL_NCOPY1+NCOPY_SAME_TXT)
+        LDY     #>(OVLBUF-OVL_NCOPY1+NCOPY_SAME_TXT)
         JSR     PRINT_STRING
-        JMP     OVLBUF-OVL_NCOPY+NCOPY_CLOSE
+        JMP     OVLBUF-OVL_NCOPY1+NCOPY_CLOSE
         
 NCOPY_NEXT4:
     ; Get NPWD of target
@@ -4232,7 +4768,7 @@ NCOPY_LOOP4:
     ; Copy N8: to the start of the path
         LDY     #$02
 NCOPY_LOOP5:
-        LDA     OVLBUF-OVL_NCOPY+NCOPY_N8,Y
+        LDA     OVLBUF-OVL_NCOPY1+NCOPY_N8,Y
         STA     RBUF-3,Y
         DEY
         BPL     NCOPY_LOOP5
@@ -4245,46 +4781,44 @@ NCOPY_LOOP5:
 
 NCOPY_OPEN_20:
     ; Open target file
-        LDX     #$20        ; Channel 2
-        LDY     OVLBUF-OVL_NCOPY+NCOPY_OUTPUT_MODE ;(8=truncate 12=append)
+        JSR     NEXT_IOCB   ; On return, X will be like $20
+        BCS     NCOPY_QUIT1 ; On failure, close source IOCB and quit
+        STX     TARGET_IOCB
+        LDY     WRITEMODE   ; 8=truncate 9=append
         JSR     CIOOPEN
-        BPL     @+
-        JSR     PRINT_ERROR
-        JMP     OVLBUF-OVL_NCOPY+NCOPY_CLOSE
+        CPY     #$80        ; Check for error
+        BCC     NCOPY_CONT  ; Jump ahead if no error
+        JSR     PRINT_ERROR 
+        JMP     OVLBUF-OVL_NCOPY1+NCOPY_CLOSE   ; Close IOCBs and exit
 
     ; We've run out of space at OVLBUF
     ; Process the next part as another 
     ; overlay command.
 
-@:      LDA     #$FF        ; Clear prev overlay id
+NCOPY_CONT:
+        LDA     #$FF        ; Clear prev overlay id
         STA     OVLPRV      ; to avoid caching confusion
         JMP     DO_NCOPY2
 
     ; Close routine
 NCOPY_CLOSE:
-        LDX     #$10
+        LDX     TARGET_IOCB
         JSR     CIOCLOSE
-        LDX     #$20
-        JMP     CIOCLOSE
+NCOPY_QUIT1:
+        LDX     SOURCE_IOCB
+        JSR     CIOCLOSE
+NCOPY_QUIT2:
+        RTS
 
-
-NCOPY_ERROR_STR:
-        .BYTE   'NCOPY FROM,TO'
 
 NCOPY_SAME_TXT:
         .BYTE   'SAME FILE?',EOL
 
-NCOPY_NPWD:
-        .BYTE   'NPWD Nn:',EOL
-
 NCOPY_N8:
         .BYTE   'N8:'
 
-NCOPY_OUTPUT_MODE:
-        .BYTE   $08
-
         .ALIGN SECTOR_SIZE, $00     ; Align to ATR sector
-END_OVL_NCOPY:
+END_OVL_NCOPY1:
 
 ;---------------------------------------
 OVL_NCOPY2:
@@ -4300,9 +4834,9 @@ OVL_NCOPY2:
         STA     INBUFF+1
 
 NCOPY2_NEXT2:
-        LDX     #$10        ; Source Channel
+        LDX     SOURCE_IOCB         ; X will be like $10
         LDA     #$80
-        LDY     #$00        ; Request $0080  bytes
+        LDY     #$00                ; Request $0080  bytes
         JSR     CIOGET
         BPL     NCOPY2_WRITE
 
@@ -4319,12 +4853,12 @@ NCOPY2_EOF_FOUND:
     ; Presumably we've reached the EOF
     ; Self-modify code ahead to adjust
     ; for the remaining bytes
-        LDX     #$10
+        LDX     SOURCE_IOCB         ; X will be like $10
         LDA     ICBLL,X   ; Remaining bytes found in IOCB
         STA     OVLBUF-OVL_NCOPY2+NCOPY2_ICBLL+1
 
 NCOPY2_WRITE:
-        LDX     #$20        ; Target Channel
+        LDX     TARGET_IOCB         ; X will be like $10
 NCOPY2_ICBLL:
         LDA     #$80
         LDY     #$00
@@ -4333,9 +4867,9 @@ NCOPY2_ICBLL:
         BEQ     NCOPY2_NEXT2
 
 NCOPY2_CLOSE:
-        LDX     #$10
+        LDX     SOURCE_IOCB         ; X will be like $10
         JSR     CIOCLOSE
-        LDX     #$20
+        LDX     TARGET_IOCB         ; X will be like $20
         JMP     CIOCLOSE
 
 NCOPY2_LOOP_FLG:
@@ -4561,17 +5095,22 @@ SAVE_SKIP2:
         JSR     GET_DOSDR
         JSR     PREPEND_DRIVE
 
-    ; Open file for write
-        LDX     #$10
-        JSR     CIOCLOSE
+;    ; Open file for write
+;        LDX     #$10
+;        JSR     CIOCLOSE
 
     ; Inbuff already contains filename
-        LDX     #$10
+;        LDX     #$10
+        JSR     NEXT_IOCB       ; Get next available IOCB channel
+        BCC     @+              ; Carry set if no available channels
+        RTS                     ; Quit
+@:      STX     TARGET_IOCB     ; X will be like $100
         LDY     #OOUTPUT
         JSR     CIOOPEN
 
     ; Save binary file header
-        LDX     #$10
+;        LDX     #$10
+        LDX     TARGET_IOCB
         LDA     #<SAVE_HEADER
         STA     INBUFF
         LDA     #>SAVE_HEADER
@@ -4582,7 +5121,8 @@ SAVE_SKIP2:
         JSR     PRINT_ERROR
 
     ; Save binary payload
-        LDX     #$10
+        ;LDX     #$10
+        LDX     TARGET_IOCB
         LDA     SAVE_HEADER+2   ; Start Address (Lo)
         STA     INBUFF
         LDA     SAVE_HEADER+3   ; Start Address (Hi)
@@ -4597,7 +5137,8 @@ SAVE_SKIP2:
         AND     COMMA_ARGS_BITFIELD
         BEQ     DO_SAVE_RUNAD
 
-        LDX     #$10
+        ;LDX     #$10
+        LDX     TARGET_IOCB
         LDA     #<SAVE_INIT
         STA     INBUFF
         LDA     #>SAVE_INIT
@@ -4613,7 +5154,8 @@ DO_SAVE_RUNAD:
         AND     COMMA_ARGS_BITFIELD
         BEQ     DO_SAVE_QUIT
 
-        LDX     #$10
+        ;LDX     #$10
+        LDX     TARGET_IOCB
         LDA     #<SAVE_RUN
         STA     INBUFF
         LDA     #>SAVE_RUN
@@ -4624,7 +5166,8 @@ DO_SAVE_RUNAD:
         JSR     PRINT_ERROR
 
 DO_SAVE_QUIT:
-        LDX     #$10
+        ;LDX     #$10
+        LDX     TARGET_IOCB
         JSR     CIOCLOSE
 
         RTS
@@ -4680,8 +5223,8 @@ DIRSTA:
     DTA $60,$C3,$02,$04,$00,C"2 Network  "
     DTA $60,$C3,$02,$04,$00,C"3   OS     "
     DTA $60,$C3,$02,$04,$00,C"4          "
-    DTA $60,$C3,$02,$04,$00,C"5 v0.7.0   "
-    DTA $60,$C3,$02,$04,$00,C"6  alpha   "
+    DTA $60,$C3,$02,$04,$00,C"5  v0.7.0  "
+    DTA $60,$C3,$02,$04,$00,C"6          "
     DTA $60,$C3,$02,$04,$00,C"7**********"
     DTA $C0
 DIREND:

@@ -1,0 +1,124 @@
+
+
+|Hex|BASIC|      Hue      |
+|Hue| SE. |  Description  |
+
+|$00|  0  | Gray          |
+|$10|  1  | Light Orange  |
+|$20|  2  | Orange        |
+|$30|  3  | Red-orange    |
+|$40|  4  | Pink          |
+|$50|  5  | Purple-red    |
+|$60|  6  | Purple-blue   |
+|$70|  7  | Blue          |
+|$80|  8  | Blue          |
+|$90|  9  | Light blue    |
+|$A0| 10  | Turquoise     |
+|$B0| 11  | Olive green   |
+|$C0| 12  | Medium green  |
+|$D0| 13  | Dark green    |
+|$E0| 14  | Orange-Green  |
+|$F0| 15  | Orange        |
+
+
+
+
+
+Character modes: Use SETCOLOR
+SE.= x in SETCOLOR x,hue,lum
+
+|GRAPHICS 0    |SE.|Dec|Hex |
+
+|Char lum only | 1 |709|02C5|
+|Bkgrd hue,lum | 2 |710|02C6|
+|Border        | 4 |712|02C8|
+
+
+
+
+|GRAPHICS 1,2  |SE.|Dec|Hex |
+
+|Upper & nbrs  | 0 |708|02C4|
+|Lowercase     | 1 |709|02C5|	
+|Inver. upper  | 2 |710|02C6|
+|Inver. lower  | 3 |711|02C7|
+|Bkgrd, border | 4 |712|02C8|
+
+
+
+
+For BASIC graphics modes 3-8,
+use SETCOLOR to define palette and
+COLOR to pick from the palette.
+
+Use COLOR prior to DRAW or XIO 18.
+
+Four-color modes:
+
+|GRAPHICS 3,5,7|SE.|COLOR|Dec|Hex |
+
+|Point or fill | 0 |  1  |708|02C4|
+|Point or fill | 1 |  2  |709|02C5|
+|Point or fill | 2 |  3  |710|02C6|
+|Bkgrd, border | 4 |  0  |712|02C8|
+
+
+Two-color modes:
+
+|GRAPHICS 4,6  |SE.|COLOR|Dec|Hex |
+
+|Point         | 0 |  1  |708|02C4|
+|Bkgrd, border | 4 |  0  |712|02C8|
+
+
+One-color, two luminances mode:
+
+|GRAPHICS 8    |SE.|COLOR|Dec|Hex |
+
+|Foreground    | 1 |  1  |708|02C4|
+|Background    | 2 |  2  |709|02C5|
+|Border        | 4 |  -  |712|02C8|
+
+
+GTIA 9 - 1 hue, 16 luminances
+
+SETCOLOR 4,x,0 where x defines hue.
+COLOR assigns current luminance
+for next PLOT statement.
+
+|GRAPHICS 9    |SE.|COLOR|Dec|Hex |
+
+|Luminance     | - | 1-15|   |    |
+|Color         | 4 |  -  |712|02C8|
+
+
+GTIA 10 - 9 Hues, Luminances
+
+Hue in upper nybble
+Lum in lower nybble
+
+|GRAPHICS 10 |COLOR|Dec|Hex |
+
+|Hue, Lum. 0 |  0  |704|02C0|
+|Hue, Lum. 1 |  1  |705|02C1|
+|Hue, Lum. 2 |  2  |706|02C2|
+|Hue, Lum. 3 |  3  |707|02C3|
+|Hue, Lum. 4 |  4  |708|02C4|
+|Hue, Lum. 5 |  5  |709|02C5|
+|Hue, Lum. 6 |  6  |710|02C6|
+|Hue, Lum. 7 |  7  |711|02C7|
+|Hue, Lum. 8 |  8  |712|02C8|
+
+
+GTIA 11 - 16 hues, 1 luminance
+
+SETCOLOR 4,0,x where x defines lum.
+COLOR assigns current color for next
+PLOT statement.
+
+The 16 hues are those listed at the
+beginning of this article
+
+
+
+Source: Mapping the ATARI [Chadwick]
