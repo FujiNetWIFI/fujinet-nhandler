@@ -4420,13 +4420,15 @@ FILL_LOOP01:
     ; Do again
 @:      JMP     OVLBUF-OVL_FILL+FILL_LOOP01
 
+FILL_QUIT:
+        RTS
+
 FILL_ASCII2ADDR:
         TAY
         CLC
         ADC     #$04
         STA     RBUF
         JSR     ASCII2ADDR
-FILL_QUIT:
         RTS
 
 FILL_ERROR_STR:
