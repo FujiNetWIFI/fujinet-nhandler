@@ -1,11 +1,11 @@
 
-Topic: NOS/COPY
+Topic: NOS/NCOPY
 
-COPY - Copy a single file between
+NCOPY - Copy a single file between
 mount points, or to a new file on
 the same mount point, or a printer.
 
-There is an append option to
+There is an append option (,A) to
 concatenate two files.
 
 Usage:
@@ -25,9 +25,6 @@ COPY N1:file,E:
 COPY "N1:my file,N2:my file"
 
 Notes:
-
-A filename is required in the target.
-(e.g, COPY N1:file,N2: is illegal.
 Wildcards are not supported.
 Beware of the use of NTRANS.
 Standard devices such as P1:, E: are
