@@ -2502,18 +2502,24 @@ JMP_OVERLAY:
 ;---------------------------------------
 DO_OVERLAY:
 ;---------------------------------------
-        LDA     OVL_SECT_TAB_L,X    ; Get ATR sector where code is stored
+    ; Use table to get sector where overlay is stored
+        LDA     OVL_SECT_TAB_L,X 
         STA     GET_SECTOR_DCB+DCB_IDX.DAUX1
 
-        LDA     OVL_SECT_TAB_H,X
+    ; Currently, all overlays exist in sectors < 01xx,
+    ; so $00 can be assumed for high byte of sector number.
+;        LDA     OVL_SECT_TAB_H,X
+        LDA     #$00
         STA     GET_SECTOR_DCB+DCB_IDX.DAUX2
 
-        LDA     OVL_SECT_CNT_TAB,X  ; Get number of sectors to load
-        STA     SECT_CNT            ; Stash sector count
+    ; Get the number of sectors to load
+        LDA     OVL_SECT_CNT_TAB,X 
+        STA     SECT_CNT
 
+    ; Quit if requested overlay command is already in memory
         LDA     CMD             ; Get current command
         CMP     OVLPRV          ; Is this already in memory?
-        BEQ     OVERLAY_DONE
+        BEQ     OVERLAY_DONE    ; Quit if already in memory
         STA     OVLPRV          ; Update previous overlay command
 
     ; Initialize the base address for the code to be loaded
@@ -3592,20 +3598,20 @@ OVL_SECT_TAB_L:
         .BYTE   <(OVL_SAVE/SECTOR_SIZE-$0D)
         .BYTE   <(OVL_XEP/SECTOR_SIZE-$0D)
 
-OVL_SECT_TAB_H:
-        .BYTE   >(OVL_AUTORUN/SECTOR_SIZE-$0D)
-        .BYTE   >(OVL_BASIC/SECTOR_SIZE-$0D)
-        .BYTE   >(OVL_DIR/SECTOR_SIZE-$0D)
-        .BYTE   >(OVL_DUMP/SECTOR_SIZE-$0D)
-        .BYTE   >(OVL_FILL/SECTOR_SIZE-$0D)
-        .BYTE   >(OVL_HELP/SECTOR_SIZE-$0D)
-        .BYTE   >(OVL_NCOPY/SECTOR_SIZE-$0D)
-        .BYTE   >(OVL_NCOPY1/SECTOR_SIZE-$0D)
-        .BYTE   >(OVL_NCOPY2/SECTOR_SIZE-$0D)
-        .BYTE   >(OVL_NTRANS/SECTOR_SIZE-$0D)
-        .BYTE   >(OVL_REENTER/SECTOR_SIZE-$0D)
-        .BYTE   >(OVL_SAVE/SECTOR_SIZE-$0D)
-        .BYTE   >(OVL_XEP/SECTOR_SIZE-$0D)
+;OVL_SECT_TAB_H:
+;        .BYTE   >(OVL_AUTORUN/SECTOR_SIZE-$0D)
+;        .BYTE   >(OVL_BASIC/SECTOR_SIZE-$0D)
+;        .BYTE   >(OVL_DIR/SECTOR_SIZE-$0D)
+;        .BYTE   >(OVL_DUMP/SECTOR_SIZE-$0D)
+;        .BYTE   >(OVL_FILL/SECTOR_SIZE-$0D)
+;        .BYTE   >(OVL_HELP/SECTOR_SIZE-$0D)
+;        .BYTE   >(OVL_NCOPY/SECTOR_SIZE-$0D)
+;        .BYTE   >(OVL_NCOPY1/SECTOR_SIZE-$0D)
+;        .BYTE   >(OVL_NCOPY2/SECTOR_SIZE-$0D)
+;        .BYTE   >(OVL_NTRANS/SECTOR_SIZE-$0D)
+;        .BYTE   >(OVL_REENTER/SECTOR_SIZE-$0D)
+;        .BYTE   >(OVL_SAVE/SECTOR_SIZE-$0D)
+;        .BYTE   >(OVL_XEP/SECTOR_SIZE-$0D)
 
         ; Derive number of ATR sectors used to store code
 OVL_SECT_CNT_TAB:
@@ -3633,7 +3639,7 @@ CIOHND  .WORD   OPEN-1
 
        ; BANNERS
 
-BREADY  .BYTE   '#FUJINET NOS v0.7.0',EOL
+BREADY  .BYTE   '#FUJINET NOS v0.7.1',EOL
 BERROR  .BYTE   '#FUJINET ERROR',EOL
 
         ; MESSAGES
@@ -5072,7 +5078,7 @@ SAVE_SKIP2:
 @:      LDA     STL,X
         STA     SAVE_HEADER+2,X
         DEX
-        BNE     @-
+        BPL     @-
 
         LDA     BLL
         STA     SAVE_HEADER+6
@@ -5225,7 +5231,7 @@ DIRSTA:
     DTA $60,$C3,$02,$04,$00,C"2 Network  "
     DTA $60,$C3,$02,$04,$00,C"3   OS     "
     DTA $60,$C3,$02,$04,$00,C"4          "
-    DTA $60,$C3,$02,$04,$00,C"5  v0.7.0  "
+    DTA $60,$C3,$02,$04,$00,C"5  v0.7.1  "
     DTA $60,$C3,$02,$04,$00,C"6          "
     DTA $60,$C3,$02,$04,$00,C"7**********"
     DTA $C0

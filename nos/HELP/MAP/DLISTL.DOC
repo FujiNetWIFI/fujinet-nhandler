@@ -1,0 +1,12 @@
+
+TOPIC: MAP/DLISTL,H
+
+54274          D402          DLISTL,H
+
+Display list pointer. Tells the OS
+the address of the display list
+instructions about what screen
+mode(s) to display and where to find
+the screen data. See SDLIST (560,
+561; $230, $231).
+
