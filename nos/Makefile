@@ -14,5 +14,5 @@ nos.atr: src/nos.s
 	mads src/nos.s -l:nos.lst -o:$(OUTFILE)
 
 clean:
-	rm -rf nos* dist/nos* 
+	rm -rf nos*
 
