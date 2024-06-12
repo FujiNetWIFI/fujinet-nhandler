@@ -216,7 +216,7 @@ READ:	JSR	GDIDX	  	; unit into X
 	STA	ROFF,X		; RXD cursor.
 	LDA	ZICDNO		; Get Unit #
 	STA	READCB+1	; Put into Read DCB table
-	LDA	RLEN		; Get RLEN (from status)
+	LDA	RLEN,X		; Get RLEN (from status)
 	BEQ	RDONE		; If RLEN=0 then abort read.
 	STA	READCB+8	; Store in DBYTL
 	STA	READCB+10	; Store in DAUX1
