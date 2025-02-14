@@ -135,7 +135,17 @@ POLL:	LDA	ZICDNO		; Get Unit #
 	STA	POLDCB+1	; Put into Table
 	LDA	RELOC_POLDCB	; Set up STATUS POLL DCB table
 	LDY	RELOC_POLDCB+1
-	JSR	DOSIOV		; And do SIOV
+	JSR	DOSIOV		; And do SIOV, fall thru to...
+
+        ;; Update Bytes waiting
+
+GETBW:	JSR	GDIDX	        ; Get Unit #
+        TXA                     ; move to A for ASL
+        ASL	                ; * 2
+        LDA	DVSTAT          ; Get Bytes Waiting (LO)
+	STA	BW,X            ; Store in BW,(unit)
+        LDA	DVSTAT+1	; Get Bytes Waiting (HI)
+	STA	BW+1,X		; Store in BW,(unit)+1
 	
 	RTS
 
@@ -450,8 +460,11 @@ STATUS:	JSR	ENPRCD		; Enable PROCEED.
 	JSR	SVSTAT		; Save DVSTAT values
 	JSR	READ		; Do read.
 	
-STRETC:	LDA	RLEN,X		; Get Saved DVSTAT+0 val
+STRETC: JSR     GDIDX           ; Unit into X
+        LDA	BW,X		; Get Saved DVSTAT+0 val
 	STA	DVSTAT		; Store into DVSTAT
+	LDA	BW+1,X		; Get Saved DVSTAT+1 val
+	STA	DVSTAT+1	; Store into DVSTAT+1
 	LDA	DVS2,X		; Get Saved DVSTAT+2 val
 	STA	DVSTAT+2	; Store
 	LDA	DVS3,X		; Get Saved DVSTAT+3 val
@@ -646,6 +659,8 @@ TOFF	.ds	MAXDEV		; TXD offset cursor
 INQDS	.ds	1		; DSTATS to return in inquiry
 DVS2	.ds	MAXDEV		; DVSTAT+2 SAVE
 DVS3	.ds	MAXDEV		; DVSTAT+3 SAVE
+
+BW      .ds     MAXDEV * 2      ; Bytes waiting save for status.
 
 RBUF	.ds	128		; RXD buffer
 TBUF	.ds	128		; TXD buffer
