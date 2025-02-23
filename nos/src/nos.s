@@ -290,7 +290,7 @@ HFND:
         LDA     #>CIOHND
         STA     HATABS+2,Y
 
-        CPX     #'N'        ; Return if 'N' and we'll be back
+        CPX     #        ; Return if 'N' and we'll be back
         BNE     HATABS_CONT ; one more time for 'D'
         RTS
 
@@ -725,10 +725,18 @@ SPEC:   ; HANDLE LOCAL COMMANDS.
 
         LDA     ZICCOM
         CMP     #$0F        ; 15 = FLUSH
-        BNE     S1          ; NO.
+        BNE     S25          ; NO.
         JSR     PFLUSH      ; DO FLUSH
         LDY     #$01        ; SUCCESS
         RTS
+
+S25:	CMP	#$25	    ; POINT
+	BNE	S26	; No.
+	JMP	PPOINT	; Do Point
+	
+S26:	CMP	#$26	; NOTE
+	BNE	S1	; No.
+	JMP	PNOTE	; Do Note
 
 S1:     CMP     #40         ; 40 = LOAD AND EXECUTE
         BEQ     S2          ; YES.
@@ -2095,6 +2103,7 @@ LOAD_BUFLEN:
 
 
 .IFDEF BURST_MODE
+.ECHO "FOO!"
 ;---------------------------------------
 LOAD_GETDAT:
 ;---------------------------------------
@@ -2166,6 +2175,7 @@ BINDCB:
        .BYTE    $FF         ; DAUX2
 
 .ELSE
+.ECHO "BAR"
 ;---------------------------------------
 LOAD_GETDAT:
 ;---------------------------------------
@@ -3639,7 +3649,7 @@ CIOHND  .WORD   OPEN-1
 
        ; BANNERS
 
-BREADY  .BYTE   '#FUJINET NOS v0.7.1',EOL
+BREADY  .BYTE   '#FUJINET NOS v0.7.2',EOL
 BERROR  .BYTE   '#FUJINET ERROR',EOL
 
         ; MESSAGES

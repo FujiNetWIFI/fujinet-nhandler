@@ -8,7 +8,7 @@ NEW
  
  200 F$="N:HTTPS://www.gnu.org/licenses/gpl-3.0.txt"
  210 PRINT "OPEN ";F$
- 220 R = 4: TR=2
+ 220 R = 12: TR=2
  230 & NOPEN F, R,TR, F$
  240 & NSTATUS F, BW, CN, ER
  
