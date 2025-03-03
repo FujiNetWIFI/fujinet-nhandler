@@ -86,7 +86,7 @@ SIOV    =     $E459   ; SIO ENTRY
 DEVIDN  =     $71     ; SIO DEVID
 DSREAD  =     $40     ; FUJI->ATARI
 DSWRIT  =     $80     ; ATARI->FUJI
-MAXDEV  =     4       ; # OF N: DEVS
+MAXDEV  =     8	      ; # OF N: DEVS
 EOF     =     $88     ; ERROR 136
 EOL     =     $9B     ; EOL CHAR
 
