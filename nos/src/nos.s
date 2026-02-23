@@ -290,7 +290,7 @@ HFND:
         LDA     #>CIOHND
         STA     HATABS+2,Y
 
-        CPX     #        ; Return if 'N' and we'll be back
+        CPX     #'N'        ; Return if 'N' and we'll be back
         BNE     HATABS_CONT ; one more time for 'D'
         RTS
 
