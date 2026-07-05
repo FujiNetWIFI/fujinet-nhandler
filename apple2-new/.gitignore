@@ -1,0 +1,12 @@
+# build artifacts
+build/
+_cache/
+# reference documents (copyrighted; not distributable)
+learn/
+# local tool settings
+.claude/
+# ready-to-run output: only the bootable disk image is tracked
+r2r/*
+!r2r/apple2/
+r2r/apple2/*
+!r2r/apple2/FUJIAPPLE.po
