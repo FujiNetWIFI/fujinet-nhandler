@@ -1,63 +1,39 @@
+PRODUCT = FUJIAPPLE
+PLATFORMS += apple2
 
-# set these environment variables in your .basrc or windows environment
-# to automagically copy the FUJIAPPLE.po file to the TNFS server
+# You can run 'make <platform>' to build for a specific platform,
+# or 'make <platform>/<target>' for a platform-specific target.
+#   make apple2        → build for apple2
+#   make apple2/disk   → build the 'disk' target for apple2
 
-# .bashrc
-# TNFS_SERVER="192.168.2.21"
-# TNFS_SHARE="tnfs/apple"
-# export TNFS_SERVER
-# export TNFS_SHARE
-#
-# windows
-# SET TNFS_SERVER=tnfs
-# SET TNFS_SHARE=tnfs\apple
+# SRC_DIRS may use the literal %PLATFORM% token.
+SRC_DIRS = src src/%PLATFORM%
 
-TNFS_SERVER = $(shell echo $$TNFS_SERVER)
-TNFS_SHARE  = $(shell echo $$TNFS_SHARE)
-OS          = $(shell echo $$OS)
+# equ.inc lives beside the platform source; make ca65 search there.
+EXTRA_INCLUDE = src/apple2
 
+# This is a BASIC.SYSTEM external-command extension, not a cc65 C program:
+# link with our own config so the image is a single BRUN-able BIN at $8000
+# (see link/fn-ext.cfg).  This overrides the apple2 target's default config.
+LDFLAGS_EXTRA_APPLE2 = -C $(abspath link/fn-ext.cfg)
 
-TARGET_EXEC ?= FUJIAPPLE
+# No fujinet-lib: the transport is hand-written 6502 SmartPort code.
+# (Leaving FUJINET_LIB undefined tells MekkoGX not to fetch/link it.)
 
-SRC_DIRS ?= ./src/
+# Define extra dirs ("combos") that expand with a platform.
+PLATFORM_COMBOS = \
+  c64+=commodore \
+  atarixe+=atari \
+  msxrom+=msx \
+  msxdos+=msx \
+  adam_cpm+=adam
 
-ASM=cl65
+include mekkogx/toplevel-rules.mk
 
-ASMFLAGS=-l listing.s -v -t apple2 -C apple2-asm.cfg 
-
-all: version dist tnfs
-
-$(TARGET_EXEC): clean
-	$(ASM) $(ASMFLAGS) ./src/FUJIAPPLE.S -o $(TARGET_EXEC)
-
-clean:
-	$(RM) -r $(TARGET_EXEC) 
-
-version: $(TARGET_EXEC)
-	python3 ver_update.py
-
-dist: $(TARGET_EXEC)
-	cp dist/FUJIAPPLE_clean.po  dist/FUJIAPPLE.po
-	cp dist/FUJIAPPLE_clean.dsk dist/FUJIAPPLE.dsk
-	java -jar dist/ac.jar -p dist/FUJIAPPLE.po  FUJIAPPLE bin 0x4000 <FUJIAPPLE
-	java -jar dist/ac.jar -p dist/FUJIAPPLE.dsk FUJIAPPLE bin 0x4000 <FUJIAPPLE
-	dist/dsk2woz dist/FUJIAPPLE.dsk dist/FUJIAPPLE.woz
-
-
-tnfs: dist/FUJIAPPLE.po dist/FUJIAPPLE.woz
-ifneq ('$(TNFS_SERVER)','')
-
-ifneq ('$(OS)','')
-    cp dist/FUJIAPPLE.po //$(TNFS_SERVER)/$(TNFS_SHARE)
-	cp dist/FUJIAPPLE.woz //$(TNFS_SERVER)/$(TNFS_SHARE)
-else
-	cp dist/FUJIAPPLE.po /run/user/1000/gvfs/smb-share:server=$(TNFS_SERVER),share=$(TNFS_SHARE)
-	cp dist/FUJIAPPLE.woz /run/user/1000/gvfs/smb-share:server=$(TNFS_SERVER),share=$(TNFS_SHARE)
-endif
-
-else
-	$(info ***********************************************)
-	$(info *** No TNFS server environment variable set ***)
-	$(info ***********************************************)
-endif
-
+# Our AppleSingle already imports FUJIAPPLE as a BIN @ $8000, so the default
+# disk recipe places it correctly.  We only need to (a) drop the .SYSTEM loader
+# MekkoGX adds for standalone programs - we boot into BASIC.SYSTEM instead - and
+# (b) add a STARTUP program that BRUNs the extension on boot.
+apple2/disk-post::
+	-ac -d $(BUILD_DISK) FUJIAPPLE.SYSTE
+	ac -bas $(BUILD_DISK) STARTUP < $(CURDIR)/dist/STARTUP.bas
