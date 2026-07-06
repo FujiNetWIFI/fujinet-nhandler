@@ -12,6 +12,7 @@
 ;----------------------------------------------------------------------------
 SPACE           = $A0           ; space, high bit set (for COUT)
 CR              = $0D           ; carriage return (ASCII)
+TOK_CALL        = $8C           ; Applesoft CALL token (for the error-trap line)
 
 ;----------------------------------------------------------------------------
 ; Zero page - "safe" scratch locations (same set the original used)
@@ -40,6 +41,13 @@ FRETOP          = $6F           ; top of string pool (lo/hi)
 MEMSIZ          = $73           ; HIMEM (lo/hi) - highest RAM Applesoft may use
 CURLIN          = $75           ; current line # ($FFxx = direct/immediate mode)
 VARPTR          = $83           ; PTRGET result: address of the located variable
+ERRFLG          = $D8           ; bit 7 set = ONERR armed
+TRCFLG          = $F2           ; bit 7 set = TRACE on.  NOTE: BASIC.SYSTEM
+                                ; parks a sentinel ($A5 - bit 7 set!) here while
+                                ; processing a command, so Applesoft run inside
+                                ; that window traces unless we silence it
+ONRTXT          = $F4           ; ONERR handler text ptr; HANDLERR -> TXTPTR
+ONRLIN          = $F6           ; ONERR handler line #;  HANDLERR -> CURLIN
 DSCTMP          = $9D           ; string descriptor scratch (shares FAC space)
 CHRGET          = $B1           ; advance TXTPTR, return char in A
 CHRGOT          = $B7           ; re-fetch current char (no advance)
@@ -48,6 +56,12 @@ TXTPTR          = $B8           ; Applesoft "current text" pointer (lo/hi)
 ;----------------------------------------------------------------------------
 ; Applesoft ROM entry points
 ;----------------------------------------------------------------------------
+; The error flow (verified from the Apple IIe ROM):
+;   SYNERR $DEC9:   LDX #$10 / JMP ERROR
+;   ERROR  $D412:   BIT ERRFLG / BPL print-and-RESTART / JMP HANDLERR
+;   HANDLERR $F2E9: $DE <- X (code); TXTPTR <- (ONRTXT); CURLIN <- (ONRLIN);
+;                   JSR CHRGOT; JSR GOTO; JMP NEWSTT   (no stack unwind)
+; CMDENTRY exploits this to trap ROM errors raised inside a command handler.
 GETBYT          = $E6F8         ; evaluate expression -> byte in X
 CHKCOM          = $DEBE         ; require a comma at TXTPTR
 PTRGET          = $DFE3         ; locate/create named variable; addr -> VARPTR
@@ -102,6 +116,7 @@ RSHIMEM         = $BEFB         ; BI's cached HIMEM page: restored into MEMSIZ+1
 BE_RANGE        = $02           ; RANGE ERROR   (bad device #, out of range)
 BE_NODEV        = $03           ; NO DEVICE CONNECTED
 BE_WRITEPROT    = $04
+BE_PATHNF       = $06           ; PATH NOT FOUND
 BE_EOD          = $05           ; END OF DATA
 BE_IOERROR      = $08           ; I/O ERROR
 BE_BADPARM      = $0B           ; INVALID PARAMETER
@@ -125,6 +140,14 @@ SP_CMD_WRITE    = $09
 
 SP_STATUS_CODE  = $00           ; device status
 SP_STATUS_DIB   = $03           ; device information block (name, type)
+
+;----------------------------------------------------------------------------
+; FujiNet network channel status codes (the "err" byte of a STATUS reply).
+; Values from fujinet-firmware lib/network-protocol/status_error_codes.h.
+;----------------------------------------------------------------------------
+NERR_SUCCESS    = 1             ; all is well
+NERR_EOF        = 136           ; end of data (a fine state, not a failure)
+NERR_FNF        = 170           ; file not found
 
 ;----------------------------------------------------------------------------
 ; FujiNet network command bytes (SmartPort CONTROL/STATUS codes).

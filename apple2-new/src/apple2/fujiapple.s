@@ -49,11 +49,15 @@ GUSRC    = ZP4                  ; GETURL source string ptr   ($FC/$FD)
 ;   CALL 32768 ($8000) - (BRUN) install
 ;   CALL 32771 ($8003) - printer redirect ON  (COUT -> FujiNet PRINTER)
 ;   CALL 32774 ($8006) - printer redirect OFF (restore previous output)
+;   CALL 32777 ($8009) - INTERNAL: error-trap recovery (see CMDENTRY).  It is
+;                        reached only via the trap's fake program line; calling
+;                        it by hand would restore a stale stack pointer.
 ;=============================================================================
 ENTRY:
         JMP INSTALL
         JMP PRON
         JMP PROFF
+        JMP RECOVER
 
 ;=============================================================================
 ; INSTALL - runs once when the BIN is BRUN.  Protects the resident with HIMEM
@@ -292,20 +296,33 @@ NEXTCMD:
 ; CMDENTRY - single dispatch trampoline for every command.  BASIC.SYSTEM
 ; JSRs here (via XTRNADDR) after CMDHANDLER claims a keyword.
 ;
-; Our handlers repoint Applesoft's TXTPTR into ARGBUF (via SETARGS) so the ROM
-; evaluators can parse the argument tail.  A normal BASIC.SYSTEM external
-; command never disturbs TXTPTR, so BASIC.SYSTEM/Applesoft does NOT save it for
-; us: on return Applesoft resumes its statement loop from whatever TXTPTR holds.
-; Left pointing into ARGBUF, Applesoft wanders into the tokenized program and
-; dies with "?SYNTAX ERROR IN <line>" - even in immediate mode.
+; It does two jobs:
 ;
-; So snapshot Applesoft's execution state (TXTPTR $B8/$B9 and CURLIN $75/$76)
-; here, run the real handler, then restore it - making us behaviourally
-; identical to a well-behaved external command.  The handler's return status
-; (carry = error, A = code) is preserved across the restore.
+; 1. TEXT STATE.  Our handlers repoint Applesoft's TXTPTR into ARGBUF (via
+;    SETARGS) so the ROM evaluators can parse the argument tail.  BASIC.SYSTEM
+;    does not save TXTPTR/CURLIN for us, so snapshot them here and restore on
+;    the way out, making us behaviourally identical to a well-behaved external
+;    command.  The handler's return status (carry, A) survives the restore.
+;
+; 2. THE ERROR TRAP.  The ROM evaluators bail out through Applesoft's ERROR
+;    on bad input (SYNERR from a misplaced argument, type mismatch, ...).
+;    That path never returns to BASIC.SYSTEM's dispatch, leaving its command
+;    wedge wedged: afterwards every command line - ours AND the built-ins -
+;    falls through to Applesoft as ?SYNTAX ERROR until reboot.  So run the
+;    handler under a fake ONERR frame (flow verified from the ROM, see
+;    equ.inc): ERROR with ERRFLG set jumps to HANDLERR, which loads TXTPTR
+;    from ONRTXT and CURLIN from ONRLIN, then GOTOs the line number found at
+;    TXTPTR, searching the program at TXTTAB.  We point ONRTXT at the text
+;    "0" and TXTTAB at FAKEPROG, a one-line program reading "0 CALL 32777" -
+;    whose target is RECOVER below.  RECOVER unwinds the stack to the level
+;    recorded in TRAPSP and exits through CMDFAIL: the command fails with a
+;    clean, ONERR-catchable SYNTAX ERROR and BASIC.SYSTEM lives on.
+;
+;    Because TXTTAB is swapped during the handler, NLOAD/NSAVE/RELINK read
+;    the real value from SAVTTAB instead.
 ;=============================================================================
 CMDENTRY:
-        LDA TXTPTR
+        LDA TXTPTR             ; --- snapshot Applesoft text state ---
         STA SAVTXT
         LDA TXTPTR+1
         STA SAVTXT+1
@@ -313,10 +330,53 @@ CMDENTRY:
         STA SAVCURLIN
         LDA CURLIN+1
         STA SAVCURLIN+1
-        JSR @call              ; run the real handler; RTS returns here
+        LDA ERRFLG             ; --- snapshot the user's ONERR state ---
+        STA SAVONERR
+        LDA ONRTXT
+        STA SAVONERR+1
+        LDA ONRTXT+1
+        STA SAVONERR+2
+        LDA ONRLIN
+        STA SAVONERR+3
+        LDA ONRLIN+1
+        STA SAVONERR+4
+        LDA TRCFLG             ; BI parks $A5 here during command processing;
+        STA SAVONERR+5         ; bit 7 reads as TRACE and would print "#0"
+        LDA #0                 ; when the trap's decoy line runs.  Silence it
+        STA TRCFLG             ; for the handler's duration.
+        LDA TXTTAB
+        STA SAVTTAB
+        LDA TXTTAB+1
+        STA SAVTTAB+1
+        LDA #<FAKETGT          ; --- arm the trap ---
+        STA ONRTXT
+        LDA #>FAKETGT
+        STA ONRTXT+1
+        LDA #0
+        STA ONRLIN             ; CURLIN 0 makes GOTO search from TXTTAB
+        STA ONRLIN+1
+        LDA #<FAKEPROG
+        STA TXTTAB
+        LDA #>FAKEPROG
+        STA TXTTAB+1
+        LDA #$80
+        STA ERRFLG
+        TSX                    ; stack level RECOVER unwinds to
+        STX TRAPSP
+        JSR CMDCALL            ; run the real handler; RTS returns here
         PHP                    ; preserve error/carry + A across the restore
         PHA
-        LDA SAVTXT
+        JMP CMDRESTOR
+CMDFAIL:
+        ; Entered from RECOVER after a trapped ROM error: the stack is back
+        ; at CMDENTRY's level, so exiting through the common restore returns
+        ; to BASIC.SYSTEM exactly like a normal failed command.
+        LDA #BE_SYNTAX
+        SEC
+        PHP
+        PHA
+CMDRESTOR:
+        LDA SAVTXT             ; --- restore text state ---
         STA TXTPTR
         LDA SAVTXT+1
         STA TXTPTR+1
@@ -324,11 +384,36 @@ CMDENTRY:
         STA CURLIN
         LDA SAVCURLIN+1
         STA CURLIN+1
+        LDA SAVONERR           ; --- disarm: restore the user's ONERR ---
+        STA ERRFLG
+        LDA SAVONERR+1
+        STA ONRTXT
+        LDA SAVONERR+2
+        STA ONRTXT+1
+        LDA SAVONERR+3
+        STA ONRLIN
+        LDA SAVONERR+4
+        STA ONRLIN+1
+        LDA SAVONERR+5         ; give BI its $F2 sentinel back
+        STA TRCFLG
+        LDA SAVTTAB
+        STA TXTTAB
+        LDA SAVTTAB+1
+        STA TXTTAB+1
         PLA
         PLP
         RTS
-@call:
+CMDCALL:
         JMP (HANDLERVEC)
+
+; RECOVER - the target of the trap's "0 CALL 32777" line.  An Applesoft error
+; fired inside a handler; the ROM has already vectored through HANDLERR ->
+; GOTO -> NEWSTT -> CALL to get here.  Throw away everything above CMDENTRY's
+; recorded stack level and fail the command cleanly.
+RECOVER:
+        LDX TRAPSP
+        TXS
+        JMP CMDFAIL
 
 ;=============================================================================
 ; SETARGS - point Applesoft's TXTPTR at a clean copy of the argument tail so
@@ -392,9 +477,17 @@ H_NOPEN:
         JSR CHKCOM
         JSR GETBYT
         STX TRANS
-        JSR FN_OPEN            ; network errors surface via NSTATUS, not raised
+        JSR ISHTTP
+        BCS @http
+        JSR OPENCK             ; verify the open; PATH NOT FOUND / I/O ERROR
+        BCS @err
         CLC
         LDA #0
+        RTS
+@http:
+        JSR FN_OPEN            ; HTTP(S): a status here would fire the request
+        CLC                    ; early (breaking NHTTPMODE header setup), so
+        LDA #0                 ; open errors surface via NSTATUS instead
 @err:   RTS
 
 ;--- NCLOSE d --------------------------------------------------------------
@@ -637,7 +730,8 @@ H_NDIR:
         STA MODE
         LDA #0
         STA TRANS
-        JSR FN_OPEN
+        JSR OPENCK             ; bad path -> PATH NOT FOUND instead of silence
+        BCS @err
 @loop:
         JSR FN_STATUS          ; SP_PAYLOAD = [avail_lo][avail_hi][conn][err]
         LDA SP_PAYLOAD
@@ -684,10 +778,13 @@ H_NSAVE:
         STA MODE
         LDA #0
         STA TRANS
-        JSR FN_OPEN
-        LDA TXTTAB             ; PRGPTR = TXTTAB
-        STA GUSRC
-        LDA TXTTAB+1
+        JSR OPENCK             ; unwritable target -> error, not silence
+        BCC @nsok
+        RTS
+@nsok:
+        LDA SAVTTAB            ; PRGPTR = TXTTAB (real value; the error trap
+        STA GUSRC              ; has TXTTAB swapped - see CMDENTRY)
+        LDA SAVTTAB+1
         STA GUSRC+1
 @wloop:
         SEC                    ; remaining = VARTAB - PRGPTR
@@ -747,21 +844,25 @@ H_NLOAD:
         STA MODE
         LDA #0
         STA TRANS
-        JSR FN_OPEN
-        ; [TXTTAB-1] must be $00 for Applesoft
-        LDA TXTTAB
+        JSR OPENCK             ; missing file -> PATH NOT FOUND, and the
+        BCC @nlok              ; program in memory is left untouched
+        RTS
+@nlok:
+        ; [TXTTAB-1] must be $00 for Applesoft.  (SAVTTAB = the real TXTTAB;
+        ; the error trap has TXTTAB itself swapped - see CMDENTRY.)
+        LDA SAVTTAB
         SEC
         SBC #1
         STA GUSRC
-        LDA TXTTAB+1
+        LDA SAVTTAB+1
         SBC #0
         STA GUSRC+1
         LDY #0
         TYA
         STA (GUSRC),Y
-        LDA TXTTAB             ; PRGPTR = TXTTAB
+        LDA SAVTTAB            ; PRGPTR = TXTTAB
         STA GUSRC
-        LDA TXTTAB+1
+        LDA SAVTTAB+1
         STA GUSRC+1
 @rloop:
         ; Bounds guard: the program must stay below HIMEM.  A chunk is at most
@@ -813,9 +914,9 @@ H_NLOAD:
         ; load (leave a clean empty program so LIST/RUN behave like after NEW),
         ; and raise PROGRAM TOO LARGE.
         JSR FN_CLOSE
-        LDA TXTTAB
+        LDA SAVTTAB
         STA GUSRC
-        LDA TXTTAB+1
+        LDA SAVTTAB+1
         STA GUSRC+1
         LDA #0
         TAY
@@ -852,9 +953,9 @@ NLVARS:
 ; the program ends with a $0000 where the next link would be.
 ;=============================================================================
 RELINK:
-        LDA TXTTAB
+        LDA SAVTTAB            ; the real TXTTAB (see CMDENTRY's error trap)
         STA GUSRC
-        LDA TXTTAB+1
+        LDA SAVTTAB+1
         STA GUSRC+1
 @line:
         LDY #0
@@ -1152,6 +1253,68 @@ CHKDEV:
         RTS
 
 ;=============================================================================
+; OPENCK - FN_OPEN on the already-selected channel, then verify the open
+; actually succeeded.  The firmware's OPEN reply is ALWAYS "no error" (a
+; failed protocol open only records its error in channel status - see
+; iwmNetwork::open() in the firmware), so ask FN_STATUS and inspect the error
+; byte: below 128, or 136 (EOF - an empty file is a fine open), is success.
+; On failure: close the channel and return SEC with A = PATH NOT FOUND for
+; err 170, I/O ERROR for anything else.
+;
+; Deliberately NOT used for HTTP(S) opens in H_NOPEN: an HTTP status call
+; fires the pending transaction (the firmware performs the request on the
+; first status/read), which would break the NHTTPMODE set-headers-then-fetch
+; recipe.  HTTP open errors stay deferred to NSTATUS, as documented.
+;=============================================================================
+OPENCK:
+        JSR FN_OPEN
+        JSR FN_STATUS          ; SP_PAYLOAD = [avail lo][avail hi][conn][err]
+        LDA SP_PAYLOAD+3
+        CMP #128
+        BCC @ok                ; informational -> open succeeded
+        CMP #NERR_EOF
+        BEQ @ok                ; empty-but-open is not a failure
+        STA OPENERR            ; failed: clean up, then map the code
+        JSR FN_CLOSE
+        LDA OPENERR
+        CMP #NERR_FNF
+        BEQ @fnf
+        LDA #BE_IOERROR
+        SEC
+        RTS
+@fnf:   LDA #BE_PATHNF
+        SEC
+        RTS
+@ok:    CLC
+        RTS
+
+;=============================================================================
+; ISHTTP - carry set if the spec in URLBUF names an HTTP or HTTPS protocol:
+; the four characters after the first ':' spell "HTTP" (case-insensitive).
+;=============================================================================
+ISHTTP:
+        LDX #0
+@fc:    CPX URLLEN             ; find the first ':'
+        BCS @no                ; none -> not HTTP
+        LDA URLBUF,X
+        INX
+        CMP #':'
+        BNE @fc
+        LDY #0
+@cm:    LDA URLBUF,X
+        AND #$DF               ; uppercase ASCII letters
+        CMP HTTPSTR,Y
+        BNE @no
+        INX
+        INY
+        CPY #4
+        BNE @cm
+        SEC
+        RTS
+@no:    CLC
+        RTS
+
+;=============================================================================
 ; CHKCHAN - validate the device number in X (1..15) and store it in CHAN.
 ; Returns CLC on success, or SEC + A = RANGE error.
 ;=============================================================================
@@ -1308,6 +1471,21 @@ MSG_NOSP:
 MSG_NONET:
         .byte "FUJINET NETWORK DEVICE NOT FOUND",$8D,0
 
+HTTPSTR:
+        .byte "HTTP"            ; protocol sniff for ISHTTP
+
+; --- the error trap's decoys (see CMDENTRY) ---
+; FAKETGT is where HANDLERR points TXTPTR: the ASCII line number its GOTO
+; parses.  FAKEPROG is where the swapped TXTTAB points: a one-line tokenized
+; program, "0 CALL 32777", whose CALL lands in RECOVER via the entry table.
+FAKETGT:
+        .byte "0",0
+FAKEPROG:
+        .addr FPEND             ; line link
+        .word 0                 ; line number 0
+        .byte TOK_CALL,"32777",0
+FPEND:  .word 0                 ; end-of-program marker
+
 ;=============================================================================
 ; Resident variables + scratch buffers (uninitialized; protected by HIMEM).
 ;=============================================================================
@@ -1318,6 +1496,9 @@ ARGSTART:  .res 1              ; index in $200 where the arguments start
 HANDLERVEC: .res 2             ; real command handler addr (CMDENTRY jumps here)
 SAVTXT:    .res 2              ; Applesoft TXTPTR saved across a command
 SAVCURLIN: .res 2              ; Applesoft CURLIN saved across a command
+SAVONERR:  .res 6              ; ERRFLG + ONRTXT + ONRLIN + TRCFLG across a command
+SAVTTAB:   .res 2              ; the REAL TXTTAB while the error trap is armed
+TRAPSP:    .res 1              ; stack level RECOVER unwinds to
 
 ; --- transport / command state ---
 SPDISP:    .res 2              ; SmartPort dispatch address (JMP (SPDISP))
@@ -1334,6 +1515,7 @@ SP_COUNT:  .res 2              ; bytes moved by the last SmartPort read/write
 SAVHK:     .res 6              ; saved CSW/KSW ($36-$39) + TXTPTR ($B8/$B9)
 FNCTMP:    .res 1              ; scratch: saved control code
 NCTLCMD:   .res 1              ; NCTL: control code held across devicespec parse
+OPENERR:   .res 1              ; OPENCK: channel error held across the cleanup close
 JQRETRY:   .res 1              ; NJSONQUERY: status-poll retry counter
 SVLEN:     .res 2              ; NSAVE: bytes of program left to write
 NEXTPTR:   .res 2              ; RELINK: next-line address scratch
