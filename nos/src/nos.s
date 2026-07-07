@@ -151,6 +151,11 @@ EOL     =   $9B         ; EOL CHAR
 CR      =   $0D         ; Carrige Return
 LF      =   $0A         ; Linefeed
 
+; Burst mode parameters
+MINBURST =  $80         ; Min user buf len to burst (128)
+MAXBURST =  $2000       ; Max bytes per burst frame (8192).
+                        ; LO byte MUST be 0 (see CAPCHK).
+
 OPTION  =   $03
 ESC_KEY =   $1C         ; Hardware code for ESC
 SPC_KEY =   $21         ; Hardware code for SPACE
@@ -468,7 +473,15 @@ GET:    JSR     GDIDX       ; IOCB UNIT #-1 into X
         ;; If RX buffer is empty, get # of chars waiting...
 
         JSR     STPOLL      ; Status Poll
-        JSR     GDIDX       ; IOCB UNIT -1 into X (because Poll trashes X)
+
+        ;; If a burst read is possible, do it directly into the
+        ;; user's buffer instead of filling RBUF a byte at a time.
+
+        JSR     BCHK        ; Burst eligible? (C clear = yes)
+        BCS     GTNORM      ; No -> normal one-byte-at-a-time path
+        JMP     BGET        ; Yes -> burst (returns straight to CIO)
+
+GTNORM: JSR     GDIDX       ; IOCB UNIT -1 into X (because Poll trashes X)
         LDA     DVSTAT      ; # of bytes waiting (0-127)
         STA     RLEN,X      ; Store in RX Len
         BEQ     RETEOF
@@ -552,7 +565,27 @@ GETDCB:
 
 PUT:    ;; Add to TX buffer.
 
+        PHA                 ; Save byte (needed for normal path)
         JSR     GDIDX
+
+        ;; Try to burst the whole write directly from the user's
+        ;; buffer.  Only for binary PUT CHARACTERS with a large
+        ;; enough length and nothing already buffered in TBUF.
+
+        LDA     TOFF,X      ; Pending buffered bytes?
+        BNE     PUTNRM      ; Yes -> normal path
+        LDA     ZICCOM      ; CIO command
+        AND     #$02        ; Binary PUT CHARACTERS?
+        BEQ     PUTNRM      ; No (text/record) -> normal path
+        LDA     ZICBLH      ; Buffer length hi
+        BNE     PUTBST      ; >= 256 -> burst
+        LDA     ZICBLL      ; Buffer length lo
+        CMP     #MINBURST   ; >= MINBURST?
+        BCC     PUTNRM      ; No -> normal path
+PUTBST: PLA                 ; Discard byte (burst re-reads from buffer)
+        JMP     BPUT        ; Burst write (returns straight to CIO)
+
+PUTNRM: PLA                 ; Restore byte
         LDY     TOFF,X      ; GET TX cursor.
         STA     TBUF,Y      ; TX Buffer
 
@@ -682,6 +715,14 @@ STPOLL:
         LDY     #>STADCB
 
         JSR     DOSIOV
+
+        ;; Save the uncapped bytes-waiting count for burst mode
+        ;; before it gets clamped to 127 below.
+
+        LDA     DVSTAT
+        STA     BWRAW
+        LDA     DVSTAT+1
+        STA     BWRAW+1
 
         ;; > 127 bytes? make it 127 bytes.
 
@@ -815,6 +856,230 @@ SPEDCB  .BYTE   DEVIDN      ; DDEVIC
         .BYTE   $FF         ; DAUX2
 
 ; End CIO SPECIAL
+;---------------------------------------
+
+;---------------------------------------
+; BURST MODE
+;---------------------------------------
+; Burst mode short-circuits CIO's one-byte-at-a-time GET/PUT loop.
+; The OS keeps its running buffer pointer in ZICBAL and its remaining
+; byte count in ZICBLL while transferring.  On a GET it stores the
+; returned byte, then bumps ZICBAL and drops ZICBLL by one; on a PUT
+; it reads the byte, then does the same.  So a handler can move a
+; whole block by transferring directly to/from (ZICBAL) and advancing
+; ZICBAL / shrinking ZICBLL by (block-1); CIO's own final +1/-1
+; accounts for the last byte.  Mirrors Atari DOS 2.0S FMS burst I/O.
+
+       ; Decide whether a GET can burst.  Call right after STPOLL,
+       ; while BWRAW holds the uncapped bytes-waiting count and
+       ; DVSTAT+3 holds the connection flag (0 = disconnected).
+       ; Eligible = binary GET CHARACTERS, user buffer >= MINBURST,
+       ; still connected, and something actually waiting.
+       ; Returns C clear if eligible, C set otherwise.
+
+BCHK:   LDA     ZICCOM      ; CIO command
+        AND     #$02        ; Bit 1 set = CHARACTERS (binary)
+        BEQ     BCHKNO      ; Clear = RECORD (text) -> no burst
+        LDA     ZICBLH      ; Buffer length hi
+        BNE     BCHKAV      ; >= 256 -> big enough
+        LDA     ZICBLL      ; Buffer length lo
+        CMP     #MINBURST   ; >= MINBURST?
+        BCC     BCHKNO      ; No -> too small to bother
+BCHKAV: LDA     DVSTAT+3    ; Connection flag (0 = disconnected)
+        BEQ     BCHKNO      ; Disconnected -> let normal path emit EOF
+        LDA     BWRAW       ; Bytes waiting lo
+        ORA     BWRAW+1     ; | hi
+        BEQ     BCHKNO      ; Nothing waiting -> let normal path run
+        CLC                 ; Eligible
+        RTS
+BCHKNO: SEC                 ; Not eligible
+        RTS
+
+       ; BURST GET: read min(bytes-waiting, buffer length, MAXBURST)
+       ; bytes in one SIO call straight into the user's buffer,
+       ; advance ZICBAL/ZICBLL past all but the last byte, and hand
+       ; that last byte back to CIO.  Entry: BWRAW = bytes waiting.
+
+BGET:   ;; CHUNK = min(BWRAW, ZICBLL)
+        LDA     BWRAW+1     ; waiting hi
+        CMP     ZICBLH
+        BCC     BGBW        ; waiting < len -> use waiting
+        BNE     BGBL        ; waiting > len -> use len
+        LDA     BWRAW       ; hi equal, compare lo
+        CMP     ZICBLL
+        BCC     BGBW        ; waiting < len -> use waiting
+BGBL:   LDA     ZICBLL      ; use length (length <= waiting)
+        STA     CHUNK
+        LDA     ZICBLH
+        STA     CHUNK+1
+        JMP     BGCAP
+BGBW:   LDA     BWRAW       ; use bytes waiting
+        STA     CHUNK
+        LDA     BWRAW+1
+        STA     CHUNK+1
+BGCAP:  JSR     CAPCHK      ; Cap CHUNK to MAXBURST
+
+        ;; Fill in the burst read DCB
+        LDA     ZICDNO
+        STA     BRDCB+DCB_IDX.DUNIT
+        LDA     ZICBAL
+        STA     BRDCB+DCB_IDX.DBUFL     ; user buffer
+        LDA     ZICBAH
+        STA     BRDCB+DCB_IDX.DBUFH
+        LDA     CHUNK
+        STA     BRDCB+DCB_IDX.DBYTL
+        STA     BRDCB+DCB_IDX.DAUX1     ; bytes to read
+        LDA     CHUNK+1
+        STA     BRDCB+DCB_IDX.DBYTH
+        STA     BRDCB+DCB_IDX.DAUX2
+
+        LDA     #<BRDCB
+        LDY     #>BRDCB
+        JSR     DOSIOV
+        LDY     DSTATS
+        CPY     #$01        ; Success?
+        BNE     BGERR
+
+        JSR     ADVBUF      ; Advance past all but the last byte
+
+        ;; If we drained everything that was waiting, clear TRIP so a
+        ;; later STATUS reflects an empty buffer (like GETUPDP does).
+        LDA     CHUNK
+        CMP     BWRAW
+        BNE     BGRET
+        LDA     CHUNK+1
+        CMP     BWRAW+1
+        BNE     BGRET
+        LDA     #$00
+        STA     TRIP
+BGRET:  LDY     #$00
+        LDA     (ZICBAL),Y  ; A = last byte, for CIO to store
+        LDY     #$01        ; Success
+        RTS
+
+       ; SIO error during burst read; return status (ext. if 144)
+BGERR:  CPY     #$90
+        BNE     BGERTS
+        JSR     STPOLL
+        LDY     DVSTAT+3
+BGERTS: RTS
+
+       ; BURST PUT: write the whole remaining buffer (up to MAXBURST)
+       ; in one SIO call straight from the user's buffer.  The byte
+       ; CIO handed us is the first byte of the block, re-sent from
+       ; memory; CIO's final +1/-1 accounts for it.
+
+BPUT:   JSR     STPOLL      ; Check connection first (like PFLUSH)
+        LDA     DVSTAT+3
+        BNE     BPGO        ; Connected -> proceed
+        LDY     #EOF        ; Disconnected -> EOF
+        TYA
+        RTS
+BPGO:   LDA     ZICBLL      ; CHUNK = remaining length
+        STA     CHUNK
+        LDA     ZICBLH
+        STA     CHUNK+1
+        JSR     CAPCHK      ; Cap CHUNK to MAXBURST
+
+        LDA     ZICDNO
+        STA     BWRCB+DCB_IDX.DUNIT
+        LDA     ZICBAL
+        STA     BWRCB+DCB_IDX.DBUFL     ; user buffer
+        LDA     ZICBAH
+        STA     BWRCB+DCB_IDX.DBUFH
+        LDA     CHUNK
+        STA     BWRCB+DCB_IDX.DBYTL
+        STA     BWRCB+DCB_IDX.DAUX1     ; bytes to write
+        LDA     CHUNK+1
+        STA     BWRCB+DCB_IDX.DBYTH
+        STA     BWRCB+DCB_IDX.DAUX2
+
+        LDA     #<BWRCB
+        LDY     #>BWRCB
+        JSR     DOSIOV
+        LDY     DSTATS
+        CPY     #$01
+        BNE     BPERR
+
+        JSR     ADVBUF      ; Advance past all but the last byte
+        LDY     #$01        ; Success
+        RTS
+
+BPERR:  CPY     #$90
+        BNE     BPERTS
+        JSR     STPOLL
+        LDY     DVSTAT+3
+BPERTS: RTS
+
+       ; Advance CIO buffer by (CHUNK-1): ZICBAL += CHUNK-1 ;
+       ; ZICBLL -= CHUNK-1.  Leaves CIO pointing at the last
+       ; transferred byte with one count still to go.
+
+ADVBUF: LDA     CHUNK       ; DECR = CHUNK - 1
+        SEC
+        SBC     #$01
+        STA     DECR
+        LDA     CHUNK+1
+        SBC     #$00
+        STA     DECR+1
+        CLC                 ; ZICBAL += DECR
+        LDA     ZICBAL
+        ADC     DECR
+        STA     ZICBAL
+        LDA     ZICBAH
+        ADC     DECR+1
+        STA     ZICBAH
+        SEC                 ; ZICBLL -= DECR
+        LDA     ZICBLL
+        SBC     DECR
+        STA     ZICBLL
+        LDA     ZICBLH
+        SBC     DECR+1
+        STA     ZICBLH
+        RTS
+
+       ; Cap CHUNK to MAXBURST.  Relies on MAXBURST's low byte being
+       ; 0: once CHUNK's hi byte reaches MAXBURST's hi byte the value
+       ; is already >= MAXBURST.
+
+CAPCHK: LDA     CHUNK+1
+        CMP     #>MAXBURST
+        BCC     CAPRTS      ; hi < MAXBURST hi -> under cap
+        LDA     #<MAXBURST  ; else clamp to MAXBURST
+        STA     CHUNK
+        LDA     #>MAXBURST
+        STA     CHUNK+1
+CAPRTS: RTS
+
+       ; Burst read DCB.  DBUF/DBYT/DAUX set at run time by BGET.
+BRDCB   .BYTE   DEVIDN      ; DDEVIC
+        .BYTE   $FF         ; DUNIT
+        .BYTE   'R'         ; DCOMND
+        .BYTE   DSREAD      ; DSTATS
+        .BYTE   $FF         ; DBUFL (set at run time)
+        .BYTE   $FF         ; DBUFH (set at run time)
+        .BYTE   $FE         ; DTIMLO
+        .BYTE   $00         ; DRESVD
+        .BYTE   $FF         ; DBYTL (set at run time)
+        .BYTE   $00         ; DBYTH (set at run time)
+        .BYTE   $FF         ; DAUX1 (set at run time)
+        .BYTE   $00         ; DAUX2 (set at run time)
+
+       ; Burst write DCB (same, DCOMND 'W').
+BWRCB   .BYTE   DEVIDN      ; DDEVIC
+        .BYTE   $FF         ; DUNIT
+        .BYTE   'W'         ; DCOMND
+        .BYTE   DSWRIT      ; DSTATS
+        .BYTE   $FF         ; DBUFL (set at run time)
+        .BYTE   $FF         ; DBUFH (set at run time)
+        .BYTE   $FE         ; DTIMLO
+        .BYTE   $00         ; DRESVD
+        .BYTE   $FF         ; DBYTL (set at run time)
+        .BYTE   $00         ; DBYTH (set at run time)
+        .BYTE   $FF         ; DAUX1 (set at run time)
+        .BYTE   $00         ; DAUX2 (set at run time)
+
+; End Burst Mode
 ;---------------------------------------
 
 ;#######################################
@@ -3699,6 +3964,10 @@ INQDS           .BYTE   $01 ; DSTATS INQ
 
 DVS2    :MAXDEV .BYTE   $00 ; DVSTAT+2 SAVE
 DVS3    :MAXDEV .BYTE   $00 ; DVSTAT+3 SAVE
+
+BWRAW           .BYTE   $00,$00 ; Uncapped bytes-waiting (burst)
+CHUNK           .BYTE   $00,$00 ; Burst transfer size
+DECR            .BYTE   $00,$00 ; Burst pointer/length decrement
 
 COLOR4_ORIG     .BYTE   $00 ; Hold prev border color
 
