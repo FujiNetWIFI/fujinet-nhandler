@@ -37,3 +37,4 @@ include mekkogx/toplevel-rules.mk
 apple2/disk-post::
 	-ac -d $(BUILD_DISK) FUJIAPPLE.SYSTE
 	ac -bas $(BUILD_DISK) STARTUP < $(CURDIR)/dist/STARTUP.bas
+	ac -bas $(BUILD_DISK) GORILLAS < $(CURDIR)/dist/GORILLAS.bas

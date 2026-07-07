@@ -124,3 +124,37 @@ the commands.  Then, e.g.:
 ```
 
 Source is in `src/apple2/`; the linker config is `link/fn-ext.cfg`.
+
+## Example: GORILLAS (network game demo)
+
+`dist/GORILLAS.bas` (on the disk as `GORILLAS` — `RUN GORILLAS`) is a port of
+the Atari BASIC "FujiNet Gorillas" relay game to Applesoft + the N-commands.
+Two players connect through the CG game relay
+(`N:TCP://RELAY.8BITATARI.COM:6502/`) and lob shots across a random HGR city;
+the host generates the city and both sides simulate every shot
+deterministically from the same data.
+
+Porting notes (useful as an N-command usage reference):
+
+- The Atari `OPEN #2,12,0,"N:TCP://…"` maps 1:1 to `NOPEN 1,U$,12,0` (mode and
+  translation are the same aux values).  Translation stays **0** and lines are
+  terminated with `CHR$(155)` (the ATASCII EOL) in both directions, so the
+  Apple II is wire-compatible with the Atari version through the relay.
+- Atari `STATUS #2` + `PEEK(746/747)` becomes `NSTATUS 1,BW,CO,ER`; `INPUT #2`
+  becomes a buffered line reader on top of `NREAD 1,T$,NB` that splits on
+  `CHR$(155)` (line 7000).
+- N-command argument strings must contain only **numeric literals and variable
+  names** — the argument buffer is raw ASCII, so Applesoft functions/operators
+  (`LEN(M$)`, `A+1`) don't tokenize and won't evaluate.  Hence the
+  `ML = LEN(M$) : PRINT D$;"NWRITE 1,M$,ML"` idiom.
+- Game logic runs in the Atari's 160×80 GRAPHICS 7 space (that's what crosses
+  the network and decides hits); only plotting scales to HGR (×1.75, ×2).
+- The program self-relocates to `$4001` (line 8, the classic
+  `POKE 103/104` + re-`RUN` trick): at `$0801` its variables would spill into
+  the HGR page.  Corollary: it must never use `HGR2` (page 2 = `$4000`).
+- **AppleCommander `ac -bas` tokenizes minus signs inside DATA statements**
+  (real Applesoft stores DATA content as literal ASCII).  `READ` then hits the
+  `$C9` token — FIN only accepts an ASCII `-` as a leading sign — and dies
+  with SYNTAX ERROR reported *at the DATA line*.  So: no negative numbers (or
+  anything else tokenizable) in DATA that ships through `ac -bas`; the gorilla
+  sprite offsets are stored biased +2 and un-biased after READ.
