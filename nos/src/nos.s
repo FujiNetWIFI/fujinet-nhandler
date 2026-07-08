@@ -207,6 +207,7 @@ CMD_SCREEN          = BOGUS
 CMD_WARM            = BOGUS
 CMD_XEP             = BOGUS
 CMD_AUTORUN         = BOGUS
+CMD_MENU            = BOGUS
 
 ;;; Macros ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1747,7 +1748,7 @@ DOS:
 
 
 CPLOOP:
-        JSR     CP          ; Command Processor
+        JSR     MENU_CP     ; DOS 2.0-style menu command processor
         JMP     CPLOOP      ; Keep looping
 
 ;---------------------------------------
@@ -3414,6 +3415,17 @@ CLS_STR:
         .BYTE   125,EOL
 
 ;---------------------------------------
+DO_MENU:
+;---------------------------------------
+    ; Leave the CLI and hand control back to the
+    ; menu.  We may be several frames deep inside CP's
+    ; command loop, so reset the stack (this IS the
+    ; top-level command processor) before re-entering.
+        LDX     #$FF
+        TXS
+        JMP     CPLOOP      ; redraw the menu and loop
+
+;---------------------------------------
 DO_COLD:
 ;---------------------------------------
         JMP     COLDSV
@@ -3641,6 +3653,437 @@ PREPEND_DRIVE_DONE:
 ;APPEND_SLASH_DONE:
 ;        RTS
 
+;#######################################
+;#                                     #
+;#   DOS 2.0-STYLE MENU FRONT-END      #
+;#                                     #
+;#######################################
+;
+; Experimental menu interface (branch: menu-experiment).
+; Instead of a bare command line, present a lettered menu
+; like ATARI DOS 2.0's DUP.SYS.  Each selection assembles a
+; normal NOS command line into LNBUF and runs it through the
+; existing GETCMDTEST / PARSECMD / DOCMD pipeline, so no
+; command logic is duplicated.
+;
+; Item flag byte:
+F_NOARG = $00       ; keyword only, run immediately
+F_ARG   = $01       ; keyword + prompt for an argument line
+F_DRIVE = $80       ; special: change default drive (Nn:)
+F_CLI   = $81       ; special: drop to one classic CLI command
+
+MENU_COUNT = 16     ; items A..P
+
+;---------------------------------------
+; Menu command processor (one session).
+; Draws the menu, then loops reading item
+; selections until warm/cold start leaves.
+;---------------------------------------
+MENU_CP:
+        JSR     MENU_SHOW           ; Clear screen + draw full menu
+
+MENU_SELECT:
+        LDA     #<SEL_STR           ; "SELECT ITEM OR RETURN FOR MENU"
+        LDY     #>SEL_STR
+        LDX     #SEL_LEN
+        JSR     MENU_PUTS
+
+        JSR     MENU_READ           ; Read a line; first char -> A
+        CMP     #EOL                ; Empty (RETURN) -> redraw menu
+        BEQ     MENU_CP
+
+        AND     #$5F                ; Force uppercase
+        SEC
+        SBC     #'A'                ; Convert letter to 0-based index
+        BMI     MENU_SELECT         ; Below 'A' -> ignore
+        CMP     #MENU_COUNT
+        BCS     MENU_SELECT         ; Past last item -> ignore
+        TAX                         ; X = item index
+        JSR     MENU_EXEC
+        JMP     MENU_SELECT
+
+;---------------------------------------
+; Execute the selected menu item (X = idx)
+;---------------------------------------
+MENU_EXEC:
+        LDA     MENU_FLAGS,X
+        CMP     #F_DRIVE
+        BNE     @+
+        JMP     MENU_DRIVE
+@:      CMP     #F_CLI
+        BNE     @+
+        JMP     MENU_CLI
+
+    ; Normal keyword item.  Save arg flag.
+@:      PHA
+
+    ; Copy keyword into LNBUF; length -> Y
+        LDA     MENU_KW_L,X
+        STA     INBUFF
+        LDA     MENU_KW_H,X
+        STA     INBUFF+1
+        LDY     #$00
+MENU_EXEC_CPY:
+        LDA     (INBUFF),Y
+        CMP     #EOL
+        BEQ     MENU_EXEC_KWDONE
+        STA     LNBUF,Y
+        INY
+        BNE     MENU_EXEC_CPY
+MENU_EXEC_KWDONE:
+        STY     MENU_KLEN           ; keyword length
+        PLA                         ; recover arg flag
+        BEQ     MENU_EXEC_NOARG
+
+    ;---------------------------------------
+    ; Item takes an argument line.
+    ; Show a verbose prompt, then read the rest.
+    ; (The keyword already sits in LNBUF for the
+    ; parser; the prompt is display-only.  X still
+    ; holds the item index here.)
+    ;---------------------------------------
+        LDA     MENU_PR_L,X         ; verbose prompt for this item
+        STA     INBUFF
+        LDA     MENU_PR_H,X
+        STA     INBUFF+1
+        JSR     MENU_PUTZ
+
+    ; GETREC the argument into LNBUF + K + 1
+    ; (leaving LNBUF[K] as a gap for space or EOL)
+        CLC
+        LDA     #<LNBUF
+        ADC     MENU_KLEN
+        STA     ICBAL
+        LDA     #>LNBUF
+        ADC     #$00
+        STA     ICBAH
+        INC     ICBAL               ; +1 past the gap
+        BNE     @+
+        INC     ICBAH
+@:      LDA     #$7F
+        SEC
+        SBC     MENU_KLEN           ; remaining buffer room
+        STA     ICBLL
+        LDX     #$00                ; CIOV needs X = IOCB #0
+        STX     ICBLH
+        LDA     #GETREC
+        STA     ICCOM
+        JSR     CIOV
+
+    ; Empty argument?  (first char at LNBUF[K+1])
+        LDY     MENU_KLEN
+        INY
+        LDA     LNBUF,Y
+        CMP     #EOL
+        BNE     MENU_EXEC_HASARG
+
+    ; No argument: terminate keyword directly
+        LDY     MENU_KLEN
+        LDA     #EOL
+        STA     LNBUF,Y
+        JMP     MENU_DISPATCH
+
+MENU_EXEC_HASARG:
+        LDY     MENU_KLEN           ; insert space between keyword and arg
+        LDA     #' '
+        STA     LNBUF,Y
+        JMP     MENU_DISPATCH
+
+MENU_EXEC_NOARG:
+        LDY     MENU_KLEN           ; terminate keyword with EOL
+        LDA     #EOL
+        STA     LNBUF,Y
+    ; fall through
+
+;---------------------------------------
+; Run the assembled command line in LNBUF
+; through the normal command pipeline.
+;---------------------------------------
+MENU_DISPATCH:
+        LDA     #$FF                ; clear command
+        STA     CMD
+        JSR     GETCMDTEST          ; tokenize LNBUF
+        JSR     PARSECMD            ; identify command
+        JSR     DOCMD               ; dispatch
+        RTS
+
+;---------------------------------------
+; Special item: change default drive.
+; Assemble LNBUF = 'N' <digit> and let
+; DO_DRIVE_CHG validate + apply it.
+;---------------------------------------
+MENU_DRIVE:
+        LDA     #<DRV_STR
+        LDY     #>DRV_STR
+        LDX     #DRV_LEN
+        JSR     MENU_PUTS
+
+        CLC                         ; read digit into LNBUF+1
+        LDA     #<LNBUF
+        ADC     #$01
+        STA     ICBAL
+        LDA     #>LNBUF
+        ADC     #$00
+        STA     ICBAH
+        LDA     #$7E
+        STA     ICBLL
+        LDX     #$00                ; CIOV needs X = IOCB #0
+        STX     ICBLH
+        LDA     #GETREC
+        STA     ICCOM
+        JSR     CIOV
+
+        LDA     #'N'                ; LNBUF[0] = 'N'
+        STA     LNBUF
+        LDA     #CMD_IDX.DRIVE_CHG
+        STA     CMD
+        JMP     DOCMD               ; DO_DRIVE_CHG, returns to caller
+
+;---------------------------------------
+; Special item: one classic CLI command.
+;---------------------------------------
+MENU_CLI:
+        JSR     CP                  ; Nn: prompt, read+dispatch
+        JMP     MENU_CLI            ; stay in the CLI until MENU typed
+
+;---------------------------------------
+; Read a line from E: into LNBUF.
+; Returns first character in A.
+;---------------------------------------
+MENU_READ:
+        LDX     #$00                ; CIOV needs X = IOCB #0
+        STX     ICBLH
+        LDA     #<LNBUF
+        STA     ICBAL
+        LDA     #>LNBUF
+        STA     ICBAH
+        LDA     #$7F
+        STA     ICBLL
+        LDA     #GETREC
+        STA     ICCOM
+        JSR     CIOV
+        LDA     LNBUF
+        RTS
+
+;---------------------------------------
+; PUTCHR X bytes from A/Y to E: (IOCB #0)
+; A=addr lo, Y=addr hi, X=length
+;---------------------------------------
+MENU_PUTS:
+        STA     ICBAL
+        STY     ICBAH
+        STX     ICBLL
+        LDX     #$00                ; CIOV needs X = IOCB #0
+        STX     ICBLH
+        LDA     #PUTCHR
+        STA     ICCOM
+        JMP     CIOV
+
+;---------------------------------------
+; PUTCHR an EOL-terminated string to E:,
+; stopping before the EOL (no newline, so
+; the reply is typed on the same line).
+; INBUFF = string address.
+;---------------------------------------
+MENU_PUTZ:
+        LDY     #$00                ; measure length up to EOL
+@:      LDA     (INBUFF),Y
+        CMP     #EOL
+        BEQ     @+
+        INY
+        BNE     @-
+@:      INY                         ; include the terminating EOL so the
+        STY     ICBLL               ; reply starts on a fresh line (length + EOL)
+        LDA     INBUFF
+        STA     ICBAL
+        LDA     INBUFF+1
+        STA     ICBAH
+        LDX     #$00                ; CIOV needs X = IOCB #0
+        STX     ICBLH
+        LDA     #PUTCHR
+        STA     ICCOM
+        JMP     CIOV
+
+;---------------------------------------
+; Clear screen and draw the full menu.
+; MENU_TXT is a run of EOL-terminated
+; lines ending with a $00 sentinel.
+;---------------------------------------
+MENU_SHOW:
+        JSR     DO_CLS
+        LDA     #<MENU_TXT
+        STA     INBUFF
+        LDA     #>MENU_TXT
+        STA     INBUFF+1
+MENU_SHOW_LOOP:
+        LDY     #$00
+        LDA     (INBUFF),Y
+        BEQ     MENU_SHOW_DONE      ; $00 = end of menu
+        LDA     INBUFF
+        LDY     INBUFF+1
+        JSR     PRINT_STRING        ; prints up to the EOL
+        LDY     #$00                ; advance past this line
+MENU_SHOW_SCAN:
+        LDA     (INBUFF),Y
+        INY
+        CMP     #EOL
+        BNE     MENU_SHOW_SCAN
+        TYA
+        CLC
+        ADC     INBUFF
+        STA     INBUFF
+        BCC     MENU_SHOW_LOOP
+        INC     INBUFF+1
+        BNE     MENU_SHOW_LOOP      ; always
+MENU_SHOW_DONE:
+        RTS
+
+SEL_STR:
+        .BYTE   EOL,'SELECT ITEM OR '
+        .BYTE   'RETURN'*            ; inverse video, DOS 2.0 style
+        .BYTE   ' FOR MENU',EOL
+SEL_LEN = *-SEL_STR
+
+DRV_STR:
+        .BYTE   EOL,'CHANGE TO DRIVE (1-8)?',EOL
+DRV_LEN = *-DRV_STR
+
+MENU_TXT:
+        .BYTE   $7D,'FUJINET NETWORK OPERATING SYSTEM 1.0',EOL
+        .BYTE   'COPYLEFT 2026 FUJINET',EOL
+        .BYTE   EOL
+        .BYTE   ' A. DIRECTORY         I. CHANGE DIR',EOL
+        .BYTE   ' B. RUN CARTRIDGE     J. SHOW DIR',EOL
+        .BYTE   ' C. COPY FILE         K. BINARY SAVE',EOL
+        .BYTE   ' D. DELETE FILE(S)    L. BINARY LOAD',EOL
+        .BYTE   ' E. RENAME FILE       M. RUN AT ADDR',EOL
+        .BYTE   ' F. MAKE DIRECTORY    N. CHANGE DRIVE',EOL
+        .BYTE   ' G. REMOVE DIRECTORY  O. TYPE FILE',EOL
+        .BYTE   ' H. BASIC ON/OFF      P. COMMAND LINE',EOL
+        .BYTE   EOL,EOL,EOL,EOL,EOL
+        .BYTE   $00
+
+; Keyword strings assembled for each item (EOL-terminated)
+KW_DIR:     .BYTE 'DIR',EOL
+KW_CAR:     .BYTE 'CAR',EOL
+KW_NCOPY:   .BYTE 'NCOPY',EOL
+KW_DEL:     .BYTE 'DEL',EOL
+KW_RENAME:  .BYTE 'RENAME',EOL
+KW_MKDIR:   .BYTE 'MKDIR',EOL
+KW_RMDIR:   .BYTE 'RMDIR',EOL
+KW_BASIC:   .BYTE 'BASIC',EOL
+KW_NCD:     .BYTE 'NCD',EOL
+KW_NPWD:    .BYTE 'NPWD',EOL
+KW_SAVE:    .BYTE 'SAVE',EOL
+KW_LOAD:    .BYTE 'LOAD',EOL
+KW_RUN:     .BYTE 'RUN',EOL
+KW_TYPE:    .BYTE 'TYPE',EOL
+
+; Item tables (index 0..15 == A..P).  KW ptr is
+; unused for the two special items (N, P).
+MENU_KW_L:
+        .BYTE   <KW_DIR             ; A DIRECTORY
+        .BYTE   <KW_CAR             ; B RUN CARTRIDGE
+        .BYTE   <KW_NCOPY           ; C COPY FILE
+        .BYTE   <KW_DEL             ; D DELETE FILE(S)
+        .BYTE   <KW_RENAME          ; E RENAME FILE
+        .BYTE   <KW_MKDIR           ; F MAKE DIRECTORY
+        .BYTE   <KW_RMDIR           ; G REMOVE DIRECTORY
+        .BYTE   <KW_BASIC           ; H BASIC ON/OFF
+        .BYTE   <KW_NCD             ; I CHANGE DIR
+        .BYTE   <KW_NPWD            ; J SHOW DIR
+        .BYTE   <KW_SAVE            ; K BINARY SAVE
+        .BYTE   <KW_LOAD            ; L BINARY LOAD
+        .BYTE   <KW_RUN             ; M RUN AT ADDRESS
+        .BYTE   <KW_DIR             ; N CHANGE DRIVE (special)
+        .BYTE   <KW_TYPE            ; O TYPE FILE
+        .BYTE   <KW_DIR             ; P COMMAND LINE (special)
+MENU_KW_H:
+        .BYTE   >KW_DIR             ; A
+        .BYTE   >KW_CAR             ; B
+        .BYTE   >KW_NCOPY           ; C
+        .BYTE   >KW_DEL             ; D
+        .BYTE   >KW_RENAME          ; E
+        .BYTE   >KW_MKDIR           ; F
+        .BYTE   >KW_RMDIR           ; G
+        .BYTE   >KW_BASIC           ; H
+        .BYTE   >KW_NCD             ; I
+        .BYTE   >KW_NPWD            ; J
+        .BYTE   >KW_SAVE            ; K
+        .BYTE   >KW_LOAD            ; L
+        .BYTE   >KW_RUN             ; M
+        .BYTE   >KW_DIR             ; N
+        .BYTE   >KW_TYPE            ; O
+        .BYTE   >KW_DIR             ; P
+MENU_FLAGS:
+        .BYTE   F_ARG               ; A DIRECTORY
+        .BYTE   F_NOARG             ; B RUN CARTRIDGE
+        .BYTE   F_ARG               ; C COPY FILE
+        .BYTE   F_ARG               ; D DELETE FILE(S)
+        .BYTE   F_ARG               ; E RENAME FILE
+        .BYTE   F_ARG               ; F MAKE DIRECTORY
+        .BYTE   F_ARG               ; G REMOVE DIRECTORY
+        .BYTE   F_ARG               ; H BASIC ON/OFF
+        .BYTE   F_ARG               ; I CHANGE DIR
+        .BYTE   F_NOARG             ; J SHOW DIR
+        .BYTE   F_ARG               ; K BINARY SAVE
+        .BYTE   F_ARG               ; L BINARY LOAD
+        .BYTE   F_ARG               ; M RUN AT ADDRESS
+        .BYTE   F_DRIVE             ; N CHANGE DRIVE
+        .BYTE   F_ARG               ; O TYPE FILE
+        .BYTE   F_CLI               ; P COMMAND LINE
+
+; Verbose argument prompts (EOL-terminated, display
+; only).  Unused entries (no-arg / special items)
+; point at PR_DIR as a harmless placeholder.
+PR_DIR:     .BYTE 'DIRECTORY-SEARCH SPEC? ',EOL
+PR_NCOPY:   .BYTE 'COPY-FROM,TO? ',EOL
+PR_DEL:     .BYTE 'DELETE FILE SPEC? ',EOL
+PR_RENAME:  .BYTE 'RENAME-OLD,NEW? ',EOL
+PR_MKDIR:   .BYTE 'MAKE DIRECTORY? ',EOL
+PR_RMDIR:   .BYTE 'REMOVE DIRECTORY? ',EOL
+PR_BASIC:   .BYTE 'BASIC ON OR OFF? ',EOL
+PR_NCD:     .BYTE 'CHANGE TO DIRECTORY? ',EOL
+PR_SAVE:    .BYTE 'SAVE-NAME,START,END? ',EOL
+PR_LOAD:    .BYTE 'BINARY LOAD FILE? ',EOL
+PR_RUN:     .BYTE 'RUN AT ADDRESS (HEX)? ',EOL
+PR_TYPE:    .BYTE 'TYPE FILE? ',EOL
+
+MENU_PR_L:
+        .BYTE   <PR_DIR             ; A DIRECTORY
+        .BYTE   <PR_DIR             ; B RUN CARTRIDGE (unused)
+        .BYTE   <PR_NCOPY           ; C COPY FILE
+        .BYTE   <PR_DEL             ; D DELETE FILE(S)
+        .BYTE   <PR_RENAME          ; E RENAME FILE
+        .BYTE   <PR_MKDIR           ; F MAKE DIRECTORY
+        .BYTE   <PR_RMDIR           ; G REMOVE DIRECTORY
+        .BYTE   <PR_BASIC           ; H BASIC ON/OFF
+        .BYTE   <PR_NCD             ; I CHANGE DIR
+        .BYTE   <PR_DIR             ; J SHOW DIR (unused)
+        .BYTE   <PR_SAVE            ; K BINARY SAVE
+        .BYTE   <PR_LOAD            ; L BINARY LOAD
+        .BYTE   <PR_RUN             ; M RUN AT ADDRESS
+        .BYTE   <PR_DIR             ; N CHANGE DRIVE (unused)
+        .BYTE   <PR_TYPE            ; O TYPE FILE
+        .BYTE   <PR_DIR             ; P COMMAND LINE (unused)
+MENU_PR_H:
+        .BYTE   >PR_DIR             ; A
+        .BYTE   >PR_DIR             ; B
+        .BYTE   >PR_NCOPY           ; C
+        .BYTE   >PR_DEL             ; D
+        .BYTE   >PR_RENAME          ; E
+        .BYTE   >PR_MKDIR           ; F
+        .BYTE   >PR_RMDIR           ; G
+        .BYTE   >PR_BASIC           ; H
+        .BYTE   >PR_NCD             ; I
+        .BYTE   >PR_DIR             ; J
+        .BYTE   >PR_SAVE            ; K
+        .BYTE   >PR_LOAD            ; L
+        .BYTE   >PR_RUN             ; M
+        .BYTE   >PR_DIR             ; N
+        .BYTE   >PR_TYPE            ; O
+        .BYTE   >PR_DIR             ; P
+
 PRMPT:
         .BYTE   EOL,'N :'
 
@@ -3711,6 +4154,7 @@ NTRDCB:
                 WARM                ; 29
                 XEP                 ; 30
                 DRIVE_CHG           ; 31
+                MENU                ; 32
         .ENDE
 
 CMD_DCOMND:
@@ -3746,6 +4190,7 @@ CMD_DCOMND:
         .BYTE   CMD_WARM            ; 29 WARM
         .BYTE   CMD_XEP             ; 30 XEP
         .BYTE   CMD_DRIVE_CHG       ; 31
+        .BYTE   CMD_MENU            ; 32 MENU
 
 COMMAND:
         .CB     "NCD"               ;  0 NCD
@@ -3839,8 +4284,11 @@ COMMAND:
         .BYTE   CMD_IDX.WARM          
                                       
         .CB     "XEP"               ; 31 XEP
-        .BYTE   CMD_IDX.XEP             
-                                        
+        .BYTE   CMD_IDX.XEP
+
+        .CB     "MENU"              ; 32 MENU (leave CLI, return to menu)
+        .BYTE   CMD_IDX.MENU
+
         ; Drive Change intentionally omitted
 
 ; Aliases
@@ -3923,6 +4371,7 @@ CMD_TAB_L:
         .BYTE   <(DO_WARM-1)        ; 29 WARM
         .BYTE   <(DO_XEP-1)         ; 30 XEP
         .BYTE   <(DO_DRIVE_CHG-1)   ; 31
+        .BYTE   <(DO_MENU-1)        ; 32 MENU
 
 CMD_TAB_H:
         .BYTE   >(DO_GENERIC-1)     ;  0 NCD
@@ -3957,6 +4406,7 @@ CMD_TAB_H:
         .BYTE   >(DO_WARM-1)        ; 29 WARM
         .BYTE   >(DO_XEP-1)         ; 30 XEP
         .BYTE   >(DO_DRIVE_CHG-1)   ; 31
+        .BYTE   >(DO_MENU-1)        ; 32 MENU
 
         ; Overlay tables
 
@@ -4074,6 +4524,7 @@ AUTORUN_FLG     .BYTE   $00 ; Checked at DOS entry. Runs only on first pass
 WRITEMODE       .BYTE   $00 ; Used for open, truncate or open, append
 SOURCE_IOCB     .BYTE   $00 ; Used in NCOPY
 TARGET_IOCB     .BYTE   $00 ; Used in NCOPY
+MENU_KLEN       .BYTE   $00 ; Menu: assembled keyword length
 
 TRIP            .BYTE   $01 ; INTR FLAG
 RLEN    :MAXDEV .BYTE   $00 ; RCV LEN
