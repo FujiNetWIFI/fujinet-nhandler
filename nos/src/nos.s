@@ -5368,6 +5368,39 @@ OVL_NCOPY:
         LDA     #$08            ; Open with Truncate mode
         STA     WRITEMODE
 
+    ; Quoted FROM support.  For a quoted name like
+    ;   "N2:My File.xex",N1:X
+    ; GETCMDTEST keeps the embedded space but turns the CLOSING quote
+    ; into an EOL (and leaves the OPENING quote just before CMDSEP[0]).
+    ; That premature EOL would stop PARSE_COMMAS before the FROM,TO
+    ; comma, so the target came out as ",N1:X".  If the FROM arg was
+    ; quoted, delete the premature EOL so FROM,TO[,A] is contiguous.
+        LDY     CMDSEP
+        DEY                     ; byte just before the FROM arg
+        LDA     LNBUF,Y
+        CMP     #'"'            ; opening-quote marker => FROM was quoted
+        BNE     NCOPY_QHEALX
+
+        LDY     CMDSEP          ; find the closing-quote EOL
+NCOPY_QHEALF:
+        LDA     LNBUF,Y
+        CMP     #EOL
+        BEQ     NCOPY_QHEALC
+        INY
+        BNE     NCOPY_QHEALF
+NCOPY_QHEALC:
+        LDA     LNBUF+1,Y       ; only heal a real FROM,TO boundary
+        CMP     #','
+        BNE     NCOPY_QHEALX
+NCOPY_QHEALS:
+        LDA     LNBUF+1,Y       ; shift the tail down over the EOL
+        STA     LNBUF,Y
+        CMP     #EOL
+        BEQ     NCOPY_QHEALX
+        INY
+        BNE     NCOPY_QHEALS
+NCOPY_QHEALX:
+
     ; Find comma, convert comma to EOL
         JSR     PARSE_COMMAS
 
@@ -5681,48 +5714,59 @@ END_OVL_NCOPY1:
 ;---------------------------------------
 OVL_NCOPY2:
 ;---------------------------------------
-        LDA     #$00
-        STA     OVLBUF-OVL_NCOPY2+NCOPY2_LOOP_FLG
-
-    ; Use the 2nd half of the Overlay buffer
-    ; to store data in transit
-        LDA     #<(OVLBUF+$80)
+    ; Copy the file body in big bursts.  Point the CIO
+    ; buffer at free RAM above DOS (MEMLO) and move up to
+    ; MAXBURST bytes per pass: a binary GET/PUT BYTES with a
+    ; buffer >= MINBURST makes the N: handler burst the whole
+    ; block in one SIO frame straight to/from this buffer,
+    ; instead of trickling 128 bytes at a time.  MEMLO ($1F00)
+    ; is well clear of the overlay ($1D00) and the screen.
+        LDA     MEMLO
         STA     INBUFF
-        LDA     #>(OVLBUF+$80)
+        LDA     MEMLO+1
         STA     INBUFF+1
 
 NCOPY2_NEXT2:
+        LDA     #$00                ; assume more blocks follow
+        STA     OVLBUF-OVL_NCOPY2+NCOPY2_LOOP_FLG
+
+    ; Read up to MAXBURST bytes from the source.
         LDX     SOURCE_IOCB         ; X will be like $10
-        LDA     #$80
-        LDY     #$00                ; Request $0080  bytes
+        LDA     #<MAXBURST
+        LDY     #>MAXBURST
         JSR     CIOGET
-        BPL     NCOPY2_WRITE
+        BPL     NCOPY2_WRITE        ; success -> full block read
 
-    ; Here if error code, if not EOF, print error and bail
+    ; Here if error/EOF status. If not EOF, print and bail.
         CPY     #136                ; EOF?
-        BEQ     NCOPY2_EOF_FOUND    ; Yes, skip ahead
-
-    ; Here of error code other than EOF
+        BEQ     NCOPY2_EOF_FOUND    ; Yes, this is the final block
         JSR     PRINT_ERROR
-        BNE     NCOPY2_CLOSE
+        JMP     OVLBUF-OVL_NCOPY2+NCOPY2_CLOSE
 
 NCOPY2_EOF_FOUND:
-        STY     OVLBUF-OVL_NCOPY2+NCOPY2_LOOP_FLG
-    ; Presumably we've reached the EOF
-    ; Self-modify code ahead to adjust
-    ; for the remaining bytes
-        LDX     SOURCE_IOCB         ; X will be like $10
-        LDA     ICBLL,X   ; Remaining bytes found in IOCB
-        STA     OVLBUF-OVL_NCOPY2+NCOPY2_ICBLL+1
+        LDA     #$01                ; mark this as the last block
+        STA     OVLBUF-OVL_NCOPY2+NCOPY2_LOOP_FLG
 
+    ; Write exactly the number of bytes CIO transferred.
+    ; ICBLL/ICBLH is the actual byte count (= MAXBURST on a
+    ; full read, a short count on the final block).
 NCOPY2_WRITE:
-        LDX     TARGET_IOCB         ; X will be like $10
-NCOPY2_ICBLL:
-        LDA     #$80
-        LDY     #$00
+        LDX     SOURCE_IOCB
+        LDA     ICBLL,X
+        STA     OVLBUF-OVL_NCOPY2+NCOPY2_LEN
+        LDA     ICBLH,X
+        STA     OVLBUF-OVL_NCOPY2+NCOPY2_LEN+1
+        ORA     OVLBUF-OVL_NCOPY2+NCOPY2_LEN
+        BEQ     NCOPY2_ENDCHK       ; nothing read -> skip the write
+
+        LDX     TARGET_IOCB
+        LDA     OVLBUF-OVL_NCOPY2+NCOPY2_LEN
+        LDY     OVLBUF-OVL_NCOPY2+NCOPY2_LEN+1
         JSR     CIOPUT
+
+NCOPY2_ENDCHK:
         LDA     OVLBUF-OVL_NCOPY2+NCOPY2_LOOP_FLG
-        BEQ     NCOPY2_NEXT2
+        BEQ     NCOPY2_NEXT2        ; not EOF -> next block
 
 NCOPY2_CLOSE:
         LDX     SOURCE_IOCB         ; X will be like $10
@@ -5732,6 +5776,8 @@ NCOPY2_CLOSE:
 
 NCOPY2_LOOP_FLG:
         .BYTE  $00
+NCOPY2_LEN:
+        .BYTE  $00,$00
 
         .ALIGN SECTOR_SIZE, $00     ; Align to ATR sector
 END_OVL_NCOPY2:
