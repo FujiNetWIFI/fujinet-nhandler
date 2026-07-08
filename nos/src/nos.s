@@ -698,12 +698,15 @@ STSLEN: LDA     RLEN,X      ; GET RLEN
         ; DO POLL AND UPDATE RCV LEN
 
 STTRI1: JSR     STPOLL      ; POLL FOR ST
-        STA     RLEN,X
 
-        ; UPDATE TRIP FLAG
+        ; TRIP tracks whether data is waiting (NOT the poll's
+        ; connection flag), and we must NOT set RLEN here: no data
+        ; was read into RBUF yet (that is GET's job).
 
-STTRIU: BNE     STDONE
-        STA     TRIP        ; RLEN = 0
+        LDA     DVSTAT      ; bytes waiting lo
+        ORA     DVSTAT+1    ; | hi
+        BNE     STDONE      ; something waiting -> leave TRIP set
+        STA     TRIP        ; nothing waiting -> TRIP = 0 (A=0)
 
         ; RETURN CONNECTED? FLAG.
 
@@ -736,11 +739,11 @@ STPOLL:
         BNE     STADJ
         LDA     DVSTAT
         BMI     STADJ
-        BVC     STP2        ; <= 127 bytes...
+        BPL     STP2        ; <= 127 bytes (N clear, always taken)
 
 STADJ   LDA     #$7F
         STA     DVSTAT
-
+        LDA     #$00
         STA     DVSTAT+1
 
        ; A = CONNECTION STATUS

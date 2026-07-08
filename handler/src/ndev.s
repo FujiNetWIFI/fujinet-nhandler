@@ -154,6 +154,7 @@ POLL:	LDA	ZICDNO		; Get Unit #
 GETBW:	JSR	GDIDX	        ; Get Unit #
         TXA                     ; move to A for ASL
         ASL	                ; * 2
+        TAX			; X = unit*2
         LDA	DVSTAT          ; Get Bytes Waiting (LO)
 	STA	BW,X            ; Store in BW,(unit)
         LDA	DVSTAT+1	; Get Bytes Waiting (HI)
@@ -501,10 +502,14 @@ STATUS:	JSR	ENPRCD		; Enable PROCEED.
 	JSR	READ		; Do read.
 	
 STRETC: JSR     GDIDX           ; Unit into X
+        TXA
+        ASL			; A = unit*2
+        TAX			; X = unit*2 for BW
         LDA	BW,X		; Get Saved DVSTAT+0 val
 	STA	DVSTAT		; Store into DVSTAT
 	LDA	BW+1,X		; Get Saved DVSTAT+1 val
 	STA	DVSTAT+1	; Store into DVSTAT+1
+	JSR	GDIDX		; X = unit for DVS2/DVS3
 	LDA	DVS2,X		; Get Saved DVSTAT+2 val
 	STA	DVSTAT+2	; Store
 	LDA	DVS3,X		; Get Saved DVSTAT+3 val
@@ -669,6 +674,10 @@ PPOK:	JSR	GDIDX		; Unit into X
 	LDA	#$00
 	STA	RLEN,X
 	STA	ROFF,X
+	TXA
+	ASL			; unit*2
+	TAX
+	LDA	#$00
 	STA	BW,X
 	STA	BW+1,X
 	LDA	#$01
@@ -782,8 +791,11 @@ BGCAP:	JSR	CAPCHK		; Cap CHUNK to MAXBURST
 	LDA	CHUNK+1
 	CMP	DVSTAT+1
 	BNE	BGTRP
+	TXA
+	ASL			; unit*2
+	TAX
 	LDA	#$00
-	STA	BW,X		; X still = unit
+	STA	BW,X		; BW[unit*2]
 	STA	BW+1,X
 	STA	TRIP
 BGTRP:	JSR	DIPRCD		; Disable PROCEED
