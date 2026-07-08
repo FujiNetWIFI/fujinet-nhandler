@@ -35,6 +35,12 @@ ZICAX4  =   ZIOCB+13    ; AUX 4
 ZICAX5  =   ZIOCB+14    ; AUX 5
 ZICAX6  =   ZIOCB+15    ; AUX 6
 
+        ;; CIO only copies the first 12 IOCB bytes to/from the ZP
+        ;; IOCB; $2C-$2F are CIO work bytes, so AUX3-5 must be read
+        ;; and written in the real IOCB, indexed by ICIDNO.
+
+ICIDNO  =   $2E         ; CIO: IOCB # * 16
+
 LMARGN  =   $52         ; Left margin
 FR0     =   $D4         ; Floating Point register 0 (used during Hex->ASCII conversion)
 CIX     =   $F2         ; Inbuff cursor
@@ -766,18 +772,18 @@ SPEC:   ; HANDLE LOCAL COMMANDS.
 
         LDA     ZICCOM
         CMP     #$0F        ; 15 = FLUSH
-        BNE     S1	    ; NO.
+        BNE     S25	    ; NO.
         JSR     PFLUSH      ; DO FLUSH
         LDY     #$01        ; SUCCESS
         RTS
 
-;S25:	CMP	#$25	    ; POINT
-;	BNE	S26	; No.
-;	JMP	PPOINT	; Do Point
-	
-;S26:	CMP	#$26	; NOTE
-;	BNE	S1	; No.
-;	JMP	PNOTE	; Do Note
+S25:	CMP	#$25	    ; POINT
+	BNE	S26	    ; No.
+	JMP	PPOINT	    ; Do Point
+
+S26:	CMP	#$26	    ; NOTE
+	BNE	S1	    ; No.
+	JMP	PNOTE	    ; Do Note
 
 S1:     CMP     #40         ; 40 = LOAD AND EXECUTE
         BEQ     S2          ; YES.
@@ -856,6 +862,116 @@ SPEDCB  .BYTE   DEVIDN      ; DDEVIC
         .BYTE   $FF         ; DAUX2
 
 ; End CIO SPECIAL
+;---------------------------------------
+
+;---------------------------------------
+; CIO NOTE/POINT
+;---------------------------------------
+; NOTE ($26) returns, and POINT ($25) sets, the 24-bit linear
+; file position in ICAX3 (lo), ICAX4 (mid), ICAX5 (hi).
+
+PNOTE:  JSR     PFLUSH      ; PUSH PENDING PUT BYTES FIRST
+
+        LDA     ZICDNO      ; UNIT #
+        STA     NOTDCB+DCB_IDX.DUNIT
+
+        LDA     #<NOTDCB
+        LDY     #>NOTDCB
+        JSR     DOSIOV      ; 3-BYTE POSITION INTO NPBUF
+
+        LDY     DSTATS
+        CPY     #$01        ; SUCCESS?
+        BEQ     PNOK
+        RTS                 ; NO, RETURN DSTATS IN Y
+
+       ; FUJINET'S POSITION IS AHEAD OF THE USER'S BY WHATEVER
+       ; IS STILL UNREAD IN RBUF; SUBTRACT IT.
+
+PNOK:   JSR     GDIDX       ; UNIT INTO X
+        SEC
+        LDA     NPBUF
+        SBC     RLEN,X
+        STA     NPBUF
+        LDA     NPBUF+1
+        SBC     #$00
+        STA     NPBUF+1
+        LDA     NPBUF+2
+        SBC     #$00
+        STA     NPBUF+2
+
+       ; STORE INTO THE CALLER'S IOCB (SEE ICIDNO NOTE UP TOP).
+
+        LDX     ICIDNO      ; IOCB # * 16
+        LDA     NPBUF
+        STA     ICAX3,X
+        LDA     NPBUF+1
+        STA     ICAX4,X
+        LDA     NPBUF+2
+        STA     ICAX5,X
+        LDY     #$01
+        RTS
+
+PPOINT: JSR     PFLUSH      ; PUSH PENDING PUT BYTES FIRST
+
+        LDX     ICIDNO      ; IOCB # * 16
+        LDA     ICAX3,X     ; POSITION (LO)
+        STA     NPBUF
+        LDA     ICAX4,X     ; POSITION (MID)
+        STA     NPBUF+1
+        LDA     ICAX5,X     ; POSITION (HI)
+        STA     NPBUF+2
+
+        LDA     ZICDNO      ; UNIT #
+        STA     PNTDCB+DCB_IDX.DUNIT
+
+        LDA     #<PNTDCB
+        LDY     #>PNTDCB
+        JSR     DOSIOV      ; SEND 3-BYTE POSITION
+
+        LDY     DSTATS
+        CPY     #$01        ; SUCCESS?
+        BEQ     PPOK
+        RTS                 ; NO, RETURN DSTATS IN Y
+
+       ; DROP STALE READ-AHEAD AND TRIP SO THE NEXT GET/STATUS
+       ; POLLS FRESH DATA AT THE NEW POSITION.
+
+PPOK:   JSR     GDIDX       ; UNIT INTO X
+        LDA     #$00
+        STA     RLEN,X
+        STA     ROFF,X
+        LDA     #$01
+        STA     TRIP
+        LDY     #$01
+        RTS
+
+NOTDCB: .BYTE   DEVIDN      ; DDEVIC
+        .BYTE   $FF         ; DUNIT
+        .BYTE   $26         ; DCOMND ; NOTE (TELL)
+        .BYTE   $40         ; DSTATS
+        .BYTE   <NPBUF      ; DBUFL
+        .BYTE   >NPBUF      ; DBUFH
+        .BYTE   $FE         ; DTIMLO
+        .BYTE   $00         ; DRESVD
+        .BYTE   $03         ; DBYTL ; 3 BYTES
+        .BYTE   $00         ; DBYTH
+        .BYTE   $00         ; DAUX1
+        .BYTE   $00         ; DAUX2
+
+PNTDCB: .BYTE   DEVIDN      ; DDEVIC
+        .BYTE   $FF         ; DUNIT
+        .BYTE   $25         ; DCOMND ; POINT (SEEK)
+        .BYTE   $80         ; DSTATS
+        .BYTE   <NPBUF      ; DBUFL
+        .BYTE   >NPBUF      ; DBUFH
+        .BYTE   $FE         ; DTIMLO
+        .BYTE   $00         ; DRESVD
+        .BYTE   $03         ; DBYTL ; 3 BYTES
+        .BYTE   $00         ; DBYTH
+        .BYTE   $00         ; DAUX1
+        .BYTE   $00         ; DAUX2
+
+; End CIO NOTE/POINT
 ;---------------------------------------
 
 ;---------------------------------------
@@ -3914,7 +4030,7 @@ CIOHND  .WORD   OPEN-1
 
        ; BANNERS
 
-BREADY  .BYTE   '#FUJINET NOS v0.8.0',EOL
+BREADY  .BYTE   '#FUJINET NOS v0.9.0',EOL
 BERROR  .BYTE   '#FUJINET ERROR',EOL
 
         ; MESSAGES
@@ -3968,6 +4084,7 @@ DVS3    :MAXDEV .BYTE   $00 ; DVSTAT+3 SAVE
 BWRAW           .BYTE   $00,$00 ; Uncapped bytes-waiting (burst)
 CHUNK           .BYTE   $00,$00 ; Burst transfer size
 DECR            .BYTE   $00,$00 ; Burst pointer/length decrement
+NPBUF           .BYTE   $00,$00,$00 ; NOTE/POINT 24-bit position
 
 COLOR4_ORIG     .BYTE   $00 ; Hold prev border color
 

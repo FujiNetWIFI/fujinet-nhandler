@@ -27,6 +27,12 @@ ZICAX4  =     ZIOCB+13 ; AUX 4
 ZICAX5  =     ZIOCB+14 ; AUX 5
 ZICAX6  =     ZIOCB+15 ; AUX 6
 
+	;; CIO only copies the first 12 IOCB bytes to/from the ZP
+	;; IOCB; $2C-$2F are CIO work bytes, so AUX3-5 must be read
+	;; and written in the real IOCB, indexed by ICIDNO.
+
+ICIDNO  =     $2E      ; CIO: IOCB # * 16
+
 DOSINI  =     $0C      ; DOSINI
 
 VPRCED  =     $0202   ; PROCEED VCTR
@@ -520,10 +526,20 @@ SPECIAL:
 
 	LDA	ZICCOM
 	CMP	#$0F		; 15 = FLUSH
-	BNE	SPQ		; No. Handle protocol commands
+	BNE	SPNOTP		; No. Check NOTE/POINT
 	JSR	FLUSH		; Yes. Do flush.
 	LDY	#$01		; Flush always successful
 	JMP	SPCDNE		; We're done.
+
+	;; NOTE/POINT are handled locally with a 3-byte position
+	;; payload; the generic path below can't carry ICAX3-5.
+
+SPNOTP:	CMP	#$25		; 37 = POINT
+	BNE	SPNOTN		; No.
+	JMP	PPOINT		; Do Point
+SPNOTN:	CMP	#$26		; 38 = NOTE
+	BNE	SPQ		; No. Handle protocol commands
+	JMP	PNOTE		; Do Note
 
 	;; Handle Protocol commands, do INQDS Query
 
@@ -573,6 +589,92 @@ SPDO:	STA	SPEDCB+3	; DSTATS value from inquiry
 	LDY	DVSTAT+3	; Get extended error.
 
 SPCDNE:	RTS
+
+;;; NOTE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	;; NOTE ($26) returns the current 24-bit linear file
+	;; position in ICAX3 (lo), ICAX4 (mid), ICAX5 (hi).
+
+PNOTE:	JSR	FLUSH		; Push pending PUT bytes first
+	LDA	ZICDNO		; Unit #
+	STA	NOTDCB+1
+	LDA	RELOC_NOTDCB
+	LDY	RELOC_NOTDCB+1
+	JSR	DOSIOV		; 3-byte position into NPBUF
+	LDY	DSTATS
+	CPY	#$01		; Success?
+	BEQ	PNOK
+	CPY	#144		; Extended error?
+	BNE	PNDONE		; No, return DSTATS in Y
+	JSR	POLL
+	LDY	DVSTAT+3	; Return extended error
+PNDONE:	RTS
+
+	;; FujiNet's position is ahead of the user's by whatever is
+	;; still unread in RBUF; subtract it (24-bit minus 8-bit).
+
+PNOK:	JSR	GDIDX		; Unit into X
+	SEC
+	LDA	NPBUF
+	SBC	RLEN,X
+	STA	NPBUF
+	LDA	NPBUF+1
+	SBC	#$00
+	STA	NPBUF+1
+	LDA	NPBUF+2
+	SBC	#$00
+	STA	NPBUF+2
+
+	;; Store into the caller's IOCB (see ICIDNO note up top).
+
+	LDX	ICIDNO		; IOCB # * 16
+	LDA	NPBUF
+	STA	ICAX3,X
+	LDA	NPBUF+1
+	STA	ICAX4,X
+	LDA	NPBUF+2
+	STA	ICAX5,X
+	LDY	#$01
+	RTS
+
+;;; POINT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	;; POINT ($25) sets the 24-bit linear file position from
+	;; ICAX3 (lo), ICAX4 (mid), ICAX5 (hi).
+
+PPOINT:	JSR	FLUSH		; Push pending PUT bytes first
+	LDX	ICIDNO		; IOCB # * 16
+	LDA	ICAX3,X		; Position (lo)
+	STA	NPBUF
+	LDA	ICAX4,X		; Position (mid)
+	STA	NPBUF+1
+	LDA	ICAX5,X		; Position (hi)
+	STA	NPBUF+2
+	LDA	ZICDNO		; Unit #
+	STA	PNTDCB+1
+	LDA	RELOC_PNTDCB
+	LDY	RELOC_PNTDCB+1
+	JSR	DOSIOV		; Send 3-byte position
+	LDY	DSTATS
+	CPY	#$01		; Success?
+	BEQ	PPOK
+	CPY	#144		; Extended error?
+	BNE	PPDONE		; No, return DSTATS in Y
+	JSR	POLL
+	LDY	DVSTAT+3	; Return extended error
+PPDONE:	RTS
+
+	;; Drop stale read-ahead and cached status, and trip so the
+	;; next GET/STATUS polls fresh data at the new position.
+
+PPOK:	JSR	GDIDX		; Unit into X
+	LDA	#$00
+	STA	RLEN,X
+	STA	ROFF,X
+	STA	BW,X
+	STA	BW+1,X
+	LDA	#$01
+	STA	TRIP
+	LDY	#$01
+	RTS
 
 ;;; BURST MODE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -928,6 +1030,34 @@ BWRCB	.BYTE	DEVIDN		; DDEVIC
 	.WORD	$FFFF		; DBYTL/DBYTH (set at run time)
 	.WORD	$FFFF		; DAUX1/DAUX2 (set at run time)
 
+	;; NOTE DCB.  3-byte little-endian position into NPBUF.
+
+NOTDCB	.BYTE	DEVIDN		; DDEVIC
+	.BYTE	$FF		; DUNIT
+	.BYTE	$26		; DCOMND ; NOTE (tell)
+	.BYTE	DSREAD		; DSTATS
+rel102	.WORD	NPBUF		; DBUF
+	.BYTE	$1F		; DTIMLO
+	.BYTE	$00		; DRESVD
+	.BYTE	$03		; DBYTL ; 3 bytes
+	.BYTE	$00		; DBYTH
+	.BYTE	$00		; DAUX1
+	.BYTE	$00		; DAUX2
+
+	;; POINT DCB.  3-byte little-endian position from NPBUF.
+
+PNTDCB	.BYTE	DEVIDN		; DDEVIC
+	.BYTE	$FF		; DUNIT
+	.BYTE	$25		; DCOMND ; POINT (seek)
+	.BYTE	DSWRIT		; DSTATS
+rel103	.WORD	NPBUF		; DBUF
+	.BYTE	$1F		; DTIMLO
+	.BYTE	$00		; DRESVD
+	.BYTE	$03		; DBYTL ; 3 bytes
+	.BYTE	$00		; DBYTH
+	.BYTE	$00		; DAUX1
+	.BYTE	$00		; DAUX2
+
 	;; End of Handler
 
 ;;; VARIABLES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -944,6 +1074,7 @@ BW      .ds     MAXDEV * 2      ; Bytes waiting save for status.
 
 CHUNK	.ds	2		; Burst transfer size
 DECR	.ds	2		; Burst pointer/length decrement
+NPBUF	.ds	3		; NOTE/POINT 24-bit position
 
 RBUF	.ds	128		; RXD buffer
 TBUF	.ds	128		; TXD buffer
@@ -992,6 +1123,12 @@ RELOC_BRDCB	.WORD	BRDCB
 relocate_013
 RELOC_BWRCB	.WORD	BWRCB
 
+relocate_014
+RELOC_NOTDCB	.WORD	NOTDCB
+
+relocate_015
+RELOC_PNTDCB	.WORD	PNTDCB
+
 NEW_START	.BYTE   $4C
 relocate_011	.WORD	START
 
@@ -1018,7 +1155,8 @@ RELOCATION_TABLE:
 			.WORD	relocate_005,relocate_006,relocate_007,relocate_008,relocate_009
 			.WORD	relocate_010, relocate_011
 			.WORD	relocate_012, relocate_013
-			.WORD	rel100,rel101
+			.WORD	relocate_014, relocate_015
+			.WORD	rel100,rel101,rel102,rel103
 			.WORD	rel110,rel111,rel112,rel113,rel114,rel115
 			.WORD	rel120
 ;	icl "CIO-Routines_RELOC.ASM"
