@@ -5123,6 +5123,37 @@ OVL_NCOPY:
     ; is a clean contiguous string here.
         JSR     PARSE_COMMAS
 
+    ; One-arg COPY?  With no TO given (CMDSEP+1 == 0) the destination
+    ; is the currently selected drive.  Synthesize "Nn:" (n = DOSDR)
+    ; just past FROM's EOL in LNBUF and point CMDSEP+1 at it.  Both the
+    ; wildcard driver and the single-file path read TO from CMDSEP+1,
+    ; and a bare "Nn:" target makes each copy keep the source's name.
+        LDA     CMDSEP+1
+        BNE     NCW_HAVETO
+        LDY     CMDSEP          ; walk FROM to its EOL
+NCW_DEFEOL:
+        LDA     (INBUFF),Y
+        CMP     #EOL
+        BEQ     NCW_DEFBLD
+        INY
+        BNE     NCW_DEFEOL
+NCW_DEFBLD:
+        INY                     ; TO begins just past FROM's EOL
+        STY     CMDSEP+1
+        LDA     #'N'
+        STA     (INBUFF),Y
+        INY
+        LDA     DOSDR           ; current drive digit
+        ORA     #'0'
+        STA     (INBUFF),Y
+        INY
+        LDA     #':'
+        STA     (INBUFF),Y
+        INY
+        LDA     #EOL
+        STA     (INBUFF),Y
+NCW_HAVETO:
+
     ; Wildcard FROM? -> load & run the (transient) wildcard-copy module.
     ; Scan inline so only the loader (WILD_LAUNCH) stays resident.
         LDY     CMDSEP
@@ -5211,10 +5242,10 @@ NCOPY_IS_COLON:
         DEX                     ; Test this only 2 times
         BEQ     NCOPY_NEXT_A    ; No. Give up and skip ahead
         
-    ; Is char digit (0-4)?
+    ; Is char digit (0-8)?  Drives are N1..N8 (see README/DO_DRIVE_CHG).
         CMP     #'0'
         BCC     NCOPY_NEXT_A
-        CMP     #'4'
+        CMP     #'9'
         BCS     NCOPY_NEXT_A
 
     ; Here if Nn. Jump back to check if next char is ':'
