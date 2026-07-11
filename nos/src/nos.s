@@ -395,16 +395,10 @@ OPEN:
 
         JSR     DOSIOV
 
-        ;; Return DSTATS, unless 144, then get extended error
+        ;; Return DSTATS; on a device ERROR (144) fetch extended
 
 OPCERR:
-        CPY     #$90        ; ERR 144?
-        BNE     OPDONE      ; NOPE. RETURN DSTATS
-
-        ;; 144 - get extended error
-
-        JSR     STPOLL      ; POLL FOR STATUS
-        LDY     DVSTAT+3
+        JSR     GETEXT      ; ERROR 144 -> extended error in Y
 
        ; RESET BUFFER LENGTH + OFFSET
 
@@ -886,7 +880,7 @@ PNOTE:  JSR     PFLUSH      ; PUSH PENDING PUT BYTES FIRST
         LDY     DSTATS
         CPY     #$01        ; SUCCESS?
         BEQ     PNOK
-        RTS                 ; NO, RETURN DSTATS IN Y
+        JMP     GETEXT      ; NO -- ERROR 144 to extended code in Y
 
        ; FUJINET'S POSITION IS AHEAD OF THE USER'S BY WHATEVER
        ; IS STILL UNREAD IN RBUF; SUBTRACT IT.
@@ -935,7 +929,7 @@ PPOINT: JSR     PFLUSH      ; PUSH PENDING PUT BYTES FIRST
         LDY     DSTATS
         CPY     #$01        ; SUCCESS?
         BEQ     PPOK
-        RTS                 ; NO, RETURN DSTATS IN Y
+        JMP     GETEXT      ; NO -- ERROR 144 to extended code in Y
 
        ; DROP STALE READ-AHEAD AND TRIP SO THE NEXT GET/STATUS
        ; POLLS FRESH DATA AT THE NEW POSITION.
@@ -1077,12 +1071,9 @@ BGRET:  LDY     #$00
         LDY     #$01        ; Success
         RTS
 
-       ; SIO error during burst read; return status (ext. if 144)
-BGERR:  CPY     #$90
-        BNE     BGERTS
-        JSR     STPOLL
-        LDY     DVSTAT+3
-BGERTS: RTS
+       ; SIO error during burst read; return the extended code
+       ; on a device ERROR (144), else DSTATS as-is.
+BGERR:  JMP     GETEXT
 
        ; BURST PUT: write the whole remaining buffer (up to MAXBURST)
        ; in one SIO call straight from the user's buffer.  The byte
@@ -1125,11 +1116,7 @@ BPGO:   LDA     ZICBLL      ; CHUNK = remaining length
         LDY     #$01        ; Success
         RTS
 
-BPERR:  CPY     #$90
-        BNE     BPERTS
-        JSR     STPOLL
-        LDY     DVSTAT+3
-BPERTS: RTS
+BPERR:  JMP     GETEXT
 
        ; Advance CIO buffer by (CHUNK-1): ZICBAL += CHUNK-1 ;
        ; ZICBLL -= CHUNK-1.  Leaves CIO pointing at the last
@@ -1485,6 +1472,23 @@ PRINT_STRING:
         JMP     CIOV
 
 ;---------------------------------------
+; On a device ERROR (144), STATUS-poll the failed op's unit (still
+; in DUNIT) and return its extended code from DVSTAT+3 in Y.  Other
+; codes (139 NAK = bad command, bus errors) pass through unchanged.
+;---------------------------------------
+GETEXT:
+        CPY     #144
+        BNE     GETEXT2
+        LDA     DUNIT
+        STA     STADCB+1
+        LDA     #<STADCB
+        LDY     #>STADCB
+        JSR     DOSIOV
+        LDY     DVSTAT+3
+GETEXT2:
+        RTS
+
+;---------------------------------------
 ; Print integer error number from DOSIOV
 ; Y: Return code from DOSIOV
 ;---------------------------------------
@@ -1492,17 +1496,8 @@ PRINT_ERROR:
         CPY     #$01        ; Exit if success (1)
         BEQ     PRINT_ERROR_DONE
 
-    ;-----------------------------------
-    ; If error code = 144, then get
-    ; extended code from DVSTAT
-    ;-----------------------------------
-        CPY     #144
-        BNE     PRINT_ERROR_NEXT
-
-        LDA     #<STADCB
-        LDY     #>STADCB
-        JSR     DOSIOV
-        LDY     DVSTAT+3    ;
+    ; On a device ERROR (144), fetch the extended code.
+        JSR     GETEXT
 
 PRINT_ERROR_NEXT:
     ;-----------------------------------
@@ -2929,6 +2924,14 @@ DO_NCOPY2:
         BNE     JMP_OVERLAY
 
 ;---------------------------------------
+DO_NDEL:
+;---------------------------------------
+    ; DEL/ERA/ERASE: load the scan overlay, which decides between a
+    ; plain single-file delete and the wildcard (Y/N) delete driver.
+        LDX     #OVL_IDX.NDEL
+        BNE     JMP_OVERLAY
+
+;---------------------------------------
 DO_NTRANS:
 ;---------------------------------------
     ; Load sector from NOS ATR into RAM and jump to it.
@@ -4079,7 +4082,7 @@ COMMAND_SIZE = * - COMMAND - 1
 CMD_TAB_L:
         .BYTE   <(DO_GENERIC-1)     ;  0 NCD
         .BYTE   <(DO_DIR-1)         ;  1 DIR
-        .BYTE   <(DO_GENERIC-1)     ;  2 DEL
+        .BYTE   <(DO_NDEL-1)        ;  2 DEL (scan overlay -> single or wildcard)
         .BYTE   <(DO_LOAD-1)        ;  3 LOAD
         .BYTE   <(DO_GENERIC-1)     ;  4 MKDIR
         .BYTE   <(DO_NCOPY-1)       ;  5 NCOPY
@@ -4114,7 +4117,7 @@ CMD_TAB_L:
 CMD_TAB_H:
         .BYTE   >(DO_GENERIC-1)     ;  0 NCD
         .BYTE   >(DO_DIR-1)         ;  1 DIR
-        .BYTE   >(DO_GENERIC-1)     ;  2 DEL
+        .BYTE   >(DO_NDEL-1)        ;  2 DEL (scan overlay -> single or wildcard)
         .BYTE   >(DO_LOAD-1)        ;  3 LOAD
         .BYTE   >(DO_GENERIC-1)     ;  4 MKDIR
         .BYTE   >(DO_NCOPY-1)       ;  5 NCOPY
@@ -4162,6 +4165,7 @@ CMD_TAB_H:
                 REENTER
                 SAVE
                 XEP
+                NDEL
         .ENDE
 
         ; Derive ATR Sector where code is stored
@@ -4179,6 +4183,7 @@ OVL_SECT_TAB_L:
         .BYTE   <(OVL_REENTER/SECTOR_SIZE-$0D)
         .BYTE   <(OVL_SAVE/SECTOR_SIZE-$0D)
         .BYTE   <(OVL_XEP/SECTOR_SIZE-$0D)
+        .BYTE   <(OVL_NDEL/SECTOR_SIZE-$0D)
 
 ;OVL_SECT_TAB_H:
 ;        .BYTE   >(OVL_AUTORUN/SECTOR_SIZE-$0D)
@@ -4194,6 +4199,7 @@ OVL_SECT_TAB_L:
 ;        .BYTE   >(OVL_REENTER/SECTOR_SIZE-$0D)
 ;        .BYTE   >(OVL_SAVE/SECTOR_SIZE-$0D)
 ;        .BYTE   >(OVL_XEP/SECTOR_SIZE-$0D)
+;        .BYTE   >(OVL_NDEL/SECTOR_SIZE-$0D)
 
         ; Derive number of ATR sectors used to store code
 OVL_SECT_CNT_TAB:
@@ -4210,6 +4216,7 @@ OVL_SECT_CNT_TAB:
         .BYTE   [END_OVL_REENTER-OVL_REENTER]/SECTOR_SIZE
         .BYTE   [END_OVL_SAVE-OVL_SAVE]/SECTOR_SIZE
         .BYTE   [END_OVL_XEP-OVL_XEP]/SECTOR_SIZE
+        .BYTE   [END_OVL_NDEL-OVL_NDEL]/SECTOR_SIZE
 
         ; DEVHDL TABLE FOR N:
 CIOHND  .WORD   OPEN-1
@@ -4221,7 +4228,7 @@ CIOHND  .WORD   OPEN-1
 
        ; BANNERS
 
-BREADY  .BYTE   '#FUJINET NOS v0.9.0',EOL
+BREADY  .BYTE   '#FUJINET NOS v1.0.0',EOL
 BERROR  .BYTE   '#FUJINET ERROR',EOL
 
         ; MESSAGES
@@ -4267,6 +4274,7 @@ QINQ            .BYTE   $00 ; QSTRIP: inside-double-quotes flag
 WILD_CH         .BYTE   $00 ; Wildcard COPY: directory IOCB channel
 WNPTR           .BYTE   $00,$00 ; Wildcard COPY: cursor into name list
 WFROM           .BYTE   $00,$00 ; Wildcard COPY: prepended FROM pointer
+WILD_MODE       .BYTE   $00 ; Wildcard driver select: 0=COPY, 1=DEL
 
 TRIP            .BYTE   $01 ; INTR FLAG
 RLEN    :MAXDEV .BYTE   $00 ; RCV LEN
@@ -5129,6 +5137,8 @@ NCW_SCAN:
         INY
         BNE     NCW_SCAN
 NCW_WILD:
+        LDA     #$00            ; select COPY driver
+        STA     WILD_MODE
         JMP     WILD_LAUNCH
 NCW_NONE:
 
@@ -5509,6 +5519,37 @@ NCOPY2_LEN:
 
         .ALIGN SECTOR_SIZE, $00     ; Align to ATR sector
 END_OVL_NCOPY2:
+
+;---------------------------------------
+OVL_NDEL:
+;---------------------------------------
+    ; DEL/ERA scan overlay.  Look for a wildcard ('*'/'?') anywhere in
+    ; the file spec.  If present, run the wildcard (Y/N) delete driver;
+    ; otherwise fall through to the ordinary single-file delete path.
+    ; Position-independent: only absolute refs (LNBUF/CMDSEP/WILD_MODE)
+    ; and JMPs to resident labels, so it runs correctly from OVLBUF.
+        LDY     CMDSEP              ; offset to arg1 in LNBUF
+        BEQ     OND_SINGLE          ; no arg -> keep current DO_GENERIC behavior
+OND_SCAN:
+        LDA     LNBUF,Y
+        CMP     #EOL
+        BEQ     OND_SINGLE          ; no wildcard -> plain single-file delete
+        CMP     #'*'
+        BEQ     OND_WILD
+        CMP     #'?'
+        BEQ     OND_WILD
+        INY
+        BNE     OND_SCAN
+OND_WILD:
+        LDA     #$01                ; select DEL driver
+        STA     WILD_MODE
+        JMP     WILD_LAUNCH
+OND_SINGLE:
+        LDX     #CMD_IDX.DEL        ; CMD_DCOMND index for DO_GENERIC
+        JMP     DO_GENERIC          ; unchanged single-delete + remount
+
+        .ALIGN SECTOR_SIZE, $00     ; Align to ATR sector
+END_OVL_NDEL:
 
 ;---------------------------------------
 OVL_NTRANS:
@@ -6273,13 +6314,19 @@ MENU_SECT = MENU_RUN/SECTOR_SIZE - $0D
 MENU_CNT  = [MENU_END-MENU_RUN]/SECTOR_SIZE
 
 ;#######################################
-;#   WILDCARD COPY MODULE (load-on-demand) #
+;#   WILDCARD COPY/DELETE MODULE (load-on-demand) #
 ;#######################################
 ; Loaded by WILD_LAUNCH into WILD_RUN.  Assembled AT its run address (no
 ; relocation), but stored contiguously in the ATR after the menu module;
 ; the ORG-back restores the file position so the VTOC pad stays correct.
+; WILD_MODE (resident, set by the caller) selects the driver: 0 = COPY
+; (NCOPY_WILD), 1 = DELETE (NDEL_WILD).  Both share WILD_READDIR/WILD_PREFIX.
 WILD_STORE = *                  ; ATR storage address (sector-aligned)
         ORG     WILD_RUN
+WILD_ENTRY:
+        LDA     WILD_MODE
+        BEQ     NCOPY_WILD          ; 0 = copy
+        JMP     NDEL_WILD           ; 1 = delete
 NCOPY_WILD:
         CLC                         ; INBUFF -> FROM
         LDA     #<LNBUF
@@ -6354,6 +6401,192 @@ NCOPY_WILD_CLOOP:
         JMP     NCOPY_WILD_CLOOP
 NCOPY_WILD_CDONE:
         RTS
+
+;#######################################
+;#   WILDCARD DELETE DRIVER              #
+;#######################################
+; Mirrors NCOPY_WILD: snapshot every matching name into WNAMES, then walk
+; the list.  For each name, prompt "<name> (Y/N)? " and, only on 'Y',
+; rebuild a quoted `DEL "<prefix><name>"` and re-run it through the normal
+; command pipeline (which lands back in OVL_NDEL -> DO_GENERIC for the
+; single delete -- safe, since that reloads OVLBUF, not this $4300 driver).
+NDEL_WILD:
+    ; Refresh the drive digit in PRMPT (as SHOWPROMPT does).  The menu
+    ; front-end never runs SHOWPROMPT, so PRMPT+2 can still be its initial
+    ; ' '.  PREPEND_DRIVE injects PRMPT to supply a missing drive, and a
+    ; ' ' there yields "N :" -- which GET_DOSDR later folds to unit 0
+    ; (space AND $0F = 0), sending the delete to the wrong device.
+        LDA     DOSDR
+        ORA     #'0'
+        STA     PRMPT+2
+
+        CLC                         ; INBUFF -> FROM (arg1)
+        LDA     #<LNBUF
+        ADC     CMDSEP
+        STA     INBUFF
+        LDA     #>LNBUF
+        ADC     #$00
+        STA     INBUFF+1
+        JSR     PREPEND_DRIVE       ; INBUFF -> full "Nn:...pattern"
+        LDA     INBUFF              ; remember it (PREPEND may have moved it)
+        STA     WFROM
+        LDA     INBUFF+1
+        STA     WFROM+1
+
+        JSR     WILD_PREFIX         ; WPREFIX <- FROM prefix (INBUFF -> FROM)
+
+        LDA     WFROM               ; read directory (INBUFF -> FROM)
+        STA     INBUFF
+        LDA     WFROM+1
+        STA     INBUFF+1
+        JSR     WILD_READDIR
+        BCC     NDEL_CINIT
+        RTS                         ; dir open failed (message shown)
+
+NDEL_CINIT:
+        LDA     #<WNAMES
+        STA     WNPTR
+        LDA     #>WNAMES
+        STA     WNPTR+1
+NDEL_CLOOP:
+        LDA     WNPTR               ; INBUFF = name cursor
+        STA     INBUFF
+        LDA     WNPTR+1
+        STA     INBUFF+1
+        LDY     #$00
+        LDA     (INBUFF),Y
+        BEQ     NDEL_CDONE          ; $00 = end of list
+
+        JSR     NDEL_PROMPT         ; Z=1 if user chose 'Y' (clobbers INBUFF via CIO)
+        PHP                         ; save the decision across the rebuild
+        LDA     WNPTR               ; re-point INBUFF at the name (CIO moved it)
+        STA     INBUFF
+        LDA     WNPTR+1
+        STA     INBUFF+1
+        JSR     NDEL_BUILD          ; LNBUF <- DEL "<prefix><name>"; advance INBUFF
+        LDA     INBUFF              ; save advanced cursor
+        STA     WNPTR
+        LDA     INBUFF+1
+        STA     WNPTR+1
+        PLP
+        BNE     NDEL_CLOOP          ; not 'Y' -> skip this file
+
+    ; Execute the single delete via the normal pipeline (same path a
+    ; user's quoted DEL takes -- QSTRIP handles spaces in the name).
+        LDA     #$FF
+        STA     CMD
+        JSR     GETCMDTEST
+        JSR     PARSECMD
+        JSR     DOCMD
+        JMP     NDEL_CLOOP
+NDEL_CDONE:
+        RTS
+
+; NDEL_PROMPT: print "<name@INBUFF> (Y/N)? " (no newline) and read a reply
+; from E:.  Returns with Z=1 when the reply's first char upper-cases to 'Y'.
+; NOTE: CIO (PUTCHR/GETREC) clobbers INBUFF ($F3); the caller must re-point
+; it before reusing.  Modeled on MENU_PUTS/MENU_READ.
+NDEL_PROMPT:
+        LDY     #$00                ; measure name length (up to, excl. EOL)
+NDP_LEN:
+        LDA     (INBUFF),Y
+        CMP     #EOL
+        BEQ     NDP_PUTNAME
+        INY
+        BNE     NDP_LEN
+NDP_PUTNAME:
+        STY     ICBLL               ; length = name length
+        LDA     INBUFF
+        STA     ICBAL
+        LDA     INBUFF+1
+        STA     ICBAH
+        LDX     #$00                ; CIOV needs X = IOCB #0
+        STX     ICBLH
+        LDA     #PUTCHR
+        STA     ICCOM
+        JSR     CIOV
+    ; " (Y/N)? " prompt tail (no EOL, so the reply is typed on the line)
+        LDA     #<NDEL_YN
+        STA     ICBAL
+        LDA     #>NDEL_YN
+        STA     ICBAH
+        LDA     #NDEL_YN_LEN
+        STA     ICBLL
+        LDX     #$00
+        STX     ICBLH
+        LDA     #PUTCHR
+        STA     ICCOM
+        JSR     CIOV
+    ; Read the reply line into TBUF (resident scratch)
+        LDA     #<TBUF
+        STA     ICBAL
+        LDA     #>TBUF
+        STA     ICBAH
+        LDA     #$08
+        STA     ICBLL
+        LDX     #$00
+        STX     ICBLH
+        LDA     #GETREC
+        STA     ICCOM
+        JSR     CIOV
+    ; Decision: upper-case first char, compare 'Y' (empty line -> not 'Y')
+        LDA     TBUF
+        JSR     TOUPPER
+        CMP     #'Y'
+        RTS                         ; Z reflects the match
+
+; NDEL_BUILD: LNBUF <- DEL "<WPREFIX><name@INBUFF>" EOL, advancing INBUFF
+; past the consumed name (incl. its EOL).  Fully quoted so QSTRIP keeps
+; spaces.  Same shape as WILD_BUILD minus the ,"<TO>" middle.
+NDEL_BUILD:
+        LDX     #$00
+        LDY     #$00
+NDB_CMD:                            ; 'DEL "'
+        LDA     NDEL_CMD,Y
+        BEQ     NDB_PFX
+        STA     LNBUF,X
+        INX
+        INY
+        BNE     NDB_CMD
+NDB_PFX:                            ; <WPREFIX>
+        LDY     #$00
+NDB_PFX_L:
+        LDA     WPREFIX,Y
+        CMP     #EOL
+        BEQ     NDB_NAME
+        STA     LNBUF,X
+        INX
+        INY
+        BNE     NDB_PFX_L
+NDB_NAME:                           ; <name>
+        LDY     #$00
+NDB_NAME_L:
+        LDA     (INBUFF),Y
+        CMP     #EOL
+        BEQ     NDB_NAME_DONE
+        STA     LNBUF,X
+        INX
+        INY
+        BNE     NDB_NAME_L
+NDB_NAME_DONE:
+        INY                         ; consume the EOL; INBUFF += Y
+        TYA
+        CLC
+        ADC     INBUFF
+        STA     INBUFF
+        BCC     NDB_END
+        INC     INBUFF+1
+NDB_END:
+        LDA     #$22                ; closing quote
+        STA     LNBUF,X
+        INX
+        LDA     #EOL
+        STA     LNBUF,X
+        RTS
+
+NDEL_CMD:   .BYTE   'DEL ',$22,$00      ; DEL "
+NDEL_YN:    .BYTE   ' (Y/N)? '
+NDEL_YN_LEN = *-NDEL_YN
 
 ; WILD_READDIR: open (INBUFF) as a RAW-format dir; read every matching
 ; name into WNAMES ($00-terminated).  C clear = ok, C set = open failed.
