@@ -248,9 +248,9 @@ START:  LDA     DOSINI
         STA     DOSINI
         LDA     #>RESET
         STA     DOSINI+1
-        LDA     #<DOS       ; Point to DOS & CP below
-        STA     DOSVEC
-        LDA     #>DOS
+        LDA     #<CMDTAB    ; DOSVEC -> COMTAB stub: JMP DOS at +0 (run DOS),
+        STA     DOSVEC      ; command line at +63 so cc65 extrinsics get argv
+        LDA     #>CMDTAB
         STA     DOSVEC+1
 
         JMP     ALTMEML     ; Alter MEMLO
@@ -1811,7 +1811,10 @@ GETCMD:
         STA     ICBAH,X
         LDA     #$7F
         STA     ICBLL,X
-        JSR     CIOV
+        JSR     GRCIOV      ; GETREC via CIOV, then snapshot the pristine
+                            ; command line into CMDLINE for cc65 argv (see
+                            ; CMDTAB).  Same byte count as a bare JSR CIOV,
+                            ; so it costs no resident space.
 
 GETCMDTEST:
         JSR     QSTRIP      ; strip quotes, protect in-quote spaces
@@ -4409,6 +4412,68 @@ DECR            .BYTE   $00,$00 ; Burst pointer/length decrement
 NPBUF           .BYTE   $00,$00,$00 ; NOTE/POINT 24-bit position
 
 COLOR4_ORIG     .BYTE   $00 ; Hold prev border color
+
+;---------------------------------------
+; cc65 command-line COMTAB stub  (DOSVEC points here)
+;
+; Mimics just enough of the OS/A+/DOS-XL/SpartaDOS COMTAB for a cc65
+; program's startup to (a) detect a command-line-capable DOS and
+; (b) locate the command line:
+;
+;   +0   JMP DOS   run-DOS entry (also used by the OS/other programs)
+;   +3   JMP R     crunch-routine slot (R is an RTS stub).  The $4C
+;                  opcodes at +0 and +3, plus a non-$4C at +6, make
+;                  cc65's dosdetect classify us as OS/A+ (dos_type 3,
+;                  <= MAX_DOS_WITH_CMDLINE) so argv[] gets populated.
+;   +6   $00       sentinel: MUST NOT be $4C
+;   +63  CMDLINE   command line (LBUF offset).  getargs copies from
+;                  (DOSVEC)+63, ATEOL-terminated, and tokenizes argv[].
+;
+; The whole block sits in the .ALIGN padding that already preceded
+; BOOTEND, so it adds no resident RAM and does not change BRCNT.
+;---------------------------------------
+CMDTAB:
+        JMP     DOS                 ; +0  run-DOS entry
+        JMP     R                   ; +3  crunch stub ($4C for detection)
+        .BYTE   $00                 ; +6  sentinel (not $4C)
+
+    ; cc65 only ever reads offsets +0/+3/+6/+63 of this block, so the
+    ; gap at +7..+62 is dead space -- NOS reuses it to hold GRCIOV, the
+    ; GETREC wrapper that snapshots the command line.  Living here (not
+    ; in the main code stream) lets the whole feature fit inside the
+    ; .ALIGN padding that already preceded BOOTEND: no extra resident
+    ; RAM, MEMLO and BRCNT unchanged.  Because GRCIOV replaces GETCMD's
+    ; bare `JSR CIOV` (same 3 bytes), CMDTAB lands low enough that
+    ; CMDLINE fills the page to a full CL_SIZE (64) buffer.
+GRCIOV:                             ; +7  (GETCMD's GETREC via CIOV)
+        JSR     CIOV                ; perform the GETREC into LNBUF
+    ; Pre-clear the whole buffer to EOL, then copy the raw line over the
+    ; front (stopping at the line's own EOL).  Clearing first means a
+    ; program that reads a fixed-size LBUF field sees command + EOL fill
+    ; -- never stale bytes, and never the $00 that abuts a short buffer.
+        LDA     #EOL
+        LDY     #CMDLINE_SIZE-1
+GRC_CLR:
+        STA     CMDLINE,Y
+        DEY
+        BPL     GRC_CLR
+        LDY     #$00
+GRC_CPY:
+        LDA     LNBUF,Y             ; raw line LNBUF -> CMDLINE
+        STA     CMDLINE,Y
+        CMP     #EOL                ; copied the terminator? done
+        BEQ     GRC_DONE
+        INY
+        CPY     #CMDLINE_SIZE-1     ; bounded; last byte stays a cleared EOL
+        BNE     GRC_CPY
+GRC_DONE:
+        RTS
+
+CMDTAB_PAD = 63 - [* - CMDTAB]      ; pad remaining gap to LBUF offset (+63)
+        :CMDTAB_PAD .BYTE $00
+CMDLINE:                            ; +63  command line, ATEOL-terminated
+CMDLINE_SIZE = [[* + $FF] & $FF00] - *   ; fill to page end (full CL_SIZE)
+        :CMDLINE_SIZE .BYTE EOL     ; default: empty line (immediate EOL)
 
        ; BUFFERS (PAGE ALIGNED)
         .ALIGN  $100, $00
