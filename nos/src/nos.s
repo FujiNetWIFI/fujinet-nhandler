@@ -261,6 +261,12 @@ RESET:  JSR     $FFFF       ; Jump to extant DOSINI
         LDA     #'D'        ; Redirect calls for D: to the
         STA     RBUF        ; N: handler for compatibility
         JSR     IHTBS       ; with software that assumes D:
+    ; INVARIANT: every CIO access to D: maps to N: (this redirect).  The
+    ; ONLY place D: means a real floppy is the interactive COPY/DIR path:
+    ; DO_NCOPY/DO_DIR parse a "Dn:" spec off the command line and drive the
+    ; disk with RAW SIO (GET_SECTOR_DCB, devid $31) -- never through CIO.
+    ; So real-disk D: is confined to the menu/CLI; do NOT add D: handling to
+    ; other commands, and never open "D:" via CIO for the disk side.
 
 ;---------------------------------------
 ;  Alter MEMLO
@@ -2876,6 +2882,14 @@ DO_BASIC:
 ;---------------------------------------
 DO_DIR:
 ;---------------------------------------
+    ; A Dn: arg lists a DOS 2.0S disk directory via the FMS module; any
+    ; other arg (or none) uses the normal N: directory overlay.
+        LDX     CMDSEP
+        BEQ     DO_DIR_NET
+        JSR     CHD_TEST
+        BCC     DO_DIR_NET
+        JMP     DDIR_LAUNCH
+DO_DIR_NET:
     ; Load sector from NOS ATR into RAM and jump to it.
         LDX     #OVL_IDX.DIR
         BNE     JMP_OVERLAY
@@ -2904,7 +2918,14 @@ DO_HELP:
 ;---------------------------------------
 DO_NCOPY:
 ;---------------------------------------
-        LDA     #$FF        ; Force DO_OVERLAY to always re-read
+    ; Route to the FMS transfer engine for any copy that needs it: a Dn:
+    ; spec on either side, OR a wildcard source (the engine handles net
+    ; dir enumeration + prefixes correctly).  Single-file N<->N stays on
+    ; the overlay path.  This scan is read-only, so OVL_NCOPY is untouched.
+        JSR     COPY_NEEDS_FMS
+        BCC     @+
+        JMP     DCOPY_LAUNCH
+@:      LDA     #$FF        ; Force DO_OVERLAY to always re-read
         STA     OVLPRV      ; code from ATR sector (cache confusion)
         LDX     #OVL_IDX.NCOPY
         BNE     JMP_OVERLAY
@@ -3039,6 +3060,7 @@ WPREFIX =   WNBUF               ; FROM dir prefix (up to last '/' or ':'), EOL-t
 WTO     =   WNBUF+$80           ; TO string, EOL-term
 WNAMES  =   WNBUF+$100          ; matched names, each EOL-term; list ends with $00
 WILD_RUN =  $4300               ; module run address (above WNAMES + burst buffer)
+FMS_RUN  =  $5000               ; DOS 2.0S FMS transfer module run address
 
 ; WILD_LAUNCH: load the wildcard module to WILD_RUN and run it.  Does NOT
 ; reset the stack: the module RTSes to the command that invoked the copy.
@@ -3058,6 +3080,99 @@ WILD_LAUNCH:
         JSR     MENU_LOAD_LOOP
         JMP     WILD_RUN
 
+;#######################################
+;#   DOS 2.0S FMS TRANSFER  (resident glue)  #
+;#######################################
+;---------------------------------------
+; COPY_HAS_DISK: return carry SET if SOURCE or DEST is a Dn: (n=2-8)
+; disk devicespec.  Read-only scan of LNBUF, run from resident DO_NCOPY
+; BEFORE the overlay/PARSE_COMMAS -- so commas are still present and the
+; overlay byte count is unchanged.  Arg1 starts at CMDSEP; arg2 begins
+; just past the first comma.  (QSTRIP already removed quotes.)
+;---------------------------------------
+COPY_NEEDS_FMS:
+        LDX     CMDSEP          ; X = offset of arg1 in LNBUF
+        JSR     CHD_TEST        ; is arg1 a Dn: spec?
+        BCS     CHD_YES
+        LDX     CMDSEP
+CHD_SCAN:
+        LDA     LNBUF,X         ; scan the args for a wildcard or a Dn: after ','
+        CMP     #EOL
+        BEQ     CHD_NO
+        CMP     #'*'
+        BEQ     CHD_YES
+        CMP     #'?'
+        BEQ     CHD_YES
+        CMP     #','
+        BNE     CHD_SCANN
+        INX                     ; at a comma -> test the following arg for Dn:
+        JSR     CHD_TEST
+        BCS     CHD_YES
+        DEX
+CHD_SCANN:
+        INX
+        BNE     CHD_SCAN
+CHD_NO:
+        CLC
+        RTS
+CHD_YES:
+        SEC
+        RTS
+    ; test arg at LNBUF,X for "Dn:" with n in '2'..'8' -> C set on match
+CHD_TEST:
+        LDA     LNBUF,X
+        AND     #$DF            ; fold letter to uppercase
+        CMP     #'D'
+        BNE     CHD_TEST_NO
+        LDA     LNBUF+2,X       ; 3rd char must be ':'
+        CMP     #':'
+        BNE     CHD_TEST_NO
+        LDA     LNBUF+1,X       ; 2nd char must be a digit 2..8
+        CMP     #'2'
+        BCC     CHD_TEST_NO
+        CMP     #'9'
+        BCS     CHD_TEST_NO
+        SEC
+        RTS
+CHD_TEST_NO:
+        CLC
+        RTS
+
+;---------------------------------------
+; DCOPY_LAUNCH: load the DOS-FMS transfer module to FMS_RUN and run it.
+; Like WILD_LAUNCH, does NOT reset the stack: the module RTSes back to
+; the command dispatcher, same as any command handler.  Resets the
+; shared GET_SECTOR_DCB to a D1 128-byte READ first, because a previous
+; FMS run may have left it set to a disk WRITE on another unit.
+;---------------------------------------
+DCOPY_LAUNCH:
+        JSR     FMS_LOAD
+        JMP     FMS_RUN                         ; copy front controller
+DDIR_LAUNCH:
+        JSR     FMS_LOAD
+        JMP     FMS_DIR_ENTRY                   ; D: directory lister
+FMS_LOAD:
+        LDA     #$01                            ; NOS boot/module disk = D1
+        STA     GET_SECTOR_DCB+DCB_IDX.DUNIT
+        LDA     #'R'
+        STA     GET_SECTOR_DCB+DCB_IDX.DCOMND
+        LDA     #$40
+        STA     GET_SECTOR_DCB+DCB_IDX.DSTATS
+        LDA     #SECTOR_SIZE                    ; 128-byte reads
+        STA     GET_SECTOR_DCB+DCB_IDX.DBYTL
+        LDA     #$00
+        STA     GET_SECTOR_DCB+DCB_IDX.DBYTH
+        LDA     #FMS_SECT
+        STA     GET_SECTOR_DCB+DCB_IDX.DAUX1
+        LDA     #$00                            ; module sectors all < 256
+        STA     GET_SECTOR_DCB+DCB_IDX.DAUX2
+        LDA     #FMS_CNT
+        STA     SECT_CNT
+        LDA     #<FMS_RUN
+        STA     GET_SECTOR_DCB+DCB_IDX.DBUFL
+        LDA     #>FMS_RUN
+        STA     GET_SECTOR_DCB+DCB_IDX.DBUFH
+        JMP     MENU_LOAD_LOOP                  ; RTSes back to the launcher
 
 ;---------------------------------------
 DO_NPWD:
@@ -6293,7 +6408,7 @@ MENU_FLAGS:
 ; only).  Unused entries (no-arg / special items)
 ; point at PR_DIR as a harmless placeholder.
 PR_DIR:     .BYTE 'DIRECTORY-SEARCH SPEC? ',EOL
-PR_NCOPY:   .BYTE 'COPY-FROM,TO? ',EOL
+PR_NCOPY:   .BYTE 'COPY SRC,DEST (Dn:/Nn:)? ',EOL
 PR_DEL:     .BYTE 'DELETE FILE SPEC? ',EOL
 PR_RENAME:  .BYTE 'RENAME-OLD,NEW? ',EOL
 PR_MKDIR:   .BYTE 'MAKE DIRECTORY? ',EOL
@@ -6791,6 +6906,2302 @@ WILD_MOD_END:
         ORG     WILD_STORE+[WILD_MOD_END-WILD_RUN]  ; resume ATR file position
 WILD_SECT = WILD_STORE/SECTOR_SIZE - $0D
 WILD_CNT  = [WILD_MOD_END-WILD_RUN]/SECTOR_SIZE
+
+;#######################################
+;#   DOS 2.0S FMS TRANSFER MODULE (load-on-demand)  #
+;#######################################
+; Loaded by DCOPY_LAUNCH into FMS_RUN.  Assembled AT its run address (no
+; relocation), stored contiguously after the WILD module; the ORG-back
+; restores the ATR file position so the VTOC pad stays correct.
+FMS_STORE = *                   ; ATR storage address (sector-aligned)
+        ORG     FMS_RUN
+
+; ---- DOS 2.0S on-disk structure offsets/flags (from the FMS listing) ----
+DFDFL1  = 0                 ; dir entry: flag byte
+DFDCNT  = 1                 ; dir entry: sector count (LE)
+DFDSSN  = 3                 ; dir entry: start sector (LE)
+DFDPFN  = 5                 ; dir entry: 8+3 filename
+DFDOUT  = $01               ; flag: open for output
+DFDLOC  = $20               ; flag: locked
+FLG_CLOSED = $42            ; DFDINU($40)|DFDNLD($02): a closed normal file
+DVDNSA  = 3                 ; VTOC: number of free sectors (LE)
+DVDSMP  = 10                ; VTOC: sector bitmap start
+
+; ---- module scratch RAM (not part of the loaded image) ----
+FMS_VARS = $6800
+SECBUF   = FMS_VARS+$000    ; 128  disk sector read/write buffer
+VTOCBUF  = FMS_VARS+$080    ; 128  VTOC (sector 360)
+DIRBUF   = FMS_VARS+$100    ; 128  current directory sector
+XBUF     = FMS_VARS+$180    ; 128  transfer block
+NETSPEC  = FMS_VARS+$200    ; 128  "Nn:name" build buffer (source)
+NETSPEC2 = FMS_VARS+$280    ; 128  "Nn:name" build buffer (dest)
+WNAMES2  = FMS_VARS+$300    ; 512  net RAW-dir name list
+NAMEWK   = FMS_VARS+$500    ; 24   DOS_TO_NAME output ("NAME.EXT"+EOL)
+NAMEBUF  = FMS_VARS+$520    ; 11   DOS 8+3 name / match pattern
+SRCPREF  = FMS_VARS+$540    ; 128  net-wildcard source dir prefix (EOL-term)
+DSTPREF  = FMS_VARS+$5C0    ; 128  net dest dir prefix (EOL-term; "" = none)
+FSTATE   = FMS_VARS+$640
+SRCMODE  = FSTATE+$00       ; 0=disk 1=net
+DSTMODE  = FSTATE+$01
+SRCUNIT  = FSTATE+$02
+DSTUNIT  = FSTATE+$03
+SRCNPTR  = FSTATE+$04       ; word: -> source name (past device)
+DSTNPTR  = FSTATE+$06       ; word: -> dest name (past device)
+DSTNAMEP = FSTATE+$08       ; word: -> effective dest name (DSTNPTR or NAMEWK)
+CL_NAME  = FSTATE+$0A       ; word: CLASSIFY result name ptr
+SRC_IOCB = FSTATE+$0C
+DST_IOCB = FSTATE+$0D
+ERRFLG   = FSTATE+$0E
+GLEN     = FSTATE+$0F       ; GETBLK: bytes returned
+GEOF     = FSTATE+$10       ; GETBLK: end-of-file flag
+XLEN     = FSTATE+$11
+XEOF     = FSTATE+$12
+DR_CURSEC  = FSTATE+$13     ; word  disk-read current sector
+DR_NEXTSEC = FSTATE+$15     ; word  disk-read next-sector link
+DR_LEN     = FSTATE+$17     ; data bytes in current sector
+DR_EOF     = FSTATE+$18
+DR_FILENO  = FSTATE+$19     ; fileNo<<2
+DW_FILENO  = FSTATE+$1A     ; fileNo<<2
+DW_STARTSEC= FSTATE+$1B     ; word
+DW_CURSEC  = FSTATE+$1D     ; word
+DW_NEXTSEC = FSTATE+$1F     ; word
+DW_SECCNT  = FSTATE+$21     ; word
+DW_DIRSEC  = FSTATE+$23     ; dir sector index 0-7 of the entry
+DW_DIRDISP = FSTATE+$24     ; displacement of entry within its dir sector
+DW_FIRST   = FSTATE+$25     ; first-block flag
+DIOUNIT  = FSTATE+$26
+DIOSECL  = FSTATE+$27
+DIOSECH  = FSTATE+$28
+DIOBUFL  = FSTATE+$29
+DIOBUFH  = FSTATE+$2A
+DS_IDX   = FSTATE+$2B       ; dir scan current file index 0-63
+DS_SECI  = FSTATE+$2C       ; current dir sector index 0-7
+DS_DISP  = FSTATE+$2D       ; current entry displacement
+DS_LOADED= FSTATE+$2E       ; dir sector cached in DIRBUF ($FF=none)
+DS_FOUND = FSTATE+$2F
+DS_FILENO= FSTATE+$30       ; matched file index (0-63)
+DS_START = FSTATE+$31       ; word matched start sector
+DS_COUNT = FSTATE+$33       ; word matched sector count
+DS_FLAG  = FSTATE+$35       ; matched flag byte
+DS_HFILENO=FSTATE+$36       ; hole file index
+DS_HSEC  = FSTATE+$37       ; hole dir sector index
+DS_HDISP = FSTATE+$38       ; hole displacement
+FC_CUR   = FSTATE+$39       ; word free-chain cursor
+FREESEC  = FSTATE+$3B       ; word VTOC_FREE input
+TMPSEC   = FSTATE+$3D       ; word VTOC_ALLOC output
+TMP1     = FSTATE+$3F
+TMP2     = FSTATE+$40
+NBASE    = FSTATE+$41       ; dir compare name base offset
+BBUFAD   = FSTATE+$43       ; word  burst buffer base (= MEMLO)
+SFCOUNT  = FSTATE+$45       ; word  bytes in burst buffer / to write
+SFEOF    = FSTATE+$47       ; end-of-stream flag
+DWREM    = FSTATE+$48       ; word  bytes left to sectorize this chunk
+DWPIECE  = FSTATE+$4A       ; current sector data length
+DDIDX    = FSTATE+$4B       ; DIR listing: current scan file index
+NVAL     = FSTATE+$4C       ; word  NUM2DEC3 input
+NDIG     = FSTATE+$4E       ; 3 bytes  NUM2DEC3 output digits
+LINEBUF  = FMS_VARS+$700    ; 24  DIR listing line buffer
+                            ; (net-dir name cursor reuses the resident WNPTR)
+
+;=======================================================================
+; FRONT CONTROLLER
+;=======================================================================
+FMS_ENTRY:
+    ; All work runs under FMS_MAIN so every exit funnels through the
+    ; DCB restore: this module borrows the resident GET_SECTOR_DCB for
+    ; disk R/W (changing unit/command/status), but MENU_LOAD/DO_OVERLAY
+    ; reload code assuming that DCB still reads D1 ('R',$40,128B).
+        JSR     FMS_MAIN
+        JMP     FMS_RESTORE_DCB
+FMS_DIR_ENTRY:                      ; DDIR_LAUNCH entry: list a D: directory
+        JSR     DOS_DIR_LIST
+        JMP     FMS_RESTORE_DCB
+FMS_MAIN:
+        LDA     #$00
+        STA     ERRFLG
+
+    ; Split SOURCE,DEST into CMDSEP[0]/CMDSEP[1] (commas -> EOL).
+        JSR     PARSE_COMMAS
+
+    ; One-arg copy: no DEST -> current N drive, source's own name.
+    ; (Synthesize "Nn:"+EOL past FROM's EOL, mirroring OVL_NCOPY.)
+        LDA     CMDSEP+1
+        BNE     FC_HAVETO
+        LDY     CMDSEP
+FC_DEFEOL:
+        LDA     LNBUF,Y
+        CMP     #EOL
+        BEQ     FC_DEFBLD
+        INY
+        BNE     FC_DEFEOL
+FC_DEFBLD:
+        INY
+        STY     CMDSEP+1
+        LDA     #'N'
+        STA     LNBUF,Y
+        INY
+        LDA     DOSDR
+        ORA     #'0'
+        STA     LNBUF,Y
+        INY
+        LDA     #':'
+        STA     LNBUF,Y
+        INY
+        LDA     #EOL
+        STA     LNBUF,Y
+FC_HAVETO:
+
+    ; Classify SOURCE (arg1 at CMDSEP).
+        CLC
+        LDA     #<LNBUF
+        ADC     CMDSEP
+        STA     INBUFF
+        LDA     #>LNBUF
+        ADC     #$00
+        STA     INBUFF+1
+        JSR     CLASSIFY
+        BCS     FC_BADSPEC
+        STA     SRCMODE
+        STX     SRCUNIT
+        LDA     CL_NAME
+        STA     SRCNPTR
+        LDA     CL_NAME+1
+        STA     SRCNPTR+1
+
+    ; Classify DEST (arg2 at CMDSEP+1).
+        CLC
+        LDA     #<LNBUF
+        ADC     CMDSEP+1
+        STA     INBUFF
+        LDA     #>LNBUF
+        ADC     #$00
+        STA     INBUFF+1
+        JSR     CLASSIFY
+        BCS     FC_BADSPEC
+        STA     DSTMODE
+        STX     DSTUNIT
+        LDA     CL_NAME
+        STA     DSTNPTR
+        LDA     CL_NAME+1
+        STA     DSTNPTR+1
+
+    ; A FujiNet N: device holds one connection per unit, so source and
+    ; dest can't stay open together on the same unit (opening dest tears
+    ; down source).  If both sides are net on the same unit, move the dest
+    ; to a different unit -- the full path still selects the right file.
+        LDA     SRCMODE
+        AND     DSTMODE             ; 1 only if both are net
+        BEQ     FC_UNITOK
+        LDA     SRCUNIT
+        CMP     DSTUNIT
+        BNE     FC_UNITOK
+        LDX     #$01                ; same unit -> use N1 (or N2 if src is N1)
+        CPX     SRCUNIT
+        BNE     FC_SETU
+        LDX     #$02
+FC_SETU:
+        STX     DSTUNIT
+FC_UNITOK:
+
+    ; Default: no dest directory prefix (single-file uses DSTNAMEP as-is).
+        LDA     #EOL
+        STA     DSTPREF
+
+    ; Wildcard source? -> multi-file driver.
+        JSR     SRC_HAS_WILD
+        BCS     FC_WILD
+        JMP     XFER_ONE
+FC_WILD:
+        JMP     XFER_WILD
+FC_BADSPEC:
+        LDA     #<MSG_BADSPEC
+        LDY     #>MSG_BADSPEC
+        JMP     PRINT_STRING
+
+;=======================================================================
+; CLASSIFY: INBUFF -> arg string.
+;   returns A=mode (0=disk,1=net), X=unit, CL_NAME=name ptr, C set on error.
+;   Dn: requires n in 2..8 (bare D: rejected).  Nn:/N: -> net; anything
+;   else -> net on the current default drive.
+;=======================================================================
+CLASSIFY:
+        LDY     #$00
+        LDA     (INBUFF),Y
+        JSR     FMS_UP
+        CMP     #'D'
+        BEQ     CL_DISK
+        CMP     #'N'
+        BEQ     CL_NET
+CL_BARE:
+        LDA     INBUFF          ; whole string is the filename
+        STA     CL_NAME
+        LDA     INBUFF+1
+        STA     CL_NAME+1
+        LDX     DOSDR
+        LDA     #$01            ; net
+        CLC
+        RTS
+CL_NET:
+        LDY     #$02
+        LDA     (INBUFF),Y      ; "Nn:" ?
+        CMP     #':'
+        BNE     CL_NET_COLON1
+        LDY     #$01
+        LDA     (INBUFF),Y
+        CMP     #'1'
+        BCC     CL_BARE
+        CMP     #'9'
+        BCS     CL_BARE
+        AND     #$0F
+        TAX
+        LDY     #$03
+        JMP     CL_SETNAME_NET
+CL_NET_COLON1:
+        LDY     #$01
+        LDA     (INBUFF),Y      ; "N:" ?
+        CMP     #':'
+        BNE     CL_BARE
+        LDX     DOSDR
+        LDY     #$02
+CL_SETNAME_NET:
+        TYA
+        CLC
+        ADC     INBUFF
+        STA     CL_NAME
+        LDA     INBUFF+1
+        ADC     #$00
+        STA     CL_NAME+1
+        LDA     #$01            ; net
+        CLC
+        RTS
+CL_DISK:
+        LDY     #$02
+        LDA     (INBUFF),Y      ; "Dn:" ?
+        CMP     #':'
+        BNE     CL_DERR
+        LDY     #$01
+        LDA     (INBUFF),Y
+        CMP     #'2'
+        BCC     CL_DERR
+        CMP     #'9'
+        BCS     CL_DERR
+        AND     #$0F
+        TAX
+        LDA     INBUFF          ; name ptr = INBUFF+3
+        CLC
+        ADC     #$03
+        STA     CL_NAME
+        LDA     INBUFF+1
+        ADC     #$00
+        STA     CL_NAME+1
+        LDA     #$00            ; disk
+        CLC
+        RTS
+CL_DERR:
+        SEC
+        RTS
+
+;=======================================================================
+; SRC_HAS_WILD: C set if SRCNPTR name contains '*' or '?'.
+;=======================================================================
+SRC_HAS_WILD:
+        LDA     SRCNPTR
+        STA     INBUFF
+        LDA     SRCNPTR+1
+        STA     INBUFF+1
+        LDY     #$00
+SHW_LOOP:
+        LDA     (INBUFF),Y
+        CMP     #EOL
+        BEQ     SHW_NO
+        CMP     #'*'
+        BEQ     SHW_YES
+        CMP     #'?'
+        BEQ     SHW_YES
+        INY
+        BNE     SHW_LOOP
+SHW_NO:
+        CLC
+        RTS
+SHW_YES:
+        SEC
+        RTS
+
+;=======================================================================
+; XFER_ONE: single-file transfer using SRCNPTR/DSTNPTR (no wildcards).
+;=======================================================================
+XFER_ONE:
+    ; --- open source ---
+        LDA     SRCMODE
+        BNE     XO_SRC_NET
+    ; disk source: parse name -> NAMEBUF, find + start chain read.
+        LDA     SRCNPTR
+        STA     INBUFF
+        LDA     SRCNPTR+1
+        STA     INBUFF+1
+        JSR     NAME_TO_DOS
+        JSR     DISK_OPEN_READ
+        BCC     XO_SRC_OK
+        LDA     #<MSG_NOTFOUND
+        LDY     #>MSG_NOTFOUND
+        JMP     PRINT_STRING
+XO_SRC_NET:
+        JSR     BUILD_SRC_NETSPEC
+        LDA     #<NETSPEC
+        STA     INBUFF
+        LDA     #>NETSPEC
+        STA     INBUFF+1
+        JSR     NEXT_IOCB
+        BCC     @+
+        RTS
+@:      STX     SRC_IOCB
+        LDY     #OINPUT
+        JSR     CIOOPEN
+        CPY     #$80
+        BCC     XO_SRC_OK
+        JSR     PRINT_ERROR
+        LDX     SRC_IOCB            ; reclaim the IOCB on a failed open
+        JSR     CIOCLOSE
+        RTS
+XO_SRC_OK:
+    ; dest name = DSTNPTR unless empty (bare drive) -> derive basename.
+        LDA     DSTNPTR
+        STA     INBUFF
+        LDA     DSTNPTR+1
+        STA     INBUFF+1
+        LDY     #$00
+        LDA     (INBUFF),Y
+        CMP     #EOL
+        BNE     XO_DST_NAMED
+        JSR     GET_BASENAME        ; -> NAMEWK
+        LDA     #<NAMEWK
+        STA     DSTNAMEP
+        LDA     #>NAMEWK
+        STA     DSTNAMEP+1
+        JMP     XFER_BODY
+XO_DST_NAMED:
+        LDA     DSTNPTR
+        STA     DSTNAMEP
+        LDA     DSTNPTR+1
+        STA     DSTNAMEP+1
+        JMP     XFER_BODY
+
+;=======================================================================
+; XFER_BODY: source already open (disk DR_* or net SRC_IOCB); DSTNAMEP =
+; effective dest name; DSTMODE/DSTUNIT set.  Open dest, copy, close.
+;=======================================================================
+XFER_BODY:
+        LDA     DSTMODE
+        BNE     XB_NET
+    ; --- disk dest ---
+        LDA     DSTNAMEP
+        STA     INBUFF
+        LDA     DSTNAMEP+1
+        STA     INBUFF+1
+        JSR     NAME_TO_DOS         ; NAMEBUF = dest DOS name
+        JSR     DWRITE_PREP
+        BCS     XB_CLOSE            ; error already reported
+        LDA     SRCMODE
+        BNE     XB_DODISK_NET       ; net source -> burst read + sectorize
+        JSR     COPY_TO_DISK        ; disk -> disk (per-sector)
+        JMP     XB_CLOSE
+XB_DODISK_NET:
+        JSR     COPY_N2D
+        JMP     XB_CLOSE
+XB_NET:
+    ; --- net dest ---
+        JSR     BUILD_DST_NETSPEC
+        LDA     #<NETSPEC2
+        STA     INBUFF
+        LDA     #>NETSPEC2
+        STA     INBUFF+1
+        JSR     NEXT_IOCB
+        BCS     XB_CLOSE
+        STX     DST_IOCB
+        LDY     #OOUTPUT
+        JSR     CIOOPEN
+        CPY     #$80
+        BCC     XB_NET_OK
+        JSR     PRINT_ERROR
+        LDX     DST_IOCB
+        JSR     CIOCLOSE
+        JMP     XB_CLOSE
+XB_NET_OK:
+        LDA     SRCMODE
+        BNE     XB_DONET_NET
+        JSR     COPY_D2N            ; disk -> net (fill buffer, burst write)
+        JMP     XB_DONET_CLOSE
+XB_DONET_NET:
+        JSR     COPY_N2N            ; net -> net (burst both ways)
+XB_DONET_CLOSE:
+        LDX     DST_IOCB
+        JSR     CIOCLOSE
+XB_CLOSE:
+        LDA     SRCMODE
+        BEQ     XB_RET
+        LDX     SRC_IOCB
+        JSR     CIOCLOSE
+XB_RET:
+        RTS
+
+;=======================================================================
+; Burst transfer engines.  The N: side moves up to MAXBURST bytes per CIO
+; call (a >= MINBURST buffer makes the handler burst one SIO frame instead
+; of trickling); the disk side is unavoidably one 125-byte sector per SIO.
+; A single MAXBURST buffer at MEMLO bridges the two -- no direction needs
+; two big buffers at once.  (BBUF overlaps the transient menu module like
+; NCOPY's burst buffer does; the resident trampoline reloads the menu.)
+;=======================================================================
+BBUF_INIT:
+        LDA     MEMLO
+        STA     BBUFAD
+        LDA     MEMLO+1
+        STA     BBUFAD+1
+        RTS
+
+; NET_RESULT: after a CIOGET (Y=status), set SFCOUNT=bytes transferred,
+; SFEOF=1 on EOF, ERRFLG on a hard error.
+NET_RESULT:
+        LDX     SRC_IOCB
+        LDA     ICBLL,X
+        STA     SFCOUNT
+        LDA     ICBLH,X
+        STA     SFCOUNT+1
+        LDA     #$00
+        STA     SFEOF
+        CPY     #$80
+        BCC     NR_RET
+        CPY     #EOF
+        BEQ     NR_EOF
+        LDA     #$FF
+        STA     ERRFLG
+NR_EOF:
+        LDA     #$01
+        STA     SFEOF
+NR_RET:
+        RTS
+
+;----- net -> net : burst read, burst write -----
+COPY_N2N:
+        JSR     BBUF_INIT
+CN2N_LOOP:
+        LDA     BBUFAD
+        STA     INBUFF
+        LDA     BBUFAD+1
+        STA     INBUFF+1
+        LDX     SRC_IOCB
+        LDA     #<MAXBURST
+        LDY     #>MAXBURST
+        JSR     CIOGET
+        JSR     NET_RESULT
+        LDA     SFCOUNT
+        ORA     SFCOUNT+1
+        BEQ     CN2N_CHK
+        LDA     BBUFAD
+        STA     INBUFF
+        LDA     BBUFAD+1
+        STA     INBUFF+1
+        LDX     DST_IOCB
+        LDA     SFCOUNT
+        LDY     SFCOUNT+1
+        JSR     CIOPUT
+        CPY     #$80
+        BCC     CN2N_CHK
+        JSR     PRINT_ERROR
+        LDA     #$FF
+        STA     ERRFLG
+CN2N_CHK:
+        LDA     ERRFLG
+        BNE     CN2N_DONE
+        LDA     SFEOF
+        BEQ     CN2N_LOOP
+CN2N_DONE:
+        RTS
+
+;----- net -> disk : burst read, sectorize to disk -----
+COPY_N2D:
+        JSR     BBUF_INIT
+        LDA     #$00
+        STA     DW_SECCNT
+        STA     DW_SECCNT+1
+        LDA     #$FF
+        STA     DW_FIRST
+CN2D_LOOP:
+        LDA     BBUFAD
+        STA     INBUFF
+        LDA     BBUFAD+1
+        STA     INBUFF+1
+        LDX     SRC_IOCB
+        LDA     #<MAXBURST
+        LDY     #>MAXBURST
+        JSR     CIOGET
+        JSR     NET_RESULT
+        JSR     DRAIN_TO_DISK
+        LDA     ERRFLG
+        BNE     CN2D_DONE
+        LDA     SFEOF
+        BEQ     CN2D_LOOP
+CN2D_DONE:
+        RTS
+
+;----- disk -> net : fill buffer from sectors, burst write -----
+COPY_D2N:
+        JSR     BBUF_INIT
+CD2N_LOOP:
+        JSR     FILL_FROM_DISK
+        LDA     ERRFLG
+        BNE     CD2N_DONE
+        LDA     SFCOUNT
+        ORA     SFCOUNT+1
+        BEQ     CD2N_CHK
+        LDA     BBUFAD
+        STA     INBUFF
+        LDA     BBUFAD+1
+        STA     INBUFF+1
+        LDX     DST_IOCB
+        LDA     SFCOUNT
+        LDY     SFCOUNT+1
+        JSR     CIOPUT
+        CPY     #$80
+        BCC     CD2N_CHK
+        JSR     PRINT_ERROR
+        LDA     #$FF
+        STA     ERRFLG
+        JMP     CD2N_DONE
+CD2N_CHK:
+        LDA     SFEOF
+        BEQ     CD2N_LOOP
+CD2N_DONE:
+        RTS
+
+; FILL_FROM_DISK: copy disk-chain data into BBUF up to ~MAXBURST bytes.
+;   Sets SFCOUNT (bytes) and SFEOF (chain ended).  DR_* already set up.
+FILL_FROM_DISK:
+        LDA     BBUFAD
+        STA     INBUFF
+        LDA     BBUFAD+1
+        STA     INBUFF+1
+        LDA     #$00
+        STA     SFCOUNT
+        STA     SFCOUNT+1
+        STA     SFEOF
+FFD_LOOP:
+        LDA     DR_EOF
+        BNE     FFD_EOF
+        LDA     SFCOUNT+1           ; stop if SFCOUNT >= MAXBURST-128
+        CMP     #>(MAXBURST-128)
+        BCC     FFD_ROOM
+        BNE     FFD_RET
+        LDA     SFCOUNT
+        CMP     #<(MAXBURST-128)
+        BCS     FFD_RET
+FFD_ROOM:
+        LDY     #$00
+FFD_CPY:
+        CPY     DR_LEN
+        BCS     FFD_CPYD
+        LDA     SECBUF,Y
+        STA     (INBUFF),Y
+        INY
+        BNE     FFD_CPY
+FFD_CPYD:
+        LDA     SFCOUNT
+        CLC
+        ADC     DR_LEN
+        STA     SFCOUNT
+        BCC     @+
+        INC     SFCOUNT+1
+@:      LDA     INBUFF
+        CLC
+        ADC     DR_LEN
+        STA     INBUFF
+        BCC     @+
+        INC     INBUFF+1
+@:      LDA     DR_NEXTSEC
+        ORA     DR_NEXTSEC+1
+        BNE     FFD_NEXT
+        LDA     #$01
+        STA     DR_EOF
+        JMP     FFD_LOOP
+FFD_NEXT:
+        LDA     DR_NEXTSEC
+        STA     DR_CURSEC
+        LDA     DR_NEXTSEC+1
+        STA     DR_CURSEC+1
+        JSR     DR_READ_CUR
+        BCC     FFD_LOOP
+        LDA     #$01
+        STA     DR_EOF
+        JMP     FFD_LOOP
+FFD_EOF:
+        LDA     #$01
+        STA     SFEOF
+FFD_RET:
+        RTS
+
+; DRAIN_TO_DISK: sectorize SFCOUNT bytes from BBUF onto the DOS disk with
+;   forward chaining.  SFEOF marks the final chunk (last sector links to 0
+;   and the dir entry + VTOC are written).  Carries DW_CURSEC across chunks.
+DRAIN_TO_DISK:
+        LDA     BBUFAD
+        STA     INBUFF
+        LDA     BBUFAD+1
+        STA     INBUFF+1
+        LDA     SFCOUNT
+        STA     DWREM
+        LDA     SFCOUNT+1
+        STA     DWREM+1
+DTD_LOOP:
+        LDA     DWREM
+        ORA     DWREM+1
+        BNE     DTD_HAVE
+    ; buffer drained
+        LDA     SFEOF
+        BEQ     DTD_RET             ; not final -> wait for the next burst
+    ; final chunk, nothing left: write one 0-length final sector.  Covers
+    ; an empty file (DW_FIRST set -> allocate a start sector) and the exact
+    ; -multiple case (previous full buffer linked to an allocated DW_CURSEC
+    ; that must be written so the chain terminates instead of dangling).
+        LDA     #$00
+        STA     DWPIECE
+        JMP     DTD_LAST
+DTD_HAVE:
+        LDA     DWREM+1             ; pieceLen = min(125, DWREM)
+        BNE     DTD_P125
+        LDA     DWREM
+        CMP     #126
+        BCS     DTD_P125
+        STA     DWPIECE             ; 0..125
+        LDA     SFEOF               ; last piece of buffer; final iff EOF
+        BNE     DTD_LAST
+        JMP     DTD_MORE
+DTD_P125:
+        LDA     #125
+        STA     DWPIECE
+DTD_MORE:
+        JSR     DWC_ENSURE_CUR
+        BCS     DTD_FULL
+        JSR     VTOC_ALLOC
+        BCS     DTD_FULL
+        LDA     TMPSEC
+        STA     DW_NEXTSEC
+        LDA     TMPSEC+1
+        STA     DW_NEXTSEC+1
+        JSR     DWC_WRITE_PIECE
+        BMI     DTD_IOERR
+        LDA     DW_NEXTSEC
+        STA     DW_CURSEC
+        LDA     DW_NEXTSEC+1
+        STA     DW_CURSEC+1
+        JSR     DWC_CONSUME
+        JMP     DTD_LOOP
+DTD_LAST:
+        JSR     DWC_ENSURE_CUR
+        BCS     DTD_FULL
+        LDA     #$00
+        STA     DW_NEXTSEC
+        STA     DW_NEXTSEC+1
+        JSR     DWC_WRITE_PIECE
+        BMI     DTD_IOERR
+        JSR     WRITE_DIRENT
+        BCS     DTD_DERR
+        LDA     DSTUNIT
+        STA     DIOUNIT
+        JSR     VTOC_WR
+DTD_RET:
+        RTS
+DTD_FULL:
+        LDA     #<MSG_DISKFULL
+        LDY     #>MSG_DISKFULL
+        JSR     PRINT_STRING
+        LDA     #$FF
+        STA     ERRFLG
+        RTS
+DTD_IOERR:
+        LDA     #<MSG_IOERR
+        LDY     #>MSG_IOERR
+        JSR     PRINT_STRING
+        LDA     #$FF
+        STA     ERRFLG
+        RTS
+DTD_DERR:
+        LDA     #$FF
+        STA     ERRFLG
+        RTS
+
+; DWC_ENSURE_CUR: allocate the file's first sector on the first piece.
+;   C set on disk full.
+DWC_ENSURE_CUR:
+        LDA     DW_FIRST
+        BEQ     DWC_EC_OK
+        JSR     VTOC_ALLOC
+        BCS     DWC_EC_FULL
+        LDA     TMPSEC
+        STA     DW_CURSEC
+        STA     DW_STARTSEC
+        LDA     TMPSEC+1
+        STA     DW_CURSEC+1
+        STA     DW_STARTSEC+1
+        LDA     #$00
+        STA     DW_FIRST
+DWC_EC_OK:
+        CLC
+        RTS
+DWC_EC_FULL:
+        SEC
+        RTS
+
+; DWC_WRITE_PIECE: build a data sector from DWPIECE bytes at (INBUFF), link
+;   DW_NEXTSEC, file no DW_FILENO, count DWPIECE; write it to DW_CURSEC and
+;   bump the sector count.  N set on I/O error.
+DWC_WRITE_PIECE:
+        LDY     #$00
+DWP_CPY:
+        CPY     DWPIECE
+        BCS     DWP_PAD
+        LDA     (INBUFF),Y
+        STA     SECBUF,Y
+        INY
+        BNE     DWP_CPY
+DWP_PAD:
+        LDA     #$00
+DWP_PADL:
+        CPY     #125
+        BCS     DWP_LINK
+        STA     SECBUF,Y
+        INY
+        BNE     DWP_PADL
+DWP_LINK:
+        LDA     DW_NEXTSEC+1
+        AND     #$03
+        ORA     DW_FILENO
+        STA     SECBUF+125
+        LDA     DW_NEXTSEC
+        STA     SECBUF+126
+        LDA     DWPIECE
+        STA     SECBUF+127
+        LDA     #<SECBUF
+        STA     DIOBUFL
+        LDA     #>SECBUF
+        STA     DIOBUFH
+        LDA     DW_CURSEC
+        STA     DIOSECL
+        LDA     DW_CURSEC+1
+        STA     DIOSECH
+        LDA     DSTUNIT
+        STA     DIOUNIT
+        JSR     DSK_WR
+        BMI     DWP_RET             ; N set = I/O error
+        INC     DW_SECCNT
+        BNE     DWP_OK
+        INC     DW_SECCNT+1
+DWP_OK:
+        LDA     #$00                ; clear N (success)
+DWP_RET:
+        RTS
+
+; DWC_CONSUME: advance INBUFF by DWPIECE and reduce DWREM by DWPIECE.
+DWC_CONSUME:
+        LDA     INBUFF
+        CLC
+        ADC     DWPIECE
+        STA     INBUFF
+        BCC     @+
+        INC     INBUFF+1
+@:      SEC
+        LDA     DWREM
+        SBC     DWPIECE
+        STA     DWREM
+        BCS     @+
+        DEC     DWREM+1
+@:      RTS
+
+;=======================================================================
+; GET_BASENAME: derive an ATASCII "NAME.EXT"+EOL into NAMEWK from the
+; source: disk -> NAMEBUF via DOS_TO_NAME; net -> SRCNPTR after last '/'.
+;=======================================================================
+GET_BASENAME:
+        LDA     SRCMODE
+        BNE     GB_NET2
+        LDA     #<NAMEBUF
+        STA     INBUFF
+        LDA     #>NAMEBUF
+        STA     INBUFF+1
+        JMP     DOS_TO_NAME
+GB_NET2:
+    ; find last '/' in SRCNPTR (else start); copy tail to NAMEWK.
+        LDA     SRCNPTR
+        STA     INBUFF
+        LDA     SRCNPTR+1
+        STA     INBUFF+1
+        LDY     #$00
+        LDX     #$00            ; X = start offset of basename
+GBN_SCAN:
+        LDA     (INBUFF),Y
+        CMP     #EOL
+        BEQ     GBN_COPY
+        CMP     #'/'
+        BNE     @+
+        INY
+        TYA
+        TAX                     ; basename starts after '/'
+        JMP     GBN_SCAN
+@:      INY
+        BNE     GBN_SCAN
+GBN_COPY:
+        TXA
+        TAY                     ; Y = start of basename
+        LDX     #$00
+GBN_CLOOP:
+        LDA     (INBUFF),Y
+        STA     NAMEWK,X
+        CMP     #EOL
+        BEQ     GBN_DONE
+        INY
+        INX
+        BNE     GBN_CLOOP
+GBN_DONE:
+        RTS
+
+;=======================================================================
+; DOS_TO_NAME: INBUFF -> 11-byte DOS name.  Output NAMEWK = "NAME.EXT"+EOL
+;=======================================================================
+DOS_TO_NAME:
+        LDX     #$00            ; NAMEWK dst index
+        LDY     #$00            ; src index (name 0..7)
+D2N_N:
+        LDA     (INBUFF),Y
+        CMP     #' '
+        BEQ     D2N_NEND
+        STA     NAMEWK,X
+        INX
+        INY
+        CPY     #$08
+        BNE     D2N_N
+D2N_NEND:
+        LDY     #$08            ; ext at 8..10
+        LDA     (INBUFF),Y
+        CMP     #' '
+        BEQ     D2N_DONE        ; blank ext
+        LDA     #'.'
+        STA     NAMEWK,X
+        INX
+        LDY     #$08
+D2N_E:
+        LDA     (INBUFF),Y
+        CMP     #' '
+        BEQ     D2N_DONE
+        STA     NAMEWK,X
+        INX
+        INY
+        CPY     #$0B
+        BNE     D2N_E
+D2N_DONE:
+        LDA     #EOL
+        STA     NAMEWK,X
+        RTS
+
+;=======================================================================
+; NAME_TO_DOS: INBUFF -> "NAME.EXT" (EOL-term).  Output NAMEBUF[11] (8+3,
+; space-padded, uppercased).  '*' fills the rest of a field with '?'.
+;=======================================================================
+NAME_TO_DOS:
+        LDX     #$0A
+        LDA     #' '
+N2D_INIT:
+        STA     NAMEBUF,X
+        DEX
+        BPL     N2D_INIT
+        LDY     #$00            ; src index
+        LDX     #$00            ; dst index (name 0..7)
+N2D_NAME:
+        LDA     (INBUFF),Y
+        CMP     #EOL
+        BEQ     N2D_DONE
+        CMP     #'.'
+        BEQ     N2D_DOT
+        CMP     #'*'
+        BEQ     N2D_NSTAR
+        JSR     FMS_UP
+        CPX     #$08
+        BCS     N2D_NSKIP
+        STA     NAMEBUF,X
+        INX
+N2D_NSKIP:
+        INY
+        BNE     N2D_NAME
+N2D_NSTAR:
+        LDA     #'?'
+N2D_NSTARL:
+        CPX     #$08
+        BCS     N2D_NSTARD
+        STA     NAMEBUF,X
+        INX
+        BNE     N2D_NSTARL
+N2D_NSTARD:
+        INY                     ; skip src until '.' or EOL
+N2D_NSK2:
+        LDA     (INBUFF),Y
+        CMP     #EOL
+        BEQ     N2D_DONE
+        CMP     #'.'
+        BEQ     N2D_DOT
+        INY
+        BNE     N2D_NSK2
+N2D_DOT:
+        INY                     ; skip '.'
+        LDX     #$08            ; ext 8..10
+N2D_EXT:
+        LDA     (INBUFF),Y
+        CMP     #EOL
+        BEQ     N2D_DONE
+        CMP     #'*'
+        BEQ     N2D_ESTAR
+        JSR     FMS_UP
+        CPX     #$0B
+        BCS     N2D_ESKIP
+        STA     NAMEBUF,X
+        INX
+N2D_ESKIP:
+        INY
+        BNE     N2D_EXT
+N2D_ESTAR:
+        LDA     #'?'
+N2D_ESTARL:
+        CPX     #$0B
+        BCS     N2D_DONE
+        STA     NAMEBUF,X
+        INX
+        BNE     N2D_ESTARL
+N2D_DONE:
+        RTS
+
+FMS_UP:
+        CMP     #'a'
+        BCC     FMS_UP_D
+        CMP     #'z'+1
+        BCS     FMS_UP_D
+        AND     #$DF
+FMS_UP_D:
+        RTS
+
+;=======================================================================
+; BUILD_SRC_NETSPEC / BUILD_DST_NETSPEC: "Nn:" + name -> NETSPEC/NETSPEC2
+;=======================================================================
+BUILD_SRC_NETSPEC:
+        LDA     SRCUNIT
+        LDX     SRCNPTR
+        LDY     SRCNPTR+1
+        STX     INBUFF
+        STY     INBUFF+1
+        ORA     #'0'
+        STA     NETSPEC+1
+        LDA     #'N'
+        STA     NETSPEC
+        LDA     #':'
+        STA     NETSPEC+2
+        LDY     #$00
+        LDX     #$03
+BSN_CPY:
+        LDA     (INBUFF),Y
+        STA     NETSPEC,X
+        CMP     #EOL
+        BEQ     BSN_DONE
+        INY
+        INX
+        BNE     BSN_CPY
+BSN_DONE:
+        RTS
+BUILD_DST_NETSPEC:
+        LDA     #'N'
+        STA     NETSPEC2
+        LDA     DSTUNIT
+        ORA     #'0'
+        STA     NETSPEC2+1
+        LDA     #':'
+        STA     NETSPEC2+2
+        LDX     #$03
+    ; copy DSTPREF (dest directory prefix, empty for single-file)
+        LDY     #$00
+BDN_PFX:
+        LDA     DSTPREF,Y
+        CMP     #EOL
+        BEQ     BDN_NAME
+        STA     NETSPEC2,X
+        INX
+        INY
+        BNE     BDN_PFX
+BDN_NAME:
+        LDA     DSTNAMEP
+        STA     INBUFF
+        LDA     DSTNAMEP+1
+        STA     INBUFF+1
+        LDY     #$00
+BDN_CPY:
+        LDA     (INBUFF),Y
+        STA     NETSPEC2,X
+        CMP     #EOL
+        BEQ     BDN_DONE
+        INY
+        INX
+        BNE     BDN_CPY
+BDN_DONE:
+        RTS
+
+; BUILD_DST_PREFIX: DSTNPTR -> DSTPREF = the dest path up to and including
+; the last '/' or ':' (empty if none).  Used for wildcard net targets.
+BUILD_DST_PREFIX:
+        LDA     DSTNPTR
+        STA     INBUFF
+        LDA     DSTNPTR+1
+        STA     INBUFF+1
+        LDY     #$00
+BDP_CPY:
+        LDA     (INBUFF),Y
+        STA     DSTPREF,Y
+        CMP     #EOL
+        BEQ     BDP_SCAN
+        INY
+        BNE     BDP_CPY
+BDP_SCAN:
+        DEY
+        BMI     BDP_NONE
+        LDA     DSTPREF,Y
+        CMP     #'/'
+        BEQ     BDP_CUT
+        CMP     #':'
+        BNE     BDP_SCAN
+BDP_CUT:
+        INY
+        LDA     #EOL
+        STA     DSTPREF,Y
+        RTS
+BDP_NONE:
+        LDA     #EOL
+        STA     DSTPREF
+        RTS
+
+;=======================================================================
+; DISK_OPEN_READ: NAMEBUF pattern, SRCUNIT -> find file, start chain read.
+;   C clear if opened; C set if not found.
+;=======================================================================
+DISK_OPEN_READ:
+        LDA     SRCUNIT
+        STA     DIOUNIT
+        LDA     #$00
+        JSR     DIR_FIND_MATCH
+        BCC     DOR_FOUND
+        SEC
+        RTS
+DOR_FOUND:
+        LDA     DS_FILENO
+        ASL
+        ASL
+        STA     DR_FILENO
+        LDA     DS_START
+        STA     DR_CURSEC
+        LDA     DS_START+1
+        STA     DR_CURSEC+1
+        JSR     DR_READ_CUR
+        RTS
+
+; DR_READ_CUR: read DR_CURSEC into SECBUF, parse link+len.  C set on I/O err.
+DR_READ_CUR:
+        LDA     #<SECBUF
+        STA     DIOBUFL
+        LDA     #>SECBUF
+        STA     DIOBUFH
+        LDA     DR_CURSEC
+        STA     DIOSECL
+        LDA     DR_CURSEC+1
+        STA     DIOSECH
+        LDA     SRCUNIT
+        STA     DIOUNIT
+        JSR     DSK_RD
+        BMI     DRC_IOERR
+        LDA     SECBUF+125
+        AND     #$03
+        STA     DR_NEXTSEC+1
+        LDA     SECBUF+126
+        STA     DR_NEXTSEC
+        LDA     SECBUF+127
+        STA     DR_LEN
+        LDA     #$00
+        STA     DR_EOF
+        CLC
+        RTS
+DRC_IOERR:
+        LDA     #$FF
+        STA     ERRFLG
+        SEC
+        RTS
+
+;=======================================================================
+; GETBLK: fill the buffer at INBUFF with up to 125 bytes.
+;   returns GLEN (count), GEOF (1 at end).  Sets ERRFLG on hard error.
+;=======================================================================
+GETBLK:
+        LDA     SRCMODE
+        BNE     GB_NET
+    ; --- disk source ---
+        LDA     DR_EOF
+        BEQ     GB_D_DATA
+        LDA     #$00
+        STA     GLEN
+        LDA     #$01
+        STA     GEOF
+        RTS
+GB_D_DATA:
+        LDY     #$00
+GB_D_CPY:
+        CPY     DR_LEN
+        BCS     GB_D_CPYD
+        LDA     SECBUF,Y
+        STA     (INBUFF),Y
+        INY
+        BNE     GB_D_CPY
+GB_D_CPYD:
+        LDA     DR_LEN
+        STA     GLEN
+        LDA     DR_NEXTSEC
+        ORA     DR_NEXTSEC+1
+        BNE     GB_D_MORE
+        LDA     #$01
+        STA     GEOF
+        STA     DR_EOF
+        RTS
+GB_D_MORE:
+        LDA     #$00
+        STA     GEOF
+        LDA     DR_NEXTSEC
+        STA     DR_CURSEC
+        LDA     DR_NEXTSEC+1
+        STA     DR_CURSEC+1
+        JSR     DR_READ_CUR         ; note: uses DIOBUF=SECBUF, not INBUFF
+        BCC     GB_D_RET
+        LDA     #$01                ; I/O error mid-read -> stop after this block
+        STA     GEOF
+GB_D_RET:
+        RTS
+GB_NET:
+        LDX     SRC_IOCB
+        LDA     #125
+        LDY     #$00
+        JSR     CIOGET              ; Y = status; ICBLL,X = actual
+        LDX     SRC_IOCB
+        LDA     ICBLL,X
+        STA     GLEN
+        CPY     #$80
+        BCC     GB_N_OK
+        CPY     #EOF
+        BEQ     GB_N_EOF
+        LDA     #$FF                ; hard error
+        STA     ERRFLG
+        LDA     #$01
+        STA     GEOF
+        RTS
+GB_N_OK:
+        LDA     #$00
+        STA     GEOF
+        RTS
+GB_N_EOF:
+        LDA     #$01
+        STA     GEOF
+        RTS
+
+;=======================================================================
+; COPY_TO_NET: stream source -> DST_IOCB (net, open for write).
+;=======================================================================
+COPY_TO_NET:
+CTN_LOOP:
+        LDA     #<XBUF
+        STA     INBUFF
+        LDA     #>XBUF
+        STA     INBUFF+1
+        JSR     GETBLK
+        LDA     ERRFLG
+        BNE     CTN_DONE
+        LDA     GLEN
+        BEQ     CTN_CHK
+        LDX     DST_IOCB
+        LDA     #<XBUF
+        STA     INBUFF
+        LDA     #>XBUF
+        STA     INBUFF+1
+        LDA     GLEN
+        LDY     #$00
+        JSR     CIOPUT
+        CPY     #$80
+        BCC     CTN_CHK
+        JSR     PRINT_ERROR
+        RTS
+CTN_CHK:
+        LDA     GEOF
+        BEQ     CTN_LOOP
+CTN_DONE:
+        RTS
+
+;=======================================================================
+; COPY_TO_DISK: stream source -> new DOS file (dir slot chosen by
+; DWRITE_PREP).  Allocates + chains data sectors, then writes the
+; directory entry and VTOC.
+;=======================================================================
+COPY_TO_DISK:
+        LDA     #$00
+        STA     DW_SECCNT
+        STA     DW_SECCNT+1
+        LDA     #$FF
+        STA     DW_FIRST
+CTD_LOOP:
+        LDA     #<XBUF
+        STA     INBUFF
+        LDA     #>XBUF
+        STA     INBUFF+1
+        JSR     GETBLK
+        LDA     ERRFLG
+        BEQ     CTD_NOERR
+        JMP     CTD_ABORT
+CTD_NOERR:
+        LDA     GLEN
+        STA     XLEN
+        LDA     GEOF
+        STA     XEOF
+    ; current sector
+        LDA     DW_FIRST
+        BEQ     CTD_HAVE
+        JSR     VTOC_ALLOC
+        BCC     CTD_GOT1
+        JMP     CTD_FULL
+CTD_GOT1:
+        LDA     TMPSEC
+        STA     DW_CURSEC
+        STA     DW_STARTSEC
+        LDA     TMPSEC+1
+        STA     DW_CURSEC+1
+        STA     DW_STARTSEC+1
+        LDA     #$00
+        STA     DW_FIRST
+CTD_HAVE:
+    ; next sector (0 if this is the last block)
+        LDA     XEOF
+        BNE     CTD_LAST
+        JSR     VTOC_ALLOC
+        BCC     CTD_GOT2
+        JMP     CTD_FULL
+CTD_GOT2:
+        LDA     TMPSEC
+        STA     DW_NEXTSEC
+        LDA     TMPSEC+1
+        STA     DW_NEXTSEC+1
+        JMP     CTD_WRITE
+CTD_LAST:
+        LDA     #$00
+        STA     DW_NEXTSEC
+        STA     DW_NEXTSEC+1
+CTD_WRITE:
+        JSR     BUILD_SEC
+        LDA     #<SECBUF
+        STA     DIOBUFL
+        LDA     #>SECBUF
+        STA     DIOBUFH
+        LDA     DW_CURSEC
+        STA     DIOSECL
+        LDA     DW_CURSEC+1
+        STA     DIOSECH
+        LDA     DSTUNIT
+        STA     DIOUNIT
+        JSR     DSK_WR
+        BPL     CTD_WROK
+        JMP     CTD_IOERR
+CTD_WROK:
+        INC     DW_SECCNT
+        BNE     CTD_NOHI
+        INC     DW_SECCNT+1
+CTD_NOHI:
+        LDA     XEOF
+        BNE     CTD_FINISH
+        LDA     DW_NEXTSEC
+        STA     DW_CURSEC
+        LDA     DW_NEXTSEC+1
+        STA     DW_CURSEC+1
+        JMP     CTD_LOOP
+CTD_FINISH:
+        JSR     WRITE_DIRENT
+        BCS     CTD_ABORT
+        LDA     DSTUNIT
+        STA     DIOUNIT
+        JSR     VTOC_WR
+        RTS
+CTD_FULL:
+        LDA     #<MSG_DISKFULL
+        LDY     #>MSG_DISKFULL
+        JMP     PRINT_STRING
+CTD_IOERR:
+        LDA     #<MSG_IOERR
+        LDY     #>MSG_IOERR
+        JMP     PRINT_STRING
+CTD_ABORT:
+        RTS
+
+; BUILD_SEC: XBUF(XLEN) -> SECBUF data; set link/fileno/count bytes.
+BUILD_SEC:
+        LDY     #$00
+BS_COPY:
+        CPY     XLEN
+        BCS     BS_PAD
+        LDA     XBUF,Y
+        STA     SECBUF,Y
+        INY
+        BNE     BS_COPY
+BS_PAD:
+        LDA     #$00
+BS_PADL:
+        CPY     #125
+        BCS     BS_LINK
+        STA     SECBUF,Y
+        INY
+        BNE     BS_PADL
+BS_LINK:
+        LDA     DW_NEXTSEC+1
+        AND     #$03
+        ORA     DW_FILENO
+        STA     SECBUF+125
+        LDA     DW_NEXTSEC
+        STA     SECBUF+126
+        LDA     XLEN
+        STA     SECBUF+127
+        RTS
+
+; WRITE_DIRENT: fill + write the directory entry.  C set on I/O error.
+WRITE_DIRENT:
+        LDA     #<DIRBUF
+        STA     DIOBUFL
+        LDA     #>DIRBUF
+        STA     DIOBUFH
+        LDA     DW_DIRSEC
+        CLC
+        ADC     #$69
+        STA     DIOSECL
+        LDA     #$01
+        ADC     #$00
+        STA     DIOSECH
+        LDA     DSTUNIT
+        STA     DIOUNIT
+        JSR     DSK_RD
+        BMI     WD_IOERR
+        LDX     DW_DIRDISP
+        LDA     #FLG_CLOSED
+        STA     DIRBUF+DFDFL1,X
+        LDA     DW_SECCNT
+        STA     DIRBUF+DFDCNT,X
+        LDA     DW_SECCNT+1
+        STA     DIRBUF+DFDCNT+1,X
+        LDA     DW_STARTSEC
+        STA     DIRBUF+DFDSSN,X
+        LDA     DW_STARTSEC+1
+        STA     DIRBUF+DFDSSN+1,X
+    ; name field: NAMEBUF[0..10] -> DIRBUF[disp+5 ..]
+        TXA
+        CLC
+        ADC     #DFDPFN
+        TAX
+        LDY     #$00
+WD_NAME:
+        LDA     NAMEBUF,Y
+        STA     DIRBUF,X
+        INX
+        INY
+        CPY     #$0B
+        BNE     WD_NAME
+        JSR     DSK_WR              ; sector/buffer/unit still set
+        BMI     WD_IOERR
+        CLC
+        RTS
+WD_IOERR:
+        LDA     #<MSG_IOERR
+        LDY     #>MSG_IOERR
+        JSR     PRINT_STRING
+        SEC
+        RTS
+
+;=======================================================================
+; DWRITE_PREP: NAMEBUF = dest name, DSTUNIT.  Read VTOC, pick a dir slot
+; (reuse+free an existing file, else a hole), set DW_FILENO/DIRSEC/DIRDISP.
+;   C clear on success; C set (message printed) on error.
+;=======================================================================
+DWRITE_PREP:
+        LDA     DSTUNIT
+        STA     DIOUNIT
+        JSR     VTOC_RD
+        BMI     DWP_IOERR
+        LDA     DSTUNIT
+        STA     DIOUNIT
+        LDA     #$00
+        JSR     DIR_FIND_MATCH
+        BCS     DWP_NEW
+    ; existing file
+        LDA     DS_FLAG
+        AND     #DFDLOC
+        BNE     DWP_LOCKED
+        JSR     FREE_CHAIN
+        LDA     DS_FILENO
+        ASL
+        ASL
+        STA     DW_FILENO
+        LDA     DS_SECI
+        STA     DW_DIRSEC
+        LDA     DS_DISP
+        STA     DW_DIRDISP
+        CLC
+        RTS
+DWP_NEW:
+        LDA     DSTUNIT
+        STA     DIOUNIT
+        JSR     DIR_FIND_HOLE
+        BCS     DWP_DIRFULL
+        LDA     DS_HFILENO
+        ASL
+        ASL
+        STA     DW_FILENO
+        LDA     DS_HSEC
+        STA     DW_DIRSEC
+        LDA     DS_HDISP
+        STA     DW_DIRDISP
+        CLC
+        RTS
+DWP_LOCKED:
+        LDA     #<MSG_LOCKED
+        LDY     #>MSG_LOCKED
+        JMP     DWP_ERR
+DWP_DIRFULL:
+        LDA     #<MSG_DIRFULL
+        LDY     #>MSG_DIRFULL
+        JMP     DWP_ERR
+DWP_IOERR:
+        LDA     #<MSG_IOERR
+        LDY     #>MSG_IOERR
+DWP_ERR:
+        JSR     PRINT_STRING
+        SEC
+        RTS
+
+; FREE_CHAIN: walk the DS_START sector chain, freeing each in VTOCBUF.
+FREE_CHAIN:
+        LDA     DS_START
+        STA     FC_CUR
+        LDA     DS_START+1
+        STA     FC_CUR+1
+FC_LOOP:
+        LDA     FC_CUR
+        ORA     FC_CUR+1
+        BEQ     FC_DONE
+        LDA     #<SECBUF
+        STA     DIOBUFL
+        LDA     #>SECBUF
+        STA     DIOBUFH
+        LDA     FC_CUR
+        STA     DIOSECL
+        LDA     FC_CUR+1
+        STA     DIOSECH
+        LDA     DSTUNIT
+        STA     DIOUNIT
+        JSR     DSK_RD
+        BMI     FC_DONE             ; best-effort: stop on read error
+        LDA     FC_CUR
+        STA     FREESEC
+        LDA     FC_CUR+1
+        STA     FREESEC+1
+        JSR     VTOC_FREE
+        LDA     SECBUF+125
+        AND     #$03
+        STA     FC_CUR+1
+        LDA     SECBUF+126
+        STA     FC_CUR
+        JMP     FC_LOOP
+FC_DONE:
+        RTS
+
+;=======================================================================
+; DIR_FIND_MATCH: A = start file index.  DIOUNIT set, NAMEBUF = pattern.
+;   C clear + DS_* filled if a match; C set if none (or end of entries).
+;=======================================================================
+DIR_FIND_MATCH:
+        STA     DS_IDX
+        LDA     #$FF
+        STA     DS_LOADED
+DFM_LOOP:
+        LDA     DS_IDX
+        CMP     #64
+        BCS     DFM_NONE
+        JSR     DIR_LOADENT         ; load entry's sector; X = displacement
+        BMI     DFM_IOERR
+        LDA     DIRBUF,X            ; flag
+        BEQ     DFM_NONE            ; 0 -> end of used entries
+        BMI     DFM_NEXT            ; deleted
+        AND     #DFDOUT
+        BNE     DFM_NEXT            ; open for output
+    ; in-use: compare NAMEBUF vs DIRBUF[disp+5 ..]
+        LDA     DS_DISP
+        CLC
+        ADC     #DFDPFN
+        TAX
+        LDY     #$00
+DFM_CMP:
+        LDA     NAMEBUF,Y
+        CMP     #'?'
+        BEQ     DFM_CMPN
+        CMP     DIRBUF,X
+        BNE     DFM_NEXT
+DFM_CMPN:
+        INX
+        INY
+        CPY     #$0B
+        BNE     DFM_CMP
+    ; matched
+        LDX     DS_DISP
+        LDA     DIRBUF+DFDFL1,X
+        STA     DS_FLAG
+        LDA     DIRBUF+DFDCNT,X
+        STA     DS_COUNT
+        LDA     DIRBUF+DFDCNT+1,X
+        STA     DS_COUNT+1
+        LDA     DIRBUF+DFDSSN,X
+        STA     DS_START
+        LDA     DIRBUF+DFDSSN+1,X
+        STA     DS_START+1
+        LDA     DS_IDX
+        STA     DS_FILENO
+                                    ; DS_SECI/DS_DISP already set by DIR_LOADENT
+        CLC
+        RTS
+DFM_NEXT:
+        INC     DS_IDX
+        JMP     DFM_LOOP
+DFM_NONE:
+        SEC
+        RTS
+DFM_IOERR:
+        LDA     #$FF
+        STA     ERRFLG
+        SEC
+        RTS
+
+;=======================================================================
+; DIR_FIND_HOLE: DIOUNIT set.  C clear + DS_H* if a free/deleted slot;
+;   C set if the directory is full.
+;=======================================================================
+DIR_FIND_HOLE:
+        LDA     #$FF
+        STA     DS_LOADED
+        LDA     #$00
+        STA     DS_IDX
+DFH_LOOP:
+        LDA     DS_IDX
+        CMP     #64
+        BCS     DFH_FULL
+        JSR     DIR_LOADENT
+        BMI     DFH_IOERR
+        LDA     DIRBUF,X            ; flag
+        BEQ     DFH_HIT             ; unused
+        BMI     DFH_HIT             ; deleted
+        INC     DS_IDX
+        JMP     DFH_LOOP
+DFH_HIT:
+        LDA     DS_IDX
+        STA     DS_HFILENO
+        LDA     DS_SECI
+        STA     DS_HSEC
+        LDA     DS_DISP
+        STA     DS_HDISP
+        CLC
+        RTS
+DFH_FULL:
+        SEC
+        RTS
+DFH_IOERR:
+        LDA     #$FF
+        STA     ERRFLG
+        SEC
+        RTS
+
+;=======================================================================
+; DIR_LOADENT: for DS_IDX, compute sector index (DS_SECI) + displacement
+;   (DS_DISP), load that dir sector into DIRBUF if not cached.
+;   Returns X = DS_DISP; N set on I/O error.
+;=======================================================================
+DIR_LOADENT:
+        LDA     DS_IDX
+        LSR
+        LSR
+        LSR
+        STA     DS_SECI             ; idx/8
+        CMP     DS_LOADED
+        BEQ     DLE_HAVE
+        STA     DS_LOADED
+        CLC
+        ADC     #$69                ; dir sector = $169 + secidx
+        STA     DIOSECL
+        LDA     #$01
+        ADC     #$00
+        STA     DIOSECH
+        LDA     #<DIRBUF
+        STA     DIOBUFL
+        LDA     #>DIRBUF
+        STA     DIOBUFH
+        JSR     DSK_RD
+        BMI     DLE_RET
+DLE_HAVE:
+        LDA     DS_IDX
+        AND     #$07
+        ASL
+        ASL
+        ASL
+        ASL                   ; (idx&7)*16
+        STA     DS_DISP
+        TAX
+        LDA     #$00                ; clear N (success)
+DLE_RET:
+        RTS
+
+;=======================================================================
+; VTOC helpers (operate on VTOCBUF).
+;=======================================================================
+VTOC_RD:
+        LDA     #$68
+        STA     DIOSECL
+        LDA     #$01
+        STA     DIOSECH
+        LDA     #<VTOCBUF
+        STA     DIOBUFL
+        LDA     #>VTOCBUF
+        STA     DIOBUFH
+        JMP     DSK_RD
+VTOC_WR:
+        LDA     #$68
+        STA     DIOSECL
+        LDA     #$01
+        STA     DIOSECH
+        LDA     #<VTOCBUF
+        STA     DIOBUFL
+        LDA     #>VTOCBUF
+        STA     DIOBUFH
+        JMP     DSK_WR
+
+; VTOC_ALLOC: find/clear a free bit; dec free count; sector -> TMPSEC.
+;   C set if the disk is full.
+VTOC_ALLOC:
+        LDY     #DVDSMP
+VA1:
+        LDA     VTOCBUF,Y
+        BNE     VA_FOUND
+        INY
+        CPY     #DVDSMP+90
+        BCC     VA1
+        SEC
+        RTS
+VA_FOUND:
+        STY     TMP1                ; map byte index
+        LDY     #$FF
+VA2:
+        INY
+        ASL
+        BCC     VA2                 ; shift until a free bit pops out
+        STY     TMP2                ; bit index (0=MSB)
+VA3:
+        LSR
+        DEY
+        BPL     VA3                 ; shift back -> that bit now 0 (allocated)
+        LDY     TMP1
+        STA     VTOCBUF,Y
+    ; free count--
+        SEC
+        LDA     VTOCBUF+DVDNSA
+        SBC     #$01
+        STA     VTOCBUF+DVDNSA
+        LDA     VTOCBUF+DVDNSA+1
+        SBC     #$00
+        STA     VTOCBUF+DVDNSA+1
+    ; sector = (byteidx-DVDSMP)*8 + bitidx
+        SEC
+        LDA     TMP1
+        SBC     #DVDSMP
+        LDY     #$00
+        STY     TMPSEC+1
+        ASL
+        ROL     TMPSEC+1
+        ASL
+        ROL     TMPSEC+1
+        ASL
+        ROL     TMPSEC+1
+        CLC
+        ADC     TMP2
+        STA     TMPSEC
+        LDA     TMPSEC+1
+        ADC     #$00
+        STA     TMPSEC+1
+        CLC
+        RTS
+
+; VTOC_FREE: set the bit for FREESEC; inc free count.
+VTOC_FREE:
+        LDA     FREESEC
+        AND     #$07
+        TAY
+        LDA     #$80
+        CPY     #$00
+        BEQ     VF_MASKD
+VF_MASK:
+        LSR
+        DEY
+        BNE     VF_MASK
+VF_MASKD:
+        PHA                         ; mask
+    ; byte index = DVDSMP + (FREESEC >> 3)
+        LDA     FREESEC+1
+        STA     TMP1
+        LDA     FREESEC
+        STA     TMP2
+        LDX     #$03
+VF_SHR:
+        LSR     TMP1
+        ROR     TMP2
+        DEX
+        BNE     VF_SHR
+        LDA     TMP2
+        CLC
+        ADC     #DVDSMP
+        TAY
+        PLA
+        ORA     VTOCBUF,Y
+        STA     VTOCBUF,Y
+        INC     VTOCBUF+DVDNSA
+        BNE     VF_DONE
+        INC     VTOCBUF+DVDNSA+1
+VF_DONE:
+        RTS
+
+;=======================================================================
+; DSK_RD / DSK_WR: 128-byte sector I/O via the resident GET_SECTOR_DCB.
+;   inputs: DIOUNIT, DIOSECL/H, DIOBUFL/H.  Returns DSTATS in A (N=error).
+;=======================================================================
+DSK_RD:
+        LDA     #'R'
+        STA     GET_SECTOR_DCB+DCB_IDX.DCOMND
+        LDA     #$40
+        STA     GET_SECTOR_DCB+DCB_IDX.DSTATS
+        BNE     DSK_GO
+DSK_WR:
+        LDA     #'P'
+        STA     GET_SECTOR_DCB+DCB_IDX.DCOMND
+        LDA     #$80
+        STA     GET_SECTOR_DCB+DCB_IDX.DSTATS
+DSK_GO:
+        LDA     DIOUNIT
+        STA     GET_SECTOR_DCB+DCB_IDX.DUNIT
+        LDA     DIOBUFL
+        STA     GET_SECTOR_DCB+DCB_IDX.DBUFL
+        LDA     DIOBUFH
+        STA     GET_SECTOR_DCB+DCB_IDX.DBUFH
+        LDA     DIOSECL
+        STA     GET_SECTOR_DCB+DCB_IDX.DAUX1
+        LDA     DIOSECH
+        STA     GET_SECTOR_DCB+DCB_IDX.DAUX2
+        LDA     #SECTOR_SIZE
+        STA     GET_SECTOR_DCB+DCB_IDX.DBYTL
+        LDA     #$00
+        STA     GET_SECTOR_DCB+DCB_IDX.DBYTH
+        LDA     #<GET_SECTOR_DCB
+        LDY     #>GET_SECTOR_DCB
+        JMP     DOSIOV              ; returns A=Y=DSTATS (N set if >=128)
+
+;=======================================================================
+; XFER_WILD: wildcard source -> transfer every match.  Calls XFER_BODY
+; directly per file (NOT the command pipeline) so this module is never
+; reloaded mid-loop.
+;=======================================================================
+XFER_WILD:
+        LDA     SRCMODE
+        BNE     XW_NET
+;----- disk source wildcard -----
+        JSR     BUILD_DST_PREFIX    ; net dest dir prefix (unused if dest=disk)
+        LDA     #$00
+        STA     DS_IDX
+XW_DLOOP:
+    ; restore the source pattern (dest processing clobbers NAMEBUF)
+        LDA     SRCNPTR
+        STA     INBUFF
+        LDA     SRCNPTR+1
+        STA     INBUFF+1
+        JSR     NAME_TO_DOS
+        LDA     SRCUNIT
+        STA     DIOUNIT
+        LDA     DS_IDX
+        JSR     DIR_FIND_MATCH
+        BCS     XW_DONE
+    ; set up chain read straight from the matched entry
+        LDA     DS_FILENO
+        ASL
+        ASL
+        STA     DR_FILENO
+        LDA     DS_START
+        STA     DR_CURSEC
+        LDA     DS_START+1
+        STA     DR_CURSEC+1
+    ; advance enumeration past this file for next time
+        LDA     DS_FILENO
+        CLC
+        ADC     #$01
+        STA     DS_IDX
+    ; derive dest basename from the matched DOS name (DIRBUF+disp+5)
+        LDA     DS_DISP
+        CLC
+        ADC     #DFDPFN
+        CLC
+        ADC     #<DIRBUF
+        STA     INBUFF
+        LDA     #>DIRBUF
+        ADC     #$00
+        STA     INBUFF+1
+        JSR     DOS_TO_NAME         ; -> NAMEWK
+        LDA     #<NAMEWK
+        LDY     #>NAMEWK
+        JSR     PRINT_STRING
+        LDA     #<NAMEWK
+        STA     DSTNAMEP
+        LDA     #>NAMEWK
+        STA     DSTNAMEP+1
+    ; open the source chain and transfer this file
+        LDA     SRCUNIT
+        STA     DIOUNIT
+        JSR     DR_READ_CUR
+        BCS     XW_DLOOP            ; read error -> skip to next
+        JSR     XFER_BODY
+        JMP     XW_DLOOP
+XW_DONE:
+        RTS
+;----- net source wildcard -----
+XW_NET:
+    ; read the whole N: directory (RAW format) into WNAMES2.
+        JSR     WILD_READDIR_NET
+        BCC     @+
+        JMP     XW_NRET
+@:
+    ; capture the source directory prefix (up to the last '/' or ':') --
+    ; the RAW dir returns bare basenames, so each must be reopened by full
+    ; path: "Nn:" + prefix + basename.
+        JSR     BUILD_SRC_PREFIX
+        JSR     BUILD_DST_PREFIX    ; net dest dir prefix (for N->N to a dir)
+        LDA     #<WNAMES2
+        STA     WNPTR
+        LDA     #>WNAMES2
+        STA     WNPTR+1
+XW_NLOOP:
+        LDA     WNPTR               ; INBUFF (ZP) = name cursor for indirect
+        STA     INBUFF
+        LDA     WNPTR+1
+        STA     INBUFF+1
+        LDY     #$00
+        LDA     (INBUFF),Y
+        BNE     @+
+        JMP     XW_NRET             ; $00 terminates the list
+@:
+    ; Skip directories: the RAW listing marks them with a trailing '/'.
+    ; Walk to EOL keeping the last char; if it's '/', ignore this entry
+    ; (a directory can't become a DOS file, and dest here is always disk).
+        LDX     #$00                ; X = last non-EOL char
+XW_N_DCHK:
+        LDA     (INBUFF),Y
+        CMP     #EOL
+        BEQ     XW_N_DCHKD
+        TAX
+        INY
+        BNE     XW_N_DCHK
+XW_N_DCHKD:
+        CPX     #'/'
+        BEQ     XW_NSKIP            ; directory -> skip
+        LDA     WNPTR               ; echo the filename
+        LDY     WNPTR+1
+        JSR     PRINT_STRING
+    ; open source = "Nn:" + prefix + basename
+        JSR     BUILD_NET_WILD_SPEC
+        LDA     #<NETSPEC
+        STA     INBUFF
+        LDA     #>NETSPEC
+        STA     INBUFF+1
+        JSR     NEXT_IOCB
+        BCC     @+
+        JMP     XW_NRET
+@:      STX     SRC_IOCB
+        LDY     #OINPUT
+        JSR     CIOOPEN
+        CPY     #$80
+        BCC     XW_N_OPENOK
+        LDX     SRC_IOCB            ; open failed -> reclaim IOCB and skip
+        JSR     CIOCLOSE
+        JMP     XW_NSKIP
+XW_N_OPENOK:
+    ; dest name = this basename (SRCNPTR := basename for GET_BASENAME)
+        LDA     WNPTR
+        STA     SRCNPTR
+        LDA     WNPTR+1
+        STA     SRCNPTR+1
+        JSR     GET_BASENAME
+        LDA     #<NAMEWK
+        STA     DSTNAMEP
+        LDA     #>NAMEWK
+        STA     DSTNAMEP+1
+        JSR     XFER_BODY
+XW_NSKIP:
+    ; advance WNPTR past this EOL-terminated name (INBUFF still = name start)
+        LDA     WNPTR
+        STA     INBUFF
+        LDA     WNPTR+1
+        STA     INBUFF+1
+        LDY     #$00
+XW_NADV:
+        LDA     (INBUFF),Y
+        INY
+        CMP     #EOL
+        BNE     XW_NADV
+        TYA                         ; WNPTR += bytes consumed (incl. EOL)
+        CLC
+        ADC     WNPTR
+        STA     WNPTR
+        BCC     @+
+        INC     WNPTR+1
+@:      JMP     XW_NLOOP
+XW_NRET:
+        RTS
+
+; BUILD_SRC_PREFIX: SRCNPTR -> SRCPREF = the path portion up to and
+; including the last '/' or ':' (empty if none).  Mirrors WILD_PREFIX.
+BUILD_SRC_PREFIX:
+        LDA     SRCNPTR
+        STA     INBUFF
+        LDA     SRCNPTR+1
+        STA     INBUFF+1
+        LDY     #$00
+BSP_CPY:
+        LDA     (INBUFF),Y
+        STA     SRCPREF,Y
+        CMP     #EOL
+        BEQ     BSP_SCAN
+        INY
+        BNE     BSP_CPY
+BSP_SCAN:
+        DEY
+        BMI     BSP_NONE
+        LDA     SRCPREF,Y
+        CMP     #'/'
+        BEQ     BSP_CUT
+        CMP     #':'
+        BNE     BSP_SCAN
+BSP_CUT:
+        INY                         ; keep the delimiter
+        LDA     #EOL
+        STA     SRCPREF,Y
+        RTS
+BSP_NONE:
+        LDA     #EOL                ; no dir part -> empty prefix
+        STA     SRCPREF
+        RTS
+
+; BUILD_NET_WILD_SPEC: NETSPEC = "N"+SRCUNIT+":"+SRCPREF+<name@WNPTR>+EOL
+BUILD_NET_WILD_SPEC:
+        LDA     #'N'
+        STA     NETSPEC
+        LDA     SRCUNIT
+        ORA     #'0'
+        STA     NETSPEC+1
+        LDA     #':'
+        STA     NETSPEC+2
+        LDX     #$03
+        LDY     #$00
+BNW_PFX:
+        LDA     SRCPREF,Y
+        CMP     #EOL
+        BEQ     BNW_NAME
+        STA     NETSPEC,X
+        INX
+        INY
+        BNE     BNW_PFX
+BNW_NAME:
+        LDA     WNPTR
+        STA     INBUFF
+        LDA     WNPTR+1
+        STA     INBUFF+1
+        LDY     #$00
+BNW_NM:
+        LDA     (INBUFF),Y
+        STA     NETSPEC,X
+        CMP     #EOL
+        BEQ     BNW_DONE
+        INX
+        INY
+        BNE     BNW_NM
+BNW_DONE:
+        RTS
+
+; WILD_READDIR_NET: open "Nn:pattern" as a RAW directory and read the
+; EOL-separated name list into WNAMES2 (pre-zeroed so it self-terminates).
+WILD_READDIR_NET:
+        LDX     #$00
+        LDA     #$00
+WRN_ZERO:
+        STA     WNAMES2,X
+        STA     WNAMES2+$100,X
+        INX
+        BNE     WRN_ZERO
+        JSR     BUILD_SRC_NETSPEC
+        JSR     NEXT_IOCB
+        BCS     WRN_ERR
+        STX     SRC_IOCB
+    ; custom OPEN with ICAX1=6 (dir), ICAX2=$83 (RAW)
+        LDA     #$03
+        STA     ICCOM,X
+        LDA     #<NETSPEC
+        STA     ICBAL,X
+        LDA     #>NETSPEC
+        STA     ICBAH,X
+        LDA     #$06
+        STA     ICAX1,X
+        LDA     #$83
+        STA     ICAX2,X
+        JSR     CIOV
+        TYA
+        BMI     WRN_CLOSE
+    ; GET BYTES up to 512 into WNAMES2
+        LDX     SRC_IOCB
+        LDA     #<WNAMES2
+        STA     INBUFF
+        LDA     #>WNAMES2
+        STA     INBUFF+1
+        LDA     #$00
+        LDY     #$02            ; 512 bytes
+        JSR     CIOGET
+        LDX     SRC_IOCB
+        JSR     CIOCLOSE
+        CLC
+        RTS
+WRN_CLOSE:
+        LDX     SRC_IOCB
+        JSR     CIOCLOSE
+WRN_ERR:
+        SEC
+        RTS
+
+;=======================================================================
+; FMS_RESTORE_DCB: put the shared GET_SECTOR_DCB back to its module-loader
+; defaults (D1, read sector, 128 bytes) that MENU_LOAD/DO_OVERLAY assume.
+;=======================================================================
+FMS_RESTORE_DCB:
+        LDA     #$01
+        STA     GET_SECTOR_DCB+DCB_IDX.DUNIT
+        LDA     #'R'
+        STA     GET_SECTOR_DCB+DCB_IDX.DCOMND
+        LDA     #$40
+        STA     GET_SECTOR_DCB+DCB_IDX.DSTATS
+        LDA     #SECTOR_SIZE
+        STA     GET_SECTOR_DCB+DCB_IDX.DBYTL
+        LDA     #$00
+        STA     GET_SECTOR_DCB+DCB_IDX.DBYTH
+        RTS
+
+;=======================================================================
+; DOS_DIR_LIST: list a DOS 2.0S disk directory (DIR Dn:[pattern]).  Prints
+; one DOS-2.0-style line per matching in-use entry -- "[*]NAME    EXT NNN"
+; (leading '*' = locked, NNN = sector count) -- then "NNN FREE SECTORS".
+;=======================================================================
+DOS_DIR_LIST:
+        LDA     #$00
+        STA     ERRFLG
+    ; classify the single arg (at CMDSEP) -> disk unit + name pointer
+        CLC
+        LDA     #<LNBUF
+        ADC     CMDSEP
+        STA     INBUFF
+        LDA     #>LNBUF
+        ADC     #$00
+        STA     INBUFF+1
+        JSR     CLASSIFY            ; A=mode, X=unit, CL_NAME=name ptr
+        STX     DIOUNIT
+    ; build the match pattern in NAMEBUF; an empty name matches everything
+        LDA     CL_NAME
+        STA     INBUFF
+        LDA     CL_NAME+1
+        STA     INBUFF+1
+        LDY     #$00
+        LDA     (INBUFF),Y
+        CMP     #EOL
+        BNE     DDL_HAVEPAT
+        LDX     #$0A                ; empty -> 11 '?'
+        LDA     #'?'
+DDL_ALL:
+        STA     NAMEBUF,X
+        DEX
+        BPL     DDL_ALL
+        JMP     DDL_READVTOC
+DDL_HAVEPAT:
+        JSR     NAME_TO_DOS         ; INBUFF -> pattern -> NAMEBUF
+DDL_READVTOC:
+        JSR     VTOC_RD             ; DIOUNIT set; VTOCBUF for free count
+        BMI     DDL_IOERR
+        LDA     #$00
+        STA     DDIDX
+DDL_LOOP:
+        LDA     DDIDX
+        JSR     DIR_FIND_MATCH      ; DIOUNIT set; matches NAMEBUF
+        BCS     DDL_FREE            ; no more matches (or end)
+        JSR     DDL_LINE
+        LDA     DS_FILENO
+        CLC
+        ADC     #$01
+        STA     DDIDX
+        JMP     DDL_LOOP
+DDL_FREE:
+        LDA     ERRFLG
+        BNE     DDL_RET             ; scan hit an I/O error -> skip trailer
+        JSR     DDL_FREELINE
+DDL_RET:
+        RTS
+DDL_IOERR:
+        LDA     #<MSG_IOERR
+        LDY     #>MSG_IOERR
+        JMP     PRINT_STRING
+
+; DDL_LINE: build + print one directory entry from DS_* / DIRBUF.
+DDL_LINE:
+        LDA     DS_FLAG
+        AND     #DFDLOC
+        BEQ     DDL_UNLK
+        LDA     #'*'
+        BNE     DDL_FLG
+DDL_UNLK:
+        LDA     #' '
+DDL_FLG:
+        STA     LINEBUF
+    ; copy the 11-byte name field (DIRBUF[DS_DISP+5..15])
+        LDA     DS_DISP
+        CLC
+        ADC     #DFDPFN
+        TAX
+        LDY     #$01
+DDL_NC:
+        LDA     DIRBUF,X
+        STA     LINEBUF,Y
+        INX
+        INY
+        CPY     #12
+        BNE     DDL_NC
+        LDA     #' '
+        STA     LINEBUF,Y           ; Y=12
+        INY
+    ; 3-digit sector count
+        LDA     DS_COUNT
+        STA     NVAL
+        LDA     DS_COUNT+1
+        STA     NVAL+1
+        JSR     NUM2DEC3
+        LDA     NDIG
+        STA     LINEBUF,Y
+        INY
+        LDA     NDIG+1
+        STA     LINEBUF,Y
+        INY
+        LDA     NDIG+2
+        STA     LINEBUF,Y
+        INY
+        LDA     #EOL
+        STA     LINEBUF,Y
+        LDA     #<LINEBUF
+        LDY     #>LINEBUF
+        JMP     PRINT_STRING
+
+; DDL_FREELINE: print "NNN FREE SECTORS" from the VTOC free count.
+DDL_FREELINE:
+        LDA     VTOCBUF+DVDNSA
+        STA     NVAL
+        LDA     VTOCBUF+DVDNSA+1
+        STA     NVAL+1
+        JSR     NUM2DEC3
+        LDA     NDIG
+        STA     LINEBUF
+        LDA     NDIG+1
+        STA     LINEBUF+1
+        LDA     NDIG+2
+        STA     LINEBUF+2
+        LDX     #$00
+DDL_FL:
+        LDA     FREETXT,X
+        STA     LINEBUF+3,X
+        INX
+        CPX     #14
+        BNE     DDL_FL
+        LDA     #<LINEBUF
+        LDY     #>LINEBUF
+        JMP     PRINT_STRING
+FREETXT:
+        .BYTE   ' FREE SECTORS',EOL
+
+; NUM2DEC3: convert NVAL (0..999) to 3 zero-padded ASCII digits in NDIG.
+NUM2DEC3:
+        LDA     #$00
+        STA     NDIG                ; hundreds
+N3_H:
+        LDA     NVAL+1
+        BNE     N3_SUB100           ; hi>0 -> definitely >= 100
+        LDA     NVAL
+        CMP     #100
+        BCC     N3_TENS
+N3_SUB100:
+        SEC
+        LDA     NVAL
+        SBC     #100
+        STA     NVAL
+        BCS     @+
+        DEC     NVAL+1
+@:      INC     NDIG
+        JMP     N3_H
+N3_TENS:
+        LDA     #$00
+        STA     NDIG+1              ; tens (NVAL now < 100, hi = 0)
+N3_T:
+        LDA     NVAL
+        CMP     #10
+        BCC     N3_ONES
+        SEC
+        SBC     #10
+        STA     NVAL
+        INC     NDIG+1
+        JMP     N3_T
+N3_ONES:
+        STA     NDIG+2              ; ones = remaining
+        LDA     NDIG
+        ORA     #'0'
+        STA     NDIG
+        LDA     NDIG+1
+        ORA     #'0'
+        STA     NDIG+1
+        LDA     NDIG+2
+        ORA     #'0'
+        STA     NDIG+2
+        RTS
+
+;=======================================================================
+; messages
+;=======================================================================
+MSG_BADSPEC:   .BYTE 'BAD DEVICE (USE D2-D8/N1-N8)',EOL
+MSG_NOTFOUND:  .BYTE 'FILE NOT FOUND',EOL
+MSG_DISKFULL:  .BYTE 'DISK FULL',EOL
+MSG_DIRFULL:   .BYTE 'DIRECTORY FULL',EOL
+MSG_LOCKED:    .BYTE 'FILE LOCKED',EOL
+MSG_IOERR:     .BYTE 'DISK I/O ERROR',EOL
+
+        .ALIGN  SECTOR_SIZE, $00 ; pad module to whole sectors
+FMS_MOD_END:
+        ORG     FMS_STORE+[FMS_MOD_END-FMS_RUN]  ; resume ATR file position
+FMS_SECT = FMS_STORE/SECTOR_SIZE - $0D
+FMS_CNT  = [FMS_MOD_END-FMS_RUN]/SECTOR_SIZE
 
 
 
