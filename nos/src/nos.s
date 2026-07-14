@@ -107,8 +107,10 @@ ICAX4   =   IOCB+13     ; AUX 4
 ICAX5   =   IOCB+14     ; AUX 5
 ICAX6   =   IOCB+15     ; AUX 6
 
+RTCLOK  =   $0012       ; Frame counter; +2 ($14) ticks each VBLANK
 ROWCRS  =   $0054
 RAMTOP  =   $006A
+RAMSIZ  =   $02E4       ; Top of RAM (pages); shadow of RAMTOP
 SCRFLG  =   $02BB       ; Scroll flag
 CH      =   $02FC       ; Hardware code for last key pressed
 CH1     =   $02F2       ; Prior keyboard character code
@@ -121,6 +123,7 @@ LNBUF   =   $0582       ; Line Buffer (128 bytes)
 ;---------------------------------------
 
 CONSOL  =   $D01F       ; Console switches
+DMACTL  =   $D400       ; ANTIC DMA control
 PORTB   =   $D301       ; On XL/XE, used to enable/disable BASIC
 PACTL   =   $D302       ; PIA CTRL A
 
@@ -4577,21 +4580,92 @@ OVL_BASIC:
 
 BASIC_ON:
     ;---------------------------------------
-    ; Source: ANTIC Volume 4 #10 Feb 1986
-    ; BASIC ON/OFF Switcher [Chadwick]
-
-    ;---------------------------------------
-    ; Enable BASIC in XL/XE
+    ; Enable internal BASIC and cold-start it.
+    ;
+    ; Two things have to happen, in this order,
+    ; or the screen crashes:
+    ;
+    ;   (1) The display.  We booted with OPTION,
+    ;       so RAMTOP=$C0 and the OS put the display
+    ;       list + screen RAM up in $A000-$BFFF.
+    ;       Mapping BASIC ROM over that region would
+    ;       leave ANTIC DMAing from ROM -> garbage /
+    ;       crash.  So we tear the screen down (close
+    ;       E:, kill ANTIC DMA) BEFORE flipping PORTB,
+    ;       drop RAMTOP to $A0, then reopen E: so the
+    ;       OS rebuilds the display list + screen just
+    ;       under the ROM (DL lands ~$9C20) and fixes
+    ;       MEMTOP.  [technique: BW-DOS 1.5 BASIC.ASM]
+    ;
+    ;   (2) The interpreter.  BASIC was disabled at
+    ;       power-up so its ZP program pointers
+    ;       ($80-$91: LOMEM,VNTP..MEMTOP) were never
+    ;       built.  BASIC's COLDSTART ($A000) only
+    ;       cold-inits when WARMFLG ($08)=0; otherwise
+    ;       it warm starts and preserves those garbage
+    ;       pointers -> LIST shows a screen of zeros
+    ;       and immediate mode crashes.  So force
+    ;       WARMFLG=0 (and clear LOADFLG $CA) and enter
+    ;       through the cart coldstart vector; XNEW then
+    ;       rebuilds LOMEM..MEMTOP from MEMLO ($2E7).
     ;---------------------------------------
         LDA     #$00
-        STA     BASICF      ; BASIC RAM FLAG
-        LDA     #$52
-        STA     $03EB       ; CARTRIDGE CHECKSUM
+        STA     BASICF      ; OS "BASIC disabled" flag = 0 (enabled)
 
+    ;---------------------------------------
+    ; (1a) Close the screen editor (IOCB #0)
+    ;---------------------------------------
+        LDX     #$00
+        JSR     CIOCLOSE
+
+    ;---------------------------------------
+    ; (1b) Blank the screen just after a VBLANK so
+    ; ANTIC is not fetching the (about to be ROM)
+    ; display list while we flip PORTB.  Reopening
+    ; E: below re-enables DMA, all within one frame.
+    ;---------------------------------------
+        LDA     RTCLOK+2    ; $14 sample frame counter
+@       CMP     RTCLOK+2
+        BEQ     @-          ; wait for next VBLANK tick
+        LDA     #$00
+        STA     DMACTL      ; ANTIC DMA off
+
+    ;---------------------------------------
+    ; (1c) Map internal BASIC ROM into $A000-$BFFF
+    ;---------------------------------------
         LDA     PORTB
-        AND     #%11111101  ; If Bit 1 = 0 then BASIC is enabled
-        STA     PORTB       ; BASIC ROM FLAG
-        BNE     BASIC_WARM  ; Always jump
+        AND     #%11111101  ; Bit 1 = 0 -> BASIC enabled
+        STA     PORTB
+
+    ;---------------------------------------
+    ; (1d) Top of RAM is now $A000 (below the ROM)
+    ;---------------------------------------
+        LDA     #$A0
+        STA     RAMTOP      ; $6A
+        STA     RAMSIZ      ; $2E4
+
+    ;---------------------------------------
+    ; (1e) Reopen E:; OS rebuilds the display list +
+    ; screen under RAMTOP and recomputes MEMTOP.
+    ;---------------------------------------
+        LDA     #<(OVLBUF-OVL_BASIC+EDITOR_STR)
+        STA     INBUFF
+        LDA     #>(OVLBUF-OVL_BASIC+EDITOR_STR)
+        STA     INBUFF+1
+        LDX     #$00
+        LDY     #$0C        ; read/write
+        JSR     CIOOPEN
+
+    ;---------------------------------------
+    ; (2) Force a COLD start of BASIC.
+    ;---------------------------------------
+        LDA     #$00
+        STA     $08         ; WARMFLG = 0 -> cold start
+        STA     $CA         ; LOADFLG = 0 -> not mid-LOAD
+        JMP     ($BFFA)     ; -> BASIC COLDSTART ($A000)
+
+EDITOR_STR:
+        .BYTE   'E:',EOL
 
 BASIC_OFF:
     ;---------------------------------------
