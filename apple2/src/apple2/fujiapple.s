@@ -93,6 +93,9 @@ INSTALL:
         STA FRETOP+1
         STA RSHIMEM
 
+        LDA #0
+        STA CURTRANS           ; default translation = none (NTRANS/NTYPE)
+
         ; --- chain into EXTRNCMD ($BE06 = JMP; target @ $BE07/$BE08) ---
         LDA EXTRNCMD+1         ; save the previous handler so we can daisy-chain
         STA NEXTCMD+1
@@ -715,11 +718,20 @@ NCTL:
         JMP SPRESULT
 @err:   RTS
 
-;--- NDIR devicespec ---------------------------------------------------------
-; Open the devicespec as a directory (mode 6), then read and print the listing
-; a chunk at a time until no bytes remain, and close.  Prints straight to the
-; screen (no string variable), so it doubles as an end-to-end read-path test.
-H_NDIR:
+;--- NCAT / NCATALOG devicespec ----------------------------------------------
+; Open the devicespec as a directory (mode 6) and print the ProDOS-style listing
+; the firmware formats for us: NCAT requests the 40-column CAT layout, NCATALOG
+; the 80-column CATALOG layout (selected via the TRANS byte).  Read and print
+; the listing a chunk at a time until no bytes remain, then close.  Prints
+; straight to the screen (no string variable), so it doubles as an end-to-end
+; read-path test.
+H_NCAT:
+        LDA #DIRFMT_CAT
+        BNE NCATCOM            ; (always: DIRFMT_CAT != 0)
+H_NCATALOG:
+        LDA #DIRFMT_CATALOG
+NCATCOM:
+        STA TRANS              ; survives the parse below (only dir handlers write TRANS)
         JSR CHKDEV
         BCS @err
         JSR SETARGS
@@ -728,8 +740,6 @@ H_NDIR:
         JSR FN_SETCH
         LDA #MODE_DIR
         STA MODE
-        LDA #0
-        STA TRANS
         JSR OPENCK             ; bad path -> PATH NOT FOUND instead of silence
         BCS @err
 @loop:
@@ -757,6 +767,68 @@ H_NDIR:
 @next:  INX
         BNE @pr
         BEQ @loop              ; (always)
+@done:
+        JSR FN_CLOSE
+        CLC
+        LDA #0
+@err:   RTS
+
+;--- NTYPE devicespec --------------------------------------------------------
+; Open the devicespec on channel 1 (mode READ) using the current NTRANS
+; translation, print its contents to the screen a chunk at a time, and close.
+; Structurally NCAT with MODE_READ and a user-set TRANS; output is faithful
+; (each byte COUT'd with the high bit set, no LF-dropping) - line-ending
+; handling is the caller's choice via NTRANS.
+H_NTYPE:
+        JSR CHKDEV
+        BCS @err
+        JSR SETARGS
+        JSR GETURL             ; devicespec -> URLBUF / URLLEN
+        LDA #1                 ; channel 1 (NTRANS/NTYPE operate on channel 1)
+        JSR FN_SETCH
+        LDA #MODE_READ
+        STA MODE
+        LDA CURTRANS
+        STA TRANS
+        JSR OPENCK             ; bad path -> PATH NOT FOUND / I/O ERROR
+        BCS @err
+@loop:
+        JSR FN_STATUS          ; SP_PAYLOAD = [avail_lo][avail_hi][conn][err]
+        JSR POLLKEY            ; CTRL-C aborts, CTRL-S pauses while we wait
+        BCS @abort
+        LDA SP_PAYLOAD
+        ORA SP_PAYLOAD+1
+        BNE @rd                ; bytes waiting -> read them
+        LDA SP_PAYLOAD+2       ; none waiting: still connected?
+        BNE @loop              ; yes -> wait for more
+        BEQ @done              ; no -> EOF
+@rd:
+        LDA SP_PAYLOAD+1       ; chunk = min(avail, 255)
+        BEQ @lo
+        LDA #255
+        BNE @go
+@lo:    LDA SP_PAYLOAD
+@go:    JSR FN_READ            ; A bytes -> SP_PAYLOAD, SP_COUNT = actual
+        LDA SP_COUNT
+        ORA SP_COUNT+1
+        BEQ @done              ; defensive: read returned nothing
+        LDX #0
+@pr:    CPX SP_COUNT
+        BEQ @loop
+        JSR POLLKEY            ; CTRL-C aborts, CTRL-S pauses the scroll
+        BCS @abort
+        LDA SP_PAYLOAD,X
+        ORA #$80               ; COUT wants the high bit set
+        JSR COUT
+        INX
+        BNE @pr
+        BEQ @loop              ; (always)
+@abort:
+        JSR CROUT              ; end the partial line cleanly
+        JSR FN_CLOSE           ; CTRL-C: close the channel and bail out
+        CLC
+        LDA #0
+        RTS
 @done:
         JSR FN_CLOSE
         CLC
@@ -1075,6 +1147,26 @@ H_NHTTPMODE:
         JMP SPRESULT
 @hmerr: RTS
 
+;--- NTRANS d, mode ----------------------------------------------------------
+; Record the current translation mode used by NTYPE (channel 1).  The firmware
+; can only set translation at OPEN time (the IWM set-translation control is a
+; stub), so this just stashes a byte for NTYPE's next open to consume - no
+; SmartPort command is issued.  mode: 0=NONE 1=CR 2=LF 3=CR/LF 4=PETSCII.
+; d is validated (1..15) for consistency; a single value is kept.
+H_NTRANS:
+        JSR CHKDEV
+        BCS @err
+        JSR SETARGS
+        JSR GETBYT
+        JSR CHKCHAN            ; validate channel 1..15
+        BCS @err
+        JSR CHKCOM
+        JSR GETBYT             ; mode -> X
+        STX CURTRANS
+        CLC
+        LDA #0
+@err:   RTS
+
 ;=============================================================================
 ; SPRESULT - turn the SmartPort carry (set on entry = device error) into a
 ; command return: CLC + A=0 on success, or SEC + A = I/O ERROR so ONERR can
@@ -1250,6 +1342,33 @@ CHKDEV:
         SEC
         RTS
 @ok:    CLC
+        RTS
+
+;=============================================================================
+; POLLKEY - flow-control keyboard poll for NTYPE's output.
+;   CTRL-S pauses: consume it, then wait here until the next key.  If that key
+;          is CTRL-C, fall through to abort; any other key resumes.
+;   CTRL-C aborts: consume it and return carry SET so the caller stops.
+;   Any other key (or no key) is left queued; return carry CLEAR.
+; Preserves X and Y (touches A only), so it can sit inside the byte loop.
+;=============================================================================
+POLLKEY:
+        LDA KBD
+        BPL @none              ; bit7 clear -> no key waiting
+        CMP #CTRL_C
+        BEQ @abort
+        CMP #CTRL_S
+        BNE @none              ; other key -> ignore, leave it queued
+        BIT KBDSTRB            ; consume the CTRL-S
+@wait:  LDA KBD                ; paused: hold until the next key
+        BPL @wait
+        BIT KBDSTRB            ; consume the resume key
+        CMP #CTRL_C            ; ...but CTRL-C while paused still aborts
+        BEQ @abrt
+@none:  CLC
+        RTS
+@abort: BIT KBDSTRB            ; consume the CTRL-C
+@abrt:  SEC
         RTS
 
 ;=============================================================================
@@ -1435,8 +1554,10 @@ CMDTABLE:
         .addr H_NJSONQUERY
         .byte "NCD",0
         .addr H_NCD
-        .byte "NDIR",0
-        .addr H_NDIR
+        .byte "NCAT",0
+        .addr H_NCAT
+        .byte "NCATALOG",0
+        .addr H_NCATALOG
         .byte "NMKDIR",0
         .addr H_NMKDIR
         .byte "NRMDIR",0
@@ -1453,12 +1574,16 @@ CMDTABLE:
         .addr H_NLOGIN
         .byte "NHTTPMODE",0
         .addr H_NHTTPMODE
+        .byte "NTRANS",0
+        .addr H_NTRANS
+        .byte "NTYPE",0
+        .addr H_NTYPE
         .byte 0                 ; end of table
 
 MSG_BANNER:
         .byte $8D               ; CR
         .byte "FUJINET BASIC EXTENSION INSTALLED",$8D
-        .byte "17 COMMANDS - NOPEN..NHTTPMODE",$8D
+        .byte "20 COMMANDS - NOPEN..NTYPE",$8D
         .byte 0
 MSG_NOROOM:
         .byte $8D,"FUJINET: NOT ENOUGH ROOM BELOW HIMEM",$8D,0
@@ -1522,6 +1647,7 @@ NEXTPTR:   .res 2              ; RELINK: next-line address scratch
 CHAN:      .res 1              ; current channel (1..15)
 MODE:      .res 1              ; open mode
 TRANS:     .res 1              ; open translation
+CURTRANS:  .res 1              ; NTRANS: standing translation for NTYPE (chan 1)
 BUFLEN:    .res 1              ; requested read/write length
 URLLEN:    .res 1              ; length of URLBUF contents
 RDVAR:     .res 2              ; saved buf$ descriptor address across a read

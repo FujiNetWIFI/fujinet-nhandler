@@ -35,13 +35,13 @@ Trade-off: like every ProDOS command (`OPEN`, `CATALOG`, `PR#`), inside a
 running program these are issued via the standard idiom
 `PRINT CHR$(4);"NOPEN 1,…"`.  At the `]` prompt you type them bare.
 
-## Command set (matches the Adam SmartBASIC 1.x set — 17 commands)
+## Command set (matches the Adam SmartBASIC 1.x set — 18 commands)
 
 | Group | Commands |
 |---|---|
 | Connection | `NOPEN` `NCLOSE` `NSTATUS` `NREAD` `NWRITE` |
 | JSON | `NJSONPARSE` `NJSONQUERY` |
-| Filesystem | `NCD` `NDIR` `NMKDIR` `NRMDIR` `NDEL` |
+| Filesystem | `NCD` `NCAT` `NCATALOG` `NMKDIR` `NRMDIR` `NDEL` |
 | Programs | `NLOAD` `NSAVE` |
 | Extra | `NACCEPT` `NLOGIN` `NHTTPMODE` |
 
@@ -69,15 +69,15 @@ running program these are issued via the standard idiom
 
 - [x] Project scaffold, equates, linker config
 - [x] Install / HIMEM-protect / `$BE06` chain
-- [x] Command recognizer + dispatch for all 17 keywords
+- [x] Command recognizer + dispatch for all 18 keywords
 - [x] Argument normalization for the ROM evaluators (incl. CHRGET priming)
 - [x] MekkoGX build → bootable `r2r/apple2/FUJIAPPLE.po`
 - [x] SmartPort transport layer (validated on hardware)
-- [x] Command bodies: all 17 written
+- [x] Command bodies: all 18 written
   - validated on hardware: `NOPEN` `NCLOSE` `NSTATUS` `NREAD` `NWRITE`
-    `NCD` `NDIR` `NMKDIR` `NRMDIR` `NDEL` `NJSONPARSE` `NJSONQUERY`
+    `NCD` `NCAT` `NMKDIR` `NRMDIR` `NDEL` `NJSONPARSE` `NJSONQUERY`
     `NLOGIN` `NLOAD` `NSAVE` `NACCEPT`
-  - written, pending on-hardware validation: `NHTTPMODE`
+  - written, pending on-hardware validation: `NHTTPMODE` `NCATALOG`
 - [x] Coexistence with BASIC.SYSTEM built-ins (CATALOG/SAVE/LOAD + NEW etc.)
 - [x] Printer redirect to the FujiNet SmartPort `PRINTER` device (validated):
   **`CALL 32771` = on, `CALL 32774` = off** (line-buffered; off also flushes a
@@ -119,7 +119,8 @@ Boots ProDOS → BASIC.SYSTEM → `STARTUP`, which `BRUN`s `FUJIAPPLE` to instal
 the commands.  Then, e.g.:
 
 ```
-] NDIR "N:TNFS://TMA-3"
+] NCAT "N:TNFS://TMA-3"
+] NCATALOG "N:TNFS://TMA-3"
 ] NOPEN 1,"N:HTTP://WWW.GNU.ORG/LICENSES/GPL-3.0.TXT",4,0
 ```
 

@@ -78,6 +78,10 @@ CSW             = $36           ; character output vector (COUT jumps here);
 COUT            = $FDED         ; print A to current output
 CROUT           = $FD8E         ; print carriage return
 PRTX            = $F944         ; print X as 2 hex digits
+KBD             = $C000         ; keyboard data; bit7 set = key ready, low 7 = ASCII
+KBDSTRB         = $C010         ; keyboard strobe; access clears the key-ready flag
+CTRL_C          = $83           ; CTRL-C, high bit set (as read from KBD)
+CTRL_S          = $93           ; CTRL-S, high bit set (as read from KBD)
 
 ;----------------------------------------------------------------------------
 ; ProDOS / BASIC.SYSTEM
@@ -179,10 +183,16 @@ MODE_READ       = 4
 MODE_WRITE      = 8
 MODE_RDWR       = 12
 MODE_POST       = 13
-MODE_DIR        = 6             ; directory open mode (NDIR)
+MODE_DIR        = 6             ; directory open mode (NCAT/NCATALOG)
+
+; Directory listing formats, passed as the open translation byte (TRANS) and
+; interpreted by the firmware's DIR_FORMAT.  NCAT asks for the 40-column ProDOS
+; CAT layout; NCATALOG the 80-column CATALOG layout.
+DIRFMT_CAT      = $84           ; DIR_FORMAT::A2CAT
+DIRFMT_CATALOG  = $85           ; DIR_FORMAT::A2CATALOG
 
 ;----------------------------------------------------------------------------
-; Scratch channel for the devicespec-only filesystem commands (NCD/NDIR/NMKDIR/
+; Scratch channel for the devicespec-only filesystem commands (NCD/NCAT/NMKDIR/
 ; NRMDIR/NDEL/NLOAD/NSAVE).  User channels are 1..15 (see CHKCHAN); channel 0
 ; can never be a user-opened channel, so filesystem ops here never clobber a
 ; live connection.
