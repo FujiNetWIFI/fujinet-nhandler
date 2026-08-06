@@ -2192,8 +2192,18 @@ GET_DOSDR_NEXT:
         LDA     (INBUFF),Y
         CMP     #':'
         BNE     GET_DOSDR_DONE  ; Not found, skip & use default
-        DEY
+
+        LDY     #$00            ; Check 1st char is 'N' (e.g. NOT "SD:")
         LDA     (INBUFF),Y
+        CMP     #'N'
+        BNE     GET_DOSDR_DONE  ; Not "Nn:" - skip & use default
+
+        INY                     ; Check 2nd char is digit 1-8
+        LDA     (INBUFF),Y
+        CMP     #'1'
+        BCC     GET_DOSDR_DONE  ; < '1' - not a drive digit
+        CMP     #'9'
+        BCS     GET_DOSDR_DONE  ; >= '9' - not a drive digit
         AND     #$0F            ; Convert, say, '2' to 2
         TAX                     ; Return DOSDR in X
 
